@@ -1,0 +1,12 @@
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from .views import WeatherViewSet
+
+router = DefaultRouter()
+router.register(r'', WeatherViewSet, basename='weather')
+
+app_name = 'weather'
+
+urlpatterns = [
+    path('', include(router.urls)),
+]
