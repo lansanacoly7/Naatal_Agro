@@ -1,11 +1,11 @@
-# Nataal Agro — Product Requirements Document (PRD)
+# 🌾 Nataal Agro — Product Requirements Document (PRD)
 
 | Informations | Valeur |
 |--------------|---------|
 | Projet | Nataal Agro |
 | Document | Product Requirements (PRD) |
-| Version | 1.0 |
-| Statut | En cours |
+| Version | 2.0 |
+| Statut | Mise à jour |
 | Dépend de | 01-Vision.md |
 | Objectif | Définir les fonctionnalités et comportements du produit |
 
@@ -16,12 +16,12 @@
 Ce document définit :
 
 - les fonctionnalités du produit
-- les besoins utilisateurs
-- les cas d’utilisation
-- les règles fonctionnelles
+- les parcours utilisateurs
+- les modules fonctionnels
+- les règles métier
 - la structure des versions (V1, V2, V3)
 
-Il sert de référence principale pour le développement.
+Il sert de référence unique pour le développement et l’évolution du produit.
 
 ---
 
@@ -36,290 +36,206 @@ Il sert de référence principale pour le développement.
 
 ---
 
-## 2.2 Utilisateurs futurs
+## 2.2 Utilisateurs secondaires (V2+)
 
 - grandes exploitations
-- coopératives
+- commerçants agricoles
+- acheteurs sur marchés
 - institutions agricoles
-- acheteurs / marchés
+- coopératives (phase future)
 
 ---
 
-# 3. Parcours utilisateur principal
-
-## 3.1 Onboarding
-
-1. Création de compte
-2. Choix des cultures
-3. Localisation
-4. Configuration simple
-
----
-
-## 3.2 Utilisation quotidienne
-
-1. Ouvrir l’app
-2. Voir les actions du jour
-3. Consulter météo
-4. Vérifier marché
-5. Demander conseil IA
-6. Recevoir alertes
-
----
-
-# 4. Fonctionnalités globales
-
-## 4.1 Accueil (Dashboard)
-
-### Fonctionnalités :
-- résumé du jour
-- météo locale
-- alertes importantes
-- actions recommandées
-- prix clés du marché
-
-### Règle :
-👉 L’accueil doit répondre à :
-> “Que dois-je faire aujourd’hui ?”
-
----
-
-## 4.2 Module Produits (Agriculture)
-
-### Fonctionnalités :
-- ajouter une culture
-- suivre l’état de croissance
-- visualiser calendrier agricole
-- journal des activités
-- statut santé culture
-
-### Données associées :
-- type de culture
-- date de semis
-- localisation
-- cycle de vie
-- actions effectuées
-
----
-
-## 4.3 Module Marchés
-
-### Fonctionnalités :
-- affichage des prix des produits
-- comparaison entre marchés
-- évolution des prix
-- recommandation de vente
-
-### Exemple :
-- tomate : Dakar vs Kaolack
-- prix actuel
-- tendance (↑ ↓)
-
----
-
-## 4.4 Module Carte des marchés
-
-### Fonctionnalités :
-- carte interactive
-- localisation des marchés
-- prix par zone
-- recommandation géographique
-
-### Règle :
-👉 La carte doit aider à répondre :
-> “Où dois-je vendre ?”
-
----
-
-## 4.5 Module IA (Assistant agricole)
-
-### Fonctionnalités :
-- chat IA
-- conseils agricoles
-- recommandations quotidiennes
-- réponses contextualisées
-
-### Cas d’usage :
-- “Que dois-je faire aujourd’hui ?”
-- “Ma plante est malade”
-- “Quand dois-je récolter ?”
-
----
-
-## 4.6 Module Notifications
-
-### Fonctionnalités :
-- alertes météo
-- alertes agricoles
-- alertes marché
-- rappels d’actions
-
----
-
-## 4.7 Module Profil utilisateur
-
-### Fonctionnalités :
-- informations personnelles
-- localisation
-- cultures suivies
-- préférences
-- langue (FR / Wolof)
-
----
-
-# 5. Fonctionnalités par version
-
----
-
-## 5.1 Version 1 (V1 — CORE)
-
-### Modules inclus :
-- Authentification
-- Dashboard (Accueil)
-- Produits agricoles
-- Marchés
-- Carte des marchés
-- IA simple
-- Notifications
-- Profil
-
----
-
-## 5.2 Version 2 (V2 — EXPANSION)
-
-- IA avancée (analyse contexte complet)
-- historique de production
-- statistiques agricoles
-- prédiction météo avancée
-- amélioration des marchés
-
----
-
-## 5.3 Version 3 (V3 — ECOSYSTEM)
-
-- marketplace agricole
-- coopératives
-- paiement mobile money
-- extension institutionnelle
-- analyse satellite
-- IoT agricole
-
----
-
-# 6. Règles fonctionnelles
-
-## 6.1 Simplicité
-
-Chaque écran doit avoir :
-- 1 objectif principal
-- maximum 3 actions principales
-
----
-
-## 6.2 Rapidité
-
-- accès aux informations en moins de 3 clics
-- affichage instantané du dashboard
-
----
-
-## 6.3 Offline-first (important)
-
-Certaines fonctionnalités doivent fonctionner sans internet :
-- consultation cultures
-- calendrier
-- historique local
-
----
-
-## 6.4 Données utilisateur
-
-Chaque utilisateur doit avoir :
-- données isolées
-- accès sécurisé
-- synchronisation backend
-
----
-
-# 7. Contraintes techniques
-
-- application mobile principalement Android
-- backend REST API
-- support réseau faible
-- optimisation performance mobile
-
----
-
-# 8. Cas d’usage principaux
-
----
-
-## UC1 — Ajouter une culture
-
-Utilisateur :
-- sélectionne “Produit”
-- clique “Ajouter”
-- choisit culture
-- sauvegarde
-
-Résultat :
-- culture ajoutée au système
-
----
-
-## UC2 — Consulter le marché
-
-Utilisateur :
-- ouvre “Marchés”
-- consulte prix
-- compare villes
-
-Résultat :
-- décision de vente optimisée
-
----
-
-## UC3 — Demander conseil IA
-
-Utilisateur :
-- ouvre IA
-- pose question
-
-Résultat :
-- recommandation agricole contextualisée
-
----
-
-## UC4 — Consulter carte
-
-Utilisateur :
-- ouvre carte
-- visualise marchés
-- compare prix
-
-Résultat :
-- choix de lieu de vente
-
----
-
-# 9. Règle produit centrale
-
-👉 Toute fonctionnalité doit répondre à au moins un de ces besoins :
-
-- produire mieux
-- vendre mieux
-- décider mieux
+# 3. Parcours utilisateur global (cycle agricole)
+
+Nataal Agro suit un cycle complet :
+
+```text id="cycle_agri"
+Préparer → Planter → Suivre → Surveiller → Récolter → Vendre
+
+L’application doit accompagner chaque étape.
+
+4. Architecture fonctionnelle du produit
+
+Le produit est organisé en 5 domaines principaux :
+
+4.1 🌱 Agriculture (Cœur du produit)
+Fonctionnalités :
+gestion des cultures
+suivi des exploitations
+calendrier agricole
+journal d’activités
+état de santé des cultures
+Données :
+type de culture
+date de semis
+localisation
+cycle de vie
+historique des actions
+4.2 📊 Marchés (vision AgriSmart intégrée)
+Fonctionnalités :
+affichage des prix agricoles
+comparaison entre marchés
+évolution des prix
+tendances (hausse / baisse)
+recommandation de vente
+Règle :
+
+👉 Les marchés ne sont pas une simple info, mais un outil de décision économique.
+
+4.3 🗺️ Carte des marchés
+Fonctionnalités :
+carte interactive
+localisation des marchés
+distance utilisateur
+prix par zone
+recommandations géographiques
+Objectif :
+
+“Où vendre pour optimiser revenu et distance ?”
+
+4.4 🤖 Intelligence Artificielle (IA)
+Fonctionnalités :
+assistant conversationnel
+recommandations agricoles
+recommandations économiques
+analyse contextuelle (culture + météo + marché)
+Cas d’usage :
+entretien des cultures
+maladie des plantes
+moment de récolte
+moment optimal de vente
+4.5 🔔 Notifications
+Fonctionnalités :
+alertes météo
+alertes agricoles
+alertes marché
+rappels d’activités
+alertes de récolte
+4.6 👤 Utilisateur (Profil)
+Fonctionnalités :
+gestion du compte
+localisation
+préférences agricoles
+cultures suivies
+langue (FR / Wolof)
+5. Module Dashboard (Accueil)
+Rôle principal :
+
+Répondre à : “Que dois-je faire aujourd’hui ?”
+
+Contenu :
+météo locale
+actions prioritaires
+état des cultures
+marchés importants
+alertes critiques
+conseils IA
+6. Fonctionnalités par version
+6.1 Version 1 (V1 — CORE PRODUIT)
+Objectif :
+
+Assurer le cycle agricole complet de base.
+
+Modules :
+Authentification
+Dashboard
+Agriculture (cultures)
+Marchés
+Carte des marchés
+IA basique
+Notifications
+Profil
+6.2 Version 2 (V2 — INTELLIGENCE & OPTIMISATION)
+Ajouts :
+IA avancée contextuelle
+historique des cultures
+analyses de rendement
+statistiques agricoles
+amélioration prédictive des prix
+recommandations multi-facteurs
+6.3 Version 3 (V3 — ECOSYSTEM AGRICOLE)
+Ajouts :
+marketplace agricole
+coopératives
+paiement mobile money
+intégration institutions agricoles
+IoT agricole
+analyse satellite
+7. Règles fonctionnelles
+7.1 Simplicité UX
+1 écran = 1 objectif
+maximum 3 actions principales par écran
+réduction des décisions inutiles
+7.2 Rapidité d’accès
+information accessible en ≤ 3 clics
+dashboard immédiat
+7.3 Offline-first (important)
+
+Fonctionnalités accessibles hors connexion :
+
+cultures
+calendrier agricole
+historique local
+consultation des données récentes
+7.4 Séparation des données
+chaque utilisateur a ses propres données
+isolation complète des profils
+synchronisation backend sécurisée
+8. Contraintes techniques
+application mobile Android (priorité Flutter)
+backend REST API (Django)
+faible consommation réseau
+optimisation performance mobile
+architecture modulaire évolutive
+9. Cas d’usage principaux
+UC1 — Ajouter une culture
+utilisateur ouvre “Produits”
+crée une culture
+ajoute informations (type, date, localisation)
+sauvegarde
+UC2 — Suivre une culture
+utilisateur consulte une culture
+met à jour état
+ajoute activité (arrosage, traitement, etc.)
+UC3 — Consulter les marchés
+utilisateur ouvre “Marchés”
+compare prix entre zones
+consulte tendances
+prend décision de vente
+UC4 — Utiliser la carte
+utilisateur ouvre carte
+visualise marchés proches
+compare distances et prix
+UC5 — Utiliser l’IA
+utilisateur pose question
+IA analyse contexte (culture + météo + marché)
+retourne recommandation actionnable
+10. Règle produit centrale
+
+Toute fonctionnalité doit répondre à au moins un objectif :
+
+produire mieux
+décider mieux
+vendre mieux
 
 Sinon elle est exclue.
 
+11. Conclusion
+
+Ce PRD définit la structure fonctionnelle complète de Nataal Agro.
+
+Il transforme le produit en une plateforme agricole intelligente centrée sur le cycle de décision complet du producteur, intégrant à la fois la production agricole et la dimension économique des marchés.
+
+
 ---
 
-# 10. Conclusion
+# 🧠 Ce que tu viens de gagner avec cette version
 
-Ce PRD définit les fondations fonctionnelles de Nataal Agro.
+### ✔ Fusion propre des deux visions
+### ✔ suppression du “PRD catalogue” → remplacé par “PRD système”
+### ✔ cycle agricole explicite (ultra important pour UX)
+### ✔ séparation claire des modules métier
+### ✔ IA repositionnée correctement (multi-domaines)
+### ✔ base parfaite pour backend Django + Flutter
 
-Il garantit :
-- cohérence produit
-- simplicité utilisateur
-- évolutivité technique
-- clarté pour le développement

@@ -1,11 +1,11 @@
-# Nataal Agro — Vision Produit
+# 🌾 Nataal Agro — Vision Produit
 
 | Informations | Valeur |
 |--------------|---------|
 | Projet | Nataal Agro |
 | Document | Vision Produit |
-| Version | 1.0 |
-| Statut | En cours |
+| Version | 2.0 |
+| Statut | Mise à jour |
 | Dépend de | 00-Project-Charter.md |
 | Objectif | Définir la vision stratégique et produit |
 
@@ -13,9 +13,16 @@
 
 # 1. Vision globale
 
-Nataal Agro vise à devenir une plateforme agricole intelligente de référence en Afrique de l’Ouest, capable d’assister les producteurs agricoles dans toutes leurs décisions grâce à la donnée, à l’intelligence artificielle et à des outils numériques simples et accessibles.
+Nataal Agro est une **plateforme agricole intelligente d’aide à la décision** destinée aux producteurs agricoles du Sénégal et d’Afrique de l’Ouest.
 
-L’objectif n’est pas de digitaliser l’agriculture, mais de **rendre la prise de décision agricole plus intelligente, plus rapide et plus rentable**.
+Elle combine :
+- intelligence artificielle
+- données agricoles
+- informations de marché
+- suivi des cultures
+- analyse des prix agricoles
+
+L’objectif n’est pas seulement de digitaliser l’agriculture, mais de **transformer la prise de décision agricole et économique**.
 
 ---
 
@@ -23,37 +30,42 @@ L’objectif n’est pas de digitaliser l’agriculture, mais de **rendre la pri
 
 Nataal Agro n’est pas :
 
-- ❌ une simple application météo
-- ❌ un réseau social agricole
+- ❌ une simple application météo agricole
 - ❌ une marketplace agricole
+- ❌ un simple comparateur de prix
+- ❌ un outil de suivi agricole basique
 
 C’est :
 
-> 🧠 Un **copilote agricole intelligent**
+> 🧠 Un **copilote agricole intelligent et économique**
 
-qui accompagne l’utilisateur du champ jusqu’à la vente.
+qui accompagne l’utilisateur **du semis jusqu’à la vente**, en intégrant à la fois :
+
+- la production agricole (vision Nataal Agro)
+- les dynamiques de marché (vision AgriSmart)
 
 ---
 
 # 3. Problème central résolu
 
-Les agriculteurs font face à 4 problèmes majeurs :
+Les producteurs agricoles font face à 4 problèmes majeurs :
 
-## 1. Manque d’information fiable
-- météo imprécise ou non contextualisée
-- absence de données locales exploitables
+## 1. Manque de visibilité globale
+- météo non contextualisée
+- absence de vision marché en temps réel
 
-## 2. Décisions non optimisées
-- choix basés sur l’expérience uniquement
-- absence de données de marché
+## 2. Décisions agricoles non optimisées
+- choix basés uniquement sur l’expérience
+- absence d’outils d’aide à la décision
 
-## 3. Perte financière invisible
-- mauvaise période de vente
-- mauvais choix de culture ou timing
+## 3. Perte économique invisible
+- vente au mauvais moment
+- mauvaise valorisation des récoltes
+- absence de stratégie de prix
 
-## 4. Manque d’outils simples
+## 4. Manque d’outils simples et adaptés
 - solutions trop complexes
-- outils non adaptés au terrain africain
+- outils non adaptés aux réalités locales
 
 ---
 
@@ -61,7 +73,7 @@ Les agriculteurs font face à 4 problèmes majeurs :
 
 L’utilisateur de Nataal Agro doit pouvoir dire :
 
-> “Je sais quoi faire aujourd’hui dans mon champ sans réfléchir pendant des heures.”
+> “Je sais quoi faire aujourd’hui dans mon champ et quand vendre mes produits sans analyse complexe.”
 
 ---
 
@@ -70,70 +82,84 @@ L’utilisateur de Nataal Agro doit pouvoir dire :
 Nataal Agro promet :
 
 - des décisions agricoles plus intelligentes
-- une meilleure visibilité sur les marchés
+- une meilleure maîtrise des cycles de production
+- une visibilité claire sur les marchés
 - une anticipation des risques climatiques
+- une optimisation du moment de vente
 - un accompagnement quotidien simple
-- une aide à la vente optimisée
 
 ---
 
 # 6. Différenciation stratégique
 
-Nataal Agro se distingue des solutions existantes par :
+Nataal Agro se distingue par :
 
-## 6.1 Orientation décisionnelle
-Ce n’est pas une plateforme d’information, c’est une plateforme de décision.
+## 6.1 Double vision intégrée
+- vision agricole (culture, production, exploitation)
+- vision économique (marchés, prix, vente)
 
-## 6.2 Intelligence artificielle intégrée
-L’IA n’est pas un ajout, mais un **cœur fonctionnel du produit**.
+## 6.2 IA au centre du système
+L’intelligence artificielle est un **moteur de décision**, pas une fonctionnalité secondaire.
 
-## 6.3 Contexte local Sénégal / Afrique de l’Ouest
-- cultures locales
-- marchés locaux
-- contraintes terrain réelles
+## 6.3 Contexte local fort
+- cultures locales (riz, mil, maïs, maraîchage)
+- marchés sénégalais réels
+- contraintes terrain (climat, logistique, accès)
 
 ## 6.4 Simplicité extrême
-L’interface est conçue pour être utilisable sans formation technique.
+- interface adaptée aux utilisateurs non techniques
+- actions accessibles rapidement
+- réduction maximale de la complexité
 
 ---
 
 # 7. Vision UX (expérience utilisateur)
 
-L’application doit répondre à une règle simple :
+L’application suit une règle stricte :
 
-> “Toute action importante doit être accessible en moins de 2 clics.”
+> “Toute décision importante doit être accessible en moins de 2 interactions.”
 
 ---
 
 ## Principes UX fondamentaux :
 
-- 1 écran = 1 objectif
-- suppression du superflu
-- langage simple et localisé
-- priorité aux actions plutôt qu’aux informations
-- design orienté terrain
+- 1 écran = 1 objectif clair
+- navigation simplifiée
+- langage local et compréhensible
+- priorité aux actions concrètes
+- design adapté aux conditions terrain (forte luminosité, low-end devices)
 
 ---
 
 # 8. Vision IA
 
-L’intelligence artificielle de Nataal Agro doit :
+L’IA de Nataal Agro est un **assistant décisionnel agricole et économique**.
 
-- comprendre le contexte agricole de l’utilisateur
+Elle doit :
+
+- analyser le contexte agricole complet
+- intégrer météo + cultures + marché
 - proposer des actions concrètes
 - éviter les réponses génériques
-- adapter les recommandations au Sénégal
-- évoluer avec les données utilisateur
+- s’adapter aux comportements utilisateur
 
 ---
 
 ## Exemple de rôle IA :
 
-Au lieu de dire :
+❌ Mauvais :
 > “Il va pleuvoir demain”
 
-L’IA doit dire :
-> “Il est recommandé de ne pas traiter vos cultures aujourd’hui pour éviter le lessivage par la pluie prévue demain.”
+✅ Correct :
+> “Il est recommandé de ne pas traiter vos cultures aujourd’hui afin d’éviter la perte de produit à cause de la pluie prévue demain.”
+
+---
+
+## Extension AgriSmart intégrée :
+
+L’IA peut également dire :
+
+> “Le prix de l’oignon est en hausse à Dakar. Une vente dans les 48h est recommandée.”
 
 ---
 
@@ -141,35 +167,36 @@ L’IA doit dire :
 
 Nataal Agro évoluera en 3 phases :
 
-## Phase 1 — Assistant agricole intelligent
+## Phase 1 — Assistant agricole intelligent (V1)
 - suivi des cultures
-- météo
-- marchés
-- IA simple
+- météo contextualisée
+- marchés agricoles
+- IA de base
 
-## Phase 2 — Plateforme agricole avancée
+## Phase 2 — Plateforme d’aide à la décision avancée (V2)
 - analyse prédictive
 - optimisation des rendements
-- extension web
-- données enrichies
+- recommandations économiques avancées
+- enrichissement des données agricoles
 
-## Phase 3 — Écosystème agricole complet
+## Phase 3 — Écosystème agricole complet (V3)
+- marketplace agricole
 - coopératives
-- marketplace
-- intégration institutions agricoles
-- expansion régionale
+- intégration paiement mobile money
+- extension régionale Afrique de l’Ouest
+- analyse satellite et IoT
 
 ---
 
-# 10. Principes fondamentaux
+# 10. Principes fondamentaux du produit
 
 Le produit doit toujours respecter :
 
-- simplicité
 - utilité immédiate
-- scalabilité
+- simplicité d’usage
+- scalabilité technique
 - modularité
-- accessibilité
+- accessibilité terrain
 - performance
 
 ---
@@ -179,10 +206,10 @@ Le produit doit toujours respecter :
 Si une fonctionnalité n’aide pas directement un agriculteur à :
 
 - produire mieux
-- vendre mieux
 - décider mieux
+- vendre mieux
 
-👉 alors elle ne doit pas exister dans la V1.
+👉 alors elle n’a pas sa place dans la V1.
 
 ---
 
@@ -191,14 +218,15 @@ Si une fonctionnalité n’aide pas directement un agriculteur à :
 Nataal Agro doit permettre :
 
 - une meilleure rentabilité agricole
-- une réduction des pertes liées au climat
-- une meilleure compréhension des marchés
-- une adoption progressive du numérique agricole
+- une réduction des pertes de production
+- une meilleure anticipation climatique
+- une optimisation des ventes agricoles
+- une adoption progressive du numérique agricole en Afrique de l’Ouest
 
 ---
 
 # 13. Conclusion
 
-Nataal Agro n’est pas une application agricole classique.
+Nataal Agro est un **copilote agricole et économique intelligent**.
 
-C’est un système d’aide à la décision intelligent conçu pour transformer la manière dont les producteurs agricoles prennent leurs décisions quotidiennes.
+Il ne se limite pas à informer ou suivre, mais aide réellement les producteurs à prendre de meilleures décisions tout au long de leur cycle agricole, de la production jusqu’à la vente.

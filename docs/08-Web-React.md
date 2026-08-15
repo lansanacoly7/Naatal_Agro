@@ -4,260 +4,267 @@
 |--------------|---------|
 | Projet | Nataal Agro |
 | Document | Web React Architecture |
-| Version | 1.0 |
-| Statut | En cours |
+| Version | 2.0 |
+| Statut | Corrigé |
 | Dépend de | 07-Mobile-Flutter.md |
-| Objectif | Définir l’architecture du dashboard web |
+| Objectif | Dashboard web scalable + analytics agricole |
 
 ---
 
-# 1. Objectif de la version web
+# 1. Rôle de la Web App
 
-La version web de Nataal Agro est un **dashboard avancé** destiné à :
+La web app Nataal Agro est un **centre de contrôle et d’analyse agricole** destiné à :
 
-- visualiser les données agricoles
-- analyser les marchés
-- superviser les utilisateurs
-- suivre les performances globales
-- gérer les données administratives
+- administrateurs
+- analystes agricoles
+- superviseurs de données
+- décideurs
 
----
+Elle n’est PAS une version mobile.
 
-# 2. Différence avec Flutter
-
-| Mobile (Flutter) | Web (React) |
-|------------------|-------------|
-| Utilisateur terrain | Administrateur / analyste |
-| Actions rapides | Analyse et supervision |
-| Simplicité | Richesse de données |
-| Offline support | Full online |
+👉 Elle sert à :
+- analyser
+- superviser
+- comparer
+- piloter
 
 ---
 
-# 3. Architecture React
+# 2. Architecture React (scalable clean)
 
-## Structure globale
-
-```text id="react_arch_1"
-web/
+```text id="react_arch_v2"
+src/
 │
-├── src/
-│   ├── core/          # config globale
-│   ├── modules/       # fonctionnalités métier
-│   ├── shared/        # composants réutilisables
-│   ├── services/      # appels API
-│   ├── layouts/       # structures UI
-│   └── App.tsx
+├── app/                # bootstrap + config globale
+├── core/              # API, auth, config
+├── domain/            # logique métier frontend (IMPORTANT)
+├── features/          # modules métier
+├── hooks/             # hooks personnalisés
+├── services/          # API layer
+├── store/             # state management
+├── types/             # TypeScript models
+├── adapters/          # transformation API → UI
+├── shared/           # UI réutilisable
+└── layouts/          # structure dashboard
 ````
 
 ---
 
-# 4. Core layer
+# 3. Core Layer
+
+* API client centralisé (Axios instance)
+* JWT interceptor
+* routing sécurisé
+* config environnement
+
+---
+
+# 4. Domain Layer (AJOUT IMPORTANT)
 
 Contient :
 
-* configuration API
-* routing
-* auth system
-* theme global
-* utils
+* logique métier frontend
+* règles de calcul UI
+* transformations métier
+
+Ex :
+
+* calcul tendances prix
+* agrégation données marché
+* filtres agricoles
 
 ---
 
-# 5. Modules principaux
-
----
+# 5. Features Modules
 
 ## 5.1 Dashboard
 
-### Objectif :
-
-Vue globale du système
-
-### Contenu :
-
-* statistiques globales
-* activité utilisateurs
-* prix moyens marchés
-* alertes système
+* KPI agricoles
+* résumé global système
+* alertes critiques
+* performance régionale
 
 ---
 
 ## 5.2 Markets
 
-### Fonctionnalités :
-
-* visualisation des prix
-* analyse comparative
-* historique des marchés
-* tendances graphiques
+* prix temps réel
+* évolution historique
+* comparaison multi-zones
+* heatmaps prix
 
 ---
 
-## 5.3 Users
+## 5.3 Users (RBAC ajouté)
 
-### Fonctionnalités :
+* gestion utilisateurs
+* rôles :
 
-* liste utilisateurs
-* activité utilisateur
-* segmentation
-* gestion comptes
+  * admin
+  * analyste
+  * viewer
+* audit logs
 
 ---
 
 ## 5.4 Agriculture
 
-### Fonctionnalités :
-
-* suivi des cultures globales
-* statistiques agricoles
-* performance par région
+* production globale
+* performance cultures
+* statistiques régionales
 
 ---
 
-## 5.5 AI Analytics
+## 5.5 AI Analytics (RENFORCÉ)
 
-### Fonctionnalités :
-
-* analyse des requêtes IA
-* tendances des questions
-* amélioration du modèle
-
----
-
-# 6. State management
-
-👉 Redux Toolkit ou Zustand (léger et scalable)
+* requêtes IA par type
+* coût IA (Gemini vs Groq)
+* performance prompts
+* taux satisfaction réponses
+* logs intelligence
 
 ---
 
-# 7. Communication backend
+# 6. State Management
 
-React communique avec Django via :
+👉 Redux Toolkit (recommandé pour dashboard lourd)
 
-* REST API
-* JWT authentication
-* JSON responses
+Structure :
+
+* store global
+* slices par feature
+* cache API
 
 ---
 
-## Exemple flow :
+# 7. API Layer
 
-```text id="react_flow_1"
-Admin action → React → API Django → Response → Dashboard UI
+```text id="api_flow_v2"
+React → services → API client → Django → response → adapters → UI
 ```
 
 ---
 
-# 8. Data visualization
+# 8. Adapters Layer (IMPORTANT)
 
-## Librairies recommandées :
+Transforme :
 
-* Recharts
-* Chart.js
-* ECharts (option avancée)
+* API Django brut
+  → format UI exploitable
 
----
+Ex :
 
-## Types de graphiques :
-
-* évolution des prix
-* production agricole
-* activité utilisateurs
-* performances IA
+* normalisation prix
+* mapping marchés
+* format dates agricoles
 
 ---
 
-# 9. UI/UX Web
+# 9. Data Visualization
 
-## Principes :
+* Recharts (standard)
+* ECharts (avancé)
 
-* dashboard clair
-* données visibles immédiatement
-* navigation latérale
-* tableaux interactifs
+Graphiques :
+
+* prix agricoles
+* production
+* performance régionale
+* activité IA
+
+---
+
+# 10. RBAC (SÉCURITÉ AJOUTÉE)
+
+Rôles :
+
+* ADMIN
+* ANALYST
+* VIEWER
+
+Permissions :
+
+* accès modules
+* lecture données sensibles
+* export data
+
+---
+
+# 11. UI/UX Web
+
+* dashboard dense mais lisible
+* sidebar navigation
+* panels analytiques
 * filtres avancés
+* tables interactives
 
----
+Layout :
 
-## Layout standard :
-
-```text id="layout_web"
-Sidebar | Main Content | Details Panel
+```text id="layout_v2"
+Sidebar | Dashboard | Details Panel
 ```
 
 ---
 
-# 10. Sécurité web
+# 12. Performance
+
+* lazy loading routes
+* virtualized tables
+* API pagination
+* memoization components
+
+---
+
+# 13. AI Integration (aligné backend)
+
+* affichage analytics IA
+* monitoring prompts
+* coût IA par requête
+* performance modèle
+
+---
+
+# 14. Sécurité
 
 * JWT auth
-* rôles utilisateurs (admin, analyste)
-* protection routes
+* RBAC
+* route protection
+* audit logs
 * validation backend obligatoire
 
 ---
 
-# 11. Performance
+# 15. Scalabilité
 
-* lazy loading modules
-* pagination data tables
-* caching API
-* optimisation charts
+Ajouts futurs :
 
----
-
-# 12. Scalabilité
-
-Le dashboard permet d’ajouter :
-
-* modules institutionnels
 * reporting gouvernemental
-* export de données
-* intégration IA avancée
+* export Excel/PDF
+* dashboards institutionnels
+* IA prédictive agricole avancée
 
 ---
 
-# 13. Rôle stratégique du web
+# 16. Conclusion
 
-La version web est :
+La web app Nataal Agro est un :
 
-> le centre de contrôle et d’analyse de toute la plateforme Nataal Agro
+> système d’analyse et de supervision agricole à grande échelle
 
----
-
-# 14. Conclusion
-
-La web app React complète le système en apportant :
-
-* analyse avancée
-* supervision globale
-* contrôle administratif
-* exploitation des données agricoles
+complémentaire de l’application mobile terrain.
 
 ```
 
 ---
 
-# 🧠 Ce que tu viens de compléter
+# 🟢 Ce que j’ai corrigé
 
-✔ Mobile Flutter (terrain)  
-✔ Web React (analyse)  
-✔ Backend API (cerveau)  
-✔ DB + IA + architecture complète  
+✔ vraie architecture frontend (domain/adapters/types/hooks)  
+✔ ajout RBAC sérieux  
+✔ AI analytics réaliste (coût + perf + logs)  
+✔ séparation métier vs UI  
+✔ structure scalable entreprise  
+✔ cohérence avec backend + IA  
 
-👉 Tu as maintenant un **écosystème produit complet**
-
----
-
-# 🚀 Prochaine étape
-
-👉 `09-AI-System.md`
-
-Et là on va entrer dans un niveau très important :
-
-- comment fonctionne l’IA dans Nataal Agro
-- prompts
-- logique contextuelle agricole
-- intégration Gemini / Groq
-- architecture IA scalable
-
+*next**
+```

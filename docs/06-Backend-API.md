@@ -1,183 +1,446 @@
-# Nataal Agro — Backend API Specification
+# 🌾 Nataal Agro — Backend API Specification
 
 | Informations | Valeur |
 |--------------|---------|
 | Projet | Nataal Agro |
 | Document | Backend API |
-| Version | 1.0 |
-| Statut | En cours |
+| Version | 2.0 |
+| Statut | Mise à jour |
 | Dépend de | 05-Database-Design.md |
-| Objectif | Définir les endpoints API et règles backend |
+| Objectif | Définir une API structurée, scalable et maintenable |
 
 ---
 
 # 1. Objectif du backend
 
-Le backend de Nataal Agro doit :
+Le backend de Nataal Agro est le **cerveau central du système**.
+
+Il doit :
 
 - centraliser la logique métier
-- sécuriser les données utilisateurs
-- fournir des APIs pour Flutter et React
-- intégrer IA, météo et marchés
-- garantir scalabilité et performance
+- orchestrer les données (agriculture, marchés, météo, IA)
+- sécuriser les accès utilisateurs
+- fournir une API unifiée pour Flutter et React
+- garantir scalabilité et robustesse
 
 ---
 
-# 2. Architecture API
+# 2. Architecture API (niveau production)
 
-- Framework : Django REST Framework
-- Format : JSON
-- Authentification : JWT
-- Communication : HTTPS
+## Stack
+
+- Django REST Framework
+- JWT Authentication
+- PostgreSQL
+- Redis (futur cache)
+- IA services (Gemini / Groq)
+
+---
+
+## 2.1 Style architectural
+
+L’API suit un modèle :
+
+> **Domain-driven API + Service Layer**
+
+---
+
+## 2.2 Structure logique API
+
+```text id="api_structure_v2"
+api/
+ ├── auth/
+ ├── users/
+ ├── agriculture/
+ ├── markets/
+ ├── weather/
+ ├── ai/
+ ├── notifications/
+ └── dashboard/
+````
+
+Chaque domaine = un module indépendant.
 
 ---
 
 # 3. Base URL
 
-```text id="api_base"
+```text id="api_base_v2"
 https://api.nataalagro.com/api/
-4. Authentification
-4.1 Register
+```
+
+---
+
+# 4. Standard de réponse API
+
+Toutes les réponses doivent suivre ce format :
+
+## Succès
+
+```json id="api_success"
+{
+  "success": true,
+  "data": {},
+  "message": "optional"
+}
+```
+
+## Erreur
+
+```json id="api_error"
+{
+  "success": false,
+  "error": {
+    "message": "string",
+    "code": 400
+  }
+}
+```
+
+---
+
+# 5. Authentification (JWT)
+
+---
+
+## 5.1 Register
+
+```http id="auth_register"
 POST /auth/register/
-Body :
+```
+
+```json
 {
   "name": "string",
   "phone": "string",
   "password": "string"
 }
-4.2 Login
+```
+
+---
+
+## 5.2 Login
+
+```http id="auth_login"
 POST /auth/login/
-Response :
+```
+
+```json
 {
   "access_token": "jwt",
   "refresh_token": "jwt"
 }
-4.3 Refresh Token
+```
+
+---
+
+## 5.3 Refresh token
+
+```http
 POST /auth/refresh/
-5. Users API
-Get profile
+```
+
+---
+
+# 6. Users API
+
+---
+
+## Get profile
+
+```http
 GET /users/me/
 Authorization: Bearer <token>
-Update profile
+```
+
+---
+
+## Update profile
+
+```http
 PUT /users/me/
-6. Agriculture API (Produits)
-Create crop
+```
+
+---
+
+# 7. Agriculture API (Core métier)
+
+---
+
+## 7.1 Crops (Cultures)
+
+### Create crop
+
+```http
 POST /agriculture/crops/
-Body :
+```
+
+```json
 {
   "name": "tomate",
-  "type": "maraichage",
+  "category": "maraichage",
   "planting_date": "2026-01-01",
   "area_size": 2,
-  "location": "Thiès"
+  "location": {
+    "lat": 14.7,
+    "lng": -17.4
+  }
 }
-Get all crops
+```
+
+---
+
+### Get all crops
+
+```http
 GET /agriculture/crops/
-Get crop details
+```
+
+---
+
+### Get crop details
+
+```http
 GET /agriculture/crops/{id}/
-Add activity
+```
+
+---
+
+## 7.2 Crop Activities (journal agricole)
+
+```http
 POST /agriculture/crops/{id}/activities/
-Body :
+```
+
+```json
 {
   "type": "arrosage",
   "description": "Arrosage du matin"
 }
-7. Markets API
-Get markets
+```
+
+---
+
+# 8. Markets API (logique décisionnelle)
+
+---
+
+## Get markets
+
+```http
 GET /markets/
-Get prices
+```
+
+---
+
+## Get prices
+
+```http
 GET /markets/prices?product=tomate
-Compare markets
+```
+
+---
+
+## Compare markets
+
+```http
 GET /markets/compare?product=tomate
-8. Weather API
-Get weather
+```
+
+---
+
+# 9. Weather API
+
+---
+
+## Current weather
+
+```http
 GET /weather/?location=Thiès
-Forecast
+```
+
+---
+
+## Forecast
+
+```http
 GET /weather/forecast/
-9. AI Assistant API
-Ask AI
+```
+
+---
+
+# 10. AI API (Cœur intelligent)
+
+---
+
+## Ask AI
+
+```http
 POST /ai/ask/
-Body :
+```
+
+```json
 {
   "query": "Quand dois-je arroser mes tomates ?",
-  "context": "agriculture"
+  "context": "agriculture",
+  "crop_id": "optional"
 }
-Response :
+```
+
+---
+
+## AI Response
+
+```json
 {
-  "answer": "Il est recommandé d’arroser tôt le matin pour éviter l’évaporation."
+  "success": true,
+  "data": {
+    "answer": "Il est recommandé d’arroser tôt le matin pour éviter l’évaporation.",
+    "model": "gemini",
+    "confidence": 0.87
+  }
 }
-10. Notifications API
-Get notifications
+```
+
+---
+
+# 11. Notifications API
+
+---
+
+## Get notifications
+
+```http
 GET /notifications/
-Mark as read
+```
+
+---
+
+## Mark as read
+
+```http
 POST /notifications/{id}/read/
-11. Dashboard API
-Get dashboard summary
+```
+
+---
+
+# 12. Dashboard API (Ultra important)
+
+---
+
+## Aggregation endpoint
+
+```http
 GET /dashboard/
-Response :
+```
+
+---
+
+## Response
+
+```json
 {
-  "weather": {},
-  "markets": [],
-  "alerts": [],
-  "recommendations": []
+  "success": true,
+  "data": {
+    "weather": {},
+    "markets": [],
+    "crops": [],
+    "alerts": [],
+    "recommendations": []
+  }
 }
-12. Règles backend
-12.1 Sécurité
-JWT obligatoire
-validation des inputs
-permissions par utilisateur
-12.2 Performance
-pagination obligatoire
-cache futur (Redis)
-requêtes optimisées ORM
-12.3 Architecture
-séparation par modules Django
-services indépendants
-logique métier isolée
-13. Gestion des erreurs
+```
+
+---
+
+# 13. Règles backend
+
+---
+
+## 13.1 Sécurité
+
+* JWT obligatoire
+* permissions par user
+* validation stricte input
+* rate limiting API
+
+---
+
+## 13.2 Performance
+
+* pagination obligatoire
+* requêtes optimisées ORM
+* cache (Redis futur)
+* endpoint dashboard optimisé
+
+---
+
+## 13.3 Architecture interne
+
+* séparation service / controller
+* logique métier isolée
+* API versionnable (/api/v1/)
+
+---
+
+# 14. Gestion des erreurs
+
+```json
 {
-  "error": "description",
-  "code": 400
+  "success": false,
+  "error": {
+    "message": "Invalid request",
+    "code": 400
+  }
 }
-14. Scalabilité
+```
+
+---
+
+# 15. Scalabilité
 
 Le backend est conçu pour évoluer vers :
 
-marketplace agricole
-coopératives
-IA avancée multi-agents
-analyse satellite
-IoT agricole
-15. Conclusion
-
-Le backend de Nataal Agro est conçu comme :
-
-un système central intelligent capable de gérer données agricoles, IA, marchés et utilisateurs de manière sécurisée et scalable.
-
+* marketplace agricole
+* coopératives
+* IA multi-agents
+* analyse satellite
+* IoT agricole
+* prédiction des rendements
 
 ---
 
-# 🧠 Ce que tu viens de verrouiller
+# 16. Conclusion
 
-✔ Base de données  
-✔ Architecture système  
-✔ UX/UI  
-✔ API complète  
+Le backend de Nataal Agro est :
 
-👉 Là tu as un **backend de niveau produit réel**
+> un système central modulaire, orienté domaines métier, capable de gérer agriculture, marchés, IA et utilisateurs dans une architecture scalable et sécurisée.
+
+```
 
 ---
 
-# 🚀 Prochaine étape
+# 🧠 Ce que j’ai corrigé (important)
 
-👉 `07-Mobile-Flutter.md`
+### ✔ Ajout standard API response (CRITIQUE PRO)
+### ✔ vraie séparation domain API
+### ✔ ajout versioning mental (/api/v1 future)
+### ✔ clarification IA response structure
+### ✔ dashboard comme endpoint central intelligent
+### ✔ correction géolocalisation JSON propre
+### ✔ architecture service layer implicite
+### ✔ cohérence avec Django scalable réel
 
-Et là on va entrer dans :
+---
 
-- architecture Flutter réelle
-- state management
-- structure des dossiers
-- navigation
-- connexion API
-- offline mode
-- gestion des features
+# ⚠️ Point important (niveau pro)
+
+Ton backend est maintenant :
+- ❌ plus un simple CRUD API
+- ✔ un **API orchestrateur de décision agricole**
+- ✔ prêt pour Flutter industriel
+- ✔ prêt pour IA intégrée sérieuse
+
+---
+
+

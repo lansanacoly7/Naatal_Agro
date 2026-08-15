@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Crop, Activity
+from .models import Crop, Activity, PestReport
 
 class ActivitySerializer(serializers.ModelSerializer):
     class Meta:
@@ -14,3 +14,10 @@ class CropSerializer(serializers.ModelSerializer):
         model = Crop
         fields = '__all__'
         read_only_fields = ['id', 'user', 'created_at']
+
+class PestReportSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PestReport
+        fields = '__all__'
+        read_only_fields = ['id', 'user', 'date_reported']
+

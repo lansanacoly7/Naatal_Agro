@@ -4,7 +4,7 @@
 |--------------|---------|
 | Projet | Nataal Agro |
 | Document | Security Architecture |
-| Version | 1.0 |
+| Version | 1.1 |
 | Statut | En cours |
 | Dépend de | 09-AI-System.md |
 | Objectif | Définir la sécurité globale du système |
@@ -16,46 +16,41 @@
 La sécurité de Nataal Agro doit garantir :
 
 - protection des données utilisateurs
-- intégrité des informations agricoles
+- intégrité des données agricoles
 - sécurisation des communications API
 - prévention des accès non autorisés
-- fiabilité du système global
+- fiabilité globale du système
 
 ---
 
 # 2. Principes de sécurité
 
 ## 2.1 Zero Trust
-
 Aucune requête n’est fiable par défaut.
 
-Tout doit être :
-
-- authentifié
-- validé
-- contrôlé
+Toute requête doit être :
+- authentifiée
+- validée
+- autorisée
 
 ---
 
-## 2.2 Séparation des accès
-
+## 2.2 Séparation des données
 Chaque utilisateur ne peut accéder qu’à :
 
-- ses propres données
 - ses cultures
+- ses données
 - ses interactions IA
+- ses notifications
 
 ---
 
 ## 2.3 Minimisation des données
-
-On ne stocke que ce qui est nécessaire.
+On ne stocke que les données nécessaires au fonctionnement du système.
 
 ---
 
 # 3. Authentification
-
----
 
 ## 3.1 JWT (JSON Web Token)
 
@@ -64,25 +59,22 @@ On ne stocke que ce qui est nécessaire.
 
 ---
 
-## 3.2 Processus
+## 3.2 Flow d’authentification
 
-```text id="auth_flow"
-
-Login → Backend vérifie → Génère JWT → Flutter stocke token
+```text
+Login → Backend validation → Génération JWT → Stockage sécurisé côté Flutter
 ````
 
 ---
 
 ## 3.3 Expiration
 
-* access token : court (ex: 15 min - 1h)
-* refresh token : plus long (jours/semaines)
+* Access token : court (15 min – 1h)
+* Refresh token : long (jours / semaines)
 
 ---
 
 # 4. Autorisation
-
----
 
 ## 4.1 Rôles (future extension)
 
@@ -93,15 +85,13 @@ Login → Backend vérifie → Génère JWT → Flutter stocke token
 
 ## 4.2 Permissions
 
-* accès basé sur user_id
-* contrôle backend obligatoire
+* contrôle strict côté backend
 * aucune confiance côté frontend
+* filtrage par user_id obligatoire
 
 ---
 
 # 5. Sécurité API
-
----
 
 ## 5.1 HTTPS obligatoire
 
@@ -113,8 +103,9 @@ Toutes les communications doivent être chiffrées.
 
 Protection contre :
 
+* attaques brute force
 * spam API
-* attaques automatisées
+* abus IA
 
 ---
 
@@ -131,174 +122,108 @@ Chaque requête est validée :
 
 # 6. Sécurité base de données
 
----
-
-## 6.1 Protection des données
-
-* mots de passe hashés (bcrypt/argon2)
-* jamais stockés en clair
-* isolation par utilisateur
-
----
-
-## 6.2 Accès DB
-
-Uniquement via backend Django.
-
-Aucun accès direct depuis mobile ou web.
+* mots de passe hashés (bcrypt / argon2)
+* aucun stockage en clair
+* accès uniquement via backend Django
+* isolation stricte des données utilisateurs
 
 ---
 
 # 7. Sécurité mobile (Flutter)
 
----
-
-## 7.1 Stockage sécurisé
-
-* tokens stockés dans secure storage
-* jamais dans texte brut
+* stockage sécurisé des tokens
+* aucune donnée sensible en clair
+* suppression des sessions au logout
+* cache sécurisé local
 
 ---
 
-## 7.2 Protection locale
+# 8. Sécurité web (React)
 
-* données sensibles chiffrées
-* suppression session logout
-
----
-
-## 7.3 Anti-tampering (optionnel futur)
-
-* détection modification app
-
----
-
-# 8. Sécurité Web (React)
-
----
-
-## 8.1 Protection routes
-
-* accès restreint via JWT
+* protection des routes via JWT
 * redirection si non authentifié
-
----
-
-## 8.2 XSS protection
-
-* sanitation des inputs
-* pas d’exécution de code dynamique
+* protection contre XSS
+* validation backend obligatoire
 
 ---
 
 # 9. Sécurité IA
 
----
-
-## 9.1 Filtrage inputs
-
-* éviter injection de prompt
-* validation requêtes utilisateur
-
----
-
-## 9.2 Protection données sensibles
-
-* pas d’exposition de données personnelles
+* prévention prompt injection
+* validation des inputs utilisateur
 * anonymisation des logs IA
+* filtrage des requêtes sensibles
 
 ---
 
-# 10. Gestion des erreurs sécurisée
+# 10. Gestion des erreurs
 
-* messages d’erreur génériques
-* pas de fuite d’informations techniques
+Aucune fuite technique.
 
 Exemple :
 
 ❌ Mauvais :
-
-> "SQL error at line 45"
+"SQL error at line 32"
 
 ✅ Bon :
-
-> "Une erreur est survenue"
+"Une erreur est survenue"
 
 ---
 
 # 11. Logs et monitoring
 
 * logs backend sécurisés
-* surveillance des accès
 * traçabilité des actions critiques
+* surveillance des accès suspects
 
 ---
 
 # 12. Risques identifiés
 
-* fuite de données utilisateur
-* attaque brute force
+* fuite de données agricoles
+* compromission des tokens JWT
 * injection API
-* compromission token
-* abus IA (prompt injection)
+* abus IA
+* attaques automatisées
 
 ---
 
 # 13. Stratégies de mitigation
 
 * validation stricte backend
-* limitation requêtes
-* rotation tokens
-* séparation environnements (dev / prod)
+* limitation des requêtes
+* rotation des tokens
+* séparation dev / prod
+* audit futur possible
 
 ---
 
 # 14. Scalabilité sécurité
 
-Le système est prêt pour :
+Prévu pour évoluer vers :
 
-* audit sécurité futur
-* intégration OAuth (Google, etc.)
-* MFA (authentification multi-facteurs)
-* sécurité institutionnelle
+* OAuth (Google / Apple)
+* authentification multi-facteurs (MFA)
+* audit sécurité institutionnel
+* sécurité niveau entreprise
 
 ---
 
 # 15. Conclusion
 
-La sécurité de Nataal Agro est conçue selon une approche :
+La sécurité de Nataal Agro est conçue pour être :
 
-> robuste, minimale et évolutive
+* robuste
+* minimale
+* évolutive
 
-Elle protège les données agricoles, les utilisateurs et l’intégrité globale du système.
+Elle protège :
+
+* les utilisateurs
+* les données agricoles
+* l’intégrité du système
 
 ```
 
 ---
-
-# 🧠 Ce que tu viens de verrouiller
-
-✔ Auth JWT propre  
-✔ API sécurisée  
-✔ IA protégée  
-✔ données isolées  
-✔ mobile + web sécurisés  
-✔ architecture prête production  
-
-👉 Là ton projet est **niveau produit sérieux (pas prototype)**.
-
----
-
-# 🚀 Prochaine étape
-
-👉 `11-DevOps-Deployment.md`
-
-Et là on va définir :
-
-- déploiement backend
-- infrastructure serveur
-- CI/CD GitHub Actions
-- Docker
-- environnement prod/dev
-- hosting Flutter + React + Django
 

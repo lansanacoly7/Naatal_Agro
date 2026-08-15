@@ -1,0 +1,98 @@
+@startuml Naatal_Agro_ERD
+!theme plain
+top to bottom direction
+
+entity "User" as users_user {
+  * id : UUID <<PK>>
+  --
+  * username : VARCHAR(150) <<UNIQUE>>
+  * phone : VARCHAR(20)
+  * location : VARCHAR(255)
+  * language : VARCHAR(10)
+  fcm_token : VARCHAR(255)
+  * date_joined : DATETIME
+}
+
+entity "Crop" as agriculture_crop {
+  * id : UUID <<PK>>
+  --
+  * user_id : UUID <<FK>>
+  * name : VARCHAR(255)
+  * crop_type : VARCHAR(100)
+  * planting_date : DATE
+  * expected_harvest_date : DATE
+  * status : VARCHAR(50)
+  * area_size : FLOAT
+  * location : VARCHAR(255)
+  * created_at : DATETIME
+}
+
+entity "Activity" as agriculture_activity {
+  * id : UUID <<PK>>
+  --
+  * crop_id : UUID <<FK>>
+  * activity_type : VARCHAR(100)
+  * description : TEXT
+  * date : DATE
+  * cost : DECIMAL(10,2)
+  * created_at : DATETIME
+}
+
+entity "Market" as markets_market {
+  * id : UUID <<PK>>
+  --
+  * name : VARCHAR(255)
+  * region : VARCHAR(100)
+  * location_gps : VARCHAR(100)
+  * created_at : DATETIME
+}
+
+entity "Price" as markets_price {
+  * id : UUID <<PK>>
+  --
+  * market_id : UUID <<FK>>
+  * product_name : VARCHAR(100)
+  * price : DECIMAL(10,2)
+  * trend : VARCHAR(20)
+  * date : DATE
+}
+
+entity "WeatherData" as weather_weatherdata {
+  * id : UUID <<PK>>
+  --
+  * location : VARCHAR(255)
+  * temperature : FLOAT
+  * humidity : FLOAT
+  * rainfall : FLOAT
+  * forecast_date : DATE
+  * created_at : DATETIME
+}
+
+entity "Notification" as notifications_notification {
+  * id : UUID <<PK>>
+  --
+  * user_id : UUID <<FK>>
+  * title : VARCHAR(255)
+  * message : TEXT
+  * type : VARCHAR(50)
+  * is_read : BOOLEAN
+  * created_at : DATETIME
+}
+
+entity "AIInteraction" as ai_assistant_aiinteraction {
+  * id : UUID <<PK>>
+  --
+  * user_id : UUID <<FK>>
+  * query : TEXT
+  * response : TEXT
+  * context_type : VARCHAR(50)
+  * created_at : DATETIME
+}
+
+users_user ||--o{ agriculture_crop : "possède"
+agriculture_crop ||--o{ agriculture_activity : "enregistre"
+markets_market ||--o{ markets_price : "publie"
+users_user ||--o{ notifications_notification : "reçoit"
+users_user ||--o{ ai_assistant_aiinteraction : "interroge"
+
+@enduml

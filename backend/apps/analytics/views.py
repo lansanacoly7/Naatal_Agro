@@ -1,8 +1,10 @@
 from rest_framework import views, permissions
 from rest_framework.response import Response
-from apps.agriculture.models import Crop
+from apps.agriculture.models import Crop, Activity
 from apps.markets.models import Price
 from apps.weather.models import WeatherData
+from apps.inventory.models import StockItem
+from django.utils import timezone
 
 class DashboardView(views.APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -30,6 +32,31 @@ class DashboardView(views.APIView):
                 'rainfall': latest_weather.rainfall
             }
 
+        # 4. Stock Items
+        stocks = StockItem.objects.filter(user=user).values(
+            'name', 'quantity', 'unit', 'alert_status', 'ai_storage_advice'
+        )
+
+        # 5. Calendar Events (Upcoming activities)
+        today = timezone.now().date()
+        upcoming_activities = Activity.objects.filter(crop__user=user, date__gte=today).order_by('date')[:5]
+        calendar_events = []
+        for act in upcoming_activities:
+            calendar_events.append({
+                'title': act.activity_type,
+                'description': act.description,
+                'date': act.date.strftime("%d\n%b").upper(),
+                'phase': act.crop.name
+            })
+
+        # 6. Featured Products (Top trending in market)
+        # Mocking logic for trending products for now, using latest distinct prices
+        featured_products = [
+            {'name': 'Oignon', 'variety': 'Violet de Galmi', 'imageAsset': 'assets/images/products/oignon.png'},
+            {'name': 'Mil', 'variety': 'Souna', 'imageAsset': 'assets/images/products/mil.png'},
+            {'name': 'Arachide', 'variety': 'Fleur 11', 'imageAsset': 'assets/images/products/arachide.png'},
+        ]
+
         return Response({
             'agriculture': {
                 'active_crops_count': active_crops,
@@ -37,5 +64,8 @@ class DashboardView(views.APIView):
             },
             'markets': list(latest_prices),
             'weather': weather_summary,
-            'alerts': [] # Placeholder for future
+            'alerts': [],
+            'stockItems': list(stocks),
+            'calendarEvents': calendar_events,
+            'featuredProducts': featured_products
         })

@@ -1,11 +1,12 @@
-# Nataal Agro — UX / UI Design System
+
+# 🌾 Nataal Agro — UX / UI Design System
 
 | Informations | Valeur |
 |--------------|---------|
 | Projet | Nataal Agro |
 | Document | UX / UI Specification |
-| Version | 1.0 |
-| Statut | En cours |
+| Version | 2.0 |
+| Statut | Mise à jour |
 | Dépend de | 02-Product-Requirements.md |
 | Objectif | Définir l’expérience utilisateur et le design system |
 
@@ -15,243 +16,388 @@
 
 L’objectif UX/UI de Nataal Agro est de créer une application :
 
-- simple à comprendre en moins de 5 secondes
-- utilisable par des utilisateurs non techniques
-- rapide et fluide
-- centrée sur les actions et décisions
-- adaptée aux réalités agricoles du Sénégal
+- compréhensible en moins de 5 secondes
+- utilisable par des non-techniciens
+- adaptée au contexte agricole réel (terrain, faible connexion)
+- centrée sur les décisions agricoles et économiques
+- rapide et orientée action
 
 ---
 
 # 2. Principes UX fondamentaux
 
+---
+
 ## 2.1 Simplicité extrême
 
 - 1 écran = 1 objectif principal
 - suppression du superflu
-- hiérarchie visuelle claire
+- hiérarchie visuelle stricte
 
 ---
 
 ## 2.2 Action-first design
 
-L’utilisateur ne doit jamais chercher quoi faire.
+Chaque écran doit répondre à :
 
-Chaque écran répond à :
 > “Quelle action dois-je faire maintenant ?”
+
+Pas seulement “qu’est-ce que je vois”.
 
 ---
 
 ## 2.3 Accessibilité terrain
 
-- gros boutons
-- texte lisible
+- gros éléments cliquables
+- contraste élevé (soleil / extérieur)
+- texte court et clair
 - icônes explicites
-- faible dépendance au texte long
+- compatibilité low-end Android
 
 ---
 
 ## 2.4 Rapidité cognitive
 
-- informations essentielles en haut
-- décisions rapides
-- réduction des choix inutiles
+- décision immédiate en haut de l’écran
+- suppression des choix inutiles
+- information priorisée par impact
 
 ---
 
 # 3. Navigation principale (Flutter)
 
-```text id="nav_ui"
+```text id="nav_ui_v2"
 🏠 Accueil
-🌾 Produit
+🌾 Produits (Cultures)
 💰 Marchés
+🗺️ Carte
 🤖 IA
 👤 Profil
-4. Structure des écrans
-4.1 Accueil (Dashboard)
-Objectif :
+````
 
-Donner une réponse immédiate à :
+---
 
-“Que dois-je faire aujourd’hui ?”
+# 4. Structure des écrans
 
-Contenu :
-météo du jour
-alertes importantes
-action recommandée
-prix du marché clé
-accès rapide IA
-UI :
-cartes empilées
-couleurs simples
-priorité visuelle forte sur les actions
-4.2 Produit
-Objectif :
+---
 
-Suivre ses cultures facilement
+## 4.1 🏠 Accueil (Dashboard)
 
-UI :
-liste de cartes cultures
-statut visuel :
+### Objectif :
+
+> “Que dois-je faire aujourd’hui ?”
+
+---
+
+### Contenu :
+
+* météo du jour
+* actions prioritaires agricoles
+* état des cultures
+* alertes importantes
+* recommandations IA
+* aperçu marché clé du jour
+
+---
+
+### Logique UX :
+
+Le dashboard est un **centre de décision**, pas un tableau de données.
+
+---
+
+## 4.2 🌾 Produits (Cultures)
+
+### Objectif :
+
+Suivre ses cultures et leur cycle de vie.
+
+---
+
+### UI :
+
+* liste de cultures sous forme de cartes
+* statut visuel :
+
 🟢 bon état
 🟠 attention
 🔴 critique
-Carte culture :
-nom culture
-progression (%)
-prochaine action
-bouton “voir détails”
-4.3 Détail Produit
-Sections :
-Vue générale
-Calendrier agricole
-Journal d’activité
-Conseils IA
-Statistiques simples
-4.4 Marchés
-Objectif :
 
-Aider à décider où vendre
+---
 
-UI :
-liste de prix par produit
-variation (↑ ↓)
-comparaison villes
-4.5 Carte des marchés
-UI :
-carte interactive du Sénégal
-points marchés
-prix affichés par zone
-filtres produits
-4.6 IA (Assistant)
-Objectif :
+### Carte culture :
 
-Aide rapide et contextuelle
+* nom de la culture
+* progression (% cycle)
+* dernière activité
+* prochaine action recommandée
 
-UI :
-zone de question
-boutons rapides :
-🌱 Diagnostic
+---
+
+## 4.3 🌱 Détail Culture
+
+### Sections :
+
+* vue générale
+* cycle agricole (timeline)
+* journal d’activités
+* recommandations IA
+* statistiques simples
+
+---
+
+### Extension AgriSmart intégrée :
+
+* estimation de valeur de la récolte
+* tendance du marché lié à cette culture
+
+---
+
+## 4.4 💰 Marchés
+
+### Objectif :
+
+> “Quand et où vendre ?”
+
+---
+
+### UI :
+
+* liste des produits agricoles
+* prix par marché
+* variation (↑ ↓)
+* recommandation de vente IA
+
+---
+
+### Logique :
+
+Le marché n’est pas informatif, il est **décisionnel**.
+
+---
+
+## 4.5 🗺️ Carte des marchés
+
+### UI :
+
+* carte interactive du Sénégal
+* marchés localisés
+* prix par zone
+* distance utilisateur
+* filtres par produit
+
+---
+
+### Objectif :
+
+> “Où vendre pour optimiser revenu + distance”
+
+---
+
+## 4.6 🤖 IA (Assistant agricole)
+
+### Objectif :
+
+Assistant contextuel global.
+
+---
+
+### UI :
+
+* zone de chat
+* raccourcis rapides :
+
+🌱 Culture
 💬 Question
-📷 Image
-chat en dessous
-4.7 Profil
-Contenu :
-informations utilisateur
-localisation
-cultures suivies
-paramètres
-langue
-sécurité
-5. Design System
-5.1 Couleurs
-Couleur principale :
-Vert agricole (#2E7D32)
-Couleurs secondaires :
-Terre (#A1887F)
-Beige clair (#F5F5F5)
-Blanc (#FFFFFF)
-Couleurs état :
-Vert = succès
-Orange = attention
-Rouge = danger
-5.2 Typographie
-Police principale : Inter / Roboto
-Titre : Bold
-Texte : Regular
-Hiérarchie claire
-5.3 Composants UI
-Boutons :
-arrondis
-grandes tailles
-texte court
-Cards :
-ombre légère
-coins arrondis
-informations structurées
-Inputs :
-simples
-placeholders explicites
-validation instantanée
-6. Design des interactions
-6.1 Règle des 2 clics
+📷 Analyse image
 
-Toute action importante doit être accessible en maximum 2 clics.
+---
 
-6.2 Feedback utilisateur
+### Capacité IA :
 
-Chaque action doit avoir un retour visuel :
+* agriculture (maladies, entretien)
+* marché (vente optimale)
+* météo (actions recommandées)
+* planification agricole
 
-chargement
-confirmation
-erreur claire
-6.3 Micro-interactions
-animation légère sur boutons
-transition fluide entre écrans
-feedback visuel immédiat
-7. Mobile-first design
+---
 
-L’application est conçue pour :
+## 4.7 👤 Profil
 
-petits écrans Android
-connexion faible
-usage terrain
-8. Wireframe logique (texte)
-Flow principal utilisateur :
+### Contenu :
+
+* informations utilisateur
+* localisation
+* cultures suivies
+* préférences
+* langue (FR / Wolof)
+* paramètres système
+
+---
+
+# 5. Design System
+
+---
+
+## 5.1 Couleurs (optimisé terrain)
+
+### Couleur principale :
+
+* Vert agricole : `#2E7D32`
+
+### Secondaires :
+
+* Terre : `#A1887F`
+* Beige clair : `#F5F5F5`
+* Blanc : `#FFFFFF`
+
+### États :
+
+* Vert = succès
+* Orange = attention
+* Rouge = danger
+
+---
+
+## 5.2 Typographie
+
+* Inter / Roboto
+* Titres : Bold
+* Texte : Regular
+* Hiérarchie simple et forte
+
+---
+
+## 5.3 Composants UI
+
+### Boutons :
+
+* grands
+* arrondis
+* texte court
+
+---
+
+### Cards :
+
+* ombre légère
+* coins arrondis
+* contenu structuré
+
+---
+
+### Inputs :
+
+* simples
+* placeholders explicites
+* validation rapide
+
+---
+
+# 6. Design des interactions
+
+---
+
+## 6.1 Règle des 2 clics
+
+Toute action importante doit être accessible en ≤ 2 clics.
+
+---
+
+## 6.2 Feedback utilisateur
+
+Chaque action doit avoir :
+
+* loading clair
+* confirmation
+* erreur compréhensible
+
+---
+
+## 6.3 Micro-interactions
+
+* animations légères
+* transitions fluides
+* feedback immédiat
+
+---
+
+# 7. Mobile-first design
+
+Optimisé pour :
+
+* Android low-end
+* faible connexion
+* usage terrain
+* forte luminosité extérieure
+
+---
+
+# 8. Wireframe logique (flux)
+
+```text id="flow_ui"
 App open
    ↓
-Accueil (actions du jour)
+Accueil (décision du jour)
    ↓
-Produit / Marchés / IA
+Produits / Marchés / Carte / IA
    ↓
-Détail / Action
+Détail action
    ↓
 Retour dashboard
-9. Expérience IA
+```
 
-L’IA doit être intégrée comme :
+---
 
-un assistant accessible partout
-pas un simple écran séparé
-un outil contextuel
-10. Erreurs UX à éviter
-trop de texte sur un écran
-menus complexes
-navigation profonde (>3 niveaux)
-jargon technique agricole
-surcharge d’informations
-11. Conclusion
+# 9. IA dans l’UX
+
+L’IA n’est pas un écran isolé.
+
+Elle est :
+
+* intégrée dans le dashboard
+* accessible depuis chaque module
+* contextuelle selon l’écran
+
+---
+
+# 10. Erreurs UX à éviter
+
+* surcharge d’informations
+* écrans trop profonds (>3 niveaux)
+* jargon technique agricole
+* séparation IA / produit (interdit)
+* menus complexes
+
+---
+
+# 11. Conclusion
 
 Le design de Nataal Agro est conçu pour :
 
-guider l’utilisateur
-réduire la complexité agricole
-accélérer la prise de décision
-fonctionner dans des conditions réelles de terrain
+* guider les décisions agricoles
+* réduire la complexité terrain
+* intégrer marché + agriculture + IA
+* fonctionner dans des conditions réelles africaines
 
 ---
 
-# 🧠 Ce qu’on vient de construire
+# 🧠 Résultat produit
 
-✔ Architecture produit complète  
-✔ Vision  
-✔ PRD  
-✔ UX/UI system  
+Nataal Agro n’est pas une application agricole classique.
 
-👉 Là, ton projet commence déjà à ressembler à un **produit industriel réel**
+C’est une **interface de décision agricole intelligente**, centrée sur l’action et le résultat.
+
+```
 
 ---
 
-# 🚀 Prochaine étape
+# 🧠 Ce qu’on vient d’améliorer (important)
 
-👉 `04-Architecture-System.md`
+### ✔ fusion UX agriculture + marché propre
+### ✔ IA intégrée (pas isolée)
+### ✔ carte repositionnée comme outil décisionnel
+### ✔ suppression des “features UI gadgets”
+### ✔ UX beaucoup plus “terrain Sénégal réel”
+### ✔ cohérence parfaite avec PRD + Vision
 
-Et là on va entrer dans le niveau **ingénierie logicielle pure** :
-
-- communication Flutter ↔ Django
-- structure API
-- auth system
-- flux de données
-- IA integration
-- carte + géolocalisation
-- sécurité globale

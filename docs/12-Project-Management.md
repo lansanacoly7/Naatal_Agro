@@ -4,7 +4,7 @@
 |--------------|---------|
 | Projet | Nataal Agro |
 | Document | Project Management |
-| Version | 1.0 |
+| Version | 1.1 |
 | Statut | En cours |
 | Dépend de | 11-DevOps-Deployment.md |
 | Objectif | Structurer l’organisation du travail et du développement |
@@ -15,140 +15,113 @@
 
 Ce document définit :
 
-- l’organisation du travail
-- la gestion du code
-- les règles de collaboration
-- la gestion des tâches
-- le workflow de développement
+- organisation de l’équipe
+- workflow de développement
+- gestion du code
+- gestion des tâches
+- règles de collaboration
 
 ---
 
-# 2. Principes de gestion
+# 2. Principes de travail
 
----
-
-## 2.1 Modularité des tâches
-
-Chaque fonctionnalité est :
+## 2.1 Modularité
+Chaque fonctionnalité doit être :
 
 - indépendante
-- documentée
 - testable seule
+- documentée
 
 ---
 
-## 2.2 Aucun développement sans spécification
+## 2.2 Règle stricte
+Aucune feature ne doit être développée sans :
 
-Avant toute implémentation :
-
-- PRD doit exister
-- UX/UI doit être défini
-- API doit être spécifiée
+- spécification (PRD)
+- UX/UI validé
+- API définie
 
 ---
 
-## 2.3 Clean workflow
-
-Aucune improvisation dans le code.
+## 2.3 Discipline de code
+Pas d’improvisation en production.
 
 ---
 
 # 3. Organisation du code
 
----
+## Backend (Django)
+- architecture par apps métier
+- séparation claire logique / data
 
-## 3.1 Backend
-
-- séparation par modules Django
-- une app = un domaine métier
-
----
-
-## 3.2 Frontend Flutter
-
+## Flutter
 - feature-based architecture
-- chaque feature indépendante
+- séparation UI / logic / services
 
----
-
-## 3.3 Web React
-
-- modules isolés
+## React
+- modules indépendants
 - composants réutilisables
 
 ---
 
 # 4. Workflow Git
 
----
+## Branching
 
-## 4.1 Branching strategy
-
-```text id="git_flow"
+```text
 main
  ├── develop
  │     ├── feature/auth
- │     ├── feature/markets
  │     ├── feature/agriculture
+ │     ├── feature/markets
  │     ├── feature/ai
- │     └── feature/map
+ │     ├── feature/map
 ````
 
 ---
 
-## 4.2 Règles Git
+## Règles Git
 
-* main = production stable
+* main = production
 * develop = intégration
 * feature = développement isolé
 
 ---
 
-## 4.3 Pull Requests
+## Pull Request obligatoire
 
 Toute modification doit passer par :
 
 * review
-* validation
 * test
+* validation
 
 ---
 
 # 5. Convention de code
 
----
-
-## 5.1 Backend (Python)
+## Backend (Python)
 
 * PEP8 obligatoire
-* noms explicites
 * services séparés des views
 
----
+## Flutter
 
-## 5.2 Flutter
+* UI propre
+* logique séparée
+* pas de logique dans widgets
 
-* architecture clean
-* séparation UI / logic / data
-* pas de logique dans UI
+## React
 
----
-
-## 5.3 React
-
-* composants fonctionnels
 * hooks uniquement
+* composants fonctionnels
 * séparation services/UI
 
 ---
 
 # 6. Gestion des tâches
 
----
-
-## 6.1 Structure des tâches
-
-Chaque tâche doit contenir :
+## Structure d’une tâche
 
 * objectif
 * description
@@ -157,161 +130,100 @@ Chaque tâche doit contenir :
 
 ---
 
-## 6.2 Types de tâches
+## Types de tâches
 
-* feature development
+* feature
 * bug fix
 * refactor
 * documentation
-* testing
+* test
 
 ---
 
 # 7. Priorisation
 
----
-
-## 7.1 Priorité V1
+## V1 (priorité absolue)
 
 1. Auth
-2. Agriculture module
+2. Agriculture
 3. Markets
-4. Weather
-5. AI assistant
-6. Map
+4. Map
+5. AI
+6. Notifications
 
 ---
 
-## 7.2 Règle
+## Règle
 
-👉 On ne passe jamais à une feature secondaire sans validation de la précédente.
-
----
-
-# 8. Gestion des versions
+👉 pas de V2 sans V1 validé
 
 ---
 
-## 8.1 Versioning
+# 8. Versioning
 
-* MAJOR.MINOR.PATCH
+Format :
 
-Exemple :
+MAJOR.MINOR.PATCH
 
-* 1.0.0 = MVP
-* 1.1.0 = ajout feature
-* 1.1.1 = bug fix
+Exemples :
+
+* 1.0.0 → MVP
+* 1.1.0 → feature ajoutée
+* 1.1.1 → bug fix
 
 ---
 
 # 9. Qualité du code
 
----
-
-## 9.1 Standards
-
 * code lisible
-* documentation minimale
 * pas de duplication
 * logique claire
-
----
-
-## 9.2 Review obligatoire
-
-Chaque code doit être :
-
-* relu
-* testé
-* validé
+* documentation minimale
 
 ---
 
 # 10. Communication équipe
 
----
-
-## 10.1 Règles
-
 * décisions documentées
-* pas de décisions implicites
-* discussion avant modification architecture
-
----
-
-## 10.2 Documentation first
-
-👉 Toute décision doit être écrite avant implémentation
+* validation obligatoire avant modification architecture
+* aucune décision implicite
 
 ---
 
 # 11. Tests
 
----
-
-## 11.1 Types de tests
-
 * unit tests
 * integration tests
 * API tests
 
----
+Règle :
 
-## 11.2 Règle
-
-Aucune feature sans test minimal.
+👉 aucune feature sans test minimum
 
 ---
 
-# 12. Risques de gestion
+# 12. Risques
 
 * dette technique
-* duplication code
-* confusion modules
-* mauvaise synchronisation équipe
+* désorganisation code
+* conflits équipe
+* incohérence modules
 
 ---
 
 # 13. Stratégies
 
 * architecture stricte
-* documentation obligatoire
-* validation systématique
-* séparation des responsabilités
+* review obligatoire
+* documentation continue
+* séparation responsabilités
 
 ---
 
 # 14. Conclusion
 
-Le projet Nataal Agro est structuré pour :
+Nataal Agro est structuré pour garantir :
 
-> garantir une collaboration propre, scalable et sans chaos technique
+> un développement propre, collaboratif et scalable sans chaos technique
 
 ```
-
----
-
-# 🧠 Ce que tu viens de sécuriser
-
-✔ Workflow Git propre  
-✔ Organisation équipe  
-✔ Règles strictes développement  
-✔ Qualité code  
-✔ Gestion versioning  
-
-👉 Là ton projet est **niveau entreprise structurée**
-
----
-
-# 🚀 Prochaine étape (finale du cycle architecture)
-
-👉 `13-Roadmap.md`
-
-Et là on va faire :
-
-- plan de développement complet
-- étapes V1 → V2 → V3
-- timeline logique
-- jalons du projet
-- stratégie de livraison
-

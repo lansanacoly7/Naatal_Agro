@@ -1,274 +1,332 @@
-# Nataal Agro — AI System Design
+# Nataal Agro — AI System Architecture
 
 | Informations | Valeur |
 |--------------|---------|
 | Projet | Nataal Agro |
 | Document | AI System Architecture |
-| Version | 1.0 |
-| Statut | En cours |
+| Version | 2.0 |
+| Statut | Corrigé |
 | Dépend de | 08-Web-React.md |
-| Objectif | Définir le système d’intelligence artificielle |
+| Objectif | Définir un système IA agricole scalable et fiable |
 
 ---
 
-# 1. Rôle de l’IA dans Nataal Agro
+# 1. Rôle réel de l’IA
 
-L’intelligence artificielle dans Nataal Agro n’est pas un simple chatbot.
+L’IA de Nataal Agro est un **moteur de décision agricole contextualisé**.
 
-Elle est un **assistant de décision agricole intelligent**.
+Elle ne doit pas :
+
+- répondre comme un chatbot générique
+- donner des informations vagues
+- fonctionner hors contexte
 
 Elle doit :
 
-- analyser les situations agricoles
-- proposer des recommandations concrètes
-- contextualiser les réponses au Sénégal
-- aider à la prise de décision rapide
+- analyser des données agricoles réelles
+- produire des décisions actionnables
+- adapter les recommandations au Sénégal
+- utiliser les données backend (marchés, météo, cultures)
 
 ---
 
-# 2. Principes fondamentaux
+# 2. Principe fondamental
 
-## 2.1 IA orientée action
+> L’IA est un système de décision, pas un générateur de texte.
 
-L’IA ne doit pas seulement informer.
+Chaque réponse doit aider à :
 
-Elle doit proposer :
-
-> “quoi faire maintenant”
-
----
-
-## 2.2 IA contextuelle
-
-Elle doit prendre en compte :
-
-- culture
-- localisation
-- météo
-- prix du marché
-- stade de production
+- produire mieux
+- vendre mieux
+- décider mieux
 
 ---
 
-## 2.3 IA simple pour utilisateur
+# 3. Architecture IA globale
 
-- langage simple
-- pas de jargon technique
-- réponses courtes et utiles
-
----
-
-# 3. Architecture IA
-
-```text id="ai_arch_1"
-
+```text id="ai_arch_v2"
 Flutter / React
         ↓
-Django API (ai_assistant)
+Django AI Gateway
         ↓
-AI Router Service
+Context Builder Service
         ↓
-┌───────────────┬───────────────┐
-│   Gemini API   │    Groq API   │
-└───────────────┴───────────────┘
+AI Router
+   ├── Gemini (analyse profonde)
+   ├── Groq (réponses rapides)
         ↓
-  Response processing
+Post-processing Layer
         ↓
-   Backend → Frontend
+Structured Response API
+        ↓
+Frontend
 ````
 
 ---
 
-# 4. Choix des modèles IA
+# 4. AI Gateway (Backend Django)
 
-## 4.1 Gemini
+Responsabilités :
 
-Utilisé pour :
-
-* analyses longues
-* recommandations agricoles complexes
-* raisonnement contextuel
-
----
-
-## 4.2 Groq
-
-Utilisé pour :
-
-* réponses rapides
-* chat instantané
-* interactions légères
+* réception requête utilisateur
+* enrichissement du contexte
+* sélection du modèle IA
+* sécurisation prompt injection
+* logging complet
 
 ---
 
-# 5. Types de requêtes IA
+# 5. Context Engine (CRITIQUE)
 
----
+Avant chaque requête IA :
 
-## 5.1 Conseil agricole
-
-Exemple :
-
-> “Quand dois-je arroser mes tomates ?”
-
----
-
-## 5.2 Diagnostic
-
-Exemple :
-
-> “Mes feuilles jaunissent, que faire ?”
-
----
-
-## 5.3 Marché
-
-Exemple :
-
-> “Dois-je vendre mes oignons maintenant ?”
-
----
-
-## 5.4 Météo agricole
-
-Exemple :
-
-> “Puis-je traiter mes cultures aujourd’hui ?”
-
----
-
-# 6. AI Context Engine
-
-Avant chaque réponse, le backend construit un contexte :
-
-```text id="ai_context"
-- culture utilisateur
-- localisation
+```text id="ai_context_v2"
+- utilisateur (profil, localisation)
+- culture(s)
 - météo actuelle
 - prix marché
 - historique utilisateur
+- saison agricole
 ```
 
----
-
-# 7. Prompt Engineering
+👉 Sans ce contexte = réponse invalide
 
 ---
 
-## 7.1 Prompt système global
+# 6. AI Router (logique décisionnelle)
 
-L’IA doit toujours suivre ce cadre :
+```text id="ai_router_v2"
+IF request_complexity == HIGH:
+    use Gemini
+ELSE:
+    use Groq
+```
 
-* être concise
-* être actionnable
-* être locale (Afrique / Sénégal)
-* éviter réponses génériques
+Critères de complexité :
+
+* analyse multi-facteurs
+* prévision
+* diagnostic agricole
 
 ---
 
-## 7.2 Exemple prompt
+# 7. Types de requêtes IA
 
-```text id="prompt_1"
+---
+
+## 7.1 Conseil agricole
+
+Ex :
+
+> “Quand arroser mes tomates ?”
+
+---
+
+## 7.2 Diagnostic maladie
+
+Ex :
+
+> “Mes feuilles deviennent jaunes”
+
+---
+
+## 7.3 Décision marché
+
+Ex :
+
+> “Dois-je vendre maintenant ou attendre ?”
+
+---
+
+## 7.4 Impact météo
+
+Ex :
+
+> “Puis-je traiter aujourd’hui ?”
+
+---
+
+# 8. Prompt Engineering System
+
+---
+
+## 8.1 Prompt système global
+
+```text id="prompt_v2"
 Tu es un assistant agricole intelligent basé au Sénégal.
-Ton rôle est d’aider les agriculteurs à prendre des décisions concrètes.
 
-Réponds de manière simple, directe et actionnable.
-Ne donne pas de théorie inutile.
+Tu aides les agriculteurs à prendre des décisions concrètes.
+
+Règles :
+- réponses simples
+- action immédiate
+- pas de théorie inutile
+- contexte local obligatoire
 ```
 
 ---
 
-# 8. Pipeline IA
+## 8.2 Structure standard prompt
 
-```text id="ai_pipeline"
+```text id="prompt_structure_v2"
+CONTEXT:
+- culture
+- météo
+- marché
+- localisation
 
-User Question
+TASK:
+- décision agricole
+
+OUTPUT:
+- action claire
+```
+
+---
+
+# 9. Pipeline IA complet
+
+```text id="ai_pipeline_v2"
+User Input
+   ↓
+Django AI Gateway
    ↓
 Context Builder
    ↓
 AI Router (Gemini / Groq)
    ↓
-Response Cleaner
+Post Processing
    ↓
-Formatted Answer
+Structured JSON Response
    ↓
 Frontend Display
 ```
 
 ---
 
-# 9. Sécurité IA
+# 10. Format de réponse IA (STANDARD)
 
-* validation des inputs
-* limitation des requêtes
-* filtrage contenu sensible
-* logs des interactions
+```json id="ai_response_v2"
+{
+  "answer": "texte simple",
+  "recommendation": "action concrète",
+  "risk_level": "low | medium | high",
+  "confidence": 0.0,
+  "data_sources": {
+    "market": true,
+    "weather": true,
+    "crop": true
+  }
+}
+```
 
 ---
 
-# 10. Optimisation IA
+# 11. Sécurité IA
 
-* cache des réponses fréquentes
-* sélection intelligente du modèle
-* réduction coût API
+* protection prompt injection
+* validation backend obligatoire
+* logs complets des requêtes
+* limitation taux requêtes
+* filtrage contenu dangereux
+
+---
+
+# 12. Optimisation IA
+
+* cache réponses fréquentes
+* fallback Groq si Gemini lent
+* réduction taille prompts
 * réponses courtes par défaut
+* batching context data
 
 ---
 
-# 11. Limites de l’IA
+# 13. Limites strictes IA
 
-L’IA ne doit PAS :
+L’IA ne doit jamais :
 
-* remplacer les experts agricoles
+* inventer des prix de marché
+* répondre sans contexte agricole
 * donner des certitudes absolues
-* inventer des données de marché
-* sortir du contexte agricole
+* remplacer données backend
+* fonctionner hors Sénégal/Afrique Ouest (sauf config future)
 
 ---
 
-# 12. Évolution future IA
+# 14. Observabilité IA (AJOUT IMPORTANT)
 
-* modèles spécialisés agriculture Afrique
-* IA prédictive des récoltes
+Système de suivi :
+
+* nombre requêtes IA
+* coût Gemini vs Groq
+* performance réponses
+* taux satisfaction utilisateur
+* types de questions fréquentes
+
+---
+
+# 15. Évolution IA
+
+---
+
+## Phase 1 (actuelle)
+
+* chat agricole
+* conseils simples
+* diagnostic basique
+
+---
+
+## Phase 2
+
+* prédiction rendement
+* optimisation ventes
+* analyse multi-facteurs
+
+---
+
+## Phase 3
+
+* IA multi-agents agricoles
+* simulation économie agricole
+* assistant vocal Wolof
 * analyse satellite
-* assistant vocal local (Wolof)
 
 ---
 
-# 13. Rôle stratégique de l’IA
+# 16. Rôle stratégique
 
-L’IA est le différenciateur principal de Nataal Agro.
+L’IA est le cœur différenciateur de Nataal Agro :
 
-Elle transforme l’application en :
+> elle transforme des données agricoles en décisions exploitables en temps réel
 
-> un conseiller agricole numérique personnalisé
+---
+
+# 17. Conclusion
+
+Le système IA de Nataal Agro est :
+
+* contextuel
+* sécurisé
+* scalable
+* multi-modèles (Gemini + Groq)
+* orienté décision terrain
 
 ```
 
 ---
 
-# 🧠 Ce que tu viens de verrouiller
+# 🧠 Ce que j’ai amélioré
 
-✔ IA intégrée proprement  
-✔ Context engine défini  
-✔ Prompting structuré  
-✔ Multi-model (Gemini + Groq)  
-✔ Pipeline clair  
-
-👉 Là ton projet devient **vraiment intelligent**, pas juste une app agricole.
+✔ AI Gateway réel (pas juste concept)  
+✔ Context Engine obligatoire (très important)  
+✔ Router logique clair  
+✔ Format réponse standardisé  
+✔ Observabilité IA (niveau produit sérieux)  
+✔ limites anti-hallucination renforcées  
+✔ évolution multi-agents structurée  
 
 ---
 
-# 🚀 Prochaine étape
-
-👉 `10-Security.md`
-
-Et là on va verrouiller :
-
-- sécurité backend
-- sécurité mobile
-- sécurité API
-- protection données agricoles
-- JWT + permissions
-- risques cyber
 

@@ -1,13 +1,13 @@
-# Nataal Agro — Product Roadmap
+# Naatal Agro — Product Roadmap
 
 | Informations | Valeur |
 |--------------|---------|
-| Projet | Nataal Agro |
-| Document | Roadmap |
-| Version | 1.0 |
-| Statut | En cours |
+| Projet | Naatal Agro |
+| Document | Product Roadmap |
+| Version | 2.0 |
+| Statut | À jour |
 | Dépend de | 12-Project-Management.md |
-| Objectif | Définir le plan d’évolution du produit |
+| Objectif | Définir le plan d’évolution stratégique et fonctionnel du produit |
 
 ---
 
@@ -15,224 +15,284 @@
 
 Cette roadmap définit :
 
-- les étapes de développement du produit
-- les priorités fonctionnelles
-- la progression V1 → V2 → V3
-- la logique de montée en puissance
+- les étapes de développement du produit ;
+- les priorités fonctionnelles et techniques ;
+- la progression du MVP vers une plateforme intelligente ;
+- la stratégie de montée en puissance au Sénégal puis en Afrique de l’Ouest.
+
+Le développement suit une approche incrémentale : chaque phase apporte une valeur utilisable par les agriculteurs tout en préparant les capacités des phases suivantes.
 
 ---
 
 # 2. Vision de progression
 
-Nataal Agro évolue en 3 grandes phases :
+Naatal Agro évolue selon quatre grandes étapes :
 
-- Phase 1 : MVP fonctionnel
-- Phase 2 : Produit intelligent avancé
-- Phase 3 : Écosystème agricole complet
+- **Phase 1 : MVP – Assistant agricole intelligent**
+- **Phase 2 : Agriculture connectée et optimisation**
+- **Phase 3 : Plateforme agricole intelligente**
+- **Phase 4 : Écosystème agricole africain**
 
----
-
-# 3. PHASE 1 — MVP (Fondation)
-
-## Objectif :
-Créer une application fonctionnelle stable.
+Chaque phase doit être pleinement stable avant le lancement de la suivante.
 
 ---
 
-### Modules inclus :
+# 3. PHASE 1 — MVP (Assistant Agricole Intelligent)
+
+## Objectif
+
+Mettre entre les mains des producteurs un véritable copilote numérique capable d'accompagner leurs décisions quotidiennes.
+
+### Modules principaux
 
 - Authentification
-- Dashboard agricole
+- Tableau de bord intelligent
+- Gestion des exploitations
+- Gestion des parcelles
 - Gestion des cultures
-- Marchés agricoles
-- Carte des marchés
+- Calendrier agricole
 - Météo agricole
-- IA basique
-- Notifications
+- Prix des marchés
+- Carte interactive
+- Assistant IA
+- Alertes et notifications
 - Profil utilisateur
 
----
+### Objectifs techniques
 
-### Objectifs techniques :
+- Backend stable
+- API sécurisée
+- Application Flutter opérationnelle
+- Synchronisation des données
+- Première version offline
 
-- backend stable
-- API fonctionnelle
-- Flutter opérationnel
-- données fiables
+### Résultat attendu
 
----
-
-### Résultat attendu :
-
-> Une application utilisable par un agriculteur réel.
+> Un agriculteur peut organiser sa campagne agricole et recevoir des recommandations utiles chaque jour.
 
 ---
 
-# 4. PHASE 2 — Intelligence & optimisation
+# 4. PHASE 2 — Agriculture Connectée
 
-## Objectif :
-Transformer l’app en assistant intelligent.
+## Objectif
+
+Transformer Naatal Agro en véritable assistant d'aide à la décision.
+
+### Nouveautés
+
+- IA contextuelle avancée
+- Diagnostic des cultures
+- Analyse des risques
+- Prévision des rendements
+- Historique complet des campagnes
+- Statistiques personnalisées
+- Gestion des dépenses agricoles
+- Gestion des revenus
+- Calcul automatique de rentabilité
+- Gestion des stocks
+- Optimisation météo
+- Optimisation des performances
+
+### Résultat attendu
+
+> L'utilisateur pilote son exploitation grâce aux données et aux recommandations de l'IA.
 
 ---
 
-### Ajouts :
+# 5. PHASE 3 — Plateforme Agricole Intelligente
 
-- IA avancée contextuelle
-- analyse des cultures
-- recommandations automatiques
-- historique agricole complet
-- statistiques utilisateurs
-- prédiction météo améliorée
+## Objectif
+
+Connecter l'ensemble des acteurs de la chaîne agricole.
+
+### Nouveaux modules
+
+- Marketplace agricole
+- Coopératives
+- Acheteurs professionnels
+- Fournisseurs d'intrants
+- Catalogue des produits agricoles
+- Mobile Money
+- Tableau de bord web complet
+- Analyse régionale
+- Tableaux de bord analytiques
+- API partenaires
+
+### Résultat attendu
+
+> Naatal Agro devient la plateforme centrale de gestion agricole.
 
 ---
 
-### Optimisations :
+# 6. PHASE 4 — Écosystème Agricole Africain
 
-- cache Redis
-- amélioration performance API
+## Objectif
+
+Faire évoluer Naatal Agro vers une plateforme de référence pour l'agriculture africaine.
+
+### Fonctionnalités
+
+- Analyse satellite
+- Intégration IoT
+- Prévisions avancées
+- IA prédictive
+- Assistant vocal (Français, Wolof puis autres langues)
+- Ouverture aux institutions
+- Multi-pays
+- Multi-devises
+- Multi-langues
+- APIs publiques
+
+### Résultat attendu
+
+> Un écosystème numérique complet reliant producteurs, marchés, partenaires et institutions.
+
+---
+
+# 7. Priorités du MVP
+
+Les fonctionnalités seront développées dans cet ordre :
+
+1. Authentification
+2. Gestion des exploitations
+3. Gestion des parcelles
+4. Gestion des cultures
+5. Tableau de bord
+6. Météo agricole
+7. Prix des marchés
+8. Carte interactive
+9. Assistant IA
+10. Calendrier agricole
+11. Notifications
+12. Profil utilisateur
+
+---
+
+# 8. Jalons du projet
+
+## Milestone 1 — Fondation
+
+- dépôt Git structuré
+- architecture Flutter
+- backend Django
+- base PostgreSQL
+- CI/CD
+
+---
+
+## Milestone 2 — Fonctionnalités cœur
+
+- authentification
+- exploitations
+- parcelles
+- cultures
+- calendrier agricole
+- tableau de bord
+
+---
+
+## Milestone 3 — Intelligence
+
+- météo
+- marchés
+- assistant IA
+- recommandations contextuelles
+- notifications intelligentes
+
+---
+
+## Milestone 4 — Qualité produit
+
+- UX finalisée
 - optimisation Flutter
-- UX améliorée
-
----
-
-### Résultat attendu :
-
-> Une application qui aide à prendre de vraies décisions agricoles.
-
----
-
-# 5. PHASE 3 — ÉCOSYSTÈME
-
-## Objectif :
-Créer une plateforme agricole complète.
-
----
-
-### Ajouts majeurs :
-
-- marketplace agricole
-- coopératives
-- paiement mobile money
-- analyse satellite
-- IoT agricole
-- intégration institutions agricoles
-
----
-
-### Expansion :
-
-- Sénégal → Afrique de l’Ouest
-- multi-langue (FR / Wolof / anglais)
-- multi-plateforme avancée
-
----
-
-### Résultat attendu :
-
-> Une plateforme agricole nationale intelligente.
-
----
-
-# 6. Priorisation des fonctionnalités V1
-
-1. Auth
-2. Dashboard
-3. Agriculture (crops)
-4. Markets
-5. Weather
-6. Map
-7. AI basic
-8. Notifications
-9. Profile
-
----
-
-# 7. Jalons du projet
-
----
-
-## Milestone 1 — Setup architecture
-
-- repo structuré
-- backend initialisé
-- Flutter setup
-- DB connectée
-
----
-
-## Milestone 2 — Core features
-
-- auth complète
-- CRUD cultures
-- API markets
-- météo fonctionnelle
-
----
-
-## Milestone 3 — IA intégrée
-
-- assistant fonctionnel
-- contexte utilisateur
-- recommandations simples
-
----
-
-## Milestone 4 — UI stable
-
-- Flutter final UI
-- navigation complète
-- UX optimisée
-
----
-
-## Milestone 5 — Beta release
-
+- mode offline
 - tests utilisateurs
-- corrections bugs
-- optimisation performance
+- optimisation des performances
 
 ---
 
-# 8. Critères de passage de phase
+## Milestone 5 — Lancement MVP
+
+- bêta privée
+- corrections
+- monitoring
+- ouverture progressive
 
 ---
 
-## Vers Phase 2 :
+# 9. Critères de passage entre les phases
+
+## Passage vers la Phase 2
 
 - MVP stable
-- API fiable
-- utilisateurs test validés
+- utilisateurs actifs
+- données fiables
+- IA validée
 
 ---
 
-## Vers Phase 3 :
+## Passage vers la Phase 3
 
-- IA fonctionnelle
-- adoption utilisateur réelle
-- système scalable
-
----
-
-# 9. Risques roadmap
-
-- surcharge scope (trop de features)
-- retard développement
-- complexité IA
-- problèmes performance
+- adoption réelle
+- performance satisfaisante
+- partenaires pilotes
+- architecture scalable
 
 ---
 
-# 10. Stratégie de contrôle
+## Passage vers la Phase 4
 
-- développement par étapes strictes
-- validation à chaque milestone
-- aucune feature hors phase
+- déploiement national réussi
+- partenariats institutionnels
+- plateforme mature
 
 ---
 
-# 11. Vision finale
+# 10. Risques
 
-Nataal Agro doit devenir :
+- élargissement excessif du périmètre
+- dépendance aux APIs externes
+- coûts de l'IA
+- qualité des données
+- adoption des utilisateurs
 
-> un système agricole intelligent complet capable d’accompagner un producteur du semis à la vente, en utilisant les données et l’IA comme copilote décisionnel.
+---
+
+# 11. Stratégie de contrôle
+
+Pour limiter les risques :
+
+- développement incrémental ;
+- validation utilisateur à chaque étape ;
+- architecture modulaire ;
+- amélioration continue basée sur les retours terrain.
+
+---
+
+# 12. Vision finale
+
+À terme, **Naatal Agro** doit devenir :
+
+> **Le copilote numérique de référence des producteurs agricoles africains**, capable d'accompagner chaque décision, de la préparation de la campagne jusqu'à la commercialisation, en combinant intelligence artificielle, données de terrain, analyse économique et outils de gestion dans une plateforme simple, fiable et adaptée aux réalités du Sénégal et de l'Afrique de l'Ouest.
+
+---
+
+# 13. Principe directeur
+
+Chaque nouvelle fonctionnalité devra répondre à au moins l'un des objectifs suivants :
+
+- produire mieux ;
+- gérer mieux ;
+- vendre mieux ;
+- décider mieux.
+
+Si elle n'apporte pas une valeur directe au producteur ou aux autres acteurs de l'écosystème agricole, elle sera reportée à une version ultérieure.
+
+---
+
+# Conclusion
+
+Cette roadmap sert de feuille de route stratégique du projet.
+
+Elle garantit que Naatal Agro évolue progressivement d'un assistant agricole intelligent vers une plateforme numérique complète au service de toute la chaîne de valeur agricole, tout en restant fidèle à sa mission première : aider les producteurs à prendre de meilleures décisions grâce à la donnée et à l'intelligence artificielle.
 ```

@@ -1,10 +1,11 @@
+
 # Nataal Agro — DevOps & Deployment
 
 | Informations | Valeur |
 |--------------|---------|
 | Projet | Nataal Agro |
 | Document | DevOps & Deployment |
-| Version | 1.0 |
+| Version | 1.1 |
 | Statut | En cours |
 | Dépend de | 10-Security.md |
 | Objectif | Définir le déploiement et l’infrastructure |
@@ -15,193 +16,261 @@
 
 Le système Nataal Agro doit être :
 
-- accessible en ligne 24/7
-- scalable selon le nombre d’utilisateurs
+- accessible 24/7
+- scalable
 - sécurisé
 - maintenable
-- automatisé (CI/CD)
+- automatisé via CI/CD
 
 ---
 
 # 2. Architecture de production
 
-```text id="deploy_arch"
-
-Flutter App (Mobile)
-        ↓
-React Web (Dashboard)
-        ↓
-        API HTTPS
-        ↓
-Django Backend (Server)
-        ↓
+```text
+Flutter Mobile
+      ↓
+React Web
+      ↓
+API Gateway (HTTPS)
+      ↓
+Django Backend
+      ↓
 PostgreSQL + Redis
-        ↓
-External Services:
+      ↓
+Services externes :
    - Gemini AI
    - Groq AI
    - Firebase
-3. Environnements
-3.1 Development (DEV)
-tests locaux
-base de données locale
-debug activé
-données fictives
-3.2 Staging
-environnement test proche production
-validation des features
-tests équipe
-3.3 Production
-système réel utilisateur
-sécurité maximale
-monitoring actif
-4. Backend Deployment (Django)
-4.1 Technologie
-Docker
-Gunicorn
-Nginx
-PostgreSQL
-Redis (cache futur)
-4.2 Processus de déploiement
+````
 
-Code push GitHub
-        ↓
-GitHub Actions CI/CD
-        ↓
-Build Docker image
-        ↓
-Deploy serveur (VPS / Cloud)
-        ↓
-Nginx reverse proxy
-        ↓
-API disponible
-4.3 Hébergement possible
-AWS EC2
-DigitalOcean
-Render
-Railway (MVP)
-5. Mobile Deployment (Flutter)
-5.1 Android
-build APK
-publication future sur Play Store
-5.2 Process
+---
 
-Flutter build release
-        ↓
-APK / AAB generated
-        ↓
+# 3. Environnements
+
+## 3.1 Development (DEV)
+
+* tests locaux
+* données fictives
+* debug activé
+
+## 3.2 Staging
+
+* environnement miroir prod
+* validation équipe
+* tests fonctionnels
+
+## 3.3 Production
+
+* utilisateurs réels
+* monitoring actif
+* sécurité maximale
+
+---
+
+# 4. Backend Deployment (Django)
+
+## 4.1 Stack
+
+* Docker
+* Gunicorn
+* Nginx
+* PostgreSQL
+* Redis (cache)
+
+---
+
+## 4.2 Pipeline CI/CD
+
+```text
+GitHub Push
+   ↓
+GitHub Actions
+   ↓
+Tests + Lint
+   ↓
+Build Docker Image
+   ↓
+Deploy Server
+   ↓
+Nginx Reverse Proxy
+   ↓
+API Live
+```
+
+---
+
+## 4.3 Hébergement
+
+* AWS EC2
+* DigitalOcean
+* Railway (MVP)
+* Render
+
+---
+
+# 5. Mobile Deployment (Flutter)
+
+## Android
+
+* build APK / AAB
+* futur Play Store
+
+## Process
+
+```text
+Flutter Build Release
+   ↓
+APK / AAB
+   ↓
 Distribution / Store
-6. Web Deployment (React)
-6.1 Hosting
-Vercel (recommandé)
-Netlify (alternative)
-6.2 Process
+```
 
-Git push
+---
+
+# 6. Web Deployment (React)
+
+## Hosting
+
+* Vercel (recommandé)
+* Netlify
+
+## Process
+
+```text
+Git Push
    ↓
-Build React app
+Build React
    ↓
-Deploy static site
+Deploy Static Site
    ↓
-Dashboard accessible
-7. CI/CD Pipeline
-7.1 GitHub Actions
+Dashboard Live
+```
+
+---
+
+# 7. CI/CD Pipeline
 
 Automatisation :
 
-tests backend
-lint code
-build Docker
-déploiement automatique
-7.2 Pipeline type
-
-Push GitHub
-   ↓
-Run Tests
-   ↓
-Build Backend
-   ↓
-Deploy if OK
-8. Base de données (PostgreSQL)
-8.1 Hébergement
-cloud database (AWS RDS / Supabase / Neon)
-8.2 Backup
-sauvegarde automatique quotidienne
-restauration possible
-9. Monitoring
-9.1 Outils possibles
-Prometheus (metrics)
-Grafana (dashboard)
-Sentry (erreurs)
-9.2 Surveillance
-API uptime
-erreurs backend
-latence requêtes
-usage IA
-10. Performance scaling
-10.1 Backend
-load balancing (futur)
-cache Redis
-optimisation ORM
-10.2 Frontend
-lazy loading
-optimisation assets
-réduction bundle size
-11. Sécurité DevOps
-variables d’environnement (.env)
-secrets GitHub protégés
-pas de clés API dans le code
-HTTPS obligatoire
-12. Stratégie de déploiement progressif
-Phase 1
-MVP déployé
-utilisateurs limités
-Phase 2
-optimisation
-montée en charge
-Phase 3
-production complète
-scaling Afrique de l’Ouest
-13. Risques DevOps
-surcharge serveur
-coût API IA
-downtime backend
-mauvaise configuration CI/CD
-14. Stratégies de mitigation
-monitoring actif
-rollback automatique
-logs centralisés
-scaling progressif
-15. Conclusion
-
-Le système de déploiement de Nataal Agro est conçu pour être :
-
-automatisé, scalable et prêt pour une production réelle dès la V1
-
+* tests backend
+* lint code
+* build Docker
+* deployment auto
 
 ---
 
-# 🧠 Ce que tu viens de verrouiller
+# 8. Base de données (PostgreSQL)
 
-✔ CI/CD complet  
-✔ Docker backend  
-✔ Flutter + React déploiement  
-✔ infra scalable  
-✔ monitoring + sécurité production  
+## Hosting
 
-👉 Là ton projet est **niveau startup déployable**
+* AWS RDS
+* Supabase
+* Neon
+
+## Backup
+
+* sauvegarde quotidienne
+* restauration rapide
 
 ---
 
-# 🚀 Prochaine étape
+# 9. Monitoring
 
-👉 `12-Project-Management.md`
+## Outils
 
-Et là on va structurer :
+* Sentry (erreurs)
+* Prometheus (metrics)
+* Grafana (dashboard)
 
-- organisation de l’équipe
-- workflow Git
-- conventions de code
-- règles de collaboration
-- gestion des tâches
-- versioning
+## Surveillance
+
+* uptime API
+* erreurs backend
+* latence
+* usage IA
+
+---
+
+# 10. Performance scaling
+
+## Backend
+
+* cache Redis
+* optimisation ORM
+* load balancing (futur)
+
+## Frontend
+
+* lazy loading
+* optimisation assets
+* réduction bundle
+
+---
+
+# 11. Sécurité DevOps
+
+* variables .env
+* secrets GitHub protégés
+* aucune clé API dans le code
+* HTTPS obligatoire
+
+---
+
+# 12. Stratégie de déploiement
+
+## Phase 1 — MVP
+
+* fonctionnalités core
+* faible charge utilisateur
+
+## Phase 2 — Scale
+
+* optimisation performance
+* ajout features
+
+## Phase 3 — Production
+
+* montée en charge Afrique Ouest
+* stabilité maximale
+
+---
+
+# 13. Risques
+
+* surcharge serveur
+* coût API IA
+* downtime backend
+* mauvaise config CI/CD
+
+---
+
+# 14. Mitigation
+
+* monitoring actif
+* rollback automatique
+* logs centralisés
+* scaling progressif
+
+---
+
+# 15. Conclusion
+
+Le système DevOps de Nataal Agro est conçu pour être :
+
+* automatisé
+* scalable
+* prêt production dès la V1
+
+```
+
+---
+
+# 🚀 Maintenant tu es ici dans le projet
+
+✔ Produit défini  
+✔ UX/UI clean  
+✔ Architecture système solide  
+✔ Backend/API structuré  
+✔ IA intégrée  
+✔ Sécurité OK  
+✔ DevOps prêt prod  

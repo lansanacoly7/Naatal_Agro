@@ -1,0 +1,279 @@
+{
+  "info": {
+    "name": "Naatal Agro API — Complete Test Suite",
+    "description": "Collection Postman complète pour tester l'ensemble des API REST du backend Django de Naatal Agro",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Authentification & Utilisateurs",
+      "item": [
+        {
+          "name": "Inscription (Register)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone_number\": \"+221771234567\",\n  \"password\": \"password123\",\n  \"full_name\": \"Moussa Ndiaye\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/users/auth/register/",
+              "host": ["{{base_url}}"],
+              "path": ["users", "auth", "register", ""]
+            }
+          }
+        },
+        {
+          "name": "Connexion (Login JWT)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.access) {",
+                  "    pm.environment.set(\"access_token\", jsonData.access);",
+                  "    pm.environment.set(\"refresh_token\", jsonData.refresh);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone_number\": \"+221770000000\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/users/auth/login/",
+              "host": ["{{base_url}}"],
+              "path": ["users", "auth", "login", ""]
+            }
+          }
+        },
+        {
+          "name": "Rafraîchir Token (Refresh)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh\": \"{{refresh_token}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/users/auth/refresh/",
+              "host": ["{{base_url}}"],
+              "path": ["users", "auth", "refresh", ""]
+            }
+          }
+        },
+        {
+          "name": "Mise à jour FCM Token (Notifications)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fcm_token\": \"fcm_token_test_12345\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/users/update-fcm-token/",
+              "host": ["{{base_url}}"],
+              "path": ["users", "update-fcm-token", ""]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Tableau de Bord (Dashboard)",
+      "item": [
+        {
+          "name": "Statistiques Synthétiques Dashboard",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/dashboard/",
+              "host": ["{{base_url}}"],
+              "path": ["dashboard", ""]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Agriculture & Exploitations",
+      "item": [
+        {
+          "name": "Liste des Cultures",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/agriculture/crops/",
+              "host": ["{{base_url}}"],
+              "path": ["agriculture", "crops", ""]
+            }
+          }
+        },
+        {
+          "name": "Créer une Culture",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Champ de Tomates Niayes\",\n  \"crop_type\": \"Tomate\",\n  \"area_size\": 2.0,\n  \"location\": \"Thiès Nord\",\n  \"planting_date\": \"2026-06-01\",\n  \"expected_harvest_date\": \"2026-09-01\",\n  \"status\": \"active\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/agriculture/crops/",
+              "host": ["{{base_url}}"],
+              "path": ["agriculture", "crops", ""]
+            }
+          }
+        },
+        {
+          "name": "Liste des Activités Agricoles",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/agriculture/activities/",
+              "host": ["{{base_url}}"],
+              "path": ["agriculture", "activities", ""]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Marchés & Cotations",
+      "item": [
+        {
+          "name": "Liste des Marchés",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/markets/",
+              "host": ["{{base_url}}"],
+              "path": ["markets", ""]
+            }
+
+          }
+        },
+        {
+          "name": "Liste des Prix & Cotations",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/markets/prices/",
+              "host": ["{{base_url}}"],
+              "path": ["markets", "prices", ""]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Météo Agricole",
+      "item": [
+        {
+          "name": "Obtenir la Météo d'une Localité",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/weather/?location=thiès",
+              "host": ["{{base_url}}"],
+              "path": ["weather", ""],
+              "query": [
+                { "key": "location", "value": "thiès" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Assistant IA (Naatal IA)",
+      "item": [
+        {
+          "name": "Poser une Question à l'IA",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"Quel est le meilleur moment pour irriguer un champ de tomates à Thiès ?\",\n  \"context\": \"agriculture_generale\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/ai/ask/",
+              "host": ["{{base_url}}"],
+              "path": ["ai", "ask", ""]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. Notifications",
+      "item": [
+        {
+          "name": "Liste des Notifications",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/notifications/",
+              "host": ["{{base_url}}"],
+              "path": ["notifications", ""]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://127.0.0.1:8000/api",
+      "type": "string"
+    }
+  ]
+}

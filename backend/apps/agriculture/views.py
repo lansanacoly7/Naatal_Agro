@@ -1,6 +1,6 @@
 from rest_framework import viewsets, permissions
-from .models import Crop, Activity
-from .serializers import CropSerializer, ActivitySerializer
+from .models import Crop, Activity, PestReport
+from .serializers import CropSerializer, ActivitySerializer, PestReportSerializer
 
 class CropViewSet(viewsets.ModelViewSet):
     serializer_class = CropSerializer
@@ -20,3 +20,11 @@ class ActivityViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         # Restrict activities to the user's crops
         return Activity.objects.filter(crop__user=self.request.user)
+
+class PestReportViewSet(viewsets.ModelViewSet):
+    serializer_class = PestReportSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = PestReport.objects.all()
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)

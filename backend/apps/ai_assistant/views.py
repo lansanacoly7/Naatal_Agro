@@ -10,12 +10,13 @@ class AskAIView(views.APIView):
     def post(self, request, *args, **kwargs):
         query = request.data.get('query')
         context = request.data.get('context', 'general')
+        image_base64 = request.data.get('image_base64')
 
-        if not query:
-            return Response({"error": "La requête ('query') est requise."}, status=status.HTTP_400_BAD_REQUEST)
+        if not query and not image_base64:
+            return Response({"error": "La requête ou l'image est requise."}, status=status.HTTP_400_BAD_REQUEST)
 
         # Call AI service
-        answer = ask_llm(query, context)
+        answer = ask_llm(query or "Analyse cette image.", context, image_base64=image_base64)
 
         # Save to DB
         interaction = AIInteraction.objects.create(
