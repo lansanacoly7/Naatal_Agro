@@ -213,7 +213,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       if (authState.isLoading) return null;
 
       final prefs = await SharedPreferences.getInstance();
-      final hasSeenOnboarding = false; // Forcé pour revoir l'onboarding
+      final hasSeenOnboarding = prefs.getBool('has_seen_onboarding') ?? false;
 
       final isGoingToOnboarding = state.uri.toString() == '/onboarding';
       final isGoingToLogin = state.uri.toString() == '/login';
