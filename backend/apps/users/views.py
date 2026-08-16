@@ -32,14 +32,27 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 class RegisterSerializer(serializers.ModelSerializer):
     phone_number = serializers.CharField(write_only=True)
     full_name = serializers.CharField(write_only=True)
-    password = serializers.CharField(write_only=True)
-    language = serializers.CharField(write_only=True, required=False)
-    location = serializers.CharField(write_only=True, required=False)
+    password = serializers.CharField(write_only=True, min_length=8)
+    confirm_password = serializers.CharField(write_only=True)
+    language = serializers.CharField(write_only=True, required=False, allow_blank=True, default='fr')
+    location = serializers.CharField(write_only=True, required=False, allow_blank=True, default='')
     role = serializers.ChoiceField(choices=User.ROLE_CHOICES, write_only=True, required=False, default='farmer')
+    region = serializers.CharField(write_only=True, required=False, allow_blank=True, allow_null=True, default=None)
+    primary_crops = serializers.ListField(
+        child=serializers.CharField(),
+        write_only=True,
+        required=False,
+        default=list
+    )
 
     class Meta:
         model = User
-        fields = ('phone_number', 'full_name', 'password', 'language', 'location', 'role')
+        fields = ('phone_number', 'full_name', 'password', 'confirm_password', 'language', 'location', 'role', 'region', 'primary_crops')
+
+    def validate(self, attrs):
+        if attrs['password'] != attrs.pop('confirm_password'):
+            raise serializers.ValidationError({'confirm_password': 'Les mots de passe ne correspondent pas.'})
+        return attrs
 
     def create(self, validated_data):
         user = User.objects.create_user(
@@ -49,7 +62,9 @@ class RegisterSerializer(serializers.ModelSerializer):
             first_name=validated_data['full_name'],
             language=validated_data.get('language', 'fr'),
             location=validated_data.get('location', ''),
-            role=validated_data.get('role', 'farmer')
+            role=validated_data.get('role', 'farmer'),
+            region=validated_data.get('region'),
+            primary_crops=validated_data.get('primary_crops', []),
         )
         return user
 

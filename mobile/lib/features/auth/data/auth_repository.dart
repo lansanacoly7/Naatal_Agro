@@ -46,7 +46,17 @@ class AuthRepository {
   }
 
   /// Inscription d'un nouvel utilisateur
-  Future<void> register(String fullName, String phone, String password, String language, String location, {String role = 'farmer'}) async {
+  Future<void> register(
+    String fullName,
+    String phone,
+    String password,
+    String language,
+    String location, {
+    String role = 'farmer',
+    String confirmPassword = '',
+    String? region,
+    List<String> primaryCrops = const [],
+  }) async {
     try {
       final formattedPhone = _formatPhone(phone);
       final response = await _apiClient.post(
@@ -55,9 +65,12 @@ class AuthRepository {
           'full_name': fullName,
           'phone_number': formattedPhone,
           'password': password,
+          'confirm_password': confirmPassword.isEmpty ? password : confirmPassword,
           'language': language,
           'location': location,
           'role': role,
+          if (region != null && region.isNotEmpty) 'region': region,
+          'primary_crops': primaryCrops,
         },
       );
 
@@ -69,6 +82,14 @@ class AuthRepository {
       }
     } on DioException catch (e) {
       if (e.response?.statusCode == 400) {
+        // Extraire le message d'erreur du backend si disponible
+        final errData = e.response?.data;
+        if (errData is Map) {
+          final firstError = errData.values.first;
+          if (firstError is List && firstError.isNotEmpty) {
+            throw Exception(firstError.first.toString());
+          }
+        }
         throw Exception('Ce numéro est déjà utilisé ou les données sont invalides.');
       }
       throw Exception('Impossible de s\'inscrire pour le moment.');
