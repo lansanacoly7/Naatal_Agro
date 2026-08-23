@@ -77,3 +77,19 @@ final chatProvider = StateNotifierProvider<ChatNotifier, List<AiMessage>>((ref) 
   final repository = ref.watch(aiRepositoryProvider);
   return ChatNotifier(repository);
 });
+
+// NAATAL_IA_IMPROVEMENT : Provider pour la langue
+final aiLanguageProvider = StateProvider<String>((ref) => 'Fr');
+
+// NAATAL_IA_IMPROVEMENT : Provider pour l'historique
+class AiInteraction {
+  final String firstMessage;
+  final DateTime date;
+  AiInteraction({required this.firstMessage, required this.date});
+}
+
+final aiInteractionProvider = StateProvider<List<AiInteraction>>((ref) => [
+  AiInteraction(firstMessage: 'Comment traiter les pucerons ?', date: DateTime.now().subtract(const Duration(days: 2))),
+  AiInteraction(firstMessage: 'Prix du mil  Touba', date: DateTime.now().subtract(const Duration(days: 5))),
+]);
+

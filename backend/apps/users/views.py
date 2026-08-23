@@ -49,6 +49,11 @@ class RegisterSerializer(serializers.ModelSerializer):
         model = User
         fields = ('phone_number', 'full_name', 'password', 'confirm_password', 'language', 'location', 'role', 'region', 'primary_crops')
 
+    def validate_phone_number(self, value):
+        if User.objects.filter(username=value).exists():
+            raise serializers.ValidationError("Un utilisateur avec ce numéro de téléphone existe déjà.")
+        return value
+
     def validate(self, attrs):
         if attrs['password'] != attrs.pop('confirm_password'):
             raise serializers.ValidationError({'confirm_password': 'Les mots de passe ne correspondent pas.'})
