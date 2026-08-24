@@ -37,13 +37,7 @@ class ChatNotifier extends StateNotifier<List<AiMessage>> {
   final AiRepository _repository;
   bool isLoading = false;
 
-  ChatNotifier(this._repository) : super([
-    AiMessage(
-      text: 'Bonjour ! Je suis Naatal IA, votre copilote agricole. Comment puis-je vous aider avec votre exploitation aujourd\'hui ?',
-      isUser: false,
-      timestamp: DateTime.now(),
-    )
-  ]);
+  ChatNotifier(this._repository) : super([]);
 
   Future<void> sendMessage(String text, {String? imageBase64, String? imagePath}) async {
     if (text.trim().isEmpty && imageBase64 == null) return;
@@ -71,6 +65,11 @@ class ChatNotifier extends StateNotifier<List<AiMessage>> {
       isLoading = false;
     }
   }
+
+  void clearChat() {
+    state = [];
+    isLoading = false;
+  }
 }
 
 final chatProvider = StateNotifierProvider<ChatNotifier, List<AiMessage>>((ref) {
@@ -92,4 +91,3 @@ final aiInteractionProvider = StateProvider<List<AiInteraction>>((ref) => [
   AiInteraction(firstMessage: 'Comment traiter les pucerons ?', date: DateTime.now().subtract(const Duration(days: 2))),
   AiInteraction(firstMessage: 'Prix du mil  Touba', date: DateTime.now().subtract(const Duration(days: 5))),
 ]);
-
