@@ -14,6 +14,8 @@ class User(AbstractUser):
     language = models.CharField(max_length=10, default='fr')
     fcm_token = models.CharField(max_length=255, blank=True, null=True, help_text="Firebase Cloud Messaging Token")
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='farmer')
+    date_of_birth = models.DateField(blank=True, null=True)
+    main_crops = models.JSONField(blank=True, null=True, default=list)
     
     def __str__(self):
         return f"{self.username} ({self.get_role_display()})"

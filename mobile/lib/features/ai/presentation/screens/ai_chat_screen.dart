@@ -6,9 +6,130 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../auth/data/auth_provider.dart';
-import '../../../../core/network/api_client.dart';
 import '../../data/ai_provider.dart';
 import '../../data/models/ai_message.dart';
+
+// --- Typewriter Effect Widget ---
+class TypewriterText extends StatefulWidget {
+  final String text;
+  final TextStyle? style;
+  final Duration duration;
+
+  const TypewriterText({
+    super.key, 
+    required this.text, 
+    this.style, 
+    this.duration = const Duration(milliseconds: 15) // Speed of typing
+  });
+
+  @override
+  State<TypewriterText> createState() => _TypewriterTextState();
+}
+
+class _TypewriterTextState extends State<TypewriterText> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<int> _characterCount;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: Duration(milliseconds: widget.text.length * widget.duration.inMilliseconds),
+    );
+    _characterCount = StepTween(begin: 0, end: widget.text.length).animate(_controller);
+    _controller.forward();
+  }
+
+  @override
+  void didUpdateWidget(TypewriterText oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.text != widget.text) {
+      _controller.duration = Duration(milliseconds: widget.text.length * widget.duration.inMilliseconds);
+      _characterCount = StepTween(begin: 0, end: widget.text.length).animate(_controller);
+      _controller.forward(from: 0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _characterCount,
+      builder: (context, child) {
+        String visibleString = widget.text.substring(0, _characterCount.value);
+        return Text(visibleString, style: widget.style);
+      },
+    );
+  }
+}
+
+// --- Typing Indicator Widget ---
+class TypingIndicator extends StatefulWidget {
+  const TypingIndicator({super.key});
+
+  @override
+  State<TypingIndicator> createState() => _TypingIndicatorState();
+}
+
+class _TypingIndicatorState extends State<TypingIndicator> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 1200))..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(3, (index) {
+        return AnimatedBuilder(
+          animation: _controller,
+          builder: (context, child) {
+            double offset = 0.0;
+            double progress = _controller.value;
+            double delay = index * 0.2;
+            double localizedProgress = (progress - delay) % 1.0;
+            if (localizedProgress < 0) localizedProgress += 1.0;
+            
+            if (localizedProgress < 0.5) {
+              offset = -5.0 * (localizedProgress * 2);
+            } else {
+              offset = -5.0 * (2 - localizedProgress * 2);
+            }
+            
+            return Transform.translate(
+              offset: Offset(0, offset),
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 2),
+                width: 6,
+                height: 6,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.6),
+                  shape: BoxShape.circle,
+                ),
+              ),
+            );
+          },
+        );
+      }),
+    );
+  }
+}
 
 class AiChatScreen extends ConsumerStatefulWidget {
   const AiChatScreen({super.key});
@@ -33,8 +154,8 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
     }
   }
 
-  void _sendMessage() async {
-    final text = _controller.text;
+  void _sendMessage({String? predefinedText}) async {
+    final text = predefinedText ?? _controller.text;
     if (text.trim().isEmpty && _selectedImage == null) return;
 
     String? base64Img;
@@ -60,8 +181,8 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
           _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
+          duration: const Duration(milliseconds: 400),
+          curve: Curves.easeOutCubic,
         );
       }
     });
@@ -79,53 +200,75 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
     });
 
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(colors: [Color(0xFFFFA726), Color(0xFFFF7043)]),
-                borderRadius: BorderRadius.circular(12),
+      backgroundColor: const Color(0xFFF9FAFB),
+      extendBodyBehindAppBar: true, 
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(60),
+        child: ClipRRect(
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+            child: AppBar(
+              title: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(colors: [Color(0xFF10B981), Color(0xFF059669)]),
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(color: const Color(0xFF10B981).withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 2)),
+                      ],
+                    ),
+                    child: const Icon(Icons.auto_awesome, color: Colors.white, size: 20),
+                  ),
+                  const SizedBox(width: 12),
+                  const Text('Naatal IA', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18, color: Color(0xFF111827))),
+                ],
               ),
-              child: const Icon(Icons.auto_awesome, color: Colors.white, size: 22),
+              backgroundColor: Colors.white.withOpacity(0.6),
+              elevation: 0,
+              bottom: PreferredSize(
+                preferredSize: const Size.fromHeight(1),
+                child: Container(color: Colors.grey.withOpacity(0.1), height: 1),
+              ),
             ),
-            const SizedBox(width: 12),
-            const Text('Naatal IA', style: TextStyle(fontWeight: FontWeight.bold)),
-          ],
-        ),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(color: Colors.grey.shade200, height: 1),
+          ),
         ),
       ),
       body: Stack(
         children: [
-          // Background subtle decoration
+          // Background mesh gradient
           Positioned(
-            top: -50,
+            top: -100,
             right: -50,
             child: Container(
-              width: 200,
-              height: 200,
+              width: 300,
+              height: 300,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.primary.withOpacity(0.05),
+                gradient: RadialGradient(
+                  colors: [
+                    AppColors.primary.withOpacity(0.08),
+                    Colors.transparent,
+                  ],
+                ),
               ),
             ),
           ),
           Positioned(
-            bottom: 100,
-            left: -50,
+            bottom: 200,
+            left: -100,
             child: Container(
-              width: 150,
-              height: 150,
+              width: 350,
+              height: 350,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.orange.withOpacity(0.05),
+                gradient: RadialGradient(
+                  colors: [
+                    Colors.orange.withOpacity(0.05),
+                    Colors.transparent,
+                  ],
+                ),
               ),
             ),
           ),
@@ -135,17 +278,23 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
               Expanded(
                 child: messages.isEmpty ? _buildEmptyState() : ListView.builder(
                   controller: _scrollController,
-                  padding: const EdgeInsets.all(16),
+                  padding: EdgeInsets.only(
+                    top: MediaQuery.of(context).padding.top + 70,
+                    bottom: 20,
+                    left: 16,
+                    right: 16
+                  ),
                   itemCount: messages.length,
                   itemBuilder: (context, index) {
                     final message = messages[index];
-                    return _buildMessageBubble(message);
+                    final isLastAiMessage = index == messages.length - 1 && !message.isUser;
+                    return _buildMessageBubble(message, isLastAiMessage);
                   },
                 ),
               ),
               if (notifier.isLoading)
                 Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8.0),
+                  padding: const EdgeInsets.only(bottom: 12.0),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -155,18 +304,14 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(20),
                           boxShadow: [
-                            BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10),
+                            BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2)),
                           ],
                         ),
                         child: const Row(
                           children: [
-                            SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
-                            ),
-                            SizedBox(width: 12),
-                            Text('Naatal IA analyse...', style: TextStyle(color: Colors.grey, fontSize: 13, fontWeight: FontWeight.w600)),
+                            TypingIndicator(),
+                            SizedBox(width: 8),
+                            Text('Naatal IA analyse...', style: TextStyle(color: Color(0xFF6B7280), fontSize: 13, fontWeight: FontWeight.w500)),
                           ],
                         ),
                       ),
@@ -182,127 +327,99 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
   }
 
   Widget _buildEmptyState() {
-    return Center(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(color: AppColors.primary.withOpacity(0.2), blurRadius: 20, spreadRadius: 5),
-                ],
-              ),
-              child: const Icon(Icons.auto_awesome, size: 64, color: AppColors.primary),
-            ),
-            const SizedBox(height: 24),
-            const Text(
-              'Bonjour, je suis Naatal IA',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Comment puis-je vous aider aujourd\'hui avec vos cultures ?',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 16, color: Colors.grey),
-            ),
-            const SizedBox(height: 40),
-            _buildActionCard(
-              title: 'Calculer ma rentabilité',
-              subtitle: 'Estimez vos gains pour la prochaine saison.',
-              icon: Icons.calculate_rounded,
-              color: AppColors.primary,
-              onTap: () {
-                _controller.text = "Calcule la rentabilité de mes cultures";
-                _sendMessage();
-              },
-            ),
-            const SizedBox(height: 16),
-            _buildActionCard(
-              title: 'Signaler au Radar',
-              subtitle: 'Alertez la communauté d\'une épidémie.',
-              icon: Icons.radar_rounded,
-              color: Colors.red,
-              onTap: _showRadarDialog,
-            ),
-          ],
-        ),
+    return SingleChildScrollView(
+      padding: EdgeInsets.only(
+        top: MediaQuery.of(context).padding.top + 60,
+        bottom: 24,
+        left: 24,
+        right: 24
       ),
-    );
-  }
-
-  Widget _buildActionCard({required String title, required String subtitle, required IconData icon, required Color color, required VoidCallback onTap}) {
-    return GestureDetector(
-      onTap: onTap,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Container(
-            padding: const EdgeInsets.all(20),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.8),
+              gradient: const LinearGradient(colors: [Color(0xFF10B981), Color(0xFF059669)]),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.white, width: 2),
               boxShadow: [
-                BoxShadow(color: color.withOpacity(0.1), blurRadius: 15, offset: const Offset(0, 5)),
+                BoxShadow(color: const Color(0xFF10B981).withOpacity(0.3), blurRadius: 20, offset: const Offset(0, 8)),
               ],
             ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: color.withOpacity(0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(icon, color: color, size: 28),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                      const SizedBox(height: 4),
-                      Text(subtitle, style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
-                    ],
-                  ),
-                ),
-                Icon(Icons.arrow_forward_ios_rounded, color: Colors.grey.shade400, size: 16),
-              ],
-            ),
+            child: const Icon(Icons.auto_awesome, size: 40, color: Colors.white),
           ),
-        ),
+          const SizedBox(height: 24),
+          const Text(
+            'Bonjour,',
+            style: TextStyle(fontSize: 32, fontWeight: FontWeight.w800, color: Color(0xFF111827), letterSpacing: -0.5),
+          ),
+          const Text(
+            'Comment puis-je vous aider ?',
+            style: TextStyle(fontSize: 22, fontWeight: FontWeight.w600, color: Color(0xFF6B7280), letterSpacing: -0.5),
+          ),
+          const SizedBox(height: 40),
+          
+          Text("SUGGESTIONS RAPIDES", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.grey.shade400, letterSpacing: 1.2)),
+          const SizedBox(height: 16),
+          
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: [
+              _buildSuggestionChip('🌱', 'Diagnostiquer une maladie', 'Identifie une maladie à partir d\'une photo'),
+              _buildSuggestionChip('📈', 'Calculer ma rentabilité', 'Calcule la rentabilité de mes cultures'),
+              _buildSuggestionChip('🌧️', 'Prévisions météo', 'Quelles sont les prévisions pour mes cultures ?'),
+              _buildSuggestionChip('🚨', 'Signaler au Radar', '', isRadar: true),
+            ],
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildMessageBubble(AiMessage message) {
+  Widget _buildSuggestionChip(String emoji, String title, String prompt, {bool isRadar = false}) {
+    return ActionChip(
+      avatar: Text(emoji, style: const TextStyle(fontSize: 16)),
+      label: Text(title, style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: isRadar ? Colors.red.shade700 : const Color(0xFF374151))),
+      backgroundColor: isRadar ? Colors.red.shade50 : Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(24),
+        side: BorderSide(color: isRadar ? Colors.red.shade200 : Colors.grey.shade200),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      elevation: 0,
+      onPressed: () {
+        if (isRadar) {
+          _showRadarDialog();
+        } else {
+          _sendMessage(predefinedText: prompt);
+        }
+      },
+    );
+  }
+
+  Widget _buildMessageBubble(AiMessage message, bool isLastAiMessage) {
     final isUser = message.isUser;
     
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.only(bottom: 20),
       child: Row(
         mainAxisAlignment: isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           if (!isUser) ...[
             Container(
-              margin: const EdgeInsets.only(right: 8),
+              margin: const EdgeInsets.only(right: 12),
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                gradient: const LinearGradient(colors: [Color(0xFFFFA726), Color(0xFFFF7043)]),
+                gradient: const LinearGradient(colors: [Color(0xFF10B981), Color(0xFF059669)]),
                 shape: BoxShape.circle,
                 boxShadow: [
-                  BoxShadow(color: Colors.orange.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 4)),
+                  BoxShadow(color: const Color(0xFF10B981).withOpacity(0.2), blurRadius: 4, offset: const Offset(0, 2)),
                 ],
               ),
-              child: const Icon(Icons.auto_awesome, color: Colors.white, size: 16),
+              child: const Icon(Icons.auto_awesome, color: Colors.white, size: 14),
             ),
           ],
           Flexible(
@@ -311,8 +428,8 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
               decoration: BoxDecoration(
                 color: isUser ? AppColors.primary : Colors.white,
                 borderRadius: BorderRadius.circular(24).copyWith(
-                  bottomRight: isUser ? const Radius.circular(4) : const Radius.circular(24),
-                  bottomLeft: !isUser ? const Radius.circular(4) : const Radius.circular(24),
+                  bottomRight: isUser ? const Radius.circular(6) : const Radius.circular(24),
+                  bottomLeft: !isUser ? const Radius.circular(6) : const Radius.circular(24),
                 ),
                 boxShadow: [
                   BoxShadow(
@@ -331,22 +448,31 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
                       borderRadius: BorderRadius.circular(16),
                       child: Image.file(
                         File(message.imagePath!),
-                        width: 220,
-                        height: 220,
+                        width: 240,
+                        height: 240,
                         fit: BoxFit.cover,
                       ),
                     ),
                     const SizedBox(height: 12),
                   ],
                   if (message.text.isNotEmpty)
-                    Text(
-                      message.text,
-                      style: TextStyle(
-                        color: isUser ? Colors.white : AppColors.textPrimary,
-                        fontSize: 15,
-                        height: 1.4,
-                      ),
-                    ),
+                    isLastAiMessage
+                        ? TypewriterText(
+                            text: message.text,
+                            style: const TextStyle(
+                              color: Color(0xFF1F2937),
+                              fontSize: 15,
+                              height: 1.5,
+                            ),
+                          )
+                        : Text(
+                            message.text,
+                            style: TextStyle(
+                              color: isUser ? Colors.white : const Color(0xFF1F2937),
+                              fontSize: 15,
+                              height: 1.5,
+                            ),
+                          ),
                 ],
               ),
             ),
@@ -358,107 +484,109 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
 
   Widget _buildMessageInput() {
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
-      decoration: BoxDecoration(
-        color: AppColors.background,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 15,
-            offset: const Offset(0, -5),
-          ),
-        ],
-      ),
+      color: Colors.transparent, 
       child: SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (_selectedImage != null)
-              Stack(
-                children: [
-                  Container(
-                    margin: const EdgeInsets.only(bottom: 12, left: 12),
-                    height: 80,
-                    width: 80,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 8),
-                      ],
-                      image: DecorationImage(
-                        image: FileImage(File(_selectedImage!.path)),
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    top: -5,
-                    right: -5,
-                    child: GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _selectedImage = null;
-                        });
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: const BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16, top: 4),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (_selectedImage != null)
+                Stack(
+                  children: [
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 12, left: 12),
+                      height: 80,
+                      width: 80,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 8),
+                        ],
+                        image: DecorationImage(
+                          image: FileImage(File(_selectedImage!.path)),
+                          fit: BoxFit.cover,
                         ),
-                        child: const Icon(Icons.cancel, color: Colors.red, size: 20),
                       ),
                     ),
-                  )
-                ],
-              ),
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(30),
-                boxShadow: [
-                  BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4)),
-                ],
-              ),
-              child: Row(
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.add_photo_alternate_outlined, color: Colors.grey),
-                    onPressed: () => _pickImage(ImageSource.gallery),
-                    tooltip: 'Ajouter une image',
-                  ),
-                  Expanded(
-                    child: TextField(
-                      controller: _controller,
-                      decoration: const InputDecoration(
-                        hintText: 'Posez votre question...',
-                        hintStyle: TextStyle(color: Colors.grey),
-                        border: InputBorder.none,
-                        contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 16),
-                      ),
-                      onSubmitted: (_) => _sendMessage(),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.only(right: 6.0),
-                    child: InkWell(
-                      onTap: _sendMessage,
-                      borderRadius: BorderRadius.circular(24),
-                      child: Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: const BoxDecoration(
-                          color: AppColors.primary,
-                          shape: BoxShape.circle,
+                    Positioned(
+                      top: -5,
+                      right: -5,
+                      child: GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _selectedImage = null;
+                          });
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: const BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.cancel, color: Colors.red, size: 20),
                         ),
-                        child: const Icon(Icons.send_rounded, color: Colors.white, size: 20),
+                      ),
+                    )
+                  ],
+                ),
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(30),
+                  border: Border.all(color: Colors.grey.shade200, width: 1.5),
+                  boxShadow: [
+                    BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 15, offset: const Offset(0, 4)),
+                  ],
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    IconButton(
+                      padding: const EdgeInsets.only(left: 12, bottom: 12, right: 8, top: 12),
+                      icon: const Icon(Icons.add_photo_alternate_rounded, color: Color(0xFF6B7280)),
+                      onPressed: () => _pickImage(ImageSource.gallery),
+                    ),
+                    Expanded(
+                      child: TextField(
+                        controller: _controller,
+                        minLines: 1,
+                        maxLines: 4,
+                        style: const TextStyle(fontSize: 15, color: Color(0xFF1F2937)),
+                        decoration: const InputDecoration(
+                          hintText: 'Posez votre question...',
+                          hintStyle: TextStyle(color: Color(0xFF9CA3AF), fontSize: 15),
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.symmetric(horizontal: 4, vertical: 15),
+                        ),
+                        onSubmitted: (_) => _sendMessage(),
                       ),
                     ),
-                  ),
-                ],
+                    Padding(
+                      padding: const EdgeInsets.only(right: 6.0, bottom: 6.0),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: () => _sendMessage(),
+                          borderRadius: BorderRadius.circular(24),
+                          child: Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: const BoxDecoration(
+                              color: AppColors.primary,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.arrow_upward_rounded, color: Colors.white, size: 20),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -469,9 +597,9 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
     final pestController = TextEditingController();
     showDialog(
       context: context,
-      builder: (context) {
+      builder: (dialogContext) {
         return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
           title: const Row(
             children: [
               Icon(Icons.radar_rounded, color: Colors.red, size: 28),
@@ -484,7 +612,7 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
             children: [
               const Text(
                 'Aidez la communauté en signalant une maladie. Si plusieurs signalements sont atteints, une alerte générale sera déclenchée.',
-                style: TextStyle(fontSize: 13, color: Colors.grey),
+                style: TextStyle(fontSize: 14, color: Colors.grey, height: 1.4),
               ),
               const SizedBox(height: 20),
               TextField(
@@ -493,8 +621,8 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
                   labelText: 'Culture concernée',
                   hintText: 'Ex: Tomate',
                   filled: true,
-                  fillColor: Colors.grey.shade100,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                  fillColor: Colors.grey.shade50,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
                 ),
               ),
               const SizedBox(height: 12),
@@ -504,23 +632,24 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
                   labelText: 'Ravageur / Maladie',
                   hintText: 'Ex: Mildiou',
                   filled: true,
-                  fillColor: Colors.grey.shade100,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                  fillColor: Colors.grey.shade50,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
                 ),
               ),
             ],
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Annuler', style: TextStyle(color: Colors.grey)),
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Annuler', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w600)),
             ),
             ElevatedButton(
               onPressed: () async {
                 final crop = cropController.text.trim();
                 final pest = pestController.text.trim();
                 if (crop.isNotEmpty && pest.isNotEmpty) {
-                  Navigator.pop(context);
+                  final messenger = ScaffoldMessenger.of(context);
+                  Navigator.pop(dialogContext);
                   try {
                     final apiClient = ref.read(apiClientProvider);
                     await apiClient.post('/agriculture/pest-reports/', data: {
@@ -529,7 +658,7 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
                       'description': 'Maladie signalée sur la culture: $crop',
                     });
                     if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
+                      messenger.showSnackBar(
                         SnackBar(
                           content: const Text('Signalement envoyé. Merci !'),
                           backgroundColor: Colors.green,
@@ -540,7 +669,7 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
                     }
                   } catch (e) {
                     if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur: $e')));
+                      messenger.showSnackBar(SnackBar(content: Text('Erreur: $e')));
                     }
                   }
                 }
@@ -548,6 +677,7 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                elevation: 0,
               ),
               child: const Text('Signaler', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
             ),

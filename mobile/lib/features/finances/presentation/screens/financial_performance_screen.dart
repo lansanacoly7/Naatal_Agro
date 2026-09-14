@@ -207,7 +207,7 @@ class FinancialPerformanceScreen extends ConsumerWidget {
                           description: descController.text,
                         );
                         ref.read(transactionsNotifierProvider.notifier).addTransaction(newItem);
-                        ref.refresh(financialSummaryProvider); // Refresh summary
+                        ref.invalidate(financialSummaryProvider); // Refresh summary
                         Navigator.pop(context);
                       }
                     },

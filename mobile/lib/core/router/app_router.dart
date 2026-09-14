@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../main.dart';
 import '../../features/auth/data/auth_provider.dart';
 import '../../core/theme/app_theme.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
@@ -14,12 +14,19 @@ import '../../features/inventory/presentation/screens/inventory_management_scree
 import '../../features/finances/presentation/screens/financial_performance_screen.dart';
 
 import '../../features/dashboard/presentation/screens/dashboard_screen.dart';
+import '../../features/dashboard/presentation/screens/mon_dashboard_screen.dart';
+import '../../features/dashboard/presentation/screens/price_analysis_screen.dart';
+import '../../features/dashboard/presentation/screens/calendar_screen.dart';
 import '../../features/agriculture/presentation/screens/crops_list_screen.dart';
 import '../../features/agriculture/presentation/screens/add_crop_screen.dart';
 
+import '../../features/agriculture/data/models/crop.dart';
+import '../../features/agriculture/presentation/screens/crop_detail_screen.dart';
 import '../../features/ai/presentation/screens/ai_chat_screen.dart';
 import '../../features/markets/presentation/screens/markets_screen.dart';
 import '../../features/markets/presentation/screens/b2b_marketplace_screen.dart';
+import '../../features/markets/presentation/screens/product_detail_screen.dart';
+import '../../features/markets/presentation/screens/market_comparison_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
 
 /// Shell avec Bottom Navigation Bar premium — Navigation principale
@@ -28,140 +35,82 @@ class MainShell extends StatelessWidget {
 
   const MainShell({super.key, required this.child});
 
-  int _currentIndex(BuildContext context) {
-    final location = GoRouterState.of(context).uri.toString();
+  int _calculateSelectedIndex(BuildContext context) {
+    final location = GoRouterState.of(context).matchedLocation;
     if (location.startsWith('/agriculture')) return 1;
     if (location.startsWith('/markets')) return 2;
     if (location.startsWith('/ai')) return 3;
     if (location.startsWith('/profile')) return 4;
-    return 0;
+    return 0; // Dashboard
+  }
+
+  void _onItemTapped(int index, BuildContext context) {
+    switch (index) {
+      case 0:
+        context.go('/');
+        break;
+      case 1:
+        context.go('/agriculture');
+        break;
+      case 2:
+        context.go('/markets');
+        break;
+      case 3:
+        context.go('/ai');
+        break;
+      case 4:
+        context.go('/profile');
+        break;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final currentIndex = _currentIndex(context);
+    final selectedIndex = _calculateSelectedIndex(context);
+
     return Scaffold(
-      extendBody: true, // Le contenu défile sous la barre de navigation
       body: child,
-      bottomNavigationBar: SafeArea(
-        child: Container(
-          margin: const EdgeInsets.only(left: 20, right: 20, bottom: 12),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.85),
-            borderRadius: BorderRadius.circular(30),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
-                blurRadius: 24,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _NavItem(icon: Icons.home_outlined, activeIcon: Icons.home_rounded, label: 'Accueil', index: 0, currentIndex: currentIndex, onTap: () => context.go('/')),
-              _NavItem(icon: Icons.grass_outlined, activeIcon: Icons.grass_rounded, label: 'Cultures', index: 1, currentIndex: currentIndex, onTap: () => context.go('/agriculture')),
-              _NavItem(icon: Icons.storefront_outlined, activeIcon: Icons.storefront_rounded, label: 'Marchés', index: 2, currentIndex: currentIndex, onTap: () => context.go('/markets')),
-              _NavItem(icon: Icons.auto_awesome_outlined, activeIcon: Icons.auto_awesome, label: 'IA', index: 3, currentIndex: currentIndex, onTap: () => context.go('/ai')),
-              _NavItem(icon: Icons.person_outline_rounded, activeIcon: Icons.person_rounded, label: 'Profil', index: 4, currentIndex: currentIndex, onTap: () => context.go('/profile')),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class BuyerShell extends StatelessWidget {
-  final Widget child;
-
-  const BuyerShell({super.key, required this.child});
-
-  int _currentIndex(BuildContext context) {
-    final location = GoRouterState.of(context).uri.toString();
-    if (location.startsWith('/buyer_profile')) return 1;
-    return 0; // Default to Bourse
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final currentIndex = _currentIndex(context);
-    return Scaffold(
-      extendBody: true,
-      body: child,
-      bottomNavigationBar: SafeArea(
-        child: Container(
-          margin: const EdgeInsets.only(left: 20, right: 20, bottom: 12),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.85),
-            borderRadius: BorderRadius.circular(30),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
-                blurRadius: 24,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _NavItem(icon: Icons.storefront_outlined, activeIcon: Icons.storefront_rounded, label: 'Bourse B2B', index: 0, currentIndex: currentIndex, onTap: () => context.go('/buyer_home')),
-              _NavItem(icon: Icons.person_outline_rounded, activeIcon: Icons.person_rounded, label: 'Profil', index: 1, currentIndex: currentIndex, onTap: () => context.go('/buyer_profile')),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _NavItem extends StatelessWidget {
-  final IconData icon;
-  final IconData activeIcon;
-  final String label;
-  final int index;
-  final int currentIndex;
-  final VoidCallback onTap;
-
-  const _NavItem({
-    required this.icon,
-    required this.activeIcon,
-    required this.label,
-    required this.index,
-    required this.currentIndex,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final isSelected = index == currentIndex;
-
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOutCubic,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              isSelected ? activeIcon : icon,
-              size: 26,
-              color: isSelected ? AppColors.primary : const Color(0xFF8E8E93),
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 20,
+              offset: const Offset(0, -5),
             ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                color: isSelected ? AppColors.primary : const Color(0xFF8E8E93),
-              ),
+          ],
+        ),
+        child: NavigationBar(
+          selectedIndex: selectedIndex,
+          onDestinationSelected: (index) => _onItemTapped(index, context),
+          backgroundColor: Colors.white,
+          indicatorColor: AppColors.primary.withOpacity(0.12),
+          elevation: 0,
+          destinations: const [
+            NavigationDestination(
+              icon: Icon(Icons.dashboard_outlined),
+              selectedIcon: Icon(Icons.dashboard_rounded, color: AppColors.primary),
+              label: 'Accueil',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.eco_outlined),
+              selectedIcon: Icon(Icons.eco_rounded, color: AppColors.primary),
+              label: 'Mes Cultures',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.storefront_outlined),
+              selectedIcon: Icon(Icons.storefront_rounded, color: AppColors.primary),
+              label: 'Marchés',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.auto_awesome_outlined),
+              selectedIcon: Icon(Icons.auto_awesome_rounded, color: AppColors.primary),
+              label: 'Naatal IA',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.person_outline_rounded),
+              selectedIcon: Icon(Icons.person_rounded, color: AppColors.primary),
+              label: 'Profil',
             ),
           ],
         ),
@@ -170,7 +119,78 @@ class _NavItem extends StatelessWidget {
   }
 }
 
-// Provider pour savoir si l'utilisateur a vu l'écran de chargement de bienvenue
+/// Shell pour le Profil Acheteur / B2B Trader
+class BuyerShell extends StatelessWidget {
+  final Widget child;
+
+  const BuyerShell({super.key, required this.child});
+
+  int _calculateSelectedIndex(BuildContext context) {
+    final location = GoRouterState.of(context).matchedLocation;
+    if (location.startsWith('/buyer_profile')) return 1;
+    return 0; // B2B Marketplace Home
+  }
+
+  void _onItemTapped(int index, BuildContext context) {
+    switch (index) {
+      case 0:
+        context.go('/buyer_home');
+        break;
+      case 1:
+        context.go('/buyer_profile');
+        break;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final selectedIndex = _calculateSelectedIndex(context);
+
+    return Scaffold(
+      body: child,
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 20,
+              offset: const Offset(0, -5),
+            ),
+          ],
+        ),
+        child: NavigationBar(
+          selectedIndex: selectedIndex,
+          onDestinationSelected: (index) => _onItemTapped(index, context),
+          backgroundColor: Colors.white,
+          indicatorColor: AppColors.primary.withOpacity(0.12),
+          elevation: 0,
+          destinations: const [
+            NavigationDestination(
+              icon: Icon(Icons.storefront_outlined),
+              selectedIcon: Icon(Icons.storefront_rounded, color: AppColors.primary),
+              label: 'Marketplace B2B',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.person_outline_rounded),
+              selectedIcon: Icon(Icons.person_rounded, color: AppColors.primary),
+              label: 'Mon Profil',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+final _rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
+final _shellNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'farmerShell');
+final _buyerShellNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'buyerShell');
+
+final hasSeenOnboardingProvider = StateProvider<bool>((ref) {
+  final prefs = ref.watch(sharedPreferencesProvider);
+  return prefs.getBool('has_seen_onboarding') ?? false;
+});
+
 final welcomeStateProvider = StateProvider<bool>((ref) => false);
 final roleStateProvider = StateProvider<String>((ref) => 'farmer');
 
@@ -183,13 +203,15 @@ class RouterNotifier extends ChangeNotifier {
       (previous, next) async {
         if (previous?.value != next.value) {
           _ref.read(welcomeStateProvider.notifier).state = false;
-          // Load role when auth changes
-          final role = await _ref.read(apiClientProvider).getUserRole();
-          _ref.read(roleStateProvider.notifier).state = role;
+          if (next.value == true) {
+            final role = await _ref.read(apiClientProvider).getUserRole();
+            _ref.read(roleStateProvider.notifier).state = role;
+          }
         }
         notifyListeners();
       },
     );
+    _ref.listen<bool>(hasSeenOnboardingProvider, (previous, next) => notifyListeners());
     _ref.listen<bool>(welcomeStateProvider, (previous, next) => notifyListeners());
     _ref.listen<String>(roleStateProvider, (previous, next) => notifyListeners());
   }
@@ -200,25 +222,31 @@ final routerNotifierProvider = Provider<RouterNotifier>((ref) {
 });
 
 final routerProvider = Provider<GoRouter>((ref) {
-  final notifier = ref.watch(routerNotifierProvider);
-  final role = ref.watch(roleStateProvider);
+  final notifier = ref.read(routerNotifierProvider);
 
   return GoRouter(
+    navigatorKey: _rootNavigatorKey,
     refreshListenable: notifier,
     initialLocation: '/',
-    redirect: (context, state) async {
+    redirect: (context, state) {
       final authState = ref.read(authStateProvider);
       final hasSeenWelcome = ref.read(welcomeStateProvider);
+      final hasSeenOnboarding = ref.read(hasSeenOnboardingProvider);
+      final role = ref.read(roleStateProvider);
+
+      final loc = state.matchedLocation;
+      final isAuthRoute = loc == '/login' || loc == '/register' || loc == '/onboarding';
       
-      if (authState.isLoading) return null;
+      if (authState.isLoading) {
+        // Pendant le chargement, ne pas rester sur une page protégée
+        if (!isAuthRoute) return hasSeenOnboarding ? '/login' : '/onboarding';
+        return null;
+      }
 
-      final prefs = await SharedPreferences.getInstance();
-      final hasSeenOnboarding = prefs.getBool('has_seen_onboarding') ?? false;
-
-      final isGoingToOnboarding = state.uri.toString() == '/onboarding';
-      final isGoingToLogin = state.uri.toString() == '/login';
-      final isGoingToRegister = state.uri.toString() == '/register';
-      final isGoingToWelcome = state.uri.toString() == '/welcome';
+      final isGoingToOnboarding = state.matchedLocation == '/onboarding';
+      final isGoingToLogin = state.matchedLocation == '/login';
+      final isGoingToRegister = state.matchedLocation == '/register';
+      final isGoingToWelcome = state.matchedLocation == '/welcome';
 
       if (!hasSeenOnboarding) {
         if (!isGoingToOnboarding && !isGoingToLogin && !isGoingToRegister) return '/onboarding';
@@ -243,11 +271,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           return role == 'buyer' ? '/buyer_home' : '/';
         }
 
-        // Prevent buyer from accessing farmer routes and vice versa
-        if (role == 'buyer' && (state.uri.toString() == '/' || state.uri.toString().startsWith('/agriculture'))) {
+        if (role == 'buyer' && (state.matchedLocation == '/' || state.matchedLocation.startsWith('/agriculture'))) {
           return '/buyer_home';
         }
-        if (role == 'farmer' && state.uri.toString().startsWith('/buyer_home')) {
+        if (role == 'farmer' && state.matchedLocation.startsWith('/buyer_home')) {
           return '/';
         }
       }
@@ -256,6 +283,7 @@ final routerProvider = Provider<GoRouter>((ref) {
     },
     routes: [
       ShellRoute(
+        navigatorKey: _shellNavigatorKey,
         builder: (context, state, child) => MainShell(child: child),
         routes: [
           GoRoute(
@@ -268,6 +296,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: 'add',
+                parentNavigatorKey: _rootNavigatorKey,
                 builder: (context, state) => const AddCropScreen(),
               ),
             ],
@@ -287,6 +316,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         ],
       ),
       ShellRoute(
+        navigatorKey: _buyerShellNavigatorKey,
         builder: (context, state, child) => BuyerShell(child: child),
         routes: [
           GoRoute(
@@ -299,30 +329,89 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
         ],
       ),
-      // Routes hors navigation (onboarding, login, register)
       GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
         path: '/onboarding',
         builder: (context, state) => const OnboardingScreen(),
       ),
       GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
         path: '/login',
         builder: (context, state) => const LoginScreen(),
       ),
       GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
         path: '/register',
         builder: (context, state) => const RegisterScreen(),
       ),
       GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
         path: '/welcome',
         builder: (context, state) => const WelcomeLoadingScreen(),
       ),
       GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
         path: '/inventory',
         builder: (context, state) => const InventoryManagementScreen(),
       ),
       GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: '/calendar',
+        builder: (context, state) => const CalendarScreen(),
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
         path: '/performances',
         builder: (context, state) => const FinancialPerformanceScreen(),
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: '/product_detail',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>? ?? {};
+          return ProductDetailScreen(
+            productName: extra['productName'] as String? ?? 'Oignon Local',
+            imageAsset: extra['imageAsset'] as String? ?? '',
+            price: extra['price'] as String? ?? '',
+          );
+        },
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: '/market_comparison',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>? ?? {};
+          return MarketComparisonScreen(
+            productName: extra['productName'] as String? ?? 'Oignon Local',
+            imageAsset: extra['imageAsset'] as String? ?? '',
+            price: extra['price'] as String? ?? '',
+          );
+        },
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: '/crop_detail',
+        builder: (context, state) {
+          final crop = state.extra as Crop;
+          return CropDetailScreen(crop: crop);
+        },
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: '/mon_dashboard',
+        builder: (context, state) => const MonDashboardScreen(),
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: '/price-analysis',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>? ?? {};
+          return PriceAnalysisScreen(
+            productName: extra['product'] as String? ?? 'Inconnu',
+            currentPrice: (extra['price'] as num?)?.toDouble() ?? 0.0,
+            initialStock: (extra['stock'] as num?)?.toDouble() ?? 0.0,
+          );
+        },
       ),
     ],
   );

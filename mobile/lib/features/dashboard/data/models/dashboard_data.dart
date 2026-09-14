@@ -83,11 +83,17 @@ class FeaturedProduct {
   final String name;
   final String variety;
   final String imageAsset;
+  final String price;
+  final String cycle;
+  final String profitability;
 
   FeaturedProduct({
     required this.name,
     required this.variety,
     required this.imageAsset,
+    this.price = '',
+    this.cycle = '',
+    this.profitability = '',
   });
 
   factory FeaturedProduct.fromJson(Map<String, dynamic> json) {
@@ -95,6 +101,9 @@ class FeaturedProduct {
       name: json['name'] ?? '',
       variety: json['variety'] ?? '',
       imageAsset: json['imageAsset'] ?? json['image_asset'] ?? '',
+      price: json['price'] ?? '',
+      cycle: json['cycle'] ?? '',
+      profitability: json['profitability'] ?? '',
     );
   }
 }
@@ -118,9 +127,9 @@ List<CalendarEvent> _mockCalendarEvents() {
 
 List<FeaturedProduct> _mockFeaturedProducts() {
   return [
-    FeaturedProduct(name: 'Oignon', variety: 'Violet de Galmi', imageAsset: 'assets/images/products/oignon.png'),
-    FeaturedProduct(name: 'Mil', variety: 'Souna 3', imageAsset: 'assets/images/products/mil.png'),
-    FeaturedProduct(name: 'Arachide', variety: 'Fleur 11', imageAsset: 'assets/images/products/arachide.png'),
+    FeaturedProduct(name: 'Oignon', variety: 'Violet de Galmi', imageAsset: 'assets/images/products/oignon.png', price: '350 F/kg', cycle: '90-120 j', profitability: 'Haute'),
+    FeaturedProduct(name: 'Mil', variety: 'Souna 3', imageAsset: 'assets/images/products/mil.png', price: '250 F/kg', cycle: '70-90 j', profitability: 'Moyenne'),
+    FeaturedProduct(name: 'Arachide', variety: 'Fleur 11', imageAsset: 'assets/images/products/arachide.png', price: '450 F/kg', cycle: '90-100 j', profitability: 'Élevée'),
   ];
 }
 

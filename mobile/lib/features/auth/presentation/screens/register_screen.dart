@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:geolocator/geolocator.dart';
-import 'package:geocoding/geocoding.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../data/auth_provider.dart';
 
@@ -15,551 +13,592 @@ class RegisterScreen extends ConsumerStatefulWidget {
 
 class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final PageController _pageController = PageController();
-  int _currentStep = 0;
+  int _currentStep = 1;
 
+  // Step 1: Infos
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _dobController = TextEditingController();
+
+  // Step 2: Security
   final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
   bool _obscurePassword = true;
+  bool _obscureConfirm = true;
+  bool _acceptTerms = false;
+
+  // Step 3: Profil Agricole
+  String? _selectedRegion;
+  final List<String> _regions = ['Dakar', 'Thiès', 'Saint-Louis', 'Louga', 'Diourbel', 'Fatick', 'Kaolack', 'Kaffrine', 'Tambacounda', 'Kédougou', 'Kolda', 'Sédhiou', 'Ziguinchor', 'Matam'];
   
-  String _selectedRole = 'farmer';
-  String _selectedLanguage = 'fr';
-  String _location = '';
+  final List<String> _availableCrops = ['Riz', 'Oignon', 'Arachide', 'Maïs', 'Maraîchage', 'Tomate', 'Mil'];
+  final List<String> _selectedCrops = [];
+
+  // Step 4: OTP
+  final _otpController = TextEditingController();
+  bool _isVerifying = false;
 
   @override
   void dispose() {
     _pageController.dispose();
     _nameController.dispose();
     _phoneController.dispose();
+    _emailController.dispose();
+    _dobController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    _otpController.dispose();
     super.dispose();
   }
 
   void _nextStep() {
-    if (_currentStep == 1 && _nameController.text.trim().isEmpty) {
-      _showError('Veuillez entrer votre nom.');
-      return;
-    }
-    if (_currentStep == 2 && _phoneController.text.trim().isEmpty) {
-      _showError('Veuillez entrer un numéro valide.');
-      return;
-    }
-    if (_currentStep == 3 && (_passwordController.text.isEmpty || _passwordController.text.length < 4)) {
-      _showError('Veuillez entrer un code PIN d\'au moins 4 chiffres.');
-      return;
+    if (_currentStep == 1) {
+      if (_nameController.text.isEmpty || _phoneController.text.isEmpty) {
+        _showError('Veuillez remplir le nom et le numéro de téléphone.');
+        return;
+      }
+    } else if (_currentStep == 2) {
+      if (_passwordController.text.length < 8) {
+        _showError('Le mot de passe doit contenir au moins 8 caractères.');
+        return;
+      }
+      if (_passwordController.text != _confirmPasswordController.text) {
+        _showError('Les mots de passe ne correspondent pas.');
+        return;
+      }
+      if (!_acceptTerms) {
+        _showError('Veuillez accepter les conditions d\'utilisation.');
+        return;
+      }
+    } else if (_currentStep == 3) {
+      if (_selectedRegion == null) {
+        _showError('Veuillez sélectionner une région.');
+        return;
+      }
+      if (_selectedCrops.isEmpty) {
+        _showError('Veuillez sélectionner au moins une culture.');
+        return;
+      }
+      // Logique pour passer à l'OTP sans appeler l'API tout de suite (pour l'UI de la prez)
     }
 
-    FocusScope.of(context).unfocus();
-    _pageController.nextPage(
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeOutCubic,
-    );
+    if (_currentStep < 4) {
+      setState(() => _currentStep++);
+      _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
+    }
   }
 
   void _previousStep() {
-    FocusScope.of(context).unfocus();
-    _pageController.previousPage(
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeOutCubic,
-    );
-  }
-
-  void _showError(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
-  }
-
-  Future<void> _getLocation() async {
-    bool serviceEnabled;
-    LocationPermission permission;
-
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      _showError('Les services de localisation sont désactivés.');
-      return;
-    }
-
-    permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
-        _showError('Les permissions de localisation sont refusées.');
-        return;
-      }
-    }
-    
-    if (permission == LocationPermission.deniedForever) {
-      _showError('Les permissions de localisation sont refusées de manière permanente.');
-      return;
-    } 
-
-    try {
-      Position position = await Geolocator.getCurrentPosition();
-      List<Placemark> placemarks = await placemarkFromCoordinates(position.latitude, position.longitude);
-      
-      if (placemarks.isNotEmpty) {
-        Placemark place = placemarks[0];
-        setState(() {
-          _location = '${place.locality}, ${place.country}';
-        });
+    if (_currentStep > 1) {
+      setState(() => _currentStep--);
+      _pageController.previousPage(duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
+    } else {
+      if (context.canPop()) {
+        context.pop();
       } else {
-        setState(() {
-          _location = '${position.latitude}, ${position.longitude}';
-        });
+        context.go('/login');
       }
-      _handleRegister();
-    } catch (e) {
-      _showError('Impossible de récupérer la localisation.');
-      _handleRegister(); // Continuer quand même si erreur
     }
   }
 
-  Future<void> _handleRegister() async {
-    final name = _nameController.text.trim();
-    final phone = _phoneController.text.trim();
-    final password = _passwordController.text;
+  Future<void> _verifyAndRegister() async {
+    if (_otpController.text.length < 4) {
+      _showError('Veuillez entrer un code OTP valide.');
+      return;
+    }
 
-    await ref.read(authStateProvider.notifier).register(name, phone, password, _selectedLanguage, _location, role: _selectedRole);
+    setState(() => _isVerifying = true);
+    
+    // Simulate OTP verification delay
+    await Future.delayed(const Duration(seconds: 1));
+
+    // Actually register via backend
+    await ref.read(authStateProvider.notifier).register(
+      _nameController.text.trim(),
+      _phoneController.text.trim(),
+      _passwordController.text,
+      'fr',
+      _selectedRegion ?? 'Sénégal',
+    );
 
     final authState = ref.read(authStateProvider);
     if (authState.hasError && mounted) {
+      setState(() => _isVerifying = false);
       _showError(authState.error.toString());
-    } else if (mounted) {
-      context.go('/');
     }
+    // Si succès, le routeur s'en chargera
+  }
+
+  void _showError(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg), backgroundColor: AppColors.error));
   }
 
   @override
   Widget build(BuildContext context) {
-    final isLoading = ref.watch(authStateProvider).isLoading;
-
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: const Color(0xFFFAF9F6), // Fond légèrement cassé
       appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded),
-          onPressed: () {
-            if (_currentStep > 0) {
-              _previousStep();
-            } else {
-              context.pop();
-            }
-          },
+          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
+          onPressed: _previousStep,
+        ),
+        title: const Text('Naatal Agro', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(
+            color: Colors.blue.withValues(alpha: 0.2), // Ligne pointillée (simplifiée par une ligne bleue claire)
+            height: 1,
+          ),
         ),
       ),
-      body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Indicateur de progression iOS style
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-              child: Row(
-                children: List.generate(6, (index) {
-                  final isActive = index <= _currentStep;
-                  return Expanded(
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 300),
-                      margin: const EdgeInsets.symmetric(horizontal: 4.0),
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: isActive ? AppColors.primary : AppColors.textSecondary.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                  );
-                }),
-              ),
-            ),
-            
-            Expanded(
-              child: PageView(
-                controller: _pageController,
-                physics: const NeverScrollableScrollPhysics(), // Désactive le scroll manuel
-                onPageChanged: (index) {
-                  setState(() => _currentStep = index);
-                },
-                children: [
-                  _buildStepRole(),
-                  _buildStepName(),
-                  _buildStepPhone(),
-                  _buildStepPassword(),
-                  _buildStepLanguage(),
-                  _buildStepLocation(isLoading),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStepRole() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      body: Column(
         children: [
-          const SizedBox(height: 24),
-          Text(
-            'Qui êtes-vous ?',
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
-                ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Choisissez votre profil pour une expérience adaptée.',
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-          ),
-          const SizedBox(height: 40),
-          _roleOption('Agriculteur', 'farmer', Icons.agriculture),
-          const SizedBox(height: 12),
-          _roleOption('Acheteur B2B', 'buyer', Icons.shopping_cart),
-          const SizedBox(height: 32),
-          ElevatedButton(
-            onPressed: () {
-              FocusScope.of(context).unfocus();
-              _pageController.nextPage(
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeOutCubic,
-              );
-            },
-            child: const Text('Continuer'),
+          _buildProgressBar(),
+          Expanded(
+            child: PageView(
+              controller: _pageController,
+              physics: const NeverScrollableScrollPhysics(),
+              children: [
+                _buildStep1(),
+                _buildStep2(),
+                _buildStep3(),
+                _buildStep4(),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _roleOption(String label, String code, IconData icon) {
-    final isSelected = _selectedRole == code;
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _selectedRole = code;
-        });
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isSelected ? AppColors.primary : Colors.transparent,
-            width: 2,
+  Widget _buildProgressBar() {
+    String title = '';
+    switch (_currentStep) {
+      case 1: title = 'Informations personnelles'; break;
+      case 2: title = 'Sécurité'; break;
+      case 3: title = 'Profil agricole'; break;
+      case 4: title = 'Vérification'; break;
+    }
+
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('ÉTAPE $_currentStep SUR 4', style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w800, fontSize: 10, letterSpacing: 1.2)),
+              Text(title, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12, fontWeight: FontWeight.bold)),
+            ],
           ),
+          const SizedBox(height: 8),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: _currentStep / 4,
+              backgroundColor: Colors.grey[200],
+              valueColor: const AlwaysStoppedAnimation<Color>(Colors.orange),
+              minHeight: 6,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeader(String title, String subtitle) {
+    return Column(
+      children: [
+        const SizedBox(height: 24),
+        Text(title, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: AppColors.primary), textAlign: TextAlign.center),
+        const SizedBox(height: 12),
+        Text(subtitle, style: const TextStyle(fontSize: 14, color: AppColors.textSecondary, height: 1.5), textAlign: TextAlign.center),
+        const SizedBox(height: 32),
+      ],
+    );
+  }
+
+  Widget _buildLabel(String label, {bool isOptional = false}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textPrimary, fontSize: 13)),
+          if (isOptional)
+            const Text('Optionnel', style: TextStyle(color: Colors.grey, fontSize: 12)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String hint,
+    required IconData icon,
+    TextInputType type = TextInputType.text,
+    bool obscure = false,
+    Widget? suffixIcon,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
+      ),
+      child: TextField(
+        controller: controller,
+        keyboardType: type,
+        obscureText: obscure,
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: const TextStyle(color: Colors.grey, fontSize: 14),
+          prefixIcon: Icon(icon, color: Colors.grey),
+          suffixIcon: suffixIcon,
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Row(
+      ),
+    );
+  }
+
+  Widget _buildButton(String text, VoidCallback onPressed, {bool showIcon = true, bool isVerifying = false}) {
+    return SizedBox(
+      width: double.infinity,
+      height: 56,
+      child: ElevatedButton(
+        onPressed: isVerifying ? null : onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+          elevation: 0,
+        ),
+        child: isVerifying 
+          ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+          : Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(icon, color: isSelected ? AppColors.primary : AppColors.textPrimary),
-                const SizedBox(width: 12),
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                    color: isSelected ? AppColors.primary : AppColors.textPrimary,
+                Text(text, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                if (showIcon) ...[
+                  const SizedBox(width: 8),
+                  const Icon(Icons.arrow_forward, size: 20),
+                ]
+              ],
+            ),
+      ),
+    );
+  }
+
+  // ==========================================
+  // ETAPE 1: Infos
+  // ==========================================
+  Widget _buildStep1() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildHeader('Faisons connaissance', 'Veuillez renseigner vos informations de base pour commencer à cultiver avec précision.'),
+          
+          _buildLabel('Nom complet'),
+          _buildTextField(controller: _nameController, hint: 'Ex: Moussa Sidibé', icon: Icons.person_outline),
+
+          _buildLabel('Numéro de téléphone'),
+          _buildTextField(controller: _phoneController, hint: '+221 77 123 45 67', icon: Icons.phone_outlined, type: TextInputType.phone),
+          const Padding(
+            padding: EdgeInsets.only(bottom: 8),
+            child: Text('Nous l\'utiliserons pour la connexion et les alertes importantes.', style: TextStyle(fontSize: 11, color: Colors.grey)),
+          ),
+
+          _buildLabel('Adresse e-mail', isOptional: true),
+          _buildTextField(controller: _emailController, hint: 'moussa@exemple.com', icon: Icons.mail_outline, type: TextInputType.emailAddress),
+
+          _buildLabel('Date de naissance'),
+          _buildTextField(controller: _dobController, hint: 'jj/mm/aaaa', icon: Icons.calendar_today_outlined, type: TextInputType.datetime),
+
+          const SizedBox(height: 16),
+          _buildButton('Suivant', _nextStep),
+        ],
+      ),
+    );
+  }
+
+  // ==========================================
+  // ETAPE 2: Sécurité
+  // ==========================================
+  Widget _buildStep2() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildHeader('Protégez votre compte', 'Choisissez un mot de passe robuste pour sécuriser vos données agricoles.'),
+          
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.grey.withValues(alpha: 0.1))),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildLabel('Mot de passe'),
+                _buildTextField(
+                  controller: _passwordController,
+                  hint: '••••••••',
+                  icon: Icons.lock_outline,
+                  obscure: _obscurePassword,
+                  suffixIcon: IconButton(icon: Icon(_obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined, color: Colors.grey), onPressed: () => setState(() => _obscurePassword = !_obscurePassword)),
+                ),
+                const Padding(
+                  padding: EdgeInsets.only(bottom: 8),
+                  child: Text('Minimum 8 caractères, incluant lettres et chiffres.', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                ),
+
+                _buildLabel('Confirmer le mot de passe'),
+                _buildTextField(
+                  controller: _confirmPasswordController,
+                  hint: '••••••••',
+                  icon: Icons.replay_outlined,
+                  obscure: _obscureConfirm,
+                  suffixIcon: IconButton(icon: Icon(_obscureConfirm ? Icons.visibility_off_outlined : Icons.visibility_outlined, color: Colors.grey), onPressed: () => setState(() => _obscureConfirm = !_obscureConfirm)),
+                ),
+
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(
+                      height: 24, width: 24,
+                      child: Checkbox(
+                        value: _acceptTerms,
+                        onChanged: (v) => setState(() => _acceptTerms = v ?? false),
+                        activeColor: AppColors.primary,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Text.rich(
+                        TextSpan(
+                          text: 'J\'accepte les ',
+                          style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                          children: [
+                            TextSpan(text: 'conditions d\'utilisation', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
+                            TextSpan(text: ' et la '),
+                            TextSpan(text: 'politique de confidentialité.', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
+                          ]
+                        )
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 32),
+                _buildButton('Suivant', _nextStep),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ==========================================
+  // ETAPE 3: Profil Agricole
+  // ==========================================
+  Widget _buildStep3() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildHeader('Profil agricole', 'Aidez-nous à personnaliser vos recommandations en nous en disant plus sur votre exploitation.'),
+          
+          Container(
+            padding: const EdgeInsets.all(24),
+            margin: const EdgeInsets.only(bottom: 16),
+            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.grey.withValues(alpha: 0.1))),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(padding: const EdgeInsets.all(12), decoration: const BoxDecoration(color: Colors.orangeAccent, shape: BoxShape.circle), child: const Icon(Icons.map_outlined, color: Colors.white)),
+                    const SizedBox(width: 16),
+                    const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text('Localisation', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary)),
+                      Text('Région principale d\'activité', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                    ])),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                _buildLabel('Sélectionnez une région'),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  decoration: BoxDecoration(color: Colors.grey[100], borderRadius: BorderRadius.circular(12)),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      isExpanded: true,
+                      value: _selectedRegion,
+                      hint: const Text('Choisir une région...', style: TextStyle(fontSize: 14)),
+                      items: _regions.map((r) => DropdownMenuItem(value: r, child: Text(r))).toList(),
+                      onChanged: (v) => setState(() => _selectedRegion = v),
+                    ),
                   ),
                 ),
               ],
             ),
-            if (isSelected) const Icon(Icons.check_circle, color: AppColors.primary),
-          ],
-        ),
-      ),
-    );
-  }
+          ),
 
-  Widget _buildStepName() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const SizedBox(height: 24),
-          Text(
-            'Comment vous appelez-vous ?',
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
-                ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Nous utiliserons ce nom pour personnaliser votre espace.',
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-          ),
-          const SizedBox(height: 40),
-          Container(
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: TextField(
-              controller: _nameController,
-              keyboardType: TextInputType.name,
-              textCapitalization: TextCapitalization.words,
-              autofocus: true,
-              decoration: const InputDecoration(
-                hintText: 'Prénom et Nom',
-                prefixIcon: Icon(Icons.person_outline, size: 22, color: AppColors.textSecondary),
-              ),
-              onSubmitted: (_) => _nextStep(),
-            ),
-          ),
-          const SizedBox(height: 32),
-          ElevatedButton(
-            onPressed: _nextStep,
-            child: const Text('Continuer'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStepPhone() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const SizedBox(height: 24),
-          Text(
-            'Votre numéro de téléphone',
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
-                ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Il vous servira d\'identifiant de connexion.',
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-          ),
-          const SizedBox(height: 40),
-          Container(
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: TextField(
-              controller: _phoneController,
-              keyboardType: TextInputType.phone,
-              autofocus: true,
-              decoration: InputDecoration(
-                hintText: '77 123 45 67',
-                prefixIcon: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Text('🇸🇳', style: TextStyle(fontSize: 18)),
-                      const SizedBox(width: 8),
-                      const Text('+221', style: TextStyle(fontWeight: FontWeight.w500)),
-                      const SizedBox(width: 12),
-                      Container(width: 1, height: 20, color: Colors.black12),
-                    ],
-                  ),
-                ),
-              ),
-              onSubmitted: (_) => _nextStep(),
-            ),
-          ),
-          const SizedBox(height: 32),
-          ElevatedButton(
-            onPressed: _nextStep,
-            child: const Text('Continuer'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStepPassword() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const SizedBox(height: 24),
-          Text(
-            'Créez un code PIN',
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
-                ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Sécurisez l\'accès avec un code à 4 chiffres ou plus.',
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-          ),
-          const SizedBox(height: 40),
-          Container(
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: TextField(
-              controller: _passwordController,
-              obscureText: _obscurePassword,
-              keyboardType: TextInputType.number,
-              autofocus: true,
-              decoration: InputDecoration(
-                hintText: 'Code PIN (ex: 1234)',
-                prefixIcon: const Icon(Icons.lock_outline, size: 20, color: AppColors.textSecondary),
-                suffixIcon: IconButton(
-                  icon: Icon(
-                    _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                    size: 20,
-                    color: AppColors.textSecondary,
-                  ),
-                  onPressed: () {
-                    setState(() {
-                      _obscurePassword = !_obscurePassword;
-                    });
-                  },
-                ),
-              ),
-              onSubmitted: (_) => _nextStep(),
-            ),
-          ),
-          const SizedBox(height: 32),
-          ElevatedButton(
-            onPressed: _nextStep,
-            child: const Text('Continuer'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStepLanguage() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const SizedBox(height: 24),
-          Text(
-            'Choisissez votre langue',
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
-                ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Dans quelle langue préférez-vous utiliser Naatal Agro ?',
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-          ),
-          const SizedBox(height: 40),
-          _languageOption('Français', 'fr'),
-          const SizedBox(height: 12),
-          _languageOption('Wolof', 'wo'),
-          const SizedBox(height: 12),
-          _languageOption('Pulaar', 'pu'),
-          const SizedBox(height: 32),
-          ElevatedButton(
-            onPressed: _nextStep,
-            child: const Text('Continuer'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _languageOption(String label, String code) {
-    final isSelected = _selectedLanguage == code;
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _selectedLanguage = code;
-        });
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isSelected ? AppColors.primary : Colors.transparent,
-            width: 2,
-          ),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                color: isSelected ? AppColors.primary : AppColors.textPrimary,
-              ),
-            ),
-            if (isSelected) const Icon(Icons.check_circle, color: AppColors.primary),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStepLocation(bool isLoading) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const SizedBox(height: 24),
-          Text(
-            'Dernière étape',
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
-                ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Pour vous fournir des prévisions météo et des prix locaux, nous avons besoin de votre position.',
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-          ),
-          const SizedBox(height: 60),
-          Center(
-            child: Icon(Icons.location_on, size: 80, color: AppColors.primary.withValues(alpha: 0.8)),
-          ),
-          const SizedBox(height: 60),
-          ElevatedButton.icon(
-            onPressed: isLoading ? null : _getLocation,
-            icon: isLoading 
-              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-              : const Icon(Icons.my_location),
-            label: const Text('Me localiser automatiquement'),
-            style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 18),
-            ),
-          ),
           const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.grey.withValues(alpha: 0.1))),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(padding: const EdgeInsets.all(12), decoration: const BoxDecoration(color: AppColors.primary, shape: BoxShape.circle), child: const Icon(Icons.grass_outlined, color: Colors.white)),
+                    const SizedBox(width: 16),
+                    const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text('Cultures', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary)),
+                      Text('Sélectionnez vos cultures principales', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                    ])),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                _buildLabel('Plusieurs choix possibles'),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 12,
+                  children: [
+                    ..._availableCrops.map((crop) {
+                      final isSelected = _selectedCrops.contains(crop);
+                      return InkWell(
+                        onTap: () {
+                          setState(() {
+                            if (isSelected) {
+                              _selectedCrops.remove(crop);
+                            } else {
+                              _selectedCrops.add(crop);
+                            }
+                          });
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: isSelected ? AppColors.primary.withValues(alpha: 0.1) : Colors.white,
+                            border: Border.all(color: isSelected ? AppColors.primary : Colors.grey.withValues(alpha: 0.3)),
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                          child: Text(crop, style: TextStyle(color: isSelected ? AppColors.primary : Colors.grey[700], fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
+                        ),
+                      );
+                    }),
+                    InkWell(
+                      onTap: () => _showAddCropDialog(),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          border: Border.all(color: Colors.grey.withValues(alpha: 0.3), style: BorderStyle.solid),
+                          borderRadius: BorderRadius.circular(24),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.add, size: 16, color: Colors.grey),
+                            const SizedBox(width: 4),
+                            Text('Autre', style: TextStyle(color: Colors.grey[700])),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 32),
+                _buildButton('S\'inscrire', _nextStep, showIcon: false),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showAddCropDialog() {
+    final customCropController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Ajouter une culture', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
+        content: TextField(
+          controller: customCropController,
+          decoration: const InputDecoration(
+            hintText: 'Ex: Coton, Manioc...',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
           TextButton(
-            onPressed: isLoading ? null : _handleRegister,
-            child: const Text('Passer (Saisir plus tard)'),
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Annuler', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final val = customCropController.text.trim();
+              if (val.isNotEmpty) {
+                setState(() {
+                  if (!_availableCrops.contains(val)) {
+                    _availableCrops.add(val);
+                  }
+                  if (!_selectedCrops.contains(val)) {
+                    _selectedCrops.add(val);
+                  }
+                });
+              }
+              Navigator.pop(context);
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+            child: const Text('Ajouter', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ==========================================
+  // ETAPE 4: OTP
+  // ==========================================
+  Widget _buildStep4() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildHeader('Vérification', 'Un code de vérification à 4 chiffres a été envoyé au ${_phoneController.text}.'),
+          
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.grey.withValues(alpha: 0.1))),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildLabel('Code OTP'),
+                _buildTextField(
+                  controller: _otpController,
+                  hint: '----',
+                  icon: Icons.message_outlined,
+                  type: TextInputType.number,
+                ),
+                const SizedBox(height: 16),
+                _buildButton('Vérifier', _verifyAndRegister, showIcon: false, isVerifying: _isVerifying),
+              ],
+            ),
           ),
         ],
       ),

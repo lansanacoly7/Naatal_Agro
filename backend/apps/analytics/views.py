@@ -34,7 +34,7 @@ class DashboardView(views.APIView):
 
         # 4. Stock Items
         stocks = StockItem.objects.filter(user=user).values(
-            'name', 'quantity', 'unit', 'alert_status', 'ai_storage_advice'
+            'id', 'name', 'quantity', 'unit', 'alert_status', 'ai_storage_advice', 'updated_at'
         )
 
         # 5. Calendar Events (Upcoming activities)

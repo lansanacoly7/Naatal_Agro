@@ -8,7 +8,7 @@ class AuthRepository {
   AuthRepository(this._apiClient);
 
   String _formatPhone(String phone) {
-    phone = phone.trim();
+    phone = phone.replaceAll(RegExp(r'\s+'), '').trim();
     if (phone.startsWith('+')) return phone;
     if (phone.startsWith('221')) return '+$phone';
     return '+221$phone';

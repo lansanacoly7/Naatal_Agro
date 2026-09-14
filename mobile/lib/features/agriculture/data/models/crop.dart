@@ -35,8 +35,10 @@ class Crop {
   String get imageAsset {
     final typeLower = cropType.toLowerCase();
     if (typeLower.contains('tomate')) return 'assets/images/products/tomate.png';
-    if (typeLower.contains('riz')) return 'assets/images/products/riz.png'; // Fallback if missing
-    if (typeLower.contains('mais') || typeLower.contains('maïs')) return 'assets/images/products/mais.png'; // Fallback if missing
+    if (typeLower.contains('riz')) return 'assets/images/products/riz.jpg';
+    if (typeLower.contains('mais') || typeLower.contains('maïs')) return 'assets/images/products/mais.jpg';
+    if (typeLower.contains('pomme') && !typeLower.contains('terre')) return 'assets/images/products/pomme.jpg';
+    if (typeLower.contains('fraise')) return 'assets/images/products/fraise.jpg';
     if (typeLower.contains('arachide')) return 'assets/images/products/arachide.png';
     if (typeLower.contains('oignon')) return 'assets/images/products/oignon_local.png';
     if (typeLower.contains('pomme de terre')) return 'assets/images/products/pomme_de_terre.png';

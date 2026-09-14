@@ -36,10 +36,13 @@ class RegisterSerializer(serializers.ModelSerializer):
     language = serializers.CharField(write_only=True, required=False)
     location = serializers.CharField(write_only=True, required=False)
     role = serializers.ChoiceField(choices=User.ROLE_CHOICES, write_only=True, required=False, default='farmer')
+    email = serializers.EmailField(write_only=True, required=False, allow_blank=True)
+    date_of_birth = serializers.DateField(write_only=True, required=False, allow_null=True)
+    main_crops = serializers.JSONField(write_only=True, required=False, default=list)
 
     class Meta:
         model = User
-        fields = ('phone_number', 'full_name', 'password', 'language', 'location', 'role')
+        fields = ('phone_number', 'full_name', 'password', 'language', 'location', 'role', 'email', 'date_of_birth', 'main_crops')
 
     def create(self, validated_data):
         user = User.objects.create_user(
@@ -49,7 +52,10 @@ class RegisterSerializer(serializers.ModelSerializer):
             first_name=validated_data['full_name'],
             language=validated_data.get('language', 'fr'),
             location=validated_data.get('location', ''),
-            role=validated_data.get('role', 'farmer')
+            role=validated_data.get('role', 'farmer'),
+            email=validated_data.get('email', ''),
+            date_of_birth=validated_data.get('date_of_birth'),
+            main_crops=validated_data.get('main_crops', [])
         )
         return user
 

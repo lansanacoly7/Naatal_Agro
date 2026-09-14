@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -482,7 +481,7 @@ class ProfileScreen extends ConsumerWidget {
           Switch(
             value: isActive,
             onChanged: (val) {},
-            activeColor: Colors.white,
+            activeThumbColor: Colors.white,
             activeTrackColor: AppColors.primary,
           ),
         ],

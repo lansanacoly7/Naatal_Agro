@@ -223,9 +223,10 @@ class _CropsListScreenState extends ConsumerState<CropsListScreen> with SingleTi
           color: Colors.transparent,
           child: InkWell(
             borderRadius: BorderRadius.circular(24),
-            onTap: () {
-              // Navigate to crop details
-            },
+            onTap: () => context.push(
+              '/crop_detail',
+              extra: crop,
+            ),
             child: Padding(
               padding: const EdgeInsets.all(16.0),
               child: Column(
@@ -261,13 +262,99 @@ class _CropsListScreenState extends ConsumerState<CropsListScreen> with SingleTi
                           ],
                         ),
                       ),
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
-                          shape: BoxShape.circle,
+                      PopupMenuButton<String>(
+                        icon: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.2),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.more_horiz, color: Colors.white, size: 20),
                         ),
-                        child: const Icon(Icons.more_horiz, color: Colors.white, size: 20),
+                        offset: const Offset(0, 40),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        onSelected: (value) async {
+                          if (value == 'delete') {
+                            // Show confirmation dialog
+                            final confirm = await showDialog<bool>(
+                              context: context,
+                              builder: (context) => AlertDialog(
+                                title: const Text('Supprimer la culture'),
+                                content: Text('Voulez-vous vraiment supprimer "${crop.name}" de votre exploitation ? Cette action est irréversible.'),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(context, false),
+                                    child: const Text('Annuler'),
+                                  ),
+                                  ElevatedButton(
+                                    style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                                    onPressed: () => Navigator.pop(context, true),
+                                    child: const Text('Supprimer', style: TextStyle(color: Colors.white)),
+                                  ),
+                                ],
+                              ),
+                            );
+
+                            if (confirm == true) {
+                              try {
+                                await ref.read(agricultureRepositoryProvider).deleteCrop(crop.id);
+                                ref.refresh(cropsProvider);
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Culture supprimée avec succès')),
+                                  );
+                                }
+                              } catch (e) {
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('Erreur: ${e.toString()}')),
+                                  );
+                                }
+                              }
+                            }
+                          } else if (value == 'edit') {
+                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Fonctionnalité de modification à venir')));
+                          } else if (value == 'harvest') {
+                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Statut mis à jour : Récolté')));
+                          } else if (value == 'details') {
+                            context.push('/crop_detail', extra: crop);
+                          }
+                        },
+                        itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                          const PopupMenuItem<String>(
+                            value: 'details',
+                            child: ListTile(
+                              leading: Icon(Icons.info_outline, color: AppColors.primary),
+                              title: Text('Détails'),
+                              contentPadding: EdgeInsets.zero,
+                            ),
+                          ),
+                          const PopupMenuItem<String>(
+                            value: 'edit',
+                            child: ListTile(
+                              leading: Icon(Icons.edit_outlined, color: Colors.blue),
+                              title: Text('Modifier'),
+                              contentPadding: EdgeInsets.zero,
+                            ),
+                          ),
+                          const PopupMenuItem<String>(
+                            value: 'harvest',
+                            child: ListTile(
+                              leading: Icon(Icons.check_circle_outline, color: Colors.green),
+                              title: Text('Marquer comme récolté'),
+                              contentPadding: EdgeInsets.zero,
+                            ),
+                          ),
+                          const PopupMenuDivider(),
+                          const PopupMenuItem<String>(
+                            value: 'delete',
+                            child: ListTile(
+                              leading: Icon(Icons.delete_outline, color: Colors.red),
+                              title: Text('Supprimer', style: TextStyle(color: Colors.red)),
+                              contentPadding: EdgeInsets.zero,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -688,7 +775,16 @@ class _CropsListScreenState extends ConsumerState<CropsListScreen> with SingleTi
       return AppColors.primary;
     }
 
-    return Container(
+    return GestureDetector(
+      onTap: () => context.push(
+        '/product_detail',
+        extra: {
+          'productName': product.name,
+          'imageAsset': product.imageAsset,
+          'price': '${product.currentPrice.toInt()} FCFA/kg',
+        },
+      ),
+      child: Container(
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -811,6 +907,6 @@ class _CropsListScreenState extends ConsumerState<CropsListScreen> with SingleTi
           ),
         ],
       ),
-    );
+    ));
   }
 }

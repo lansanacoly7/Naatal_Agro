@@ -3,7 +3,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
 import 'api_client.dart';
-import '../constants/app_constants.dart';
 
 class SyncService {
   static const String _queueKey = 'offline_request_queue';

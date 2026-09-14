@@ -30,6 +30,16 @@ class AgricultureRepository {
       throw Exception('Erreur lors de l\'ajout de la culture');
     }
   }
+
+  Future<void> deleteCrop(String cropId) async {
+    final response = await _apiClient.delete(
+      '${AppConstants.cropsEndpoint}$cropId/',
+    );
+    
+    if (response.statusCode != 204) {
+      throw Exception('Erreur lors de la suppression de la culture');
+    }
+  }
 }
 
 // Fournit l'instance de AgricultureRepository

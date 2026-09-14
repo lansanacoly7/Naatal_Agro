@@ -1,10 +1,11 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:fl_chart/fl_chart.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../data/dashboard_provider.dart';
 import '../../data/models/dashboard_data.dart';
 import '../../../inventory/data/models/stock_item.dart';
+import '../widgets/market_prices_section.dart';
 import 'package:go_router/go_router.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
@@ -18,6 +19,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
+  late PageController _aiTipsController;
+  Timer? _aiTipsTimer;
 
   @override
   void initState() {
@@ -28,10 +31,24 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     );
     _fadeAnimation = CurvedAnimation(parent: _fadeController, curve: Curves.easeOutCubic);
     _fadeController.forward();
+
+    _aiTipsController = PageController(viewportFraction: 1.0);
+    _aiTipsTimer = Timer.periodic(const Duration(seconds: 4), (timer) {
+      if (_aiTipsController.hasClients) {
+        int nextPage = _aiTipsController.page!.round() + 1;
+        if (nextPage >= 4) { // length of tips
+          _aiTipsController.animateToPage(0, duration: const Duration(milliseconds: 800), curve: Curves.fastOutSlowIn);
+        } else {
+          _aiTipsController.nextPage(duration: const Duration(milliseconds: 800), curve: Curves.fastOutSlowIn);
+        }
+      }
+    });
   }
 
   @override
   void dispose() {
+    _aiTipsTimer?.cancel();
+    _aiTipsController.dispose();
     _fadeController.dispose();
     super.dispose();
   }
@@ -84,17 +101,21 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                   const SizedBox(height: 16),
                   _buildQuickActions(context),
                   const SizedBox(height: 32),
+                  _buildSectionTitle('Aujourd\'hui'),
+                  const SizedBox(height: 16),
+                  _buildTodayTasks(),
+                  const SizedBox(height: 32),
+                  _buildSectionTitle('Conseils Naatal IA', badgeText: 'NOUVEAU'),
+                  const SizedBox(height: 16),
+                  _buildAiTipsScroll(),
+                  const SizedBox(height: 32),
                   _buildSectionTitle(
                     'Prix du Marché', 
                     actionLabel: 'Tous les prix >',
                     onActionTap: () => context.go('/markets'),
                   ),
                   const SizedBox(height: 16),
-                  _buildMarketPrices(data.markets),
-                  const SizedBox(height: 32),
-                  _buildSectionTitle('Calendrier Agricole', badgeText: 'JUIN 2024'),
-                  const SizedBox(height: 16),
-                  _buildAgriculturalCalendar(data.calendarEvents),
+                  MarketPricesSection(markets: data.markets, stocks: data.stockItems),
                   const SizedBox(height: 32),
                   _buildSectionTitle(
                     'Produits en Vedette',
@@ -103,6 +124,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                   ),
                   const SizedBox(height: 16),
                   _buildFeaturedProducts(data.featuredProducts),
+                  const SizedBox(height: 32),
+                  _buildSectionTitle('Calendrier Agricole', badgeText: 'JUIN 2024'),
+                  const SizedBox(height: 16),
+                  _buildAgriculturalCalendar(data.calendarEvents),
                   const SizedBox(height: 32),
                   _buildSectionTitle('Mon Dashboard'),
                   const SizedBox(height: 16),
@@ -160,21 +185,52 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
             ),
           ],
         ),
-        Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
+        Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4)),
+                ],
               ),
-            ],
-          ),
-          child: const Icon(Icons.search, color: AppColors.textPrimary, size: 20),
+              child: const Icon(Icons.search, color: AppColors.textPrimary, size: 20),
+            ),
+            const SizedBox(width: 12),
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4)),
+                    ],
+                  ),
+                  child: const Icon(Icons.notifications_outlined, color: AppColors.textPrimary, size: 20),
+                ),
+                Positioned(
+                  top: -2,
+                  right: -2,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: AppColors.error,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 2),
+                    ),
+                    child: const Text('2', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
       ],
     );
@@ -201,7 +257,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Grand Mbao - Dakar',
+            weather.location,
             style: TextStyle(
               color: Colors.white.withValues(alpha: 0.8),
               fontSize: 12,
@@ -266,8 +322,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: [
-        _buildActionItem(Icons.sensors, 'Prévoir', () {}), // Bientôt disponible
-        _buildActionItem(Icons.map_outlined, 'Météo', () {}), // Bientôt disponible
+        _buildActionItem(Icons.insights, 'Dashboard', () => context.push('/mon_dashboard')), 
+        _buildActionItem(Icons.calendar_month_outlined, 'Calendrier', () => context.push('/calendar')), 
         _buildActionItem(Icons.notifications_active_outlined, 'Alerte', () {}), // Bientôt disponible
         _buildActionItem(Icons.auto_awesome, 'Naatal IA', () => context.go('/ai')),
       ],
@@ -309,94 +365,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     );
   }
 
-  // ─────────────────────────────────────────────
-  // MARKET PRICES
-  // ─────────────────────────────────────────────
-  Widget _buildMarketPrices(List<MarketPrice> markets) {
-    // Mock the images for the market list based on the name
-    String getImageForProduct(String name) {
-      final nameLower = name.toLowerCase();
-      if (nameLower.contains('tomate')) return 'assets/images/products/tomate.png';
-      if (nameLower.contains('riz')) return 'assets/images/products/riz.png';
-      if (nameLower.contains('arachide')) return 'assets/images/products/arachide.png';
-      if (nameLower.contains('oignon')) return 'assets/images/products/oignon_local.png';
-      if (nameLower.contains('pomme de terre')) return 'assets/images/products/pomme_de_terre.png';
-      if (nameLower.contains('chou')) return 'assets/images/products/chou.png';
-      if (nameLower.contains('aubergine')) return 'assets/images/products/aubergine.png';
-      if (nameLower.contains('pasteque') || nameLower.contains('pastèque')) return 'assets/images/products/pasteque.png';
-      if (nameLower.contains('papaye')) return 'assets/images/products/papaye.png';
-      if (nameLower.contains('mangue')) return 'assets/images/products/mangue.png';
-      if (nameLower.contains('niebe') || nameLower.contains('niébé')) return 'assets/images/products/niebe.png';
-      return 'assets/images/naatal_agro_logo-removebg-preview.png';
-    }
+  // L'ancienne méthode _buildMarketPrices a été remplacée par le widget MarketPricesSection
 
-    final displayMarkets = markets.isEmpty ? [
-      MarketPrice(productName: 'Oignon', price: 400, trend: 'up', marketName: 'Locale'),
-      MarketPrice(productName: 'Mil', price: 350, trend: 'stable', marketName: 'Souna'),
-      MarketPrice(productName: 'Arachide', price: 600, trend: 'down', marketName: 'Décortiquée'),
-    ] : markets.take(3).toList();
-
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          ...displayMarkets.map((market) {
-            return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              child: Row(
-                children: [
-                  Image.asset(
-                    getImageForProduct(market.productName),
-                    width: 48,
-                    height: 48,
-                    errorBuilder: (context, error, stackTrace) => Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade200,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Icon(Icons.image_not_supported, color: Colors.grey, size: 24),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          market.productName,
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                        ),
-                        Text(
-                          market.marketName,
-                          style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Text(
-                    '${market.price.toInt()} CFA/kg',
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                  ),
-                ],
-              ),
-            );
-          }),
-        ],
-      ),
-    );
-  }
 
   // ─────────────────────────────────────────────
   // AGRICULTURAL CALENDAR
@@ -421,6 +391,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.grey.withValues(alpha: 0.1)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.03),
@@ -434,73 +405,116 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Date Box (Calendar style)
               Container(
-                width: 80,
-                height: 100,
+                width: 70,
                 decoration: BoxDecoration(
-                  color: AppColors.primary,
+                  color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
+                  boxShadow: [
+                    BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4)),
+                  ],
                 ),
                 child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(
-                      event.date.split('\n').first,
-                      style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      decoration: const BoxDecoration(
+                        color: AppColors.primary,
+                        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                      ),
+                      child: const Text('JUIN', textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 10, letterSpacing: 1)),
                     ),
-                    Text(
-                      event.date.split('\n').last,
-                      style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 14),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      child: Text(event.date.split('\n').first, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: AppColors.textPrimary)),
                     ),
                   ],
                 ),
               ),
               const SizedBox(width: 16),
+              // Event Details
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Icon(Icons.star, color: AppColors.primary, size: 14),
-                        const SizedBox(width: 4),
-                        Text(
-                          event.phase,
-                          style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 12),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
+                          child: Text(event.phase, style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 10, letterSpacing: 0.5)),
                         ),
+                        const Icon(Icons.more_horiz, color: Colors.grey, size: 20),
                       ],
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      event.title,
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      event.description,
-                      style: const TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.4),
-                    ),
+                    const SizedBox(height: 10),
+                    Text(event.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.textPrimary)),
+                    const SizedBox(height: 6),
+                    Text(event.description, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.4), maxLines: 2, overflow: TextOverflow.ellipsis),
                   ],
                 ),
               ),
             ],
           ),
           const SizedBox(height: 20),
-          const Divider(height: 1),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          // Progress Bar
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Icon(Icons.check_circle_outline, color: Colors.grey.shade400, size: 20),
-                  const SizedBox(width: 8),
-                  Text('Reste 5 jours', style: TextStyle(color: Colors.grey.shade500, fontSize: 13)),
+                  const Text('Progression', style: TextStyle(color: AppColors.textSecondary, fontSize: 12, fontWeight: FontWeight.w600)),
+                  Text('75%', style: TextStyle(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.bold)),
                 ],
               ),
-              const Text(
-                'Marquer terminé',
-                style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 13),
+              const SizedBox(height: 8),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: LinearProgressIndicator(
+                  value: 0.75,
+                  backgroundColor: Colors.grey.shade200,
+                  valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
+                  minHeight: 6,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          const Divider(height: 1, color: Color(0xFFEEEEEE)),
+          const SizedBox(height: 16),
+          // Action Buttons
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => context.push('/calendar'),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    minimumSize: const Size(0, 48),
+                    side: BorderSide(color: Colors.grey.shade300),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text('Voir calendrier', style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold)),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () {},
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    minimumSize: const Size(0, 48),
+                    backgroundColor: AppColors.primary,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text('Terminer', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                ),
               ),
             ],
           ),
@@ -514,67 +528,145 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
   // ─────────────────────────────────────────────
   Widget _buildFeaturedProducts(List<FeaturedProduct> products) {
     return SizedBox(
-      height: 180,
+      height: 290,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
         itemCount: products.length,
         itemBuilder: (context, index) {
           final product = products[index];
-          return Container(
-            width: 140,
-            margin: const EdgeInsets.only(right: 16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.03),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
+          // Génération d'une couleur pastel douce basée sur l'index
+          final bgColors = [const Color(0xFFFDECEA), const Color(0xFFE8F5E9), const Color(0xFFFFF3E0)];
+          final badgeColors = [Colors.red.shade600, Colors.green.shade600, Colors.orange.shade600];
+          final badgeTexts = ['Très demandé', 'En Saison', 'Nouveau'];
+          
+          final bgColor = bgColors[index % bgColors.length];
+          final badgeColor = badgeColors[index % badgeColors.length];
+          final badgeText = badgeTexts[index % badgeTexts.length];
+
+          return GestureDetector(
+            onTap: () => context.push(
+              '/product_detail',
+              extra: {
+                'productName': product.name,
+                'imageAsset': product.imageAsset,
+                'price': product.price,
+              },
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: ClipRRect(
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                    child: Container(
-                      width: double.infinity,
-                      color: const Color(0xFFF9F9F9),
-                      child: Image.asset(
-                        product.imageAsset, 
-                        fit: BoxFit.contain,
-                        errorBuilder: (context, error, stackTrace) => const Center(
-                          child: Icon(Icons.image_not_supported, color: Colors.grey, size: 40),
+            child: Container(
+              width: 220,
+              margin: const EdgeInsets.only(right: 16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: Colors.grey.withValues(alpha: 0.1)),
+                boxShadow: [
+                  BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 15, offset: const Offset(0, 8)),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    flex: 5,
+                    child: Stack(
+                      children: [
+                        SizedBox(
+                          width: double.infinity,
+                          height: double.infinity,
+                          child: ClipRRect(
+                            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                            child: Image.asset(
+                              product.imageAsset, 
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) => Container(
+                                color: bgColor,
+                                child: const Center(child: Icon(Icons.image_not_supported, color: Colors.grey)),
+                              ),
+                            ),
+                          ),
                         ),
+                        Positioned(
+                          top: 12,
+                          left: 12,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: badgeColor,
+                              borderRadius: BorderRadius.circular(8),
+                              boxShadow: [BoxShadow(color: badgeColor.withValues(alpha: 0.3), blurRadius: 4, offset: const Offset(0, 2))],
+                            ),
+                            child: Text(badgeText, style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    flex: 5,
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(product.name, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: AppColors.textPrimary)),
+                              const SizedBox(height: 4),
+                              Text(product.variety, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13, fontWeight: FontWeight.w500)),
+                            ],
+                          ),
+                          const Divider(height: 1, color: Color(0xFFEEEEEE)),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              _buildProductInfoItem(Icons.payments_outlined, product.price),
+                              _buildProductInfoItem(Icons.timer_outlined, product.cycle),
+                            ],
+                          ),
+                          Row(
+                            children: [
+                              Icon(Icons.trending_up, size: 14, color: AppColors.secondary),
+                              const SizedBox(width: 4),
+                              Text(
+                                'Rentabilité: ${product.profitability}',
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.secondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
                   ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        product.name,
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        product.variety,
-                        style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           );
         },
       ),
+    );
+  }
+
+  Widget _buildProductInfoItem(IconData icon, String text) {
+    return Row(
+      children: [
+        Icon(icon, size: 14, color: AppColors.primary),
+        const SizedBox(width: 4),
+        Text(
+          text,
+          style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textPrimary,
+          ),
+        ),
+      ],
     );
   }
 
@@ -583,17 +675,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
   // ─────────────────────────────────────────────
   Widget _buildInventoryAndAlerts(List<StockItem> stockItems) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: Colors.grey.withValues(alpha: 0.1)),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 20, offset: const Offset(0, 8))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -603,65 +690,92 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
             children: [
               const Row(
                 children: [
-                  Icon(Icons.inventory_2_outlined, color: AppColors.primary),
-                  SizedBox(width: 8),
-                  Text('État des Stocks', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  Icon(Icons.inventory_2_rounded, color: AppColors.primary, size: 22),
+                  SizedBox(width: 10),
+                  Text('État des Stocks', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: AppColors.textPrimary)),
                 ],
               ),
               GestureDetector(
                 onTap: () => context.push('/inventory'),
-                child: const Text('Gérer', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
+                  child: const Text('Gérer', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 12)),
+                ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           Row(
             children: stockItems.map((item) {
+              final double fillPercentage = (item.quantity / 1000).clamp(0.1, 1.0); // Dummy logic
               return Expanded(
                 child: Container(
-                  margin: const EdgeInsets.only(right: 8),
-                  padding: const EdgeInsets.all(12),
+                  margin: const EdgeInsets.only(right: 12),
+                  padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF4F6F8),
-                    borderRadius: BorderRadius.circular(12),
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.grey.withValues(alpha: 0.15)),
+                    boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 5, offset: const Offset(0, 2))],
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(item.name, style: const TextStyle(color: AppColors.textSecondary, fontSize: 10, fontWeight: FontWeight.bold)),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Icon(Icons.grass, color: AppColors.primary.withValues(alpha: 0.7), size: 18),
+                          Text('${(fillPercentage * 100).toInt()}%', style: TextStyle(color: AppColors.primary, fontSize: 10, fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Text(item.name, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12, fontWeight: FontWeight.w600)),
                       const SizedBox(height: 4),
-                      Text('${item.quantity} ${item.unit}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                      Text('${item.quantity} ${item.unit}', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: AppColors.textPrimary)),
+                      const SizedBox(height: 12),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: LinearProgressIndicator(
+                          value: fillPercentage,
+                          backgroundColor: Colors.grey.shade100,
+                          valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
+                          minHeight: 4,
+                        ),
+                      ),
                     ],
                   ),
                 ),
               );
             }).toList(),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 24),
           Row(
             children: [
               Expanded(
                 child: Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: AppColors.error.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(16),
+                    color: Colors.red.shade50,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.red.shade100),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Row(
+                      Row(
                         children: [
-                          Icon(Icons.warning_amber_rounded, color: AppColors.error, size: 16),
-                          SizedBox(width: 4),
-                          Text('ALERTE', style: TextStyle(color: AppColors.error, fontWeight: FontWeight.bold, fontSize: 12)),
+                          Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(color: Colors.red.shade100, shape: BoxShape.circle),
+                            child: const Icon(Icons.warning_rounded, color: AppColors.error, size: 14),
+                          ),
+                          const SizedBox(width: 8),
+                          const Text('ALERTE MÉTÉO', style: TextStyle(color: AppColors.error, fontWeight: FontWeight.w900, fontSize: 10, letterSpacing: 0.5)),
                         ],
                       ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Le prix de l\'arachide a subit une baisse de 15%',
-                        style: TextStyle(color: AppColors.error, fontSize: 12, fontWeight: FontWeight.w600),
-                      ),
+                      const SizedBox(height: 12),
+                      Text('Risque de gel cette nuit sur la parcelle Nord.', style: TextStyle(color: Colors.red.shade900, fontSize: 13, fontWeight: FontWeight.w600, height: 1.3)),
                     ],
                   ),
                 ),
@@ -673,8 +787,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                   child: Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: AppColors.primary,
-                      borderRadius: BorderRadius.circular(16),
+                      gradient: const LinearGradient(colors: [AppColors.primary, Color(0xFF1B5E20)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [BoxShadow(color: AppColors.primary.withValues(alpha: 0.3), blurRadius: 10, offset: const Offset(0, 4))],
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -682,27 +797,22 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Icon(Icons.show_chart, color: Colors.white, size: 20),
+                            Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), shape: BoxShape.circle),
+                              child: const Icon(Icons.trending_up, color: Colors.white, size: 14),
+                            ),
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.3),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: const Text('+15%', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8)),
+                              child: const Text('+15%', style: TextStyle(color: AppColors.primary, fontSize: 10, fontWeight: FontWeight.w900)),
                             ),
                           ],
                         ),
                         const SizedBox(height: 12),
-                        const Text(
-                          'RENDEMENT',
-                          style: TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.bold),
-                        ),
-                        const SizedBox(height: 2),
-                        const Text(
-                          '+15% ce mois',
-                          style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
-                        ),
+                        const Text('RENDEMENT', style: TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+                        const SizedBox(height: 4),
+                        const Text('Très bon ce mois', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w800)),
                       ],
                     ),
                   ),
@@ -765,6 +875,275 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
             ),
           ),
       ],
+    );
+  }
+
+  // ─────────────────────────────────────────────
+  // AUJOURD'HUI (Tâches du jour)
+  // ─────────────────────────────────────────────
+  Widget _buildTodayTasks() {
+    return Column(
+      children: [
+        _buildPremiumTaskItem(
+          title: 'Irrigation champ Tomates',
+          time: '08:00 - 09:30',
+          location: 'Parcelle Nord',
+          icon: Icons.water_drop,
+          color: Colors.blueAccent,
+          isCompleted: true,
+        ),
+        const SizedBox(height: 16),
+        _buildPremiumTaskItem(
+          title: 'Vérification humidité stock',
+          time: '14:00',
+          location: 'Entrepôt A',
+          icon: Icons.inventory_2,
+          color: Colors.orange,
+          isCompleted: false,
+        ),
+        const SizedBox(height: 16),
+        _buildPremiumTaskItem(
+          title: 'Semis Arachide',
+          time: '16:00 - 18:00',
+          location: 'Parcelle B',
+          icon: Icons.grass,
+          color: AppColors.primary,
+          isCompleted: false,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPremiumTaskItem({
+    required String title,
+    required String time,
+    required String location,
+    required IconData icon,
+    required Color color,
+    required bool isCompleted,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Barre de couleur latérale
+            Container(
+              width: 6,
+              decoration: BoxDecoration(
+                color: isCompleted ? Colors.grey.shade300 : color,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(20),
+                  bottomLeft: Radius.circular(20),
+                ),
+              ),
+            ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: isCompleted ? Colors.grey.withValues(alpha: 0.1) : color.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Icon(
+                        icon,
+                        color: isCompleted ? Colors.grey : color,
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            title,
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                              color: isCompleted ? Colors.grey : AppColors.textPrimary,
+                              decoration: isCompleted ? TextDecoration.lineThrough : null,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Row(
+                            children: [
+                              Icon(Icons.schedule, size: 12, color: isCompleted ? Colors.grey : AppColors.textSecondary),
+                              const SizedBox(width: 4),
+                              Text(
+                                time,
+                                style: TextStyle(
+                                  color: isCompleted ? Colors.grey : AppColors.textSecondary,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Icon(Icons.location_on, size: 12, color: isCompleted ? Colors.grey : AppColors.textSecondary),
+                              const SizedBox(width: 4),
+                              Text(
+                                location,
+                                style: TextStyle(
+                                  color: isCompleted ? Colors.grey : AppColors.textSecondary,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Icon(
+                      isCompleted ? Icons.check_circle : Icons.radio_button_unchecked,
+                      color: isCompleted ? AppColors.primary : Colors.grey.shade300,
+                      size: 28,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ─────────────────────────────────────────────
+  // CONSEILS NAATAL IA (Défilant)
+  // ─────────────────────────────────────────────
+  Widget _buildAiTipsScroll() {
+    final tips = [
+      {
+        'category': 'Stock',
+        'title': 'Risque d\'humidité',
+        'desc': 'Bâchez votre récolte d\'oignons, la météo prévoit de légères pluies ce soir.',
+        'icon': Icons.inventory,
+        'color': Colors.orange,
+      },
+      {
+        'category': 'Opportunité',
+        'title': 'Prix de la Tomate en hausse',
+        'desc': 'La demande explose à Dakar. C\'est le bon moment pour planifier une récolte anticipée.',
+        'icon': Icons.trending_up,
+        'color': Colors.green,
+      },
+      {
+        'category': 'Semis',
+        'title': 'Période idéale',
+        'desc': 'Les sols de votre région sont parfaitement hydratés pour commencer le semis de l\'arachide.',
+        'icon': Icons.eco_outlined,
+        'color': AppColors.primary,
+      },
+      {
+        'category': 'Nouvelle culture',
+        'title': 'Diversification',
+        'desc': 'Le gombo présente une forte rentabilité sur les marchés voisins de Thiès ce mois-ci.',
+        'icon': Icons.lightbulb_outline,
+        'color': Colors.purple,
+      },
+    ];
+
+    return SizedBox(
+      height: 180,
+      child: PageView.builder(
+        controller: _aiTipsController,
+        physics: const BouncingScrollPhysics(),
+        itemCount: tips.length,
+        itemBuilder: (context, index) {
+          final tip = tips[index];
+          final color = tip['color'] as Color;
+          return Container(
+            margin: const EdgeInsets.symmetric(horizontal: 4), // Marges pour l'espacement
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: Colors.grey.withValues(alpha: 0.1)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.03),
+                  blurRadius: 15,
+                  offset: const Offset(0, 5),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: color.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(tip['icon'] as IconData, color: color, size: 14),
+                          const SizedBox(width: 6),
+                          Text(
+                            (tip['category'] as String).toUpperCase(),
+                            style: TextStyle(
+                              color: color,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 1.2,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Icon(Icons.auto_awesome, color: Colors.grey, size: 20),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  tip['title'] as String,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Expanded(
+                  child: Text(
+                    tip['desc'] as String,
+                    style: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 14,
+                      height: 1.5,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 

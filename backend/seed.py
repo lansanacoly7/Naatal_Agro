@@ -1,6 +1,7 @@
 import os
 import django
 import datetime
+import random
 from django.utils import timezone
 
 # Configuration de Django
@@ -50,15 +51,61 @@ def run_seed():
     print("Meteo ajoutee")
 
     # 3. Création des Marchés
-    dakar_market = Market.objects.create(name="Marché Castors", region="Dakar", location_gps="14.7077,-17.4526")
-    thies_market = Market.objects.create(name="Marché Central", region="Thiès", location_gps="14.7928,-16.9267")
-    
-    # Prix des marchés
-    Price.objects.create(market=dakar_market, product_name="Tomate", price=450.00, trend="up", date=today)
-    Price.objects.create(market=dakar_market, product_name="Oignon", price=300.00, trend="down", date=today)
-    Price.objects.create(market=thies_market, product_name="Tomate", price=400.00, trend="stable", date=today)
-    Price.objects.create(market=thies_market, product_name="Oignon", price=250.00, trend="up", date=today)
-    print("Marches et Prix ajoutes")
+    markets_data = [
+        {"name": "Marché Castors", "region": "Dakar", "lat": "14.7077", "lng": "-17.4526", "rating": 4.5},
+        {"name": "Marché Sandaga", "region": "Dakar", "lat": "14.6698", "lng": "-17.4357", "rating": 4.2},
+        {"name": "Marché Tilène", "region": "Dakar", "lat": "14.6853", "lng": "-17.4521", "rating": 4.0},
+        {"name": "Marché de Thiaroye", "region": "Dakar", "lat": "14.7570", "lng": "-17.3751", "rating": 3.8},
+        {"name": "Marché Central", "region": "Thiès", "lat": "14.7928", "lng": "-16.9267", "rating": 4.3},
+    ]
+
+    markets = {}
+    for m in markets_data:
+        market = Market.objects.create(name=m['name'], region=m['region'], location_gps=f"{m['lat']},{m['lng']}")
+        # Simulation d'un rating sur le modele s'il n'existe pas ou utilisation custom coté frontend
+        markets[m['name']] = market
+
+    # Ajout de prix (Oignon, Tomate, Riz, Arachide)
+    prices_data = [
+        # Oignon
+        {"market": "Marché Castors", "product": "Oignon", "price": 470.00, "trend": "up"},
+        {"market": "Marché Sandaga", "product": "Oignon", "price": 450.00, "trend": "stable"},
+        {"market": "Marché Tilène", "product": "Oignon", "price": 435.00, "trend": "down"},
+        {"market": "Marché de Thiaroye", "product": "Oignon", "price": 410.00, "trend": "down"},
+        {"market": "Marché Central", "product": "Oignon", "price": 400.00, "trend": "stable"},
+
+        # Tomate
+        {"market": "Marché Castors", "product": "Tomate", "price": 500.00, "trend": "up"},
+        {"market": "Marché Sandaga", "product": "Tomate", "price": 550.00, "trend": "up"},
+        {"market": "Marché Tilène", "product": "Tomate", "price": 480.00, "trend": "down"},
+        {"market": "Marché de Thiaroye", "product": "Tomate", "price": 450.00, "trend": "down"},
+        {"market": "Marché Central", "product": "Tomate", "price": 400.00, "trend": "stable"},
+
+        # Arachide
+        {"market": "Marché Castors", "product": "Arachide", "price": 890.00, "trend": "stable"},
+        {"market": "Marché Sandaga", "product": "Arachide", "price": 950.00, "trend": "up"},
+        {"market": "Marché Tilène", "product": "Arachide", "price": 860.00, "trend": "down"},
+        {"market": "Marché de Thiaroye", "product": "Arachide", "price": 800.00, "trend": "down"},
+        {"market": "Marché Central", "product": "Arachide", "price": 750.00, "trend": "stable"},
+
+        # Riz
+        {"market": "Marché Castors", "product": "Riz", "price": 420.00, "trend": "up"},
+        {"market": "Marché Sandaga", "product": "Riz", "price": 450.00, "trend": "up"},
+        {"market": "Marché Tilène", "product": "Riz", "price": 400.00, "trend": "stable"},
+        {"market": "Marché de Thiaroye", "product": "Riz", "price": 380.00, "trend": "down"},
+        {"market": "Marché Central", "product": "Riz", "price": 350.00, "trend": "stable"},
+    ]
+
+    for p in prices_data:
+        Price.objects.create(
+            market=markets[p['market']], 
+            product_name=p['product'], 
+            price=p['price'], 
+            trend=p['trend'], 
+            date=today
+        )
+
+    print("Marchés et Prix ajoutes")
 
     # 4. Création des Cultures
     tomato_crop = Crop.objects.create(
