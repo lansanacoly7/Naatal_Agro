@@ -7,7 +7,11 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
+from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
+
+from .phone import clean_phone, normalize_phone
 
 User = get_user_model()
 
@@ -20,7 +24,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 
     def validate(self, attrs):
         # Mappe phone_number vers username pour que simple_jwt fonctionne
-        attrs[self.username_field] = attrs.pop('phone_number')
+        attrs[self.username_field] = clean_phone(attrs.pop('phone_number'))
         data = super().validate(attrs)
         
         # Add user details to response
@@ -41,7 +45,8 @@ class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
     language = serializers.CharField(write_only=True, required=False)
     location = serializers.CharField(write_only=True, required=False)
-    role = serializers.ChoiceField(choices=User.ROLE_CHOICES, write_only=True, required=False, default='farmer')
+    # Un compte administrateur ne se crée jamais par l'inscription publique
+    role = serializers.ChoiceField(choices=[('farmer', 'Agriculteur')], write_only=True, required=False, default='farmer')
     email = serializers.EmailField(write_only=True, required=False, allow_blank=True)
     date_of_birth = serializers.DateField(write_only=True, required=False, allow_null=True)
     main_crops = serializers.JSONField(write_only=True, required=False, default=list)
@@ -51,14 +56,27 @@ class RegisterSerializer(serializers.ModelSerializer):
         fields = ('phone_number', 'full_name', 'password', 'language', 'location', 'role', 'email', 'date_of_birth', 'main_crops')
 
     def validate_phone_number(self, value):
-        cleaned = value.strip().replace(' ', '')
+        try:
+            cleaned = normalize_phone(value)
+        except ValueError as exc:
+            raise serializers.ValidationError(str(exc))
         if User.objects.filter(username=cleaned).exists() or User.objects.filter(phone=cleaned).exists():
             raise serializers.ValidationError("Ce numéro de téléphone est déjà associé à un compte.")
         return cleaned
 
-    def validate_password(self, value):
-        validate_password(value)
-        return value
+    def validate(self, attrs):
+        # Le validateur de similarité compare le mot de passe aux données du compte futur
+        candidate = User(
+            username=attrs['phone_number'],
+            phone=attrs['phone_number'],
+            first_name=attrs.get('full_name', ''),
+            email=attrs.get('email', ''),
+        )
+        try:
+            validate_password(attrs['password'], user=candidate)
+        except DjangoValidationError as exc:
+            raise serializers.ValidationError({'password': list(exc.messages)})
+        return attrs
 
     def validate_main_crops(self, value):
         if not isinstance(value, list):
@@ -122,7 +140,8 @@ class UserProfileSerializer(serializers.ModelSerializer):
             'date_joined',
             'crops_count',
         )
-        read_only_fields = ('id', 'username', 'role', 'date_joined', 'crops_count')
+        # Le téléphone est l'identifiant de connexion : il ne se modifie pas par le profil
+        read_only_fields = ('id', 'username', 'phone', 'role', 'date_joined', 'crops_count')
 
     def get_full_name(self, obj):
         name = f"{obj.first_name} {obj.last_name}".strip()
@@ -194,4 +213,44 @@ class LogoutView(views.APIView):
         if str(token.get('user_id')) != str(request.user.pk):
             return Response({"error": "Ce jeton n'appartient pas à l'utilisateur connecté."}, status=status.HTTP_403_FORBIDDEN)
         token.blacklist()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ChangePasswordSerializer(serializers.Serializer):
+    old_password = serializers.CharField(write_only=True)
+    new_password = serializers.CharField(write_only=True)
+
+    def validate_old_password(self, value):
+        if not self.context['request'].user.check_password(value):
+            raise serializers.ValidationError("Mot de passe actuel incorrect.")
+        return value
+
+    def validate(self, attrs):
+        user = self.context['request'].user
+        if attrs['old_password'] == attrs['new_password']:
+            raise serializers.ValidationError({'new_password': ["Le nouveau mot de passe doit être différent de l'actuel."]})
+        try:
+            validate_password(attrs['new_password'], user=user)
+        except DjangoValidationError as exc:
+            raise serializers.ValidationError({'new_password': list(exc.messages)})
+        return attrs
+
+
+class ChangePasswordView(views.APIView):
+    """
+    Changement de mot de passe. Toutes les sessions ouvertes (jetons de rafraîchissement
+    en circulation) sont invalidées : l'appelant doit se reconnecter avec le nouveau mot de passe.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'auth'
+
+    def post(self, request, *args, **kwargs):
+        serializer = ChangePasswordSerializer(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        user = request.user
+        user.set_password(serializer.validated_data['new_password'])
+        user.save(update_fields=['password'])
+        for outstanding in OutstandingToken.objects.filter(user=user):
+            BlacklistedToken.objects.get_or_create(token=outstanding)
         return Response(status=status.HTTP_204_NO_CONTENT)

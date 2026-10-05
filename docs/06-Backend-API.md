@@ -101,44 +101,116 @@ Toutes les réponses doivent suivre ce format :
 
 # 5. Authentification (JWT)
 
+Contrat réellement implémenté (préfixe `/api/users/`). Les identifiants sont le **numéro de téléphone** au
+format international (`+221771234567`) ; les espaces, points et tirets saisis sont ignorés.
+
+| Point d'accès | Méthode | Accès | Rôle |
+|---|---|---|---|
+| `/api/users/auth/register/` | POST | public | Création d'un compte agriculteur |
+| `/api/users/auth/login/` | POST | public | Obtention des jetons |
+| `/api/users/auth/refresh/` | POST | public (avec refresh) | Renouvellement (rotation) |
+| `/api/users/auth/logout/` | POST | connecté | Invalidation du refresh token |
+| `/api/users/auth/password/change/` | POST | connecté | Changement de mot de passe |
+
+Limite de débit : 10 requêtes par minute sur register, login et changement de mot de passe (scope `auth`).
+
 ---
 
 ## 5.1 Register
 
-```http id="auth_register"
-POST /auth/register/
+```http
+POST /api/users/auth/register/
 ```
 
 ```json
 {
-  "name": "string",
-  "phone": "string",
-  "password": "string"
+  "phone_number": "+221771234567",
+  "full_name": "Fatou Sow",
+  "password": "Motdepasse#2026",
+  "language": "fr",
+  "location": "Saint-Louis, Sénégal",
+  "role": "farmer",
+  "main_crops": ["Riz"]
 }
 ```
+
+- `phone_number`, `full_name`, `password` obligatoires ; `role` ne peut valoir que `farmer` (un compte
+  administrateur ne se crée pas par l'inscription publique).
+- Réponses : `201` création ; `400` numéro invalide (`phone_number`), numéro déjà utilisé, mot de passe refusé (`password`).
+- **Politique de mot de passe** : 8 caractères minimum, pas uniquement numérique, pas dans la liste des mots de passe
+  courants, pas trop proche du nom ou du numéro.
 
 ---
 
 ## 5.2 Login
 
-```http id="auth_login"
-POST /auth/login/
+```http
+POST /api/users/auth/login/
 ```
 
 ```json
+{ "phone_number": "+221771234567", "password": "Motdepasse#2026" }
+```
+
+Réponse `200` :
+
+```json
 {
-  "access_token": "jwt",
-  "refresh_token": "jwt"
+  "access": "jwt (validité 1 jour)",
+  "refresh": "jwt (validité 7 jours)",
+  "role": "farmer",
+  "location": "Thiès, Sénégal",
+  "full_name": "Fatou Sow"
 }
 ```
 
+Mauvais identifiants : `401`, sans préciser si le numéro existe.
+
 ---
 
-## 5.3 Refresh token
+## 5.3 Refresh token (rotation)
 
 ```http
-POST /auth/refresh/
+POST /api/users/auth/refresh/
 ```
+
+```json
+{ "refresh": "jwt" }
+```
+
+Réponse `200` : un nouvel `access` **et un nouveau `refresh`**. L'ancien `refresh` est invalidé immédiatement :
+le client doit conserver le nouveau. Un refresh déjà utilisé ou invalidé donne `401`.
+
+---
+
+## 5.4 Logout
+
+```http
+POST /api/users/auth/logout/
+Authorization: Bearer <access>
+```
+
+```json
+{ "refresh": "jwt" }
+```
+
+`204` : le refresh est invalidé. `400` jeton absent ou invalide ; `403` jeton d'un autre utilisateur.
+
+---
+
+## 5.5 Changement de mot de passe
+
+```http
+POST /api/users/auth/password/change/
+Authorization: Bearer <access>
+```
+
+```json
+{ "old_password": "Motdepasse#2026", "new_password": "Autre#Mdp2027" }
+```
+
+`204` : mot de passe changé et **toutes les sessions ouvertes sont fermées** (le client doit se reconnecter).
+`400` : mot de passe actuel incorrect, nouveau mot de passe refusé par la politique, ou identique à l'actuel.
 
 ---
 
@@ -368,7 +440,7 @@ GET /dashboard/
 
 ## 13.2 Performance
 
-* pagination obligatoire
+* pagination : implémentée **à la demande** (voir §13.4), à rendre obligatoire quand le mobile l'utilisera partout
 * requêtes optimisées ORM
 * cache (Redis futur)
 * endpoint dashboard optimisé
@@ -380,6 +452,19 @@ GET /dashboard/
 * séparation service / controller
 * logique métier isolée
 * API versionnable (/api/v1/)
+
+---
+
+## 13.4 Pagination
+
+Toute liste accepte `?page=<n>` et `?page_size=<n>` (20 par défaut, 100 au maximum). Réponse paginée :
+
+```json
+{ "count": 57, "next": "http://.../?page=2", "previous": null, "results": [] }
+```
+
+Sans paramètre, la liste complète est renvoyée sous forme de tableau JSON (compatibilité avec les clients existants).
+Une page hors limites répond `404`. L'ordre des résultats est déterministe (ordre par défaut de chaque modèle).
 
 ---
 
