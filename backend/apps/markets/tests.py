@@ -126,3 +126,26 @@ class MarketsAppTests(TestCase):
         # 4. Tentative de réservation sur une offre fermée / réservée -> refusée
         closed_response = self.client.post(reserve_url, {'quantity_reserved': 50}, format='json')
         self.assertEqual(closed_response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_b2b_offer_modification_by_non_owner_forbidden(self):
+        """Vérifie qu'un autre utilisateur ne peut ni modifier ni supprimer l'offre d'un producteur (anti-IDOR)."""
+        offer = PreSaleOffer.objects.create(
+            farmer=self.farmer,
+            product_name='Piment Doux',
+            quantity_kg=200.0,
+            price_per_kg='1200.00',
+            availability_date='2026-06-01',
+            location='Mboro, Sénégal',
+            status='open'
+        )
+        # L'acheteur tente d'altérer l'offre du producteur
+        self.client.force_authenticate(user=self.buyer)
+        detail_url = reverse('markets:presale-offer-detail', kwargs={'pk': str(offer.id)})
+
+        patch_response = self.client.patch(detail_url, {'price_per_kg': '100.00'}, format='json')
+        self.assertEqual(patch_response.status_code, status.HTTP_403_FORBIDDEN)
+
+        delete_response = self.client.delete(detail_url)
+        self.assertEqual(delete_response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertTrue(PreSaleOffer.objects.filter(id=offer.id).exists())
+

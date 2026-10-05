@@ -1,12 +1,17 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:nataal_agro/main.dart';
 import 'package:nataal_agro/features/auth/presentation/screens/onboarding_screen.dart';
 import 'package:nataal_agro/features/auth/presentation/screens/login_screen.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUp(() {
+    FlutterSecureStorage.setMockInitialValues({});
+  });
 
   testWidgets('Affiche Onboarding au premier lancement si onboarding non vu', (WidgetTester tester) async {
     SharedPreferences.setMockInitialValues({'has_seen_onboarding': false});
@@ -20,7 +25,8 @@ void main() {
         child: const NataalAgroApp(),
       ),
     );
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
 
     expect(find.byType(OnboardingScreen), findsOneWidget);
     expect(find.text("Réinventer l'agriculture"), findsOneWidget);
@@ -38,7 +44,8 @@ void main() {
         child: const NataalAgroApp(),
       ),
     );
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
 
     expect(find.byType(LoginScreen), findsOneWidget);
     expect(find.text('Bon retour'), findsOneWidget);

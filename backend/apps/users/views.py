@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.contrib.auth import get_user_model
+from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 
 User = get_user_model()
@@ -43,6 +44,21 @@ class RegisterSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('phone_number', 'full_name', 'password', 'language', 'location', 'role', 'email', 'date_of_birth', 'main_crops')
+
+    def validate_phone_number(self, value):
+        cleaned = value.strip().replace(' ', '')
+        if User.objects.filter(username=cleaned).exists() or User.objects.filter(phone=cleaned).exists():
+            raise serializers.ValidationError("Ce numéro de téléphone est déjà associé à un compte.")
+        return cleaned
+
+    def validate_password(self, value):
+        validate_password(value)
+        return value
+
+    def validate_main_crops(self, value):
+        if not isinstance(value, list):
+            raise serializers.ValidationError("Le champ 'main_crops' doit être une liste de cultures.")
+        return [str(c).strip() for c in value if str(c).strip()]
 
     def create(self, validated_data):
         user = User.objects.create_user(
@@ -110,6 +126,11 @@ class UserProfileSerializer(serializers.ModelSerializer):
             return obj.crops.count()
         return len(obj.main_crops or [])
 
+    def validate_main_crops(self, value):
+        if not isinstance(value, list):
+            raise serializers.ValidationError("Le champ 'main_crops' doit être une liste de cultures.")
+        return [str(c).strip() for c in value if str(c).strip()]
+
 class MeView(views.APIView):
     """
     Endpoint retournant ou mettant à jour les données complètes de l'utilisateur connecté.
@@ -130,28 +151,19 @@ class MeView(views.APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class UpdateProfileView(views.APIView):
+    """
+    Endpoint compatible rétroactivement avec l'ancien contrat /profile/update/.
+    Utilise le même UserProfileSerializer validé.
+    """
     permission_classes = [permissions.IsAuthenticated]
 
     def patch(self, request, *args, **kwargs):
         user = request.user
-        language = request.data.get('language')
-        location = request.data.get('location')
-        first_name = request.data.get('full_name') or request.data.get('first_name')
-        main_crops = request.data.get('main_crops')
-        
-        if language is not None:
-            user.language = language
-        if location is not None:
-            user.location = location
-        if first_name is not None:
-            user.first_name = first_name
-        if main_crops is not None:
-            user.main_crops = main_crops
-            
-        user.save()
-        return Response({
-            "status": "Profil mis à jour avec succès.",
-            "user": UserProfileSerializer(user).data
-        })
-
-
+        serializer = UserProfileSerializer(user, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                "status": "Profil mis à jour avec succès.",
+                "user": serializer.data
+            }, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

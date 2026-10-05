@@ -108,3 +108,18 @@ class UserAuthAndProfileTests(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.farmer_user.refresh_from_db()
         self.assertEqual(self.farmer_user.fcm_token, 'fcm_sample_token_xyz_123')
+
+    def test_register_duplicate_phone_returns_400(self):
+        """Vérifie qu'un numéro déjà enregistré renvoie une 400 Bad Request et non un crash 500."""
+        url = reverse('users:register')
+        payload = {
+            'phone_number': '+221771234567',  # Déjà existant (farmer_user)
+            'full_name': 'Doublon Test',
+            'password': 'passwordSenegal2026',
+            'location': 'Dakar',
+            'role': 'farmer'
+        }
+        response = self.client.post(url, payload, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('phone_number', response.data)
+

@@ -1,112 +1,135 @@
 import json
-import re
+import logging
 import requests
 from django.conf import settings
-from django.db import connection
+from django.utils import timezone
+import datetime
 
-SCHEMA_CONTEXT = """
-Schéma autorisé de la base de données Naatal Agro :
-- Table agriculture_crop(id, user_id, name, crop_type, planting_date, expected_harvest_date, status, area_size, location)
-- Table agriculture_activity(id, crop_id, activity_type, description, date, cost)
-- Table markets_product(id, name, category, current_price, trend_percentage, is_trending)
-- Table markets_market(id, name, region)
-- Table markets_price(id, market_id, product_name, price, trend, date)
-- Table weather_weatherdata(id, location, temperature, humidity, rainfall, forecast_date)
-- Table inventory_stockitem(id, user_id, name, quantity, unit, alert_status)
+logger = logging.getLogger(__name__)
 
-RÈGLES STRICTES D'ANTI-HALLUCINATION & DE SÉCURITÉ :
-1. Tu es le Moteur IA Décisionnel de Naatal Agro.
-2. Tu ne dois JAMAIS inventer de chiffres, prix ou données agricoles.
-3. Si la question nécessite des données factuelles de la base, génère UNIQUEMENT un bloc JSON contenant une requête SQL SELECT restreinte :
-```json
-{"sql": "SELECT ... FROM ... LIMIT 10"}
-```
-4. SÉCURITÉ : N'accède JAMAIS aux tables d'utilisateurs ou de mots de passe. N'utilise que les tables autorisées listées ci-dessus.
-5. Si la question est d'ordre général (conseil cultural, diagnostic), réponds directement en texte clair et bienveillant sans SQL.
+SYSTEM_PROMPT = """Tu es le copilote agronomique intelligent de Naatal Agro, la plateforme agricole de référence au Sénégal.
+Ton rôle est d'apporter des conseils agronomiques précis, pratiques, contextualisés et immédiatement applicables par les producteurs sénégalais.
+
+RÈGLES D'OR :
+1. Réponds de façon concise, bienveillante et professionnelle en français (avec des termes locaux si pertinents, ex: Louma, Niayes, Casamance).
+2. Base-toi en priorité sur les données réelles fournies dans le profil et les exploitations de l'utilisateur.
+3. Ne divulgue jamais de données techniques internes ou d'informations d'autres exploitants.
+4. Si une maladie ou un ravageur est détecté, propose des solutions de lutte intégrée (biologiques et conventionnelles homologuées au Sénégal).
 """
 
-ALLOWED_TABLES = {
-    'agriculture_crop',
-    'agriculture_activity',
-    'markets_product',
-    'markets_market',
-    'markets_price',
-    'weather_weatherdata',
-    'inventory_stockitem',
-}
-
-FORBIDDEN_KEYWORDS = [
-    'insert', 'update', 'delete', 'drop', 'truncate', 'alter',
-    'create', 'grant', 'revoke', 'copy', 'into', 'users_user',
-    'django_session', 'django_admin', 'auth_group', 'auth_permission'
-]
-
-def execute_read_only_sql(sql_query, user=None):
+def get_farmer_context(user):
     """
-    Exécute de manière sécurisée une requête SELECT en lecture seule.
-    Vérifie les tables autorisées et prévient l'injection SQL.
+    Extrait de manière strictement cloisonnée (ORM Django) le contexte
+    agricole de l'utilisateur authentifié. Aucune fuite multi-tenant possible.
     """
-    sql = sql_query.strip()
-    sql_lower = sql.lower()
+    if not user or not user.is_authenticated:
+        return {"auth": False, "note": "Utilisateur non connecté (mode invité)"}
 
-    if not sql_lower.startswith("select"):
-        raise ValueError("Seules les requêtes SELECT en lecture seule sont permises.")
+    context = {
+        "auth": True,
+        "name": user.first_name or user.username,
+        "role": getattr(user, 'role', 'farmer'),
+        "location": getattr(user, 'location', 'Sénégal'),
+        "main_crops": getattr(user, 'main_crops', []),
+        "crops": [],
+        "recent_activities": [],
+        "market_prices": [],
+        "local_pest_alerts": []
+    }
 
-    if ";" in sql:
-        sql = sql.split(";")[0].strip()
+    try:
+        from apps.agriculture.models import Crop, Activity, PestReport
+        from apps.markets.models import Product, Price
 
-    # Vérification des mots-clés interdits
-    for forbidden in FORBIDDEN_KEYWORDS:
-        pattern = rf'\b{re.escape(forbidden)}\b'
-        if re.search(pattern, sql_lower):
-            raise PermissionError(f"Opération ou table interdite détectée : {forbidden}")
+        # 1. Cultures personnelles exclusives de l'utilisateur connecté
+        user_crops = Crop.objects.filter(user=user)[:10]
+        for c in user_crops:
+            context["crops"].append({
+                "nom": c.name,
+                "type": c.crop_type,
+                "surface_ha": c.area_size,
+                "statut": c.status,
+                "semis": str(c.planting_date),
+                "recolte_prevue": str(c.expected_harvest_date),
+            })
 
-    # Vérification des tables interrogées (FROM et JOIN)
-    tables_found = re.findall(r'\b(?:from|join)\s+([a-zA-Z0-9_]+)', sql_lower)
-    for table in tables_found:
-        if table not in ALLOWED_TABLES:
-            raise PermissionError(f"Accès refusé à la table non autorisée : {table}")
+        # 2. Activités récentes sur ses propres cultures
+        user_activities = Activity.objects.filter(crop__user=user).order_by('-date')[:5]
+        for a in user_activities:
+            context["recent_activities"].append({
+                "culture": a.crop.name,
+                "type": a.activity_type,
+                "description": a.description,
+                "date": str(a.date)
+            })
 
-    # Ajout d'une limite par défaut si non spécifiée pour éviter tout DoS
-    if 'limit' not in sql_lower:
-        sql += " LIMIT 25"
+        # 3. Tendances des marchés (données publiques)
+        trending_products = Product.objects.filter(is_trending=True)[:5]
+        for p in trending_products:
+            context["market_prices"].append({
+                "produit": p.name,
+                "categorie": p.category,
+                "prix_kg": str(p.current_price),
+                "tendance": f"{p.trend_percentage}%"
+            })
 
-    with connection.cursor() as cursor:
-        cursor.execute(sql)
-        columns = [col[0] for col in cursor.description]
-        rows = cursor.fetchall()
-        
-    results = []
-    for row in rows:
-        results.append(dict(zip(columns, row)))
-    return results
+        # 4. Alertes ravageurs dans la région de l'utilisateur (14 derniers jours)
+        if user.location:
+            region = user.location.split(',')[0].strip()
+            recent_alerts = PestReport.objects.filter(
+                location__icontains=region,
+                date_reported__gte=timezone.now() - datetime.timedelta(days=14)
+            )[:3]
+            for alert in recent_alerts:
+                context["local_pest_alerts"].append({
+                    "ravageur": alert.pest_name,
+                    "zone": alert.location,
+                    "date": alert.date_reported.strftime("%Y-%m-%d")
+                })
+    except Exception as e:
+        logger.error(f"[AI Context Extraction] Erreur d'extraction : {e}")
+
+    return context
 
 def call_groq(prompt):
     groq_key = getattr(settings, 'GROQ_API_KEY', None)
     if not groq_key:
         return None
     url = "https://api.groq.com/openai/v1/chat/completions"
-    headers = {"Authorization": f"Bearer {groq_key}"}
+    headers = {
+        "Authorization": f"Bearer {groq_key}",
+        "Content-Type": "application/json"
+    }
     payload = {
         "model": "llama-3.1-8b-instant",
-        "messages": [{"role": "user", "content": prompt}],
-        "temperature": 0.1
+        "messages": [
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": prompt}
+        ],
+        "temperature": 0.2,
+        "max_tokens": 800
     }
     try:
         res = requests.post(url, json=payload, headers=headers, timeout=10)
         if res.status_code == 200:
             return res.json()['choices'][0]['message']['content']
+        logger.warning(f"[Groq Service] Statut HTTP {res.status_code}: {res.text}")
     except Exception as e:
-        print(f"[Groq Service] Erreur d'appel API : {e}")
+        logger.error(f"[Groq Service] Exception : {e}")
     return None
 
 def call_gemini(prompt, image_base64=None):
     gemini_key = getattr(settings, 'GEMINI_API_KEY', None)
     if not gemini_key:
         return None
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={gemini_key}"
+        
+    url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
+    headers = {
+        "x-goog-api-key": gemini_key,
+        "Content-Type": "application/json"
+    }
     
-    parts = [{"text": prompt}]
+    parts = [{"text": f"{SYSTEM_PROMPT}\n\n{prompt}"}]
     if image_base64:
         parts.append({
             "inline_data": {
@@ -119,83 +142,56 @@ def call_gemini(prompt, image_base64=None):
         "contents": [{"parts": parts}]
     }
     try:
-        res = requests.post(url, json=payload, timeout=12)
+        res = requests.post(url, json=payload, headers=headers, timeout=12)
         if res.status_code == 200:
             return res.json()['candidates'][0]['content']['parts'][0]['text']
+        logger.warning(f"[Gemini Service] Statut HTTP {res.status_code}: {res.text}")
     except Exception as e:
-        print(f"[Gemini Service] Erreur d'appel API : {e}")
+        logger.error(f"[Gemini Service] Exception : {e}")
     return None
 
 def call_llm(prompt, image_base64=None):
     if image_base64:
         return call_gemini(prompt, image_base64=image_base64)
-
+    # Tente Groq en priorité, bascule sur Gemini si indisponible
     res = call_groq(prompt)
-    if res is None:
+    if not res:
         res = call_gemini(prompt)
     return res
 
-def extract_json_sql(text):
-    match = re.search(r'```json\s*(\{.*?\})\s*```', text, re.DOTALL)
-    if match:
-        try:
-            return json.loads(match.group(1)).get('sql')
-        except Exception:
-            pass
-    
-    try:
-        start = text.find('{')
-        end = text.rfind('}') + 1
-        if start != -1 and end != 0:
-            return json.loads(text[start:end]).get('sql')
-    except Exception:
-        pass
-    return None
-
 def ask_llm(query, context='general', image_base64=None, user=None):
     """
-    Orchestrateur IA sécurisé de Naatal Agro.
-    Gère le Text-to-SQL borné et le diagnostic phytosanitaire par vision.
+    Point d'entrée du copilote IA décisionnel de Naatal Agro.
+    - Diagnostic vision (analyse phytosanitaire d'une image)
+    - Recommandation agronomique contextuelle sécurisée (zéro injection SQL, isolation stricte par ORM)
     """
     if image_base64:
         vision_prompt = (
-            f"Tu es l'agronome expert sénégalais de Naatal Agro. "
-            f"Analyse cette image agricole. L'utilisateur demande : '{query}'. "
-            f"Identifie avec précision la culture, le ravageur ou la maladie éventuelle, "
-            f"et prescris un traitement clair et immédiatement disponible au Sénégal."
+            f"Analyse phytosanitaire de cette image agricole transmise par l'exploitant.\n"
+            f"Question / Remarque : '{query}'.\n"
+            f"1. Identifie la culture et la maladie ou le ravageur visible avec certitude.\n"
+            f"2. Indique la sévérité et les symptômes caractéristiques.\n"
+            f"3. Recommande un traitement curatif et préventif adapté au climat sénégalais."
         )
-        return call_llm(vision_prompt, image_base64=image_base64) or "Erreur lors de l'analyse visuelle de l'image."
+        response = call_llm(vision_prompt, image_base64=image_base64)
+        return response or "Le service de vision IA est indisponible. Veuillez vérifier vos clés API."
 
-    user_info = ""
-    if user and user.is_authenticated:
-        user_info = f"Utilisateur ID: '{user.id}', Région: '{user.location or 'Sénégal'}', Rôle: '{user.role}'."
+    # Construction du contexte sécurisé avec requêtes ORM cloisonnées par utilisateur
+    farmer_context = get_farmer_context(user)
+    context_str = json.dumps(farmer_context, ensure_ascii=False, indent=2)
 
-    initial_prompt = (
-        f"{SCHEMA_CONTEXT}\n\n"
-        f"Profil exploitant : {user_info}\n"
-        f"Contexte : {context}\n"
-        f"Question : {query}"
+    prompt = (
+        f"### DONNÉES CLOISONNÉES DE L'EXPLOITANT (Source certifiée Naatal Agro) :\n"
+        f"```json\n{context_str}\n```\n\n"
+        f"### CONTEXTE MÉTIER : {context}\n"
+        f"### QUESTION DU PRODUCTEUR : {query}\n\n"
+        f"Réponds de manière directe, concrète et utile pour l'exploitant :"
     )
-    
-    first_response = call_llm(initial_prompt)
-    if not first_response:
-        return "L'assistant IA est temporairement indisponible ou non configuré avec les clés d'API nécessaires."
 
-    sql_query = extract_json_sql(first_response)
-    
-    if sql_query:
-        try:
-            db_results = execute_read_only_sql(sql_query, user=user)
-            analysis_prompt = (
-                f"Tu es Naatal Agro. L'utilisateur a demandé : '{query}'.\n"
-                f"Données réelles de la base : {db_results}.\n"
-                f"Formule une recommandation concise, experte et directement actionnable "
-                f"en te basant strictement sur ces données réelles."
-            )
-            final_response = call_llm(analysis_prompt)
-            return final_response or "Erreur lors de l'analyse des résultats de la base de données."
-        except Exception as e:
-            print(f"[IA Décisionnelle] Erreur SQL contrôlée : {e}")
-            return "Je n'ai pas pu récupérer de façon sécurisée les données nécessaires pour répondre."
-    
-    return first_response
+    llm_response = call_llm(prompt)
+    if not llm_response:
+        return (
+            "Naatal IA est temporairement indisponible (les clés API Gemini ou Groq ne sont pas configurées). "
+            "Vos données agricoles personnelles restent parfaitement sécurisées et accessibles."
+        )
+    return llm_response
