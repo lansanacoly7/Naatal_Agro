@@ -28,32 +28,40 @@ class _MonDashboardScreenState extends ConsumerState<MonDashboardScreen> {
           style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
         ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildSectionTitle('Performances Financières'),
-            const SizedBox(height: 16),
-            _buildFinancialStats(),
-            
-            const SizedBox(height: 32),
-            _buildSectionTitle('État de mon Stock'),
-            const SizedBox(height: 16),
-            _buildStockInfo(),
-            
-            const SizedBox(height: 32),
-            _buildSectionTitle('Naatal IA - Stock & Récoltes'),
-            const SizedBox(height: 16),
-            _buildAiRecommendations(),
-            
-            const SizedBox(height: 32),
-            _buildSectionTitle('Tendances & Investissements'),
-            const SizedBox(height: 16),
-            _buildInvestmentAdvice(),
-            
-            const SizedBox(height: 40),
-          ],
+      body: RefreshIndicator(
+        onRefresh: () async {
+          await Future.delayed(const Duration(milliseconds: 500));
+          if (mounted) setState(() {});
+        },
+        color: AppColors.primary,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildSectionTitle('Performances Financières'),
+              const SizedBox(height: 16),
+              _buildFinancialStats(),
+              
+              const SizedBox(height: 32),
+              _buildSectionTitle('État de mon Stock'),
+              const SizedBox(height: 16),
+              _buildStockInfo(),
+              
+              const SizedBox(height: 32),
+              _buildSectionTitle('Naatal IA - Stock & Récoltes'),
+              const SizedBox(height: 16),
+              _buildAiRecommendations(),
+              
+              const SizedBox(height: 32),
+              _buildSectionTitle('Tendances & Investissements'),
+              const SizedBox(height: 16),
+              _buildInvestmentAdvice(),
+              
+              const SizedBox(height: 40),
+            ],
+          ),
         ),
       ),
     );

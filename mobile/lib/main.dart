@@ -8,6 +8,7 @@ import 'core/theme/app_theme.dart';
 import 'core/router/app_router.dart';
 import 'core/network/api_client.dart';
 import 'core/network/sync_service.dart';
+import 'core/widgets/offline_banner.dart';
 import 'features/auth/data/auth_provider.dart';
 
 final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
@@ -85,6 +86,14 @@ class _NataalAgroAppState extends ConsumerState<NataalAgroApp> {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       routerConfig: _router,
+      builder: (context, child) {
+        return Column(
+          children: [
+            const OfflineBanner(),
+            Expanded(child: child ?? const SizedBox.shrink()),
+          ],
+        );
+      },
     );
   }
 }

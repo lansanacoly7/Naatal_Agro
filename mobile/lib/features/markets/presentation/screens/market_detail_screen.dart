@@ -44,29 +44,53 @@ class _MarketDetailScreenState extends ConsumerState<MarketDetailScreen> {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // 1. Header (Nom, Lieu, Note, Statut)
-            _buildHeader(),
-            const SizedBox(height: 24),
+      body: RefreshIndicator(
+        onRefresh: () async => ref.invalidate(pricesListProvider),
+        color: AppColors.primary,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // 1. Header (Nom, Lieu, Note, Statut)
+              _buildHeader(),
+              const SizedBox(height: 24),
 
-            // 2. Prix actuels & 3. Évolution du marché
-            pricesAsync.when(
-              data: (prices) {
-                final marketPrices = prices.where((p) => p.marketId == market.id).toList();
-                return Column(
-                  children: [
-                    _buildCurrentPrices(marketPrices),
-                    const SizedBox(height: 24),
-                    _buildMarketEvolution(marketPrices),
-                  ],
-                );
-              },
-              loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
-              error: (err, _) => Center(child: Text("Erreur: $err")),
-            ),
+              // 2. Prix actuels & 3. Évolution du marché
+              pricesAsync.when(
+                data: (prices) {
+                  final marketPrices = prices.where((p) => p.marketId == market.id).toList();
+                  return Column(
+                    children: [
+                      _buildCurrentPrices(marketPrices),
+                      const SizedBox(height: 24),
+                      _buildMarketEvolution(marketPrices),
+                    ],
+                  );
+                },
+                loading: () => const Center(child: Padding(
+                  padding: EdgeInsets.all(32.0),
+                  child: CircularProgressIndicator(color: AppColors.primary),
+                )),
+                error: (err, _) => Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.error_outline, color: Colors.red, size: 36),
+                        const SizedBox(height: 8),
+                        Text("Erreur: $err", textAlign: TextAlign.center),
+                        const SizedBox(height: 12),
+                        ElevatedButton(
+                          onPressed: () => ref.invalidate(pricesListProvider),
+                          child: const Text('Réessayer'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             const SizedBox(height: 24),
 
             // 4. Fiche Marché (Détails, Activité)
@@ -79,8 +103,9 @@ class _MarketDetailScreenState extends ConsumerState<MarketDetailScreen> {
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildHeader() {
     return Padding(

@@ -74,9 +74,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
   }
 
   Widget _buildContent(BuildContext context, DashboardData data) {
-    return CustomScrollView(
-      physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
-      slivers: [
+    return RefreshIndicator(
+      onRefresh: () async {
+        ref.invalidate(dashboardDataProvider);
+      },
+      color: AppColors.primary,
+      child: CustomScrollView(
+        physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+        slivers: [
         SliverToBoxAdapter(
           child: SafeArea(
             bottom: false,
@@ -140,8 +145,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
           ),
         ),
       ],
-    );
-  }
+    ),
+  );
+}
 
   // ─────────────────────────────────────────────
   // HEADER

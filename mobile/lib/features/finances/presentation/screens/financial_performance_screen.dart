@@ -20,30 +20,103 @@ class FinancialPerformanceScreen extends ConsumerWidget {
         elevation: 0,
         iconTheme: const IconThemeData(color: AppColors.textPrimary),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            summaryAsync.when(
-              data: (summary) => _buildSummaryCards(summary),
-              loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
-              error: (e, _) => Text('Erreur : $e'),
-            ),
-            const SizedBox(height: 32),
-            const Text('Historique des Transactions', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
-            const SizedBox(height: 16),
-            transactionsState.when(
-              data: (transactions) {
-                if (transactions.isEmpty) return const Text("Aucune transaction trouvée.");
-                return Column(
-                  children: transactions.map((t) => _buildTransactionCard(t)).toList(),
-                );
-              },
-              loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
-              error: (e, _) => Text('Erreur : $e'),
-            ),
-          ],
+      body: RefreshIndicator(
+        onRefresh: () async {
+          ref.invalidate(financialSummaryProvider);
+          ref.invalidate(transactionsNotifierProvider);
+        },
+        color: AppColors.primary,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              summaryAsync.when(
+                data: (summary) => _buildSummaryCards(summary),
+                loading: () => const Center(child: Padding(
+                  padding: EdgeInsets.all(32.0),
+                  child: CircularProgressIndicator(color: AppColors.primary),
+                )),
+                error: (e, _) => Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      children: [
+                        const Icon(Icons.error_outline, color: Colors.red, size: 36),
+                        const SizedBox(height: 8),
+                        Text('Erreur de chargement du résumé : $e', textAlign: TextAlign.center),
+                        const SizedBox(height: 12),
+                        ElevatedButton(
+                          onPressed: () => ref.invalidate(financialSummaryProvider),
+                          child: const Text('Réessayer'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 32),
+              const Text('Historique des Transactions', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+              const SizedBox(height: 16),
+              transactionsState.when(
+                data: (transactions) {
+                  if (transactions.isEmpty) {
+                    return Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(32),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade50,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.grey.shade200),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.receipt_long_outlined, size: 48, color: Colors.grey.shade400),
+                          const SizedBox(height: 12),
+                          const Text(
+                            'Aucune transaction enregistrée',
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.textPrimary),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            'Ajoutez vos revenus ou dépenses avec le bouton + ci-dessous.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+                  return Column(
+                    children: transactions.map((t) => _buildTransactionCard(t)).toList(),
+                  );
+                },
+                loading: () => const Center(child: Padding(
+                  padding: EdgeInsets.all(32.0),
+                  child: CircularProgressIndicator(color: AppColors.primary),
+                )),
+                error: (e, _) => Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      children: [
+                        const Icon(Icons.error_outline, color: Colors.red, size: 36),
+                        const SizedBox(height: 8),
+                        Text('Erreur transactions : $e', textAlign: TextAlign.center),
+                        const SizedBox(height: 12),
+                        ElevatedButton(
+                          onPressed: () => ref.invalidate(transactionsNotifierProvider),
+                          child: const Text('Réessayer'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
       floatingActionButton: FloatingActionButton(

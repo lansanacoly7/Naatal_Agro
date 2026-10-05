@@ -19,22 +19,81 @@ class InventoryManagementScreen extends ConsumerWidget {
         elevation: 0,
         iconTheme: const IconThemeData(color: AppColors.textPrimary),
       ),
-      body: inventoryState.when(
-        data: (stocks) {
-          if (stocks.isEmpty) {
-            return const Center(child: Text("Aucun stock disponible. Ajoutez-en un !"));
-          }
-          return ListView.builder(
-            padding: const EdgeInsets.all(20),
-            itemCount: stocks.length,
-            itemBuilder: (context, index) {
-              final stock = stocks[index];
-              return _buildStockCard(stock);
-            },
-          );
-        },
-        loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
-        error: (error, _) => Center(child: Text('Erreur: $error')),
+      body: RefreshIndicator(
+        onRefresh: () => ref.read(inventoryNotifierProvider.notifier).fetchInventory(),
+        color: AppColors.primary,
+        child: inventoryState.when(
+          data: (stocks) {
+            if (stocks.isEmpty) {
+              return Center(
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.all(32.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.inventory_2_outlined, size: 64, color: AppColors.primary),
+                      ),
+                      const SizedBox(height: 24),
+                      Text(
+                        'Aucun stock enregistré',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textPrimary,
+                            ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Ajoutez vos récoltes et intrants en stock avec le bouton +.',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: AppColors.textSecondary,
+                            ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
+            return ListView.builder(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(20),
+              itemCount: stocks.length,
+              itemBuilder: (context, index) {
+                final stock = stocks[index];
+                return _buildStockCard(stock);
+              },
+            );
+          },
+          loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+          error: (error, _) => Center(
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, color: Colors.red, size: 48),
+                  const SizedBox(height: 16),
+                  Text('Erreur de chargement', style: Theme.of(context).textTheme.titleLarge),
+                  const SizedBox(height: 8),
+                  Text(error.toString(), textAlign: TextAlign.center),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () => ref.read(inventoryNotifierProvider.notifier).fetchInventory(),
+                    child: const Text('Réessayer'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showAddStockDialog(context, ref),
