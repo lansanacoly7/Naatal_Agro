@@ -100,17 +100,6 @@ Légende : **AGY** = Antigravity, **CLA** = Claude. La colonne « Définition de
 | Déploiement | AGY | Images Docker réellement construites et lancées, démarrage de bout en bout (base, backend, proxy). Secrets obligatoires. | `docker compose up` démarre ; `/api/health/` répond ; capture de la sortie conservée. |
 | Documentation | CLA | README, documents `docs/`, `.env.example`, guide d'installation vérifié sur une machine neuve, documentation d'API. | Un lecteur suit le README jusqu'à une application qui tourne. |
 
-## Blocs à trancher par le propriétaire du projet
-
-Ces quatre blocs viennent d'une grille générale et **n'existent pas dans les priorités V1 de `AGENTS.md`**. Aucun agent ne les traite tant que le propriétaire n'a pas décidé :
-
-| Bloc de la grille | Proposition |
-|---|---|
-| Protection des mineurs | Remplacé par le bloc « Données personnelles et consentement » ci-dessus. |
-| Gamification | Hors périmètre V1. |
-| Tableau de bord parent | Hors périmètre V1. |
-| Tableau de bord enseignant | Hors périmètre V1. |
-
 ---
 
 # 7. Points ouverts connus (issus des audits)
