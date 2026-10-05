@@ -3,7 +3,7 @@ from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.response import Response
 from .models import AIInteraction
 from .serializers import AIInteractionSerializer
-from .services import ask_llm
+from .services import answer_question
 
 MAX_QUERY_LENGTH = 1000
 MAX_IMAGE_BASE64_LENGTH = 7_000_000  # ~5 Mo d'image
@@ -34,14 +34,16 @@ class AskAIView(views.APIView):
 
         # Call AI service avec cloisonnement de sécurité
         safe_query = query.strip() if query else "Analyse cette image."
-        answer = ask_llm(safe_query, context, image_base64=image_base64, user=request.user)
+        result = answer_question(safe_query, context, image_base64=image_base64, user=request.user)
 
-        # Save to DB
+        # Save to DB : la réponse, d'où elle vient (fiches, conseil général) et les sources citées
         interaction = AIInteraction.objects.create(
             user=request.user,
             query=safe_query,
-            response=answer,
-            context_type=context
+            response=result['answer'],
+            context_type=context,
+            origin=result['origin'],
+            sources=result['sources'],
         )
 
         serializer = AIInteractionSerializer(interaction)

@@ -132,6 +132,12 @@ class AgronomicGuide(models.Model):
     yield_info = models.TextField(blank=True)
     limitations = models.TextField(blank=True, help_text="Limites et points à vérifier avant de s'appuyer sur la fiche")
     sources = models.JSONField(default=list, help_text="Liste de {title, publisher, year, url}")
+    aliases = models.JSONField(
+        default=list, blank=True,
+        help_text="Autres noms que les utilisateurs emploient (pluriel, nom local) pour retrouver la fiche")
+    locally_edited = models.BooleanField(
+        default=False,
+        help_text="Modifiée depuis l'administration : le rechargement du fichier du dépôt ne l'écrase pas (sauf --force)")
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -139,3 +145,50 @@ class AgronomicGuide(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class KnowledgeProposal(models.Model):
+    """
+    Information candidate pour une fiche, en attente de validation humaine.
+
+    Rien n'entre dans une fiche sans passer par ici : la proposition porte la source (URL de confiance)
+    et l'extrait exact qui la justifie. L'approbation (administration) ajoute le texte à la fiche avec son
+    repère de source ; le rejet la conserve pour mémoire.
+    """
+    TEXT_FIELDS = [
+        ('summary', 'Présentation'),
+        ('zones', 'Zones de culture'),
+        ('calendar', 'Calendrier'),
+        ('soil_and_sowing', 'Sol et semis'),
+        ('water_needs', 'Eau'),
+        ('fertilization', 'Fertilisation'),
+        ('harvest', 'Récolte'),
+        ('yield_info', 'Rendement'),
+    ]
+    FIELD_CHOICES = TEXT_FIELDS + [('pests_diseases', 'Maladies et ravageurs')]
+    STATUS_CHOICES = [('pending', 'À valider'), ('approved', 'Approuvée'), ('rejected', 'Rejetée')]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    guide = models.ForeignKey(AgronomicGuide, on_delete=models.CASCADE, related_name='proposals')
+    field = models.CharField(max_length=30, choices=FIELD_CHOICES)
+    pest_name = models.CharField(max_length=120, blank=True, help_text="Obligatoire pour « Maladies et ravageurs »")
+    proposed_text = models.TextField()
+    quote = models.TextField(help_text="Extrait exact de la source qui justifie le texte proposé")
+    source_title = models.CharField(max_length=300)
+    source_publisher = models.CharField(max_length=200)
+    source_year = models.CharField(max_length=40, blank=True)
+    source_url = models.URLField(max_length=500)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
+    submitted_via = models.CharField(max_length=30, default='manual')
+    created_at = models.DateTimeField(auto_now_add=True)
+    reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name='+')
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    review_note = models.CharField(max_length=300, blank=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [models.Index(fields=['status', 'created_at'])]
+
+    def __str__(self):
+        return f"{self.guide.name} · {self.get_field_display()} ({self.get_status_display()})"

@@ -372,31 +372,42 @@ GET /weather/forecast/
 ## Ask AI
 
 ```http
-POST /ai/ask/
+POST /api/ai/ask/        # poser une question
+GET  /api/ai/ask/        # 20 derniers échanges de l'utilisateur
 ```
 
 ```json
-{
-  "query": "Quand dois-je arroser mes tomates ?",
-  "context": "agriculture",
-  "crop_id": "optional"
-}
+{ "query": "Comment semer les tomates ?", "context": "agriculture" }
 ```
 
----
+`query` : texte de 1000 caractères maximum. `image_base64` (facultatif) : photo pour un diagnostic. Limite : 30 questions par heure.
 
 ## AI Response
 
+Réponse `201` (le champ `response` est le texte à afficher, sources comprises) :
+
 ```json
 {
-  "success": true,
-  "data": {
-    "answer": "Il est recommandé d’arroser tôt le matin pour éviter l’évaporation.",
-    "model": "gemini",
-    "confidence": 0.87
-  }
+  "id": "uuid",
+  "query": "Comment semer les tomates ?",
+  "response": "Tomate industrielle : Semis et calendrier\n... [1]\n\nSources :\n[1] Livrable 3 : note de synthèse...",
+  "origin": "database",
+  "sources": [
+    { "number": 1, "title": "...", "publisher": "...", "year": "2021", "url": "https://...", "type": "fiche" }
+  ],
+  "context_type": "agriculture",
+  "created_at": "2026-10-05T20:00:00Z"
 }
 ```
+
+`origin` indique d'où vient la réponse :
+
+| Valeur | Sens |
+|---|---|
+| `database` | Réponse construite à partir de nos fiches agronomiques, avec leurs sources (`/api/agriculture/guides/`) |
+| `general` | Conseil général sans source (culture absente de nos fiches, photo, ou sujet non documenté). L'application doit l'afficher comme tel |
+
+`origin` et `sources` sont fixés par le serveur : un client ne peut pas les envoyer.
 
 ---
 

@@ -329,4 +329,43 @@ Le système IA de Nataal Agro est :
 
 ---
 
+---
 
+# 18. Connaissances de l'assistant : base d'abord, validation humaine ensuite
+
+Cette section décrit ce qui est implémenté et fait foi pour la partie « réponses sourcées ».
+
+## 18.1 Ordre de priorité
+
+1. **Nos fiches agronomiques** (table `AgronomicGuide`, voir `docs/06-Backend-API.md` §7.3). Le serveur reconnaît la culture
+   (nom, alias, nom scientifique, mots entiers uniquement) et le sujet demandé (semis, fertilisation, maladies, eau,
+   récolte, rendement, cycle), puis renvoie les sections correspondantes avec leurs sources. Sans sujet précis, la fiche complète.
+2. **Information absente de la fiche** : l'assistant le dit explicitement (« non disponible dans nos fiches vérifiées »).
+   Il ne devine jamais une dose, un produit ou une date.
+3. **Culture sans fiche, photo ou sujet hors fiches** : conseil général, marqué `origin = general` et accompagné d'un avertissement.
+
+## 18.2 Garde-fous
+
+- La recherche dans les fiches est déterministe : sans appel externe, sans SQL, sans dépendance au modèle de langage.
+- Le modèle de langage ne reçoit que les fiches retrouvées, avec l'instruction de ne rien ajouter et de citer ses sources.
+  Sa réponse est **refusée** si elle ne cite aucune source existante ; les repères inventés sont retirés. Dans ce cas (ou si le
+  modèle est indisponible), la réponse est construite directement depuis les fiches.
+- Les repères de source sont renumérotés pour que plusieurs fiches dans une même réponse restent cohérentes.
+- Le profil de l'exploitant n'est jamais mélangé aux fiches : seules ses propres données sont transmises.
+
+## 18.3 Alimenter la base : file de validation
+
+Une information nouvelle n'entre dans une fiche qu'après validation humaine :
+
+1. Elle est enregistrée comme `KnowledgeProposal` (champ visé, texte, **extrait exact** de la source, titre, éditeur, année, URL).
+2. Dans l'administration Django, un relecteur compare le texte à l'extrait puis approuve ou rejette (actions groupées).
+3. L'approbation est refusée si l'URL n'est pas en https sur un domaine de la liste `TRUSTED_WEB_DOMAINS` (ministère, ISRA,
+   ANCAR, SAED, FAO, CIRAD, IFDC, AfricaRice…). Le texte est alors ajouté à la fiche avec son repère de source.
+4. Une fiche modifiée de cette façon est protégée du rechargement du fichier du dépôt (`--force` pour l'écraser) ;
+   `python manage.py export_agronomic_guides` réécrit le fichier du dépôt à partir de la base, pour le versionner.
+
+## 18.4 Prévu, non implémenté
+
+Recherche web pendant la conversation, pour combler les manques : à n'activer qu'avec un service de recherche restreint aux
+domaines de confiance, des réponses marquées « non encore validées par l'équipe » et chaque résultat versé dans la file de
+validation ci-dessus. Tant que ce n'est pas fait, l'assistant n'accède à aucune source en direct.

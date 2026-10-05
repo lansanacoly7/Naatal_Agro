@@ -21,6 +21,16 @@ GROQ_API_KEY = os.getenv('API_KEY_GROQ')
 GEMINI_API_KEY = os.getenv('API_KEY_GEMINI')
 GEMINI_MODEL = os.getenv('GEMINI_MODEL', 'gemini-2.5-flash')
 
+# Sites dont les informations peuvent alimenter les fiches agronomiques (sources institutionnelles).
+# Une proposition dont la source n'est pas sur l'un de ces domaines (en https) ne peut pas être approuvée.
+TRUSTED_WEB_DOMAINS = [
+    d.strip().lower() for d in os.getenv(
+        'TRUSTED_WEB_DOMAINS',
+        'agriculture.gouv.sn,dapsa.gouv.sn,isra.sn,ancar.sn,saed.sn,anacim.sn,fao.org,cirad.fr,ifdc.org,'
+        'africarice.org,africarice-fr.org,inter-reseaux.org,cgiar.org,icrisat.org,ird.fr,comite-costea.fr,wur.nl,cta.int'
+    ).split(',') if d.strip()
+]
+
 # Inscription : exiger l'acceptation de la politique de confidentialité (privacy_accepted=true).
 # Passer à True dès que l'application mobile envoie ce champ (voir docs/06-Backend-API.md §5.1).
 PRIVACY_CONSENT_REQUIRED = os.getenv('PRIVACY_CONSENT_REQUIRED', 'False').lower() in ('true', '1', 't')

@@ -1,10 +1,10 @@
 from django.db import migrations
 
-from apps.agriculture.guides_loader import load_guides
+from apps.agriculture.guides_loader import INITIAL_GUIDE_FIELDS, load_guides
 
 
 def load_initial_guides(apps, schema_editor):
-    load_guides(apps.get_model('agriculture', 'AgronomicGuide'))
+    load_guides(apps.get_model('agriculture', 'AgronomicGuide'), fields=INITIAL_GUIDE_FIELDS)
 
 
 class Migration(migrations.Migration):

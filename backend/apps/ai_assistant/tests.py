@@ -108,7 +108,7 @@ class AIEndpointGuardTests(TestCase):
     def test_ai_scope_is_throttled(self):
         from unittest.mock import patch
         from rest_framework.throttling import ScopedRateThrottle
-        with patch.dict(ScopedRateThrottle.THROTTLE_RATES, {'ai': '2/hour'}),                 patch('apps.ai_assistant.views.ask_llm', return_value='ok'):
+        with patch.dict(ScopedRateThrottle.THROTTLE_RATES, {'ai': '2/hour'}),                 patch('apps.ai_assistant.views.answer_question', return_value={'answer': 'ok', 'origin': 'general', 'sources': []}):
             codes = [self.client.post('/api/ai/ask/', {'query': 'bonjour'}, format='json').status_code for _ in range(3)]
         self.assertEqual(codes, [status.HTTP_201_CREATED, status.HTTP_201_CREATED, status.HTTP_429_TOO_MANY_REQUESTS])
 

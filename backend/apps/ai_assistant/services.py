@@ -5,6 +5,8 @@ from django.conf import settings
 from django.utils import timezone
 import datetime
 
+from .knowledge import MARKER, retrieve
+
 logger = logging.getLogger(__name__)
 
 SYSTEM_PROMPT = """Tu es le copilote agronomique intelligent de Naatal Agro, la plateforme agricole de référence au Sénégal.
@@ -160,11 +162,94 @@ def call_llm(prompt, image_base64=None):
         res = call_gemini(prompt)
     return res
 
-def ask_llm(query, context='general', image_base64=None, user=None):
+GROUNDED_RULES = """Tu réponds à une question d'agriculture pour un producteur sénégalais.
+RÈGLES ABSOLUES :
+1. Utilise UNIQUEMENT les informations des FICHES ci-dessous. N'ajoute aucun fait, chiffre, dose, produit ou date qui n'y figure pas.
+2. Cite la source de chaque information avec son numéro entre crochets, par exemple [1], comme dans les fiches.
+3. Si la question porte sur une information absente des fiches, dis clairement qu'elle n'est pas disponible dans nos fiches vérifiées. Ne la devine pas.
+4. Pour les produits phytosanitaires et les doses, rappelle de confirmer avec un conseiller agricole (ANCAR, SAED).
+5. Réponse courte, concrète, en français simple."""
+
+GENERAL_NOTICE = "Réponse générale, non issue de nos fiches vérifiées : à confirmer auprès d'un conseiller agricole."
+SOURCES_UNAVAILABLE_NOTICE = (
+    "Naatal IA est temporairement indisponible (les clés API Gemini ou Groq ne sont pas configurées). "
+    "Vos données agricoles personnelles restent parfaitement sécurisées et accessibles."
+)
+
+
+def _source_line(source):
+    year = f" ({source['year']})" if source.get('year') else ''
+    publisher = f", {source['publisher']}" if source.get('publisher') else ''
+    return f"[{source['number']}] {source['title']}{publisher}{year}"
+
+
+def _missing_sentence(retrieval):
+    if not retrieval.missing:
+        return ''
+    items = '; '.join(f"{label.lower()} ({name})" for name, label in retrieval.missing)
+    return (f"Information non disponible dans nos fiches vérifiées : {items}. "
+            "Nous ne la devinons pas : demandez conseil à un technicien (ANCAR, SAED).")
+
+
+def _cited_sources(answer, sources):
+    cited = {int(n) for n in MARKER.findall(answer)}
+    return [src for src in sources if src['number'] in cited]
+
+
+def _with_sources_footer(answer, sources):
+    cited = _cited_sources(answer, sources)
+    if not cited:
+        return answer
+    footer = "\n".join(_source_line(src) for src in cited)
+    return f"{answer}\n\nSources :\n{footer}"
+
+
+def build_fiche_answer(retrieval):
+    """Réponse construite directement depuis les fiches, sans modèle de langage."""
+    blocks = [f"{section.guide.name} : {section.label}\n{section.text}" for section in retrieval.sections]
+    missing = _missing_sentence(retrieval)
+    if missing:
+        blocks.append(missing)
+    return "\n\n".join(blocks)
+
+
+def _grounded_prompt(query, retrieval, farmer_context):
+    sources = "\n".join(_source_line(src) for src in retrieval.sources)
+    sheets = "\n\n".join(
+        f"Culture : {section.guide.name} | Sujet : {section.label}\n{section.text}" for section in retrieval.sections)
+    context_str = json.dumps(farmer_context, ensure_ascii=False, indent=2)
+    return (
+        f"{GROUNDED_RULES}\n\n"
+        f"### SOURCES\n{sources}\n\n"
+        f"### FICHES NAATAL AGRO (données vérifiées)\n{sheets}\n\n"
+        f"### PROFIL DE L'EXPLOITANT (données privées, pour adapter la réponse)\n```json\n{context_str}\n```\n\n"
+        f"### QUESTION DU PRODUCTEUR\n{query}\n"
+    )
+
+
+def _validated_llm_answer(raw, sources):
     """
-    Point d'entrée du copilote IA décisionnel de Naatal Agro.
-    - Diagnostic vision (analyse phytosanitaire d'une image)
-    - Recommandation agronomique contextuelle sécurisée (zéro injection SQL, isolation stricte par ORM)
+    Garde la réponse du modèle seulement si elle cite au moins une source existante.
+    Les repères inventés (numéro hors liste) sont retirés. Renvoie None si la réponse n'est pas exploitable.
+    """
+    if not raw:
+        return None
+    valid = {src['number'] for src in sources}
+
+    def keep_valid(match):
+        return match.group(0) if int(match.group(1)) in valid else ''
+
+    cleaned = MARKER.sub(keep_valid, raw).strip()
+    return cleaned if MARKER.search(cleaned) else None
+
+
+def answer_question(query, context='general', image_base64=None, user=None):
+    """
+    Point d'entrée du copilote IA de Naatal Agro. Renvoie ``{'answer', 'origin', 'sources'}``.
+
+    Ordre de priorité : 1) nos fiches agronomiques (base de données), avec leurs sources ;
+    2) à défaut, un conseil général clairement signalé comme non sourcé.
+    Le diagnostic par image reste un conseil général (pas de fiche pour une photo).
     """
     if image_base64:
         vision_prompt = (
@@ -175,12 +260,25 @@ def ask_llm(query, context='general', image_base64=None, user=None):
             f"3. Recommande un traitement curatif et préventif adapté au climat sénégalais."
         )
         response = call_llm(vision_prompt, image_base64=image_base64)
-        return response or "Le service de vision IA est indisponible. Veuillez vérifier vos clés API."
+        answer = response or "Le service de vision IA est indisponible. Veuillez vérifier vos clés API."
+        return {'answer': answer, 'origin': 'general', 'sources': []}
 
-    # Construction du contexte sécurisé avec requêtes ORM cloisonnées par utilisateur
     farmer_context = get_farmer_context(user)
-    context_str = json.dumps(farmer_context, ensure_ascii=False, indent=2)
+    retrieval = retrieve(query)
 
+    if retrieval.sections:
+        raw = call_llm(_grounded_prompt(query, retrieval, farmer_context))
+        answer = _validated_llm_answer(raw, retrieval.sources)
+        if answer is None:
+            answer = build_fiche_answer(retrieval)
+        else:
+            missing = _missing_sentence(retrieval)
+            if missing:
+                answer = f"{answer}\n\n{missing}"
+        sources = _cited_sources(answer, retrieval.sources)
+        return {'answer': _with_sources_footer(answer, retrieval.sources), 'origin': 'database', 'sources': sources}
+
+    context_str = json.dumps(farmer_context, ensure_ascii=False, indent=2)
     prompt = (
         f"### DONNÉES CLOISONNÉES DE L'EXPLOITANT (Source certifiée Naatal Agro) :\n"
         f"```json\n{context_str}\n```\n\n"
@@ -188,11 +286,19 @@ def ask_llm(query, context='general', image_base64=None, user=None):
         f"### QUESTION DU PRODUCTEUR : {query}\n\n"
         f"Réponds de manière directe, concrète et utile pour l'exploitant :"
     )
-
     llm_response = call_llm(prompt)
+    missing = _missing_sentence(retrieval)
     if not llm_response:
-        return (
-            "Naatal IA est temporairement indisponible (les clés API Gemini ou Groq ne sont pas configurées). "
-            "Vos données agricoles personnelles restent parfaitement sécurisées et accessibles."
-        )
-    return llm_response
+        parts = [part for part in (missing, SOURCES_UNAVAILABLE_NOTICE) if part]
+        return {'answer': "\n\n".join(parts), 'origin': 'general', 'sources': []}
+    parts = [llm_response]
+    if missing:
+        parts.append(missing)
+    if retrieval.is_agricultural:
+        parts.append(GENERAL_NOTICE)
+    return {'answer': "\n\n".join(parts), 'origin': 'general', 'sources': []}
+
+
+def ask_llm(query, context='general', image_base64=None, user=None):
+    """Version texte de answer_question (compatibilité : scripts de diagnostic, anciens appels)."""
+    return answer_question(query, context, image_base64=image_base64, user=user)['answer']
