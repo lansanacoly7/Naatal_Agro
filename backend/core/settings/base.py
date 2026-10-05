@@ -20,6 +20,10 @@ OPENWEATHER_API_KEY = os.getenv('API_KEY_OPENWEATHER')
 GROQ_API_KEY = os.getenv('API_KEY_GROQ')
 GEMINI_API_KEY = os.getenv('API_KEY_GEMINI')
 GEMINI_MODEL = os.getenv('GEMINI_MODEL', 'gemini-2.5-flash')
+
+# Inscription : exiger l'acceptation de la politique de confidentialité (privacy_accepted=true).
+# Passer à True dès que l'application mobile envoie ce champ (voir docs/06-Backend-API.md §5.1).
+PRIVACY_CONSENT_REQUIRED = os.getenv('PRIVACY_CONSENT_REQUIRED', 'False').lower() in ('true', '1', 't')
 FIREBASE_CREDENTIALS_PATH = os.getenv('FIREBASE_CREDENTIALS_PATH')
 
 # SECURITY WARNING: don't run with debug turned on in production!
@@ -49,6 +53,7 @@ INSTALLED_APPS = [
     "apps.analytics",
     "apps.inventory",
     "apps.finances",
+    "apps.privacy",
 ]
 
 MIDDLEWARE = [

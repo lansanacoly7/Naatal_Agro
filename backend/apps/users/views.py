@@ -7,9 +7,13 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
+from django.conf import settings
 from django.core.exceptions import ValidationError as DjangoValidationError
+from django.utils import timezone
 from rest_framework import serializers
 from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
+
+from apps.privacy.policy import POLICY_VERSION
 
 from .phone import clean_phone, normalize_phone
 
@@ -50,10 +54,11 @@ class RegisterSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(write_only=True, required=False, allow_blank=True)
     date_of_birth = serializers.DateField(write_only=True, required=False, allow_null=True)
     main_crops = serializers.JSONField(write_only=True, required=False, default=list)
+    privacy_accepted = serializers.BooleanField(write_only=True, required=False, default=False)
 
     class Meta:
         model = User
-        fields = ('phone_number', 'full_name', 'password', 'language', 'location', 'role', 'email', 'date_of_birth', 'main_crops')
+        fields = ('phone_number', 'full_name', 'password', 'language', 'location', 'role', 'email', 'date_of_birth', 'main_crops', 'privacy_accepted')
 
     def validate_phone_number(self, value):
         try:
@@ -76,6 +81,8 @@ class RegisterSerializer(serializers.ModelSerializer):
             validate_password(attrs['password'], user=candidate)
         except DjangoValidationError as exc:
             raise serializers.ValidationError({'password': list(exc.messages)})
+        if settings.PRIVACY_CONSENT_REQUIRED and not attrs.get('privacy_accepted'):
+            raise serializers.ValidationError({'privacy_accepted': ["L'acceptation de la politique de confidentialité est obligatoire."]})
         return attrs
 
     def validate_main_crops(self, value):
@@ -96,6 +103,10 @@ class RegisterSerializer(serializers.ModelSerializer):
             date_of_birth=validated_data.get('date_of_birth'),
             main_crops=validated_data.get('main_crops', [])
         )
+        if validated_data.get('privacy_accepted'):
+            user.privacy_accepted_at = timezone.now()
+            user.privacy_policy_version = POLICY_VERSION
+            user.save(update_fields=['privacy_accepted_at', 'privacy_policy_version'])
         return user
 
 class RegisterView(generics.CreateAPIView):

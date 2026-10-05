@@ -425,6 +425,26 @@ GET /dashboard/
 
 ---
 
+# 12.1 Confidentialité (données personnelles)
+
+| Point d'accès | Méthode | Accès | Rôle |
+|---|---|---|---|
+| `/api/privacy/policy/` | GET | public | Texte de la politique de confidentialité et sa version |
+| `/api/privacy/export/` | GET | connecté | Export JSON de toutes les données du compte (droit d'accès) |
+| `/api/privacy/delete-account/` | POST | connecté | Suppression définitive du compte et des données liées (droit à l'effacement) |
+
+- **Consentement** : l'inscription accepte `privacy_accepted: true`. La date et la version acceptées sont enregistrées sur le compte.
+  Le réglage `PRIVACY_CONSENT_REQUIRED` (variable d'environnement, `False` par défaut) rend ce champ obligatoire ; à activer
+  quand l'application mobile affichera la case à cocher.
+- **Export** : réponse `200` avec `Content-Disposition: attachment`. Contient profil, cultures, activités, signalements,
+  ventes, transactions, stocks, notifications et échanges IA du compte, jamais ceux d'un autre utilisateur ni le mot de passe.
+- **Suppression** : corps `{ "password": "..." }` ; `204` si le mot de passe est correct, `400` sinon, `403` pour un compte
+  d'administration. Toutes les données liées sont effacées (cascade).
+- Le texte de `apps/privacy/policy_fr.md` est un document de travail : l'identité du responsable du traitement et le contact
+  doivent être ajoutés par le propriétaire du projet, et le texte validé juridiquement avant publication.
+
+---
+
 # 13. Règles backend
 
 ---

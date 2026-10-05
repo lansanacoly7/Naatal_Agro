@@ -116,3 +116,6 @@ Légende : **AGY** = Antigravity, **CLA** = Claude. La colonne « Définition de
 | Pagination (documents ↔ code) | CLA puis AGY | À faire |
 | Écrans produit encore sur données simulées | CLA puis AGY | À faire |
 | Notifications push sur téléphone | AGY, après projet Firebase | À faire |
+| Écrans mobiles de confidentialité : case de consentement à l'inscription, export de mes données, suppression du compte (API prête : `/api/privacy/`) | AGY | À faire |
+| Passer `PRIVACY_CONSENT_REQUIRED=True` une fois la case de consentement livrée | CLA | À faire |
+| Identité du responsable du traitement et contact dans la politique de confidentialité, validation juridique du texte | Propriétaire | À faire |
