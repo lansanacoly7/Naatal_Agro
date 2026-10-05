@@ -5,7 +5,7 @@ from django.db import models
 class User(AbstractUser):
     ROLE_CHOICES = [
         ('farmer', 'Agriculteur'),
-        ('buyer', 'Acheteur B2B'),
+        ('admin', 'Administrateur'),
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -16,6 +16,8 @@ class User(AbstractUser):
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='farmer')
     date_of_birth = models.DateField(blank=True, null=True)
     main_crops = models.JSONField(blank=True, null=True, default=list)
+    privacy_accepted_at = models.DateTimeField(blank=True, null=True, help_text="Date d'acceptation de la politique de confidentialité")
+    privacy_policy_version = models.CharField(max_length=20, blank=True, default='', help_text='Version de la politique acceptée')
     
     def __str__(self):
         return f"{self.username} ({self.get_role_display()})"

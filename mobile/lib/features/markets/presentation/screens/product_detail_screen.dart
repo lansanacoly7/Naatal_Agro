@@ -134,8 +134,8 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                   Row(
                     children: [
                       _buildGlassChip(
-                          product.trendPercentage >= 0 ? '↑ +${product.trendPercentage} %' : '↓ ${product.trendPercentage} %',
-                          null,
+                          product.trendPercentage >= 0 ? '+${product.trendPercentage} %' : '${product.trendPercentage} %',
+                          product.trendPercentage >= 0 ? Icons.trending_up_rounded : Icons.trending_down_rounded,
                           product.trendPercentage >= 0 ? Colors.greenAccent : Colors.redAccent),
                       const SizedBox(width: 8),
                       _buildGlassChip(product.category, null, Colors.white),

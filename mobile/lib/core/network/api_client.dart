@@ -1,14 +1,22 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../constants/app_constants.dart';
 import 'sync_service.dart';
 
 /// Client HTTP centralisé pour communiquer avec le backend Django.
-/// Intercepte automatiquement les requêtes pour ajouter le token JWT.
+/// Stocke les tokens JWT de façon chiffrée (Android Keystore / iOS Keychain)
+/// et intercepte automatiquement les requêtes pour ajouter le token JWT.
 class ApiClient {
   late final Dio _dio;
+  final FlutterSecureStorage _secureStorage;
+  final HttpClientAdapter? _httpClientAdapter;
 
-  ApiClient() {
+  /// [httpClientAdapter] permet d'injecter un faux serveur dans les tests.
+  ApiClient({FlutterSecureStorage? secureStorage, HttpClientAdapter? httpClientAdapter})
+      : _secureStorage = secureStorage ?? const FlutterSecureStorage(),
+        _httpClientAdapter = httpClientAdapter {
     _dio = Dio(
       BaseOptions(
         baseUrl: AppConstants.apiBaseUrl,
@@ -21,12 +29,15 @@ class ApiClient {
       ),
     );
 
-    // Intercepteur JWT — injecte le token automatiquement
+    if (httpClientAdapter != null) {
+      _dio.httpClientAdapter = httpClientAdapter;
+    }
+
+    // Intercepteur JWT — injecte le token automatiquement depuis le stockage sécurisé
     _dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
-          final prefs = await SharedPreferences.getInstance();
-          final token = prefs.getString(AppConstants.accessTokenKey);
+          final token = await _secureStorage.read(key: AppConstants.accessTokenKey);
           if (token != null && token.isNotEmpty) {
             options.headers['Authorization'] = 'Bearer $token';
           }
@@ -45,7 +56,9 @@ class ApiClient {
               error.type == DioExceptionType.receiveTimeout) {
             
             final method = error.requestOptions.method.toUpperCase();
-            if (['POST', 'PUT', 'PATCH', 'DELETE'].contains(method)) {
+            // Les requêtes rejouées par SyncService ne doivent pas être remises en file ici
+            final isReplay = error.requestOptions.extra['replay'] == true;
+            if (!isReplay && ['POST', 'PUT', 'PATCH', 'DELETE'].contains(method)) {
               await SyncService.enqueueRequest(
                 method: method,
                 path: error.requestOptions.path,
@@ -55,25 +68,24 @@ class ApiClient {
               return handler.resolve(Response(
                 requestOptions: error.requestOptions,
                 statusCode: 202,
-                data: {'message': 'Action sauvegardée (Offline)'},
+                data: {'message': 'Action sauvegardée (Offline)', 'offline': true},
               ));
             }
           }
 
-          // Si le token a expiré (401), tenter un refresh
+          // Si le token a expiré (401), tenter un refresh sécurisé
           if (error.response?.statusCode == 401) {
             final refreshed = await _refreshToken();
             if (refreshed) {
               // Relancer la requête originale avec le nouveau token
-              final prefs = await SharedPreferences.getInstance();
-              final token = prefs.getString(AppConstants.accessTokenKey);
+              final token = await _secureStorage.read(key: AppConstants.accessTokenKey);
               if (token != null) {
                 error.requestOptions.headers['Authorization'] = 'Bearer $token';
                 final response = await _dio.fetch(error.requestOptions);
                 return handler.resolve(response);
               }
             } else {
-              // Si le refresh échoue (refresh token expiré ou invalide), on déconnecte de force.
+              // Si le refresh échoue, déconnexion propre et purge du coffre-fort
               await clearTokens();
             }
           }
@@ -83,27 +95,57 @@ class ApiClient {
     );
   }
 
-  /// Tente de rafraîchir le JWT
+  /// Tente de rafraîchir le JWT de manière sécurisée.
+  /// Le backend fait tourner les jetons de rafraîchissement : l'ancien est invalidé
+  /// à chaque renouvellement, le nouveau doit donc être conservé.
   Future<bool> _refreshToken() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final refreshToken = prefs.getString(AppConstants.refreshTokenKey);
+      final refreshToken = await _secureStorage.read(key: AppConstants.refreshTokenKey);
       if (refreshToken == null || refreshToken.isEmpty) return false;
 
-      final response = await Dio().post(
-        '${AppConstants.apiBaseUrl}${AppConstants.refreshTokenEndpoint}',
+      final bareDio = Dio(BaseOptions(
+        baseUrl: AppConstants.apiBaseUrl,
+        connectTimeout: const Duration(seconds: 10),
+        receiveTimeout: const Duration(seconds: 15),
+      ));
+      final adapter = _httpClientAdapter;
+      if (adapter != null) {
+        bareDio.httpClientAdapter = adapter;
+      }
+      final response = await bareDio.post(
+        AppConstants.refreshTokenEndpoint,
         data: {'refresh': refreshToken},
       );
 
-      if (response.statusCode == 200) {
-        await prefs.setString(
-          AppConstants.accessTokenKey,
-          response.data['access'],
-        );
+      final access = response.data['access'];
+      if (response.statusCode == 200 && access is String && access.isNotEmpty) {
+        await _secureStorage.write(key: AppConstants.accessTokenKey, value: access);
+        final rotated = response.data['refresh'];
+        if (rotated is String && rotated.isNotEmpty) {
+          await _secureStorage.write(key: AppConstants.refreshTokenKey, value: rotated);
+        }
         return true;
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[ApiClient] Échec du renouvellement du jeton : $e');
+    }
     return false;
+  }
+
+  /// Invalide le jeton de rafraîchissement côté serveur (liste noire).
+  /// Au mieux : si le réseau est coupé, la déconnexion locale doit tout de même aboutir.
+  Future<void> logoutFromServer() async {
+    try {
+      final refreshToken = await _secureStorage.read(key: AppConstants.refreshTokenKey);
+      if (refreshToken == null || refreshToken.isEmpty) return;
+      await _dio.request(
+        AppConstants.logoutEndpoint,
+        data: {'refresh': refreshToken},
+        options: Options(method: 'POST', extra: {'replay': true}),
+      );
+    } catch (e) {
+      debugPrint('[ApiClient] Déconnexion serveur impossible (déconnexion locale conservée) : $e');
+    }
   }
 
   // ──────────── Méthodes publiques ────────────
@@ -124,20 +166,31 @@ class ApiClient {
     return _dio.patch(path, data: data);
   }
 
+  /// Rejoue une requête mise en file hors ligne. Les erreurs réseau sont propagées
+  /// (au lieu d'être converties en faux 202) pour que SyncService garde la requête.
+  Future<Response> replay(String method, String path, {dynamic data}) {
+    return _dio.request(
+      path,
+      data: data,
+      options: Options(method: method, extra: {'replay': true}),
+    );
+  }
+
   Future<Response> delete(String path) {
     return _dio.delete(path);
   }
 
-  /// Sauvegarder les tokens après login
+  /// Sauvegarder les tokens dans le coffre-fort chiffré (Keychain/Keystore)
   Future<void> saveTokens({
     required String accessToken,
     required String refreshToken,
     String? role,
     String? location,
   }) async {
+    await _secureStorage.write(key: AppConstants.accessTokenKey, value: accessToken);
+    await _secureStorage.write(key: AppConstants.refreshTokenKey, value: refreshToken);
+    
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(AppConstants.accessTokenKey, accessToken);
-    await prefs.setString(AppConstants.refreshTokenKey, refreshToken);
     if (role != null) {
       await prefs.setString('user_role', role);
     }
@@ -148,17 +201,17 @@ class ApiClient {
 
   /// Supprimer les tokens (logout)
   Future<void> clearTokens() async {
+    await _secureStorage.delete(key: AppConstants.accessTokenKey);
+    await _secureStorage.delete(key: AppConstants.refreshTokenKey);
+    
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(AppConstants.accessTokenKey);
-    await prefs.remove(AppConstants.refreshTokenKey);
     await prefs.remove('user_role');
     await prefs.remove('user_location');
   }
 
-  /// Vérifier si l'utilisateur a un token valide
+  /// Vérifier si l'utilisateur possède un jeton d'accès sécurisé
   Future<bool> hasToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString(AppConstants.accessTokenKey);
+    final token = await _secureStorage.read(key: AppConstants.accessTokenKey);
     return token != null && token.isNotEmpty;
   }
   

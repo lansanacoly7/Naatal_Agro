@@ -6,6 +6,7 @@ import '../../data/dashboard_provider.dart';
 import '../../data/models/dashboard_data.dart';
 import '../../../inventory/data/models/stock_item.dart';
 import '../widgets/market_prices_section.dart';
+import '../../../../core/widgets/notifications_sheet.dart';
 import 'package:go_router/go_router.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
@@ -125,7 +126,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                   const SizedBox(height: 16),
                   _buildFeaturedProducts(data.featuredProducts),
                   const SizedBox(height: 32),
-                  _buildSectionTitle('Calendrier Agricole', badgeText: 'JUIN 2024'),
+                  _buildSectionTitle('Calendrier Agricole', badgeText: _currentMonthLabel()),
                   const SizedBox(height: 16),
                   _buildAgriculturalCalendar(data.calendarEvents),
                   const SizedBox(height: 32),
@@ -293,7 +294,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                 child: Padding(
                   padding: const EdgeInsets.only(left: 16.0),
                   child: Text(
-                    'Pluies prévues ce soir',
+                    weather.rainfall > 0 
+                        ? 'Pluie : ${weather.rainfall.toStringAsFixed(1)} mm' 
+                        : (weather.temp >= 32 ? 'Fort ensoleillement' : 'Ciel dégagé / Favorable'),
                     style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.9),
                       fontSize: 16,
@@ -306,11 +309,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
           ),
           const SizedBox(height: 24),
           ElevatedButton(
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Prévisions météo complètes à venir !')),
-              );
-            },
+            onPressed: () => _showWeatherDetails(context, weather),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.white,
               foregroundColor: AppColors.primary,
@@ -331,6 +330,91 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     );
   }
 
+  void _showWeatherDetails(BuildContext context, WeatherSummary weather) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2))),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Bulletin Météo Agricole', style: Theme.of(ctx).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 4),
+                    Text(weather.location, style: TextStyle(color: Colors.grey.shade600, fontSize: 14)),
+                  ],
+                ),
+                Text('${weather.temp.toInt()}°C', style: const TextStyle(fontSize: 36, fontWeight: FontWeight.bold, color: AppColors.primary)),
+              ],
+            ),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                _buildWeatherStat(Icons.water_drop_outlined, 'Humidité', '${weather.humidity.toInt()}%', Colors.blue),
+                const SizedBox(width: 12),
+                _buildWeatherStat(Icons.cloud_outlined, 'Précipitations', '${weather.rainfall.toStringAsFixed(1)} mm', Colors.indigo),
+                const SizedBox(width: 12),
+                _buildWeatherStat(Icons.air_rounded, 'Vent', '14 km/h', Colors.teal),
+              ],
+            ),
+            const SizedBox(height: 24),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(16)),
+              child: Row(
+                children: [
+                  const Icon(Icons.tips_and_updates_rounded, color: AppColors.primary),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      weather.rainfall > 5 
+                        ? 'Fortes pluies : reportez les pulvérisations pour éviter le lessivage des intrants.'
+                        : (weather.temp >= 32 
+                            ? 'Forte chaleur : irriguez de préférence tôt le matin ou après 17h.'
+                            : 'Conditions climatiques optimales pour l\'entretien et la fertilisation des parcelles.'),
+                      style: const TextStyle(fontSize: 13, color: AppColors.textPrimary, height: 1.3),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWeatherStat(IconData icon, String label, String value, Color color) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+        decoration: BoxDecoration(color: Colors.grey.shade50, borderRadius: BorderRadius.circular(14), border: Border.all(color: Colors.grey.shade200)),
+        child: Column(
+          children: [
+            Icon(icon, color: color, size: 22),
+            const SizedBox(height: 6),
+            Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+            const SizedBox(height: 2),
+            Text(label, style: TextStyle(color: Colors.grey.shade500, fontSize: 11)),
+          ],
+        ),
+      ),
+    );
+  }
+
   // ─────────────────────────────────────────────
   // QUICK ACTIONS
   // ─────────────────────────────────────────────
@@ -340,7 +424,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
       children: [
         _buildActionItem(Icons.insights, 'Dashboard', () => context.push('/mon_dashboard')), 
         _buildActionItem(Icons.calendar_month_outlined, 'Calendrier', () => context.push('/calendar')), 
-        _buildActionItem(Icons.notifications_active_outlined, 'Alerte', () => context.push('/price-alerts')),
+        _buildActionItem(Icons.notifications_active_outlined, 'Alertes', () => context.push('/price-alerts')),
         _buildActionItem(Icons.auto_awesome, 'Naatal IA', () => context.go('/ai')),
       ],
     );
@@ -387,20 +471,34 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
   // ─────────────────────────────────────────────
   // AGRICULTURAL CALENDAR
   // ─────────────────────────────────────────────
+  /// Mois courant en français, ex. « OCTOBRE 2026 » (évite d'initialiser les locales intl).
+  String _currentMonthLabel() {
+    const months = [
+      'JANVIER', 'FÉVRIER', 'MARS', 'AVRIL', 'MAI', 'JUIN',
+      'JUILLET', 'AOÛT', 'SEPTEMBRE', 'OCTOBRE', 'NOVEMBRE', 'DÉCEMBRE',
+    ];
+    final now = DateTime.now();
+    return '${months[now.month - 1]} ${now.year}';
+  }
+
   Widget _buildAgriculturalCalendar(List<CalendarEvent> events) {
-    CalendarEvent event;
     if (events.isEmpty) {
-      event = CalendarEvent(
-        date: '15\nJUIN',
-        monthYear: 'JUIN 2024',
-        phase: 'PHASE ACTUELLE',
-        title: 'Préparation des sols (Mil)',
-        description: 'Désherbage et labour avant les premières pluies majeures.',
-        isCompleted: true,
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: Colors.grey.withValues(alpha: 0.1)),
+        ),
+        child: const Text(
+          'Aucune activité planifiée. Ajoutez une culture pour alimenter votre calendrier agricole.',
+          style: TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.4),
+        ),
       );
-    } else {
-      event = events.first;
     }
+    final event = events.first;
+    final eventMonth = event.date.contains('\n') ? event.date.split('\n').last : '';
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -441,7 +539,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                         color: AppColors.primary,
                         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
                       ),
-                      child: const Text('JUIN', textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 10, letterSpacing: 1)),
+                      child: Text(eventMonth, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 10, letterSpacing: 1)),
                     ),
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 12),
@@ -521,7 +619,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
               const SizedBox(width: 12),
               Expanded(
                 child: ElevatedButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Activité "${event.title}" marquée comme terminée.'),
+                        backgroundColor: AppColors.primary,
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  },
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     minimumSize: const Size(0, 48),

@@ -2,8 +2,12 @@ import os
 import json
 import urllib.request
 from dotenv import load_dotenv
+from pathlib import Path
 
-load_dotenv('.env')
+ROOT = Path(__file__).resolve().parents[2]
+BACKEND = ROOT / 'backend'
+
+load_dotenv(BACKEND / '.env')
 
 POSTMAN_API_KEY = os.getenv('POSTMAN_API_KEY')
 

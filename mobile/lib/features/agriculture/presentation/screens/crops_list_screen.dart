@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/notifications_sheet.dart';
+import '../../../../core/network/paginated_response.dart';
 
 // Imports pour Mes Cultures
 import '../../data/agriculture_provider.dart';
@@ -60,7 +62,7 @@ class _CropsListScreenState extends ConsumerState<CropsListScreen> with SingleTi
         actions: [
           IconButton(
             icon: const Icon(Icons.notifications_outlined, color: Colors.black87),
-            onPressed: () {},
+            onPressed: () => showNotificationsSheet(context, ref),
           ),
         ],
         bottom: TabBar(
@@ -87,13 +89,7 @@ class _CropsListScreenState extends ConsumerState<CropsListScreen> with SingleTi
           backgroundColor: AppColors.primary,
           child: const Icon(Icons.add, color: Colors.white),
           onPressed: () {
-            if (_tabController.index == 0) {
-              context.push('/agriculture/add');
-            } else {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Fonctionnalité d\'ajout à venir')),
-              );
-            }
+            context.push('/agriculture/add');
           },
         ),
       ),
@@ -105,71 +101,109 @@ class _CropsListScreenState extends ConsumerState<CropsListScreen> with SingleTi
   // ==========================================
 
   Widget _buildMesCulturesTab() {
-    final cropsAsync = ref.watch(cropsProvider);
+    final paginatedState = ref.watch(cropsPaginationNotifierProvider);
 
     return RefreshIndicator(
       onRefresh: () async {
-        ref.invalidate(cropsProvider);
+        await ref.read(cropsPaginationNotifierProvider.notifier).refresh();
       },
       color: AppColors.primary,
-      child: cropsAsync.when(
-        data: (crops) => _buildCropsList(context, crops),
-        loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
-        error: (error, stack) => Center(
+      child: paginatedState.isLoading && paginatedState.items.isEmpty
+          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+          : paginatedState.error != null && paginatedState.items.isEmpty
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.error_outline, color: Colors.red, size: 48),
+                        const SizedBox(height: 16),
+                        Text('Erreur de chargement', style: Theme.of(context).textTheme.titleLarge),
+                        const SizedBox(height: 8),
+                        Text(paginatedState.error!, textAlign: TextAlign.center),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: () => ref.read(cropsPaginationNotifierProvider.notifier).refresh(),
+                          child: const Text('Réessayer'),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              : _buildCropsList(context, paginatedState),
+    );
+  }
+
+  Widget _buildCropsList(BuildContext context, PaginatedState<Crop> state) {
+    if (state.items.isEmpty) {
+      return Center(
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.error_outline, color: Colors.red, size: 48),
-              const SizedBox(height: 16),
-              Text('Erreur de chargement', style: Theme.of(context).textTheme.titleLarge),
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.green.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.eco_rounded, size: 64, color: Colors.green),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'Aucune culture enregistrée',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+              ),
               const SizedBox(height: 8),
-              Text(error.toString(), textAlign: TextAlign.center),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () => ref.invalidate(cropsProvider),
-                child: const Text('Réessayer'),
+              Text(
+                'Commencez par ajouter votre première parcelle.',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
               ),
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildCropsList(BuildContext context, List<Crop> crops) {
-    if (crops.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: Colors.green.withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.eco_rounded, size: 64, color: Colors.green),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'Aucune culture enregistrée',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: AppColors.textPrimary),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Commencez par ajouter votre première parcelle.',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
-            ),
-          ],
-        ),
       );
     }
 
+    final hasFooter = state.hasMore || state.isLoadingMore;
+    final totalCount = state.items.length + (hasFooter ? 1 : 0);
+
     return ListView.builder(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 100),
-      itemCount: crops.length,
+      itemCount: totalCount,
       itemBuilder: (context, index) {
-        final crop = crops[index];
+        if (index == state.items.length) {
+          if (state.isLoadingMore) {
+            return const Padding(
+              padding: EdgeInsets.symmetric(vertical: 20),
+              child: Center(
+                child: CircularProgressIndicator(color: AppColors.primary),
+              ),
+            );
+          }
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            child: Center(
+              child: OutlinedButton.icon(
+                icon: const Icon(Icons.arrow_downward, color: AppColors.primary),
+                label: const Text(
+                  'Charger plus de cultures',
+                  style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
+                ),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: AppColors.primary),
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                onPressed: () => ref.read(cropsPaginationNotifierProvider.notifier).loadMore(),
+              ),
+            ),
+          );
+        }
+        final crop = state.items[index];
         return _buildCropCard(context, crop);
       },
     );
@@ -185,7 +219,7 @@ class _CropsListScreenState extends ConsumerState<CropsListScreen> with SingleTi
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 15,
             offset: const Offset(0, 8),
           ),
@@ -214,8 +248,8 @@ class _CropsListScreenState extends ConsumerState<CropsListScreen> with SingleTi
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  Colors.black.withOpacity(0.2),
-                  Colors.black.withOpacity(0.8),
+                  Colors.black.withValues(alpha: 0.2),
+                  Colors.black.withValues(alpha: 0.8),
                 ],
               ),
             ),
@@ -239,9 +273,9 @@ class _CropsListScreenState extends ConsumerState<CropsListScreen> with SingleTi
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
+                          color: Colors.white.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: Colors.white.withOpacity(0.5)),
+                          border: Border.all(color: Colors.white.withValues(alpha: 0.5)),
                         ),
                         child: Row(
                           children: [
@@ -298,7 +332,8 @@ class _CropsListScreenState extends ConsumerState<CropsListScreen> with SingleTi
                             if (confirm == true) {
                               try {
                                 await ref.read(agricultureRepositoryProvider).deleteCrop(crop.id);
-                                ref.refresh(cropsProvider);
+                                ref.read(cropsPaginationNotifierProvider.notifier).refresh();
+                                ref.invalidate(cropsProvider);
                                 if (context.mounted) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(content: Text('Culture supprimée avec succès')),
@@ -313,9 +348,27 @@ class _CropsListScreenState extends ConsumerState<CropsListScreen> with SingleTi
                               }
                             }
                           } else if (value == 'edit') {
-                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Fonctionnalité de modification à venir')));
+                            _showEditCropDialog(context, ref, crop);
                           } else if (value == 'harvest') {
-                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Statut mis à jour : Récolté')));
+                            try {
+                              await ref.read(agricultureRepositoryProvider).updateCrop(crop.id, {'status': 'harvested'});
+                              ref.read(cropsPaginationNotifierProvider.notifier).refresh();
+                              ref.invalidate(cropsProvider);
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Culture "${crop.name}" marquée comme récoltée avec succès'),
+                                    backgroundColor: Colors.green,
+                                  ),
+                                );
+                              }
+                            } catch (e) {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('Erreur: ${e.toString()}'), backgroundColor: Colors.red),
+                                );
+                              }
+                            }
                           } else if (value == 'details') {
                             context.push('/crop_detail', extra: crop);
                           }
@@ -390,30 +443,8 @@ class _CropsListScreenState extends ConsumerState<CropsListScreen> with SingleTi
                           ),
                         ],
                       ),
-                      const SizedBox(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            'Stade de croissance',
-                            style: TextStyle(color: Colors.white70, fontSize: 12),
-                          ),
-                          Text(
-                            '60%', // Hardcoded for design demo
-                            style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: LinearProgressIndicator(
-                          value: 0.6,
-                          backgroundColor: Colors.white.withOpacity(0.2),
-                          valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
-                          minHeight: 6,
-                        ),
-                      ),
+                      const SizedBox(height: 14),
+                      _buildCropProgressBar(crop),
                     ],
                   ),
                 ],
@@ -425,6 +456,49 @@ class _CropsListScreenState extends ConsumerState<CropsListScreen> with SingleTi
     ],
   ),
 );
+  }
+
+  Widget _buildCropProgressBar(Crop crop) {
+    double progress = 0.0;
+    try {
+      final start = DateTime.parse(crop.plantingDate);
+      final end = DateTime.parse(crop.expectedHarvestDate);
+      final now = DateTime.now();
+      if (now.isAfter(end)) {
+        progress = 1.0;
+      } else if (now.isAfter(start)) {
+        final totalDays = end.difference(start).inDays;
+        if (totalDays > 0) {
+          progress = now.difference(start).inDays / totalDays;
+        }
+      }
+    } catch (e) {
+      progress = 0.5;
+    }
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: const [
+            Text('Semis', style: TextStyle(color: Colors.white70, fontSize: 10)),
+            Text('Croissance', style: TextStyle(color: Colors.white70, fontSize: 10)),
+            Text('Récolte', style: TextStyle(color: Colors.white70, fontSize: 10)),
+          ],
+        ),
+        const SizedBox(height: 4),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(10),
+          child: LinearProgressIndicator(
+            value: progress,
+            backgroundColor: Colors.white.withValues(alpha: 0.2),
+            valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
+            minHeight: 6,
+          ),
+        ),
+      ],
+    );
   }
 
   // ==========================================
@@ -610,7 +684,7 @@ class _CropsListScreenState extends ConsumerState<CropsListScreen> with SingleTi
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -639,7 +713,7 @@ class _CropsListScreenState extends ConsumerState<CropsListScreen> with SingleTi
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
+                      color: Colors.black.withValues(alpha: 0.1),
                       blurRadius: 4,
                     )
                   ],
@@ -790,7 +864,7 @@ class _CropsListScreenState extends ConsumerState<CropsListScreen> with SingleTi
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -886,9 +960,7 @@ class _CropsListScreenState extends ConsumerState<CropsListScreen> with SingleTi
                       ),
                       GestureDetector(
                         onTap: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Action sur ${product.name}')),
-                          );
+                          context.push('/agriculture/add');
                         },
                         child: Container(
                           padding: const EdgeInsets.all(6),
@@ -908,5 +980,133 @@ class _CropsListScreenState extends ConsumerState<CropsListScreen> with SingleTi
         ],
       ),
     ));
+  }
+
+  void _showEditCropDialog(BuildContext context, WidgetRef ref, Crop crop) {
+    final nameController = TextEditingController(text: crop.name);
+    final areaController = TextEditingController(text: crop.areaSize.toString());
+    final locationController = TextEditingController(text: crop.location);
+    String currentStatus = crop.status;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setModalState) => Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Modifier : ${crop.name}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded),
+                      onPressed: () => Navigator.pop(ctx),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: nameController,
+                  decoration: InputDecoration(
+                    labelText: 'Nom de la culture',
+                    prefixIcon: const Icon(Icons.grass_rounded),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: areaController,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    labelText: 'Superficie (ha)',
+                    prefixIcon: const Icon(Icons.square_foot_rounded),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: locationController,
+                  decoration: InputDecoration(
+                    labelText: 'Localisation',
+                    prefixIcon: const Icon(Icons.location_on_rounded),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                DropdownButtonFormField<String>(
+                  initialValue: currentStatus,
+                  decoration: InputDecoration(
+                    labelText: 'Statut',
+                    prefixIcon: const Icon(Icons.info_outline_rounded),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                  items: const [
+                    DropdownMenuItem(value: 'active', child: Text('En croissance (Active)')),
+                    DropdownMenuItem(value: 'harvested', child: Text('Récoltée')),
+                    DropdownMenuItem(value: 'paused', child: Text('En pause')),
+                  ],
+                  onChanged: (val) {
+                    if (val != null) {
+                      setModalState(() => currentStatus = val);
+                    }
+                  },
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      Navigator.pop(ctx);
+                      try {
+                        final updatedData = {
+                          'name': nameController.text.trim(),
+                          'area_size': double.tryParse(areaController.text.trim()) ?? crop.areaSize,
+                          'location': locationController.text.trim(),
+                          'status': currentStatus,
+                        };
+                        await ref.read(agricultureRepositoryProvider).updateCrop(crop.id, updatedData);
+                        ref.read(cropsPaginationNotifierProvider.notifier).refresh();
+                        ref.invalidate(cropsProvider);
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Culture mise à jour avec succès'),
+                              backgroundColor: AppColors.primary,
+                            ),
+                          );
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Erreur: $e'), backgroundColor: Colors.redAccent),
+                          );
+                        }
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    ),
+                    child: const Text('Enregistrer', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

@@ -56,3 +56,11 @@ web/dist/
 # OS
 .DS_Store
 Thumbs.db
+
+backend/staticfiles/
+
+# SonarQube & Coverage
+.scannerwork/
+.coverage
+coverage.xml
+**/coverage/

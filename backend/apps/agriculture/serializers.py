@@ -1,11 +1,18 @@
 from rest_framework import serializers
-from .models import Crop, Activity, PestReport
+from .models import AgronomicGuide, Crop, Activity, PestReport
 
 class ActivitySerializer(serializers.ModelSerializer):
     class Meta:
         model = Activity
         fields = '__all__'
         read_only_fields = ['id', 'created_at']
+
+    def validate_crop(self, value):
+        request = self.context.get('request')
+        if request and request.user and request.user.is_authenticated:
+            if value.user != request.user:
+                raise serializers.ValidationError("Violation de sécurité : Vous ne pouvez modifier ou lier une activité qu'à vos propres cultures.")
+        return value
 
 class CropSerializer(serializers.ModelSerializer):
     activities = ActivitySerializer(many=True, read_only=True)
@@ -21,3 +28,14 @@ class PestReportSerializer(serializers.ModelSerializer):
         fields = '__all__'
         read_only_fields = ['id', 'user', 'date_reported']
 
+
+class AgronomicGuideSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AgronomicGuide
+        fields = [
+            'id', 'slug', 'name', 'scientific_name', 'category', 'summary', 'zones',
+            'cycle_days_min', 'cycle_days_max', 'calendar', 'soil_and_sowing', 'water_needs',
+            'fertilization', 'pests_diseases', 'harvest', 'yield_info', 'limitations', 'sources',
+            'updated_at',
+        ]
+        read_only_fields = fields

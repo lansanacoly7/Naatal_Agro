@@ -10,5 +10,11 @@ class AIInteraction(models.Model):
     context_type = models.CharField(max_length=50, default='general') # market, crop, general
     created_at = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['user', 'created_at']),
+        ]
+
     def __str__(self):
         return f"{self.user.username} - {self.context_type} - {self.created_at}"

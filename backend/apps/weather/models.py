@@ -12,6 +12,10 @@ class WeatherData(models.Model):
 
     class Meta:
         verbose_name_plural = "Weather data"
+        ordering = ['-forecast_date']
+        indexes = [
+            models.Index(fields=['location', 'forecast_date']),
+        ]
 
     def __str__(self):
         return f"Weather in {self.location} on {self.forecast_date}"

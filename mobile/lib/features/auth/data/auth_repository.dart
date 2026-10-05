@@ -102,8 +102,9 @@ class AuthRepository {
     }
   }
 
-  /// Déconnexion
+  /// Déconnexion : invalide le jeton côté serveur puis purge le stockage local
   Future<void> logout() async {
+    await _apiClient.logoutFromServer();
     await _apiClient.clearTokens();
   }
 

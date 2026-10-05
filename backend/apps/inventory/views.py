@@ -1,7 +1,7 @@
 from rest_framework import viewsets, permissions
 from .models import StockItem
 from .serializers import StockItemSerializer
-from apps.ai_assistant.services import ask_llm
+from apps.ai_assistant.services import call_llm
 
 class StockItemViewSet(viewsets.ModelViewSet):
     serializer_class = StockItemSerializer
@@ -14,7 +14,8 @@ class StockItemViewSet(viewsets.ModelViewSet):
         stock = serializer.save(user=self.request.user)
         # Generate AI advice asynchronously or synchronously (we'll do sync for simplicity here)
         query = f"Donne-moi 2 phrases courtes de conseil pour bien stocker : {stock.quantity} {stock.unit} de {stock.name}. Prends en compte la température et l'humidité au Sénégal."
-        advice = ask_llm(query, context="Gestion de stock agricole.")
+        # call_llm renvoie None si l'IA est indisponible : aucun conseil n'est alors stocké
+        advice = call_llm(query)
         if advice:
             stock.ai_storage_advice = advice
             stock.save()

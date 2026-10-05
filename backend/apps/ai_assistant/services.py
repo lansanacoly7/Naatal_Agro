@@ -1,76 +1,136 @@
 import json
-import re
+import logging
 import requests
 from django.conf import settings
-from django.db import connection
+from django.utils import timezone
+import datetime
 
-SCHEMA_CONTEXT = """
-Schéma de la base de données (PostgreSQL) :
-- Table agriculture_crop(id, user_id, name, crop_type, planting_date, expected_harvest_date, status, area_size, location)
-- Table agriculture_activity(id, crop_id, activity_type, description, date, cost)
-- Table markets_product(id, name, category, current_price, trend_percentage, is_trending)
-- Table markets_market(id, name, region)
-- Table markets_price(id, market_id, product_name, price, trend, date)
-- Table weather_weatherdata(id, location, temperature, humidity, rainfall, forecast_date)
+logger = logging.getLogger(__name__)
 
-RÈGLES D'ANTI-HALLUCINATION :
-Tu es le Moteur IA Décisionnel de Naatal Agro.
-Tu ne dois JAMAIS inventer de données agricoles ou financières.
-Si la question de l'utilisateur nécessite des données (prix, météo, cultures de l'utilisateur), réponds UNIQUEMENT avec un objet JSON contenant une requête SQL (SELECT uniquement) pour obtenir ces données.
-Format exact attendu si du SQL est requis :
-```json
-{"sql": "SELECT ... FROM ... LIMIT 10"}
-```
+SYSTEM_PROMPT = """Tu es le copilote agronomique intelligent de Naatal Agro, la plateforme agricole de référence au Sénégal.
+Ton rôle est d'apporter des conseils agronomiques précis, pratiques, contextualisés et immédiatement applicables par les producteurs sénégalais.
 
-RÈGLE POUR LA RENTABILITÉ : 
-Pour calculer une rentabilité, tu dois générer un SQL qui somme les coûts (cost) d'une culture dans la table agriculture_activity, et trouve le prix actuel (price) de cette même culture dans markets_price pour pouvoir faire la soustraction.
-
-Si la question ne nécessite pas de base de données (ex: conseils généraux), réponds directement en texte.
+RÈGLES D'OR :
+1. Réponds de façon concise, bienveillante et professionnelle en français (avec des termes locaux si pertinents, ex: Louma, Niayes, Casamance).
+2. Base-toi en priorité sur les données réelles fournies dans le profil et les exploitations de l'utilisateur.
+3. Ne divulgue jamais de données techniques internes ou d'informations d'autres exploitants.
+4. Si une maladie ou un ravageur est détecté, propose des solutions de lutte intégrée (biologiques et conventionnelles homologuées au Sénégal).
 """
 
-def execute_read_only_sql(sql_query):
-    sql = sql_query.strip()
-    if not sql.lower().startswith("select"):
-        raise ValueError("Only SELECT queries are allowed for security reasons.")
-    if ";" in sql:
-        sql = sql.split(";")[0] # Prevent stacked queries
+def get_farmer_context(user):
+    """
+    Extrait de manière strictement cloisonnée (ORM Django) le contexte
+    agricole de l'utilisateur authentifié. Aucune fuite multi-tenant possible.
+    """
+    if not user or not user.is_authenticated:
+        return {"auth": False, "note": "Utilisateur non connecté (mode invité)"}
 
-    with connection.cursor() as cursor:
-        cursor.execute(sql)
-        columns = [col[0] for col in cursor.description]
-        rows = cursor.fetchall()
-        
-    results = []
-    for row in rows:
-        results.append(dict(zip(columns, row)))
-    return results
+    context = {
+        "auth": True,
+        "name": user.first_name or user.username,
+        "role": getattr(user, 'role', 'farmer'),
+        "location": getattr(user, 'location', 'Sénégal'),
+        "main_crops": getattr(user, 'main_crops', []),
+        "crops": [],
+        "recent_activities": [],
+        "market_prices": [],
+        "local_pest_alerts": []
+    }
+
+    try:
+        from apps.agriculture.models import Crop, Activity, PestReport
+        from apps.markets.models import Product, Price
+
+        # 1. Cultures personnelles exclusives de l'utilisateur connecté
+        user_crops = Crop.objects.filter(user=user)[:10]
+        for c in user_crops:
+            context["crops"].append({
+                "nom": c.name,
+                "type": c.crop_type,
+                "surface_ha": c.area_size,
+                "statut": c.status,
+                "semis": str(c.planting_date),
+                "recolte_prevue": str(c.expected_harvest_date),
+            })
+
+        # 2. Activités récentes sur ses propres cultures
+        user_activities = Activity.objects.filter(crop__user=user).order_by('-date')[:5]
+        for a in user_activities:
+            context["recent_activities"].append({
+                "culture": a.crop.name,
+                "type": a.activity_type,
+                "description": a.description,
+                "date": str(a.date)
+            })
+
+        # 3. Tendances des marchés (données publiques)
+        trending_products = Product.objects.filter(is_trending=True)[:5]
+        for p in trending_products:
+            context["market_prices"].append({
+                "produit": p.name,
+                "categorie": p.category,
+                "prix_kg": str(p.current_price),
+                "tendance": f"{p.trend_percentage}%"
+            })
+
+        # 4. Alertes ravageurs dans la région de l'utilisateur (14 derniers jours)
+        if user.location:
+            region = user.location.split(',')[0].strip()
+            recent_alerts = PestReport.objects.filter(
+                location__icontains=region,
+                date_reported__gte=timezone.now() - datetime.timedelta(days=14)
+            )[:3]
+            for alert in recent_alerts:
+                context["local_pest_alerts"].append({
+                    "ravageur": alert.pest_name,
+                    "zone": alert.location,
+                    "date": alert.date_reported.strftime("%Y-%m-%d")
+                })
+    except Exception as e:
+        logger.error(f"[AI Context Extraction] Erreur d'extraction : {e}")
+
+    return context
 
 def call_groq(prompt):
     groq_key = getattr(settings, 'GROQ_API_KEY', None)
     if not groq_key:
         return None
     url = "https://api.groq.com/openai/v1/chat/completions"
-    headers = {"Authorization": f"Bearer {groq_key}"}
+    headers = {
+        "Authorization": f"Bearer {groq_key}",
+        "Content-Type": "application/json"
+    }
     payload = {
         "model": "llama-3.1-8b-instant",
-        "messages": [{"role": "user", "content": prompt}],
-        "temperature": 0.1 # Low temp for deterministic SQL
+        "messages": [
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": prompt}
+        ],
+        "temperature": 0.2,
+        "max_tokens": 800
     }
     try:
-        res = requests.post(url, json=payload, headers=headers)
+        res = requests.post(url, json=payload, headers=headers, timeout=10)
         if res.status_code == 200:
             return res.json()['choices'][0]['message']['content']
+        logger.warning(f"[Groq Service] Statut HTTP {res.status_code}: {res.text}")
     except Exception as e:
-        print("Groq Exception:", e)
+        logger.error(f"[Groq Service] Exception : {e}")
     return None
 
 def call_gemini(prompt, image_base64=None):
     gemini_key = getattr(settings, 'GEMINI_API_KEY', None)
     if not gemini_key:
         return None
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={gemini_key}"
+        
+    model = getattr(settings, 'GEMINI_MODEL', 'gemini-2.5-flash')
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+    headers = {
+        "x-goog-api-key": gemini_key,
+        "Content-Type": "application/json"
+    }
     
-    parts = [{"text": prompt}]
+    parts = [{"text": f"{SYSTEM_PROMPT}\n\n{prompt}"}]
     if image_base64:
         parts.append({
             "inline_data": {
@@ -83,67 +143,56 @@ def call_gemini(prompt, image_base64=None):
         "contents": [{"parts": parts}]
     }
     try:
-        res = requests.post(url, json=payload)
+        res = requests.post(url, json=payload, headers=headers, timeout=12)
         if res.status_code == 200:
             return res.json()['candidates'][0]['content']['parts'][0]['text']
+        logger.warning(f"[Gemini Service] Statut HTTP {res.status_code}: {res.text}")
     except Exception as e:
-        print("Gemini Exception:", e)
+        logger.error(f"[Gemini Service] Exception : {e}")
     return None
 
 def call_llm(prompt, image_base64=None):
-    # If image is provided, we MUST use Gemini (Groq does not support multimodal here)
     if image_base64:
         return call_gemini(prompt, image_base64=image_base64)
-
+    # Tente Groq en priorité, bascule sur Gemini si indisponible
     res = call_groq(prompt)
-    if res is None:
+    if not res:
         res = call_gemini(prompt)
     return res
 
-def extract_json_sql(text):
-    match = re.search(r'```json\s*(\{.*?\})\s*```', text, re.DOTALL)
-    if match:
-        try:
-            return json.loads(match.group(1)).get('sql')
-        except:
-            pass
-    
-    try:
-        start = text.find('{')
-        end = text.rfind('}') + 1
-        if start != -1 and end != 0:
-            return json.loads(text[start:end]).get('sql')
-    except:
-        pass
-    return None
-
-def ask_llm(query, context, image_base64=None):
+def ask_llm(query, context='general', image_base64=None, user=None):
     """
-    Orchestrateur IA. 
-    Gère le Text-to-SQL (si besoin de BDD) et le Computer Vision (si image fournie).
+    Point d'entrée du copilote IA décisionnel de Naatal Agro.
+    - Diagnostic vision (analyse phytosanitaire d'une image)
+    - Recommandation agronomique contextuelle sécurisée (zéro injection SQL, isolation stricte par ORM)
     """
     if image_base64:
-        vision_prompt = f"Tu es un agronome expert sénégalais. Analyse cette image agricole. L'utilisateur demande : '{query}'. Identifie la culture, la maladie ou le ravageur éventuel, et propose un traitement clair (naturel ou chimique) disponible au Sénégal."
-        return call_llm(vision_prompt, image_base64=image_base64) or "Erreur lors de l'analyse visuelle de l'image."
+        vision_prompt = (
+            f"Analyse phytosanitaire de cette image agricole transmise par l'exploitant.\n"
+            f"Question / Remarque : '{query}'.\n"
+            f"1. Identifie la culture et la maladie ou le ravageur visible avec certitude.\n"
+            f"2. Indique la sévérité et les symptômes caractéristiques.\n"
+            f"3. Recommande un traitement curatif et préventif adapté au climat sénégalais."
+        )
+        response = call_llm(vision_prompt, image_base64=image_base64)
+        return response or "Le service de vision IA est indisponible. Veuillez vérifier vos clés API."
 
-    initial_prompt = f"{SCHEMA_CONTEXT}\n\nContexte de la requête: {context}\nQuestion de l'utilisateur : {query}"
-    
-    first_response = call_llm(initial_prompt)
-    if not first_response:
-        return "L'assistant IA n'est pas configuré ou est indisponible."
+    # Construction du contexte sécurisé avec requêtes ORM cloisonnées par utilisateur
+    farmer_context = get_farmer_context(user)
+    context_str = json.dumps(farmer_context, ensure_ascii=False, indent=2)
 
-    sql_query = extract_json_sql(first_response)
-    
-    if sql_query:
-        print(f"[IA Décisionnelle] SQL généré : {sql_query}")
-        try:
-            db_results = execute_read_only_sql(sql_query)
-            
-            analysis_prompt = f"Tu es Nataal Agro. L'utilisateur a demandé : '{query}'.\nVoici les données réelles issues de la base de données : {db_results}.\nFormule une réponse claire, experte et directe (parle de rentabilité financière si c'est le sujet) en te basant EXCLUSIVEMENT sur ces données. N'invente aucun chiffre."
-            final_response = call_llm(analysis_prompt)
-            return final_response or "Erreur lors de l'analyse des résultats de la base de données."
-        except Exception as e:
-            print(f"[IA Décisionnelle] Erreur SQL : {e}")
-            return "Je n'ai pas pu récupérer les données nécessaires pour répondre de manière certaine."
-    
-    return first_response
+    prompt = (
+        f"### DONNÉES CLOISONNÉES DE L'EXPLOITANT (Source certifiée Naatal Agro) :\n"
+        f"```json\n{context_str}\n```\n\n"
+        f"### CONTEXTE MÉTIER : {context}\n"
+        f"### QUESTION DU PRODUCTEUR : {query}\n\n"
+        f"Réponds de manière directe, concrète et utile pour l'exploitant :"
+    )
+
+    llm_response = call_llm(prompt)
+    if not llm_response:
+        return (
+            "Naatal IA est temporairement indisponible (les clés API Gemini ou Groq ne sont pas configurées). "
+            "Vos données agricoles personnelles restent parfaitement sécurisées et accessibles."
+        )
+    return llm_response

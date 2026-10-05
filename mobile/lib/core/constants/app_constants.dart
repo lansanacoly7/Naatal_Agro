@@ -2,26 +2,37 @@ import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, Tar
 
 /// Constantes globales de l'application Nataal Agro
 class AppConstants {
+  /// URL de l'API injectable à la compilation, utile pour un téléphone réel ou la prod :
+  /// `flutter run --dart-define=API_BASE_URL=http://192.168.1.20:8000/api`
+  static const String _apiBaseUrlOverride = String.fromEnvironment('API_BASE_URL');
+
   // API Backend Django - Dynamique selon l'environnement
   static String get apiBaseUrl {
-    // For web use localhost (CORS must be configured on the server)
-    if (kIsWeb) return 'http://localhost:8000/api';
-    // Android emulators route localhost via 10.0.2.2
+    if (_apiBaseUrlOverride.isNotEmpty) {
+      return _apiBaseUrlOverride;
+    }
+
+    if (kIsWeb) {
+      return 'http://127.0.0.1:8000/api';
+    }
+
     if (defaultTargetPlatform == TargetPlatform.android) {
+      // 10.0.2.2 = machine hôte vue depuis l'émulateur Android
       return 'http://10.0.2.2:8000/api';
     }
-    // iOS simulators can also use localhost directly
+
     if (defaultTargetPlatform == TargetPlatform.iOS) {
-      return 'http://localhost:8000/api';
+      return 'http://127.0.0.1:8000/api';
     }
-    // Default to the LAN IP for physical devices
-    return 'http://192.168.1.31:8000/api';
+
+    return 'http://127.0.0.1:8000/api';
   }
 
   // Endpoints Auth
   static const String loginEndpoint = '/users/auth/login/';
   static const String registerEndpoint = '/users/auth/register/';
   static const String refreshTokenEndpoint = '/users/auth/refresh/';
+  static const String logoutEndpoint = '/users/auth/logout/';
 
   // Endpoints Agriculture
   static const String cropsEndpoint = '/agriculture/crops/';

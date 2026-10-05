@@ -5,34 +5,43 @@ import random
 from django.utils import timezone
 
 # Configuration de Django
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'core.settings.base')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'core.settings.local')
 django.setup()
 
 from django.contrib.auth import get_user_model
 from apps.agriculture.models import Crop, Activity
 from apps.markets.models import Market, Price
 from apps.weather.models import WeatherData
+from apps.inventory.models import StockItem
+from apps.notifications.models import Notification
 
 User = get_user_model()
 
 def run_seed():
     print("Demarrage du script de seed...")
 
-    # 1. Création de l'utilisateur de test
+    # 1. Création de l'utilisateur de test Agriculteur
     phone_number = "+221770000000"
     user, created = User.objects.get_or_create(username=phone_number, defaults={
         'phone': phone_number,
-        'first_name': 'Lass',
-        'last_name': 'Test',
-        'location': 'Thiès, Sénégal'
+        'first_name': 'Lassana',
+        'last_name': 'Coly',
+        'location': 'Thiès, Sénégal',
+        'role': 'farmer',
+        'language': 'fr',
+        'main_crops': ['Tomate', 'Oignon', 'Arachide']
     })
     
-    if created:
-        user.set_password('password123')
-        user.save()
-        print(f"Utilisateur de test cree: {phone_number} / password123")
-    else:
-        print(f"Utilisateur de test deja existant: {phone_number}")
+    user.set_password('password123')
+    user.first_name = 'Lassana'
+    user.last_name = 'Coly'
+    user.location = 'Thiès, Sénégal'
+    user.role = 'farmer'
+    user.language = 'fr'
+    user.main_crops = ['Tomate', 'Oignon', 'Arachide']
+    user.save()
+    print(f"Agriculteur de test configure: {phone_number} / password123")
+
 
     # Nettoyage des anciennes données
     Crop.objects.filter(user=user).delete()
@@ -148,12 +157,48 @@ def run_seed():
     )
     print("Activites agricoles ajoutees")
 
+    # 6. Création des Stocks
+    StockItem.objects.filter(user=user).delete()
+    StockItem.objects.create(
+        user=user,
+        name="Oignon Local (Sacs 25kg)",
+        quantity=120.0,
+        unit="Sacs",
+        alert_status=False,
+        ai_storage_advice="Conserver dans un endroit sec, ventilé et à l'abri de l'humidité du sol."
+    )
+    StockItem.objects.create(
+        user=user,
+        name="Arachide Décortiquée",
+        quantity=45.0,
+        unit="Sacs",
+        alert_status=True,
+        ai_storage_advice="Risque de charançons. Inspecter les sacs et aérer le local de stockage."
+    )
+    print("Stocks ajoutes")
+
+    # 7. Création de Notifications Réelles
+    Notification.objects.filter(user=user).delete()
+    Notification.objects.create(
+        user=user,
+        type="market",
+        message="Le cours de l'oignon local est en hausse de +5% sur le Marché Castors. Opportunité de vente favorable.",
+        is_read=False
+    )
+    Notification.objects.create(
+        user=user,
+        type="weather",
+        message="Alerte Météo : Fortes chaleurs prévues à Thiès (35°C). Pensez à irriguer tôt le matin.",
+        is_read=False
+    )
+    print("Notifications ajoutees")
+
     print("\nSeed termine avec succes !")
     print("=========================================")
-    print("Identifiants de test :")
-    print(f"Téléphone : {phone_number}")
-    print("Mot de passe : password123")
+    print("Compte de test disponible :")
+    print(f"1. Agriculteur : {phone_number} / password123")
     print("=========================================")
 
 if __name__ == '__main__':
     run_seed()
+

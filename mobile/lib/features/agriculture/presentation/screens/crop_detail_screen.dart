@@ -15,6 +15,8 @@ class CropDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
+  final Set<String> _completedTasks = {'Irrigation approfondie'};
+
   // --- Helpers for Growth Calculation ---
   double _calculateGrowthProgress() {
     try {
@@ -254,23 +256,44 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Semis', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
-                Text(_formatDate(widget.crop.plantingDate), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-              ],
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                const Text('Récolte estimée', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
-                Text(_formatDate(widget.crop.expectedHarvestDate), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-              ],
-            ),
+            _buildStageInfo('Semis', _formatDate(widget.crop.plantingDate), progress >= 0.0, CrossAxisAlignment.start),
+            _buildStageInfo('Croissance', 'En cours', progress > 0.0 && progress < 1.0, CrossAxisAlignment.center),
+            _buildStageInfo('Récolte', _formatDate(widget.crop.expectedHarvestDate), progress >= 1.0, CrossAxisAlignment.end),
           ],
         ),
       ],
+    );
+  }
+
+  Widget _buildStageInfo(String title, String subtitle, bool isActive, CrossAxisAlignment alignment) {
+    return Expanded(
+      child: Column(
+        crossAxisAlignment: alignment,
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              color: isActive ? AppColors.primary : AppColors.textSecondary,
+              fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+              fontSize: 13,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            subtitle,
+            style: TextStyle(
+              fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
+              fontSize: 11,
+              color: isActive ? AppColors.textPrimary : Colors.grey.shade500,
+            ),
+            textAlign: alignment == CrossAxisAlignment.end 
+                ? TextAlign.right 
+                : alignment == CrossAxisAlignment.center 
+                    ? TextAlign.center 
+                    : TextAlign.left,
+          ),
+        ],
+      ),
     );
   }
 
@@ -280,14 +303,15 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
       children: [
         const Text("Ce qu'il faut faire (Plan d'action)", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
         const SizedBox(height: 16),
-        _buildTaskTile('Irrigation approfondie', 'Aujourd\'hui', true),
-        _buildTaskTile('Apport d\'engrais NPK', 'Demain', false),
-        _buildTaskTile('Sarclage', 'Dans 3 jours', false),
+        _buildTaskTile('Irrigation approfondie', 'Aujourd\'hui'),
+        _buildTaskTile('Apport d\'engrais NPK', 'Demain'),
+        _buildTaskTile('Sarclage', 'Dans 3 jours'),
       ],
     );
   }
 
-  Widget _buildTaskTile(String title, String time, bool isDone) {
+  Widget _buildTaskTile(String title, String time) {
+    final isDone = _completedTasks.contains(title);
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -296,13 +320,41 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
         border: Border.all(color: Colors.grey.shade200),
       ),
       child: ListTile(
+        onTap: () {
+          setState(() {
+            if (isDone) {
+              _completedTasks.remove(title);
+            } else {
+              _completedTasks.add(title);
+            }
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(isDone ? 'Tâche "$title" marquée non terminée' : 'Bravo ! Tâche "$title" accomplie'),
+              duration: const Duration(seconds: 2),
+              backgroundColor: isDone ? Colors.grey.shade800 : AppColors.primary,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        },
         leading: Icon(
           isDone ? Icons.check_circle : Icons.circle_outlined,
           color: isDone ? Colors.green : Colors.grey.shade400,
         ),
-        title: Text(title, style: TextStyle(decoration: isDone ? TextDecoration.lineThrough : null, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+        title: Text(
+          title,
+          style: TextStyle(
+            decoration: isDone ? TextDecoration.lineThrough : null,
+            fontWeight: FontWeight.w600,
+            color: isDone ? Colors.grey : AppColors.textPrimary,
+          ),
+        ),
         subtitle: Text(time, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-        trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey),
+        trailing: Icon(
+          isDone ? Icons.done_all_rounded : Icons.touch_app_outlined,
+          size: 16,
+          color: isDone ? Colors.green : Colors.grey,
+        ),
       ),
     );
   }
@@ -354,10 +406,7 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
           children: [
             const Text("Gestion du Stock & Vente", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
             OutlinedButton.icon(
-              onPressed: () {
-                // Logic to create an alert for price
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Formulaire de création d\'alerte de prix ouvert')));
-              },
+              onPressed: () => _showCreatePriceAlertDialog(context),
               icon: const Icon(Icons.notifications_active, size: 16, color: AppColors.primary),
               label: const Text('Créer une alerte', style: TextStyle(color: AppColors.primary, fontSize: 12)),
               style: OutlinedButton.styleFrom(
@@ -416,6 +465,94 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  void _showCreatePriceAlertDialog(BuildContext context) {
+    final priceController = TextEditingController();
+    String alertCondition = 'greater';
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheetState) => Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Alerte de prix : ${widget.crop.name}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    IconButton(icon: const Icon(Icons.close_rounded), onPressed: () => Navigator.pop(ctx)),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                DropdownButtonFormField<String>(
+                  initialValue: alertCondition,
+                  decoration: InputDecoration(
+                    labelText: 'Condition de déclenchement',
+                    prefixIcon: const Icon(Icons.tune_rounded),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                  items: const [
+                    DropdownMenuItem(value: 'greater', child: Text('Quand le prix dépasse (> )')),
+                    DropdownMenuItem(value: 'lower', child: Text('Quand le prix descend sous (< )')),
+                  ],
+                  onChanged: (val) {
+                    if (val != null) {
+                      setSheetState(() => alertCondition = val);
+                    }
+                  },
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: priceController,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    labelText: 'Prix seuil cible (FCFA / kg)',
+                    prefixIcon: const Icon(Icons.payments_outlined),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      final val = priceController.text.trim();
+                      if (val.isEmpty) return;
+                      Navigator.pop(ctx);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Alerte enregistrée : alerte si le prix de ${widget.crop.name} est ${alertCondition == "greater" ? ">" : "<"} $val FCFA/kg'),
+                          backgroundColor: AppColors.primary,
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    ),
+                    child: const Text('Activer l\'alerte', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

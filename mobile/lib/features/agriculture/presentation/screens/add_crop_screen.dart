@@ -80,6 +80,7 @@ class _AddCropScreenState extends ConsumerState<AddCropScreen> {
       
       // Invalidate providers so Dashboard and Crops List refresh
       ref.invalidate(cropsProvider);
+      ref.invalidate(cropsPaginationNotifierProvider);
       // We don't import dashboardProvider here to avoid circular dependency, 
       // but going back to root will re-trigger its FutureProvider if invalidated,
       // or we can just let pull-to-refresh handle it. For real-time we'd use a shared notifier.
