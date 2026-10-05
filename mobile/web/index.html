@@ -139,7 +139,8 @@
     function showStartupError(detail) {
       var splash = document.getElementById('splash-screen');
       if (!splash) return;
-      if (observer) observer.disconnect();
+      // L'observateur reste actif : si Flutter finit par démarrer, le splash (et son
+      // message d'erreur) est retiré au lieu de recouvrir l'application.
       if (detail) console.error('[Naatal Agro] Échec du démarrage : ' + detail);
       var content = splash.querySelector('.splash-content');
       content.innerHTML =
@@ -158,7 +159,7 @@
     // Délai maximal de démarrage (réseau lent compris)
     setTimeout(function() {
       if (document.getElementById('splash-screen')) showStartupError('délai de démarrage dépassé');
-    }, 20000);
+    }, 45000);
   </script>
   <script src="flutter_bootstrap.js" async onerror="showStartupError('flutter_bootstrap.js introuvable')"></script>
 </body>
