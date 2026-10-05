@@ -24,14 +24,7 @@ class NotificationsScreen extends StatelessWidget {
         'color': Colors.blue,
         'isRead': false,
       },
-      {
-        'title': 'Nouvel acheteur',
-        'message': 'Un acheteur B2B recherche de l\'Arachide dans votre région.',
-        'time': 'Hier',
-        'icon': Icons.storefront_rounded,
-        'color': Colors.orange,
-        'isRead': true,
-      },
+
     ];
 
     return Scaffold(

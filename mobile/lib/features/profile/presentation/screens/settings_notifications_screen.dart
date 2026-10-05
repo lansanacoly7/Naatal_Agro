@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/theme/app_theme.dart';
 
 class SettingsNotificationsScreen extends StatefulWidget {
@@ -12,6 +13,26 @@ class _SettingsNotificationsScreenState extends State<SettingsNotificationsScree
   bool _pushEnabled = true;
   bool _smsEnabled = false;
   bool _emailEnabled = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPreferences();
+  }
+
+  Future<void> _loadPreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _pushEnabled = prefs.getBool('notif_push') ?? true;
+      _smsEnabled = prefs.getBool('notif_sms') ?? false;
+      _emailEnabled = prefs.getBool('notif_email') ?? true;
+    });
+  }
+
+  Future<void> _savePreference(String key, bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(key, value);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,11 +56,20 @@ class _SettingsNotificationsScreenState extends State<SettingsNotificationsScree
         children: [
           const Text('Gérez vos préférences de notifications.', style: TextStyle(color: Colors.grey, fontSize: 16)),
           const SizedBox(height: 24),
-          _buildSwitchTile('Notifications Push', 'Alertes météo, prix, et nouveautés directement sur votre téléphone', _pushEnabled, (val) => setState(() => _pushEnabled = val)),
+          _buildSwitchTile('Notifications Push', 'Alertes météo, prix, et nouveautés directement sur votre téléphone', _pushEnabled, (val) {
+            setState(() => _pushEnabled = val);
+            _savePreference('notif_push', val);
+          }),
           const SizedBox(height: 16),
-          _buildSwitchTile('Alertes SMS', 'Recevez les alertes de prix critiques par SMS', _smsEnabled, (val) => setState(() => _smsEnabled = val)),
+          _buildSwitchTile('Alertes SMS', 'Recevez les alertes de prix critiques par SMS', _smsEnabled, (val) {
+            setState(() => _smsEnabled = val);
+            _savePreference('notif_sms', val);
+          }),
           const SizedBox(height: 16),
-          _buildSwitchTile('Emails récapitulatifs', 'Résumé hebdomadaire du marché et conseils', _emailEnabled, (val) => setState(() => _emailEnabled = val)),
+          _buildSwitchTile('Emails récapitulatifs', 'Résumé hebdomadaire du marché et conseils', _emailEnabled, (val) {
+            setState(() => _emailEnabled = val);
+            _savePreference('notif_email', val);
+          }),
         ],
       ),
     );

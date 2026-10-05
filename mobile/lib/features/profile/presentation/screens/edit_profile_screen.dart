@@ -3,25 +3,37 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../../core/theme/app_theme.dart';
 
-class EditProfileScreen extends StatefulWidget {
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../data/profile_provider.dart';
+
+class EditProfileScreen extends ConsumerStatefulWidget {
   const EditProfileScreen({super.key});
 
   @override
-  State<EditProfileScreen> createState() => _EditProfileScreenState();
+  ConsumerState<EditProfileScreen> createState() => _EditProfileScreenState();
 }
 
-class _EditProfileScreenState extends State<EditProfileScreen> {
+class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   final _formKey = GlobalKey<FormState>();
   
   File? _profileImage;
   final ImagePicker _picker = ImagePicker();
   
   // Contrôleurs pour les champs
-  final TextEditingController _nameController = TextEditingController(text: 'Moussa Diallo');
-  final TextEditingController _locationController = TextEditingController(text: 'Dakar, Sénégal');
-  final TextEditingController _phoneController = TextEditingController(text: '770000000');
+  late TextEditingController _nameController;
+  late TextEditingController _locationController;
+  late TextEditingController _phoneController;
 
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final profile = ref.read(profileNotifierProvider).valueOrNull;
+    _nameController = TextEditingController(text: profile?.fullName ?? '');
+    _locationController = TextEditingController(text: profile?.location ?? '');
+    _phoneController = TextEditingController(text: profile?.phone ?? '');
+  }
 
   Future<void> _pickImage(ImageSource source) async {
     try {
@@ -76,9 +88,18 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       setState(() {
         _isLoading = true;
       });
-      
-      // Simuler un appel réseau
-      await Future.delayed(const Duration(seconds: 1));
+      try {
+        await ref.read(profileNotifierProvider.notifier).updateProfile(
+          fullName: _nameController.text.trim(),
+          location: _locationController.text.trim(),
+        );
+      } catch (e) {
+        if (mounted) {
+          setState(() { _isLoading = false; });
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur: $e'), backgroundColor: Colors.red));
+        }
+        return;
+      }
       
       if (mounted) {
         setState(() {
@@ -148,7 +169,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         backgroundColor: Colors.white,
                         backgroundImage: _profileImage != null ? FileImage(_profileImage!) : null,
                         child: _profileImage == null 
-                          ? const Text('MD', style: TextStyle(color: AppColors.primary, fontSize: 32, fontWeight: FontWeight.bold))
+                          ? Text(_nameController.text.isNotEmpty ? _nameController.text.substring(0, 1).toUpperCase() : 'U', style: const TextStyle(color: AppColors.primary, fontSize: 32, fontWeight: FontWeight.bold))
                           : null,
                       ),
                     ),

@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/theme/app_theme.dart';
 
 class PriceAlertsScreen extends StatefulWidget {
@@ -9,32 +11,35 @@ class PriceAlertsScreen extends StatefulWidget {
 }
 
 class _PriceAlertsScreenState extends State<PriceAlertsScreen> {
-  // Simuler une liste d'alertes locales
-  final List<Map<String, dynamic>> _alerts = [
-    {
-      'product': 'Oignon Local',
-      'condition': 'Prix > 450 FCFA/kg',
-      'isActive': true,
-      'isUp': true,
-    },
-    {
-      'product': 'Arachide',
-      'condition': 'Prix < 550 FCFA/kg',
-      'isActive': true,
-      'isUp': false,
-    },
-    {
-      'product': 'Tomate',
-      'condition': 'Prix > 700 FCFA/kg',
-      'isActive': false,
-      'isUp': true,
-    },
-  ];
+  List<Map<String, dynamic>> _alerts = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAlerts();
+  }
+
+  Future<void> _loadAlerts() async {
+    final prefs = await SharedPreferences.getInstance();
+    final alertsJson = prefs.getString('price_alerts');
+    if (alertsJson != null) {
+      final List<dynamic> decoded = json.decode(alertsJson);
+      setState(() {
+        _alerts = List<Map<String, dynamic>>.from(decoded);
+      });
+    }
+  }
+
+  Future<void> _saveAlerts() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('price_alerts', json.encode(_alerts));
+  }
 
   void _toggleAlert(int index, bool value) {
     setState(() {
       _alerts[index]['isActive'] = value;
     });
+    _saveAlerts();
   }
 
   void _showAddAlertDialog() {
@@ -48,6 +53,7 @@ class _PriceAlertsScreenState extends State<PriceAlertsScreen> {
         setState(() {
           _alerts.add(newAlert);
         });
+        _saveAlerts();
       }
     });
   }

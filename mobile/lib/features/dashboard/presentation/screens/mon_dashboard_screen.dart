@@ -28,8 +28,15 @@ class _MonDashboardScreenState extends ConsumerState<MonDashboardScreen> {
           style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
         ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+      body: RefreshIndicator(
+        onRefresh: () async {
+          // Simuler le rafraîchissement ou appeler une méthode du provider
+          await Future.delayed(const Duration(seconds: 1));
+        },
+        color: AppColors.primary,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -55,6 +62,7 @@ class _MonDashboardScreenState extends ConsumerState<MonDashboardScreen> {
             const SizedBox(height: 40),
           ],
         ),
+      ),
       ),
     );
   }

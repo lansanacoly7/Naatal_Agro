@@ -87,7 +87,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       _buildTrackedProducts(context, profile),
                       const SizedBox(height: 32),
                       _buildSectionTitle('Mes Alertes Actives', badgeCount: 2),
-                      _buildAlertsCard(),
+                      _buildAlertsCard(context),
                       const SizedBox(height: 32),
                       _buildSectionTitle('Paramètres du Compte'),
                       _buildSettingsSection(profile),
