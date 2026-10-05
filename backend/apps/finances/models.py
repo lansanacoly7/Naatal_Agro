@@ -16,6 +16,12 @@ class Sale(models.Model):
     def total_revenue(self):
         return float(self.quantity_sold) * float(self.price_per_unit)
 
+    class Meta:
+        ordering = ['-date', '-created_at']
+        indexes = [
+            models.Index(fields=['crop', 'date']),
+        ]
+
     def __str__(self):
         return f"Vente de {self.crop.name} - {self.total_revenue} CFA"
 
@@ -31,6 +37,12 @@ class Transaction(models.Model):
     date = models.DateField()
     description = models.CharField(max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-date', '-created_at']
+        indexes = [
+            models.Index(fields=['user', 'transaction_type']),
+        ]
 
     def __str__(self):
         return f"{self.get_transaction_type_display()} : {self.amount} ({self.date})"

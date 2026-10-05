@@ -14,6 +14,12 @@ class Crop(models.Model):
     location = models.CharField(max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['user', 'status']),
+        ]
+
     def __str__(self):
         return f"{self.name} - {self.user.username}"
 
@@ -26,6 +32,12 @@ class Activity(models.Model):
     cost = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        ordering = ['date']
+        indexes = [
+            models.Index(fields=['crop', 'date']),
+        ]
+
     def __str__(self):
         return f"{self.activity_type} on {self.crop.name}"
 
@@ -36,6 +48,12 @@ class PestReport(models.Model):
     location = models.CharField(max_length=255) # ex: "Thiès, Sénégal"
     date_reported = models.DateTimeField(auto_now_add=True)
     description = models.TextField(blank=True, null=True)
+
+    class Meta:
+        ordering = ['-date_reported']
+        indexes = [
+            models.Index(fields=['location', 'date_reported']),
+        ]
 
     def __str__(self):
         return f"{self.pest_name} signalé à {self.location}"
