@@ -112,6 +112,7 @@ class AgronomicGuide(models.Model):
         ('legume', 'Légume'),
         ('cereale', 'Céréale'),
         ('legumineuse', 'Légumineuse'),
+        ('fruit', 'Fruit'),
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

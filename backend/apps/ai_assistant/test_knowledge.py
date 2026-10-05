@@ -86,3 +86,34 @@ class RetrievalTests(TestCase):
     def test_cycle_topic_mentions_the_cycle_range(self):
         result = retrieve("Quel est le cycle de l'arachide ?")
         self.assertIn('de 80 à 125 jours', result.sections[0].text)
+
+
+class NewCropsRetrievalTests(TestCase):
+    def test_carrot_harvest(self):
+        result = retrieve('Comment récolter les carottes ?')
+        self.assertEqual([g.slug for g in result.guides], ['carotte'])
+        self.assertIn('fer courbe', result.sections[0].text)
+
+    def test_carrot_fertilizer_and_water(self):
+        self.assertIn('300 kg', retrieve('Quel engrais pour la carotte ?').sections[0].text)
+        self.assertIn('6 à 9 litres', retrieve("Besoins en eau de la carotte ?").sections[0].text)
+
+    def test_sorghum_fertilization(self):
+        result = retrieve('Quel engrais pour le sorgho ?')
+        self.assertEqual([g.slug for g in result.guides], ['sorgho'])
+        self.assertIn('15-15-15', result.sections[0].text)
+
+    def test_mango_harvest_period_and_pests(self):
+        self.assertIn('mi-juin', retrieve('Quand récolter les mangues ?').sections[0].text)
+        pests = retrieve('Quels ravageurs attaquent le manguier ?').sections[0].text
+        self.assertIn('Mouches des fruits', pests)
+
+    def test_recent_millet_varieties_are_listed_with_their_source(self):
+        result = retrieve('Quelles variétés de mil récentes ?')
+        text = ' '.join(section.text for section in result.sections)
+        self.assertIn('Souna du Baol', text)
+        self.assertTrue(any('isra.sn' in source['url'] for source in result.sources))
+
+    def test_millet_and_sorghum_are_not_confused(self):
+        self.assertEqual([g.slug for g in retrieve('Engrais pour le mil').guides], ['mil'])
+        self.assertEqual([g.slug for g in retrieve('Engrais pour le sorgho').guides], ['sorgho'])

@@ -15,7 +15,7 @@ User = get_user_model()
 LIST_URL = '/api/agriculture/guides/'
 TEXT_FIELDS = ('summary', 'zones', 'calendar', 'soil_and_sowing', 'water_needs', 'fertilization',
                'harvest', 'yield_info')
-EXPECTED_SLUGS = {'oignon', 'tomate-industrielle', 'arachide', 'mil', 'riz-irrigue'}
+EXPECTED_SLUGS = {'oignon', 'tomate-industrielle', 'arachide', 'mil', 'riz-irrigue', 'carotte', 'sorgho', 'mangue'}
 MARKER = re.compile(r'\[(\d+)\]')
 
 
@@ -108,7 +108,7 @@ class GuideApiTests(TestCase):
 
     def test_filter_by_category(self):
         data = self.client.get(LIST_URL, {'category': 'cereale'}).json()
-        self.assertEqual({g['slug'] for g in data}, {'mil', 'riz-irrigue'})
+        self.assertEqual({g['slug'] for g in data}, {'mil', 'riz-irrigue', 'sorgho'})
 
     def test_search_by_name_and_scientific_name(self):
         self.assertEqual([g['slug'] for g in self.client.get(LIST_URL, {'search': 'oignon'}).json()], ['oignon'])
@@ -123,3 +123,18 @@ class GuideApiTests(TestCase):
         data = self.client.get(LIST_URL, {'page_size': 2}).json()
         self.assertEqual(data['count'], len(EXPECTED_SLUGS))
         self.assertEqual(len(data['results']), 2)
+
+
+class AutomaticSyncTests(TestCase):
+    def test_sync_after_migrate_restores_missing_guides_and_keeps_edited_ones(self):
+        from apps.agriculture.apps import sync_agronomic_guides
+        AgronomicGuide.objects.filter(slug='carotte').delete()
+        edited = AgronomicGuide.objects.get(slug='mil')
+        edited.summary = 'Validé par un relecteur.'
+        edited.locally_edited = True
+        edited.save()
+
+        sync_agronomic_guides(sender=None)
+
+        self.assertEqual(AgronomicGuide.objects.count(), len(EXPECTED_SLUGS))
+        self.assertEqual(AgronomicGuide.objects.get(slug='mil').summary, 'Validé par un relecteur.')

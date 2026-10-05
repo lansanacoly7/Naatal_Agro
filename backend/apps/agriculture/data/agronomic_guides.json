@@ -131,7 +131,7 @@
     "zones": "Souna III : 250 à 750 mm de pluie par an, diffusée dans le sud des régions de Thiès et de Kaolack et dans la région de Tambacounda. IBV 8004 : 300 à 750 mm, diffusée dans le sud de Louga et de Diourbel, le centre de Thiès et le nord de Gossas. [1]",
     "cycle_days_min": 75,
     "cycle_days_max": 95,
-    "calendar": "Souna III : 85 à 95 jours du semis à la maturation, 50 % de floraison à 56 jours. IBV 8004 : 75 à 85 jours, 50 % de floraison à 54 jours. [1] Dans l'essai de Saint-Louis, le semis a eu lieu le 18 août 2016 pour une culture de 90 jours. [2]",
+    "calendar": "Souna III : 85 à 95 jours du semis à la maturation, 50 % de floraison à 56 jours. IBV 8004 : 75 à 85 jours, 50 % de floraison à 54 jours. [1] Dans l'essai de Saint-Louis, le semis a eu lieu le 18 août 2016 pour une culture de 90 jours. [2] Variétés plus récentes : Souna du Baol, Souna du Sine, Souna du Saloum et l'hybride Taaw ont été homologuées en 2021 ou 2022 et inscrites au catalogue national ; leurs cycles et rendements ne figurent pas dans la source. [3]",
     "soil_and_sowing": "Les sols du Sénégal sont généralement sableux et pauvres en éléments nutritifs. Dans l'essai de l'Université Gaston Berger (Souna 3, Saint-Louis, 2016) : labour à 20 cm suivi d'un hersage, semis en poquets (une pincée de grains) espacés de 90 cm sur 90 cm, démariage 15 jours après la levée à 3 plants par poquet. [2]",
     "water_needs": "L'essai de Saint-Louis utilisait un goutte-à-goutte de 1 litre par poquet et par jour : ce n'est pas une référence pour la culture pluviale. [2]",
     "fertilization": "Meilleur résultat de l'essai : NPK 10-10-20 à 150 kg par hectare en fumure de fond, plus 100 kg par hectare d'urée en deux apports (50 kg au tallage et 50 kg à la montaison), soit 1 657 kg de grains par hectare. Le compost (10 t par hectare) et les litières de Faidherbia albida ou de filao (5 t par hectare) n'ont pas eu d'effet significatif dans cet essai. [2]",
@@ -143,7 +143,7 @@
     ],
     "harvest": "",
     "yield_info": "Rendement potentiel : 2 à 2,5 t par hectare pour Souna III, 2,5 à 3 t par hectare pour IBV 8004. [1] L'essai de Saint-Louis a obtenu au mieux 1,66 t par hectare. [2]",
-    "limitations": "Les variétés viennent du catalogue variétal officiel (document non daté). Les doses de fumure viennent d'un essai universitaire sur une seule saison, pas d'une recommandation de vulgarisation : à confirmer auprès de l'ANCAR ou de l'ISRA. Le mil sanio (cycle long, Casamance) n'est pas couvert.",
+    "limitations": "Les variétés viennent du catalogue variétal officiel (document non daté). Les doses de fumure viennent d'un essai universitaire sur une seule saison, pas d'une recommandation de vulgarisation : à confirmer auprès de l'ANCAR ou de l'ISRA. Le mil sanio (cycle long, Casamance) n'est pas couvert. Les caractéristiques (cycle, rendement, zones) des variétés homologuées en 2021-2022 ne sont pas encore documentées ici.",
     "sources": [
       {
         "title": "Catalogue variétal du Sénégal",
@@ -156,6 +156,12 @@
         "publisher": "Université Gaston Berger de Saint-Louis et partenaires",
         "year": "2019",
         "url": "https://agritrop.cirad.fr/593162/1/Diallo%20et%20al.,%20RAFEA%202019.pdf"
+      },
+      {
+        "title": "Catalogue national des semences et espèces de plantes cultivées au Sénégal : des nouvelles variétés de riz, mil et fonio de l'ISRA inscrites",
+        "publisher": "ISRA",
+        "year": "2025",
+        "url": "https://isra.sn/2025/06/18/catalogue-national-des-semences-et-especes-de-plantes-cultivees-au-senegal-des-nouvelles-varietes-de-riz-mil-et-fonio-de-lisra-inscrites/"
       }
     ],
     "aliases": [
@@ -175,7 +181,7 @@
     "zones": "Vallée du fleuve Sénégal. [1] [3]",
     "cycle_days_min": 90,
     "cycle_days_max": 120,
-    "calendar": "Sahel 108, cycle court de 90 à 110 jours : hivernage et contre-saison. Sahel 201, Sahel 202, Sahel 177 et IR 1529, cycle moyen de 110 à 120 jours : surtout l'hivernage. [1] Les dates de semis et de repiquage ne figurent pas dans nos sources : se référer au calendrier cultural de la SAED pour votre périmètre.",
+    "calendar": "Sahel 108, cycle court de 90 à 110 jours : hivernage et contre-saison. Sahel 201, Sahel 202, Sahel 177 et IR 1529, cycle moyen de 110 à 120 jours : surtout l'hivernage. [1] Les dates de semis et de repiquage ne figurent pas dans nos sources : se référer au calendrier cultural de la SAED pour votre périmètre. Variétés plus récentes : ISRIZ 16, ISRIZ 17, ISRIZ P01 et ISRIZ P02 ont été homologuées en 2021 ou 2022 ; leurs caractéristiques ne figurent pas dans la source. [4]",
     "soil_and_sowing": "Chez les producteurs intensifs de la vallée, la dose de semis moyenne est de 130 kg par hectare (pratique observée, pas une recommandation). [1]",
     "water_needs": "",
     "fertilization": "Les normes recommandées citées sont de 300 kg d'urée et 150 kg de NPK par hectare ; les producteurs intensifs utilisent des doses supérieures. Le fractionnement et les dates d'apport ne figurent pas dans nos sources. [1]",
@@ -201,6 +207,12 @@
         "publisher": "AfricaRice",
         "year": "",
         "url": "https://www.africarice-fr.org/varietes-sahel"
+      },
+      {
+        "title": "Catalogue national des semences et espèces de plantes cultivées au Sénégal : des nouvelles variétés de riz, mil et fonio de l'ISRA inscrites",
+        "publisher": "ISRA",
+        "year": "2025",
+        "url": "https://isra.sn/2025/06/18/catalogue-national-des-semences-et-especes-de-plantes-cultivees-au-senegal-des-nouvelles-varietes-de-riz-mil-et-fonio-de-lisra-inscrites/"
       }
     ],
     "aliases": [
@@ -208,6 +220,109 @@
       "paddy",
       "riziculture",
       "riz irrigue"
+    ]
+  },
+  {
+    "slug": "carotte",
+    "name": "Carotte (Niayes)",
+    "scientific_name": "Daucus carota",
+    "category": "legume",
+    "aliases": [
+      "carottes"
+    ],
+    "summary": "Culture maraîchère des Niayes, semée directement en planches. Fiche tirée du guide de bonnes pratiques du Ministère de l'Agriculture (projet PIESAN), mis en ligne en 2022. [1]",
+    "zones": "Niayes. [1]",
+    "cycle_days_min": 90,
+    "cycle_days_max": 120,
+    "calendar": "Choisir la variété en fonction de la période de semis ; les semis de saison donnent les meilleurs rendements. Température optimale : entre 15 et 20 °C ; la carotte s'adapte néanmoins à 30-35 °C. La récolte se fait à la main à partir de 90 à 120 jours après le semis. [1]",
+    "soil_and_sowing": "Éviter surtout les sols salés et acides. Précédents entrant dans une rotation : chou, oignon. Labour de 25 à 30 cm. Planches de 10 m sur 1,2 m avec des allées de 0,5 m ; fumure organique de 15 à 20 kg par planche de 12 m² et 400 g d'engrais minéral 10-10-20 par planche de 12 m² (un verre à thé = 100 g) ; ratisser pour casser les mottes et arroser les planches avant le semis. Utiliser des semences certifiées : 4 à 6 kg par hectare en semis à la volée, 2 kg par hectare en semis en ligne (6 lignes par planche avec un semoir manuel, lignes espacées de 10 à 30 cm). Démarier à la main en laissant un plant par poquet. Désherber à la main ; le guide mentionne aussi un herbicide en pré-levée et en post-levée, 30 à 45 jours après le semis. [1]",
+    "water_needs": "Arroser régulièrement, à raison de 6 à 9 litres par m² et par jour (6 à 9 pots d'eau de 1 litre = 1 arrosoir), et aussitôt après le démariage. L'arrosage à la lance est fortement déconseillé. [1]",
+    "fertilization": "Fumure de fond : voir sol et semis. Fumure minérale d'entretien : 300 kg par hectare au total, en deux apports, au 20e et au 40e jour après le semis. [1]",
+    "pests_diseases": [
+      {
+        "name": "Surveillance et traitements",
+        "advice": "Surveiller régulièrement les plants pour déceler les attaques et les maladies, et intervenir de façon adaptée. Les produits phytosanitaires sont très dangereux pour la santé s'ils sont mal utilisés : toujours prendre l'avis d'un technicien sur les produits à utiliser. [1]"
+      }
+    ],
+    "harvest": "Humidifier le sol la veille pour faciliter l'arrachage. Récolter à la main à partir de 90 à 120 jours, le matin ou l'après-midi en évitant les heures les plus chaudes ; déterrer à la main si le sol est meuble, avec un fer courbe si le sol est argileux, sans blesser les carottes. Couper les fanes à 1 cm du collet et regrouper la récolte en tas sur des bâches. Trier et calibrer par taille et par forme (1er, 2e et 3e choix), conditionner dans des emballages propres portant une étiquette, éviter les charges trop lourdes ou liées au fil de fer, puis transporter vers le centre de conditionnement, la chambre froide ou directement le marché. [1]",
+    "yield_info": "",
+    "limitations": "Le guide ne donne ni rendement attendu, ni liste précise de ravageurs, ni produit de traitement. Il fait suite à une édition précédente du projet PADEN.",
+    "sources": [
+      {
+        "title": "Bonnes pratiques de production de la carotte dans les Niayes (livret français-poular)",
+        "publisher": "Ministère de l'Agriculture et de l'Équipement rural, projet PIESAN",
+        "year": "mis en ligne en 2022",
+        "url": "https://agriculture.gouv.sn/wp-content/uploads/2022/02/LIvret-Carotte-francais-Poular.pdf"
+      }
+    ]
+  },
+  {
+    "slug": "sorgho",
+    "name": "Sorgho",
+    "scientific_name": "Sorghum bicolor",
+    "category": "cereale",
+    "aliases": [
+      "sorghos"
+    ],
+    "summary": "Céréale pluviale des zones soudano-sahéliennes du Sénégal, cultivée sur sols sableux. La fertilisation recommandée au Sénégal est de 150 kg/ha de NPK 15-15-15 à la levée, puis 50 kg/ha d'urée au tallage et 50 kg/ha à la montaison. [1]",
+    "zones": "Zones soudano-sahéliennes ; les essais cités ont eu lieu à Nioro du Rip et à Sinthiou Malème, sur sols sableux, en culture pluviale. [1]",
+    "cycle_days_min": null,
+    "cycle_days_max": null,
+    "calendar": "Classes de cycle (du semis à la maturité) : court, de 85 à 95 jours ; moyen, de 105 à 135 jours ; long, au-delà de 135 jours. Faourou (variété sénégalaise) : cycle court, non sensible à la photopériode, petite taille (moins de 2 m), pour le grain. Fadda (hybride du Mali) et Soumba (Mali) : cycle moyen, double usage grain et fourrage. Soumalemba (Cameroun) : cycle long, sensible à la photopériode, grande taille (plus de 3 m), pour le grain. [1]",
+    "soil_and_sowing": "Dans les essais : labour croisé à 30 cm de profondeur ; lignes espacées de 0,8 m et poquets espacés de 0,4 m ; 5 à 6 grains par poquet, démariés à 2 plants par poquet à la levée, soit 62 500 plants par hectare ; sarclage, buttage et traitements phytosanitaires réalisés régulièrement. [1]",
+    "water_needs": "",
+    "fertilization": "Recommandation en vigueur au Sénégal pour le sorgho : 150 kg/ha de NPK 15-15-15 à la levée, 50 kg/ha d'urée (46 %) au tallage et 50 kg/ha d'urée à la montaison. Si le début de la saison des pluies est défavorable, les essais montrent qu'un apport retardé de la même dose (NPK 150 kg/ha, puis 50 kg/ha d'urée à la montaison et 50 kg/ha à l'épiaison) reste bénéfique pour le grain comme pour la biomasse ; la moitié de la dose retardée est moins efficace. La variété Soumalemba réagit mieux aux apports tardifs. [1]",
+    "pests_diseases": [],
+    "harvest": "",
+    "yield_info": "",
+    "limitations": "Source principale : un article scientifique de 2018 (essais sur deux sites, sols sableux). La fertilisation y est citée comme recommandation en vigueur, sans détail par zone. Dates de semis, ravageurs, récolte et rendements moyens ne sont pas couverts ici.",
+    "sources": [
+      {
+        "title": "Optimisation du NPK et urée basée sur les informations climatiques pour accroître la production du sorgho en zones soudano-sahéliennes du Sénégal (K. K. Ganyo et al.), Journal of Applied Biosciences 131",
+        "publisher": "CERAAS, UCAD, CIRAD et partenaires",
+        "year": "2018",
+        "url": "https://agritrop.cirad.fr/590813/1/5.Ganyo_%20(1).pdf"
+      }
+    ]
+  },
+  {
+    "slug": "mangue",
+    "name": "Mangue (Niayes)",
+    "scientific_name": "Mangifera indica",
+    "category": "fruit",
+    "aliases": [
+      "mangues",
+      "manguier",
+      "manguiers"
+    ],
+    "summary": "Arboriculture fruitière des Niayes, en trois systèmes : arbres isolés, grands vergers d'exportation et petits vergers traditionnels pour le marché local. [1]",
+    "zones": "Bassin de production des Niayes et région de Thiès (zone étudiée). [1]",
+    "cycle_days_min": null,
+    "cycle_days_max": null,
+    "calendar": "Dans les Niayes, la récolte s'étale de mi-juin à début août, avec un pic en juillet, en 3 ou 4 passages à mesure que les fruits mûrissent. [1]",
+    "soil_and_sowing": "Vergers d'exportation : monoculture de la variété Kent, plus rarement Keitt, plantée de 6 m sur 6 m à 10 m sur 10 m. Petits vergers traditionnels : variétés à dominante Kent, avec des variétés précoces (variétés locales fibreuses, Boucodiékhal, Dieg bou gatt) et tardives (Keitt), souvent associées au maraîchage, à la papaye et aux agrumes. [1]",
+    "water_needs": "Vergers d'exportation : irrigation au goutte-à-goutte ou en micro-aspersion, du stade floraison jusqu'à quelques jours avant la récolte. Dans les vergers traditionnels, la variabilité du rendement semble liée à l'état de nutrition hydrique des arbres (profondeur de la nappe par rapport aux racines, irrigation). [1]",
+    "fertilization": "Vergers d'exportation : taille annuelle et fertilisation racinaire ; un exemple cité est un mélange de fumier, coquilles d'arachide, litière de filao et résidus de taille. Vergers traditionnels : apports occasionnels de fumier. Après la récolte, certains producteurs enlèvent les inflorescences desséchées pour stimuler les pousses florifères de l'année suivante. [1]",
+    "pests_diseases": [
+      {
+        "name": "Mouches des fruits (Ceratitis cosyra, Bactrocera dorsalis)",
+        "advice": "Principal enjeu sanitaire : Bactrocera dorsalis et Ceratitis cosyra sont des insectes de quarantaine, et les lots touchés sont détruits à l'arrivée en Europe. Les mangues sont récoltées encore dures, à un stade assez précoce pour éviter les attaques de mouches mais assez avancé pour mûrir après la récolte. Le piégeage des mâles et l'élevage de fourmis oecophylles ont été conçus pour limiter les mouches ; la source constate toutefois que les producteurs ne les appliquent pas. [1]"
+      },
+      {
+        "name": "Anthracnose et maladies fongiques",
+        "advice": "Les vergers d'exportation sont protégés contre les maladies fongiques (anthracnose). Un verger biologique cité utilise la bouillie bordelaise comme base de travail. [1]"
+      }
+    ],
+    "harvest": "Récolter encore dur. Critères cités : renflement près du pédoncule (« épaule bombée »), apparition de lenticelles et, dans certains cas, taux de sucre supérieur à 10-12 Brix. Les fruits piqués ou moisis sont laissés sur l'arbre ou écartés. En système d'exportation, des équipes formées cueillent les fruits avec leur hampe florale. [1]",
+    "yield_info": "Vergers d'exportation : 15 à 25 t par hectare. Vergers traditionnels : 1 à 10 t par hectare. [1]",
+    "limitations": "Note de pré-diagnostic issue d'une mission de terrain en 2017 : ses auteurs précisent que ses conclusions sont provisoires et ont valeur d'hypothèses. Elle décrit des pratiques observées, pas un itinéraire recommandé : aucune dose d'engrais ni aucun produit de traitement n'est recommandé ici.",
+    "sources": [
+      {
+        "title": "Le système sociotechnique associé à la mangue au Sénégal : pré-diagnostic (R. Belmin)",
+        "publisher": "CIRAD",
+        "year": "2017 (mis en ligne en 2019)",
+        "url": "https://agritrop.cirad.fr/592209/1/Pre%CC%81diagnostic%20Mangue%20Se%CC%81ne%CC%81gal%20V4.pdf"
+      }
     ]
   }
 ]
