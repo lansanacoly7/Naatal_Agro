@@ -28,6 +28,7 @@ class AppConstants {
   static const String loginEndpoint = '/users/auth/login/';
   static const String registerEndpoint = '/users/auth/register/';
   static const String refreshTokenEndpoint = '/users/auth/refresh/';
+  static const String logoutEndpoint = '/users/auth/logout/';
 
   // Endpoints Agriculture
   static const String cropsEndpoint = '/agriculture/crops/';

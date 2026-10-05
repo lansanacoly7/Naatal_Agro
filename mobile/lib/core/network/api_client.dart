@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../constants/app_constants.dart';
@@ -10,10 +11,12 @@ import 'sync_service.dart';
 class ApiClient {
   late final Dio _dio;
   final FlutterSecureStorage _secureStorage;
+  final HttpClientAdapter? _httpClientAdapter;
 
   /// [httpClientAdapter] permet d'injecter un faux serveur dans les tests.
   ApiClient({FlutterSecureStorage? secureStorage, HttpClientAdapter? httpClientAdapter})
-      : _secureStorage = secureStorage ?? const FlutterSecureStorage() {
+      : _secureStorage = secureStorage ?? const FlutterSecureStorage(),
+        _httpClientAdapter = httpClientAdapter {
     _dio = Dio(
       BaseOptions(
         baseUrl: AppConstants.apiBaseUrl,
@@ -86,26 +89,57 @@ class ApiClient {
     );
   }
 
-  /// Tente de rafraîchir le JWT de manière sécurisée
+  /// Tente de rafraîchir le JWT de manière sécurisée.
+  /// Le backend fait tourner les jetons de rafraîchissement : l'ancien est invalidé
+  /// à chaque renouvellement, le nouveau doit donc être conservé.
   Future<bool> _refreshToken() async {
     try {
       final refreshToken = await _secureStorage.read(key: AppConstants.refreshTokenKey);
       if (refreshToken == null || refreshToken.isEmpty) return false;
 
-      final response = await Dio().post(
-        '${AppConstants.apiBaseUrl}${AppConstants.refreshTokenEndpoint}',
+      final bareDio = Dio(BaseOptions(
+        baseUrl: AppConstants.apiBaseUrl,
+        connectTimeout: const Duration(seconds: 10),
+        receiveTimeout: const Duration(seconds: 15),
+      ));
+      final adapter = _httpClientAdapter;
+      if (adapter != null) {
+        bareDio.httpClientAdapter = adapter;
+      }
+      final response = await bareDio.post(
+        AppConstants.refreshTokenEndpoint,
         data: {'refresh': refreshToken},
       );
 
-      if (response.statusCode == 200) {
-        await _secureStorage.write(
-          key: AppConstants.accessTokenKey,
-          value: response.data['access'],
-        );
+      final access = response.data['access'];
+      if (response.statusCode == 200 && access is String && access.isNotEmpty) {
+        await _secureStorage.write(key: AppConstants.accessTokenKey, value: access);
+        final rotated = response.data['refresh'];
+        if (rotated is String && rotated.isNotEmpty) {
+          await _secureStorage.write(key: AppConstants.refreshTokenKey, value: rotated);
+        }
         return true;
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[ApiClient] Échec du renouvellement du jeton : $e');
+    }
     return false;
+  }
+
+  /// Invalide le jeton de rafraîchissement côté serveur (liste noire).
+  /// Au mieux : si le réseau est coupé, la déconnexion locale doit tout de même aboutir.
+  Future<void> logoutFromServer() async {
+    try {
+      final refreshToken = await _secureStorage.read(key: AppConstants.refreshTokenKey);
+      if (refreshToken == null || refreshToken.isEmpty) return;
+      await _dio.request(
+        AppConstants.logoutEndpoint,
+        data: {'refresh': refreshToken},
+        options: Options(method: 'POST', extra: {'replay': true}),
+      );
+    } catch (e) {
+      debugPrint('[ApiClient] Déconnexion serveur impossible (déconnexion locale conservée) : $e');
+    }
   }
 
   // ──────────── Méthodes publiques ────────────
