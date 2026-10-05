@@ -58,3 +58,9 @@ web/dist/
 Thumbs.db
 
 backend/staticfiles/
+
+# SonarQube & Coverage
+.scannerwork/
+.coverage
+coverage.xml
+**/coverage/

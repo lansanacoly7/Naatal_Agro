@@ -43,10 +43,18 @@ jobs:
           cd backend
           python manage.py check --deploy --settings=core.settings.prod
 
-      - name: Run Backend Tests
+      - name: Run Backend Tests with Coverage
         run: |
           cd backend
-          python manage.py test
+          coverage run --source='apps' manage.py test
+          coverage xml -o coverage.xml
+          coverage report -m
+
+      - name: Upload Backend Coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage
+          path: backend/coverage.xml
 
   flutter-test:
     name: Flutter Mobile Analyze & Tests
@@ -70,10 +78,16 @@ jobs:
           cd mobile
           flutter analyze lib
 
-      - name: Run Flutter Widget Tests
+      - name: Run Flutter Widget Tests with Coverage
         run: |
           cd mobile
-          flutter test
+          flutter test --coverage
+
+      - name: Upload Flutter Coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: flutter-coverage
+          path: mobile/coverage/lcov.info
 
   web-build:
     name: Web React Build
@@ -93,3 +107,32 @@ jobs:
           cd web
           npm ci
           npm run build
+
+  sonarqube:
+    name: SonarQube Quality Gate
+    runs-on: ubuntu-latest
+    needs: [backend-test, flutter-test, web-build]
+    if: always() && (needs.backend-test.result == 'success') && (needs.flutter-test.result == 'success')
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download Backend Coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-coverage
+          path: backend/
+
+      - name: Download Flutter Coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: flutter-coverage
+          path: mobile/coverage/
+
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v4
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        continue-on-error: true
