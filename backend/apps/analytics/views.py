@@ -47,7 +47,7 @@ class DashboardView(views.APIView):
 
         # 5. Calendrier des activités agricoles à venir
         today = timezone.now().date()
-        upcoming_activities = Activity.objects.filter(crop__user=user, date__gte=today).order_by('date')[:5]
+        upcoming_activities = Activity.objects.filter(crop__user=user, date__gte=today).select_related('crop').order_by('date')[:5]
         calendar_events = []
         for act in upcoming_activities:
             calendar_events.append({

@@ -1,7 +1,10 @@
+import logging
 import os
 import firebase_admin
 from firebase_admin import credentials, messaging
 from django.conf import settings
+
+logger = logging.getLogger(__name__)
 
 # Initialiser l'application Firebase une seule fois
 def get_firebase_app():
@@ -11,7 +14,7 @@ def get_firebase_app():
             cred = credentials.Certificate(cred_path)
             return firebase_admin.initialize_app(cred)
         else:
-            print("WARNING: Firebase credentials not found. Push notifications will be disabled.")
+            logger.warning("Identifiants Firebase introuvables : notifications push désactivées.")
             return None
     return firebase_admin.get_app()
 
@@ -31,8 +34,8 @@ def send_push_notification(fcm_token, title, body, data=None):
     
     try:
         response = messaging.send(message)
-        print(f"Successfully sent push notification: {response}")
+        logger.info("Notification push envoyée : %s", response)
         return True
     except Exception as e:
-        print(f"Error sending push notification: {e}")
+        logger.error("Échec de l'envoi de la notification push : %s", e)
         return False

@@ -13,17 +13,19 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 load_dotenv(BASE_DIR / '.env')
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-naatal-agro-production-ready-key-2026-very-secure-seed-98234127')
+# Valeur de repli réservée au développement/CI : prod.py refuse de démarrer sans SECRET_KEY.
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-dev-only-do-not-use-in-production')
 
 OPENWEATHER_API_KEY = os.getenv('API_KEY_OPENWEATHER')
 GROQ_API_KEY = os.getenv('API_KEY_GROQ')
 GEMINI_API_KEY = os.getenv('API_KEY_GEMINI')
+GEMINI_MODEL = os.getenv('GEMINI_MODEL', 'gemini-2.5-flash')
 FIREBASE_CREDENTIALS_PATH = os.getenv('FIREBASE_CREDENTIALS_PATH')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'False').lower() in ('true', '1', 't')
 
-ALLOWED_HOSTS = ['*'] # Dev config
+ALLOWED_HOSTS = [h.strip() for h in os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,10.0.2.2').split(',') if h.strip()]
 
 # Application definition
 INSTALLED_APPS = [
@@ -126,8 +128,9 @@ USE_TZ = True
 STATIC_URL = "static/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# CORS configuration
-CORS_ALLOW_ALL_ORIGINS = True
+# CORS : fermé par défaut, ouvert uniquement via local.py ou CORS_ALLOWED_ORIGINS
+CORS_ALLOW_ALL_ORIGINS = False
+CORS_ALLOWED_ORIGINS = [o.strip() for o in os.getenv('CORS_ALLOWED_ORIGINS', '').split(',') if o.strip()]
 
 # REST Framework configuration
 REST_FRAMEWORK = {
@@ -141,6 +144,9 @@ REST_FRAMEWORK = {
     'DEFAULT_THROTTLE_RATES': {
         'anon': '100/minute',
         'user': '1000/minute',
+        # Limites dédiées (vues avec throttle_scope)
+        'auth': '10/minute',
+        'ai': '30/hour',
     }
 }
 
@@ -153,6 +159,44 @@ SIMPLE_JWT = {
     'UPDATE_LAST_LOGIN': True,
 }
 
+# Configuration de journalisation centralisée (Logging)
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '[{asctime}] {levelname} [{name}:{lineno}] {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
+            'propagate': False,
+        },
+        'apps': {
+            'handlers': ['console'],
+            'level': 'DEBUG' if DEBUG else 'INFO',
+            'propagate': False,
+        },
+    },
+}
+
 # Optimisation drastique de la vitesse d'exécution des tests (MD5 au lieu de PBKDF2 720k iterations)
 import sys
 if 'test' in sys.argv:
@@ -160,4 +204,5 @@ if 'test' in sys.argv:
         'django.contrib.auth.hashers.MD5PasswordHasher',
     ]
     REST_FRAMEWORK['DEFAULT_THROTTLE_CLASSES'] = []
+    REST_FRAMEWORK['DEFAULT_THROTTLE_RATES'].update({'auth': '10000/minute', 'ai': '10000/minute'})
 

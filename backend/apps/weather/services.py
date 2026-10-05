@@ -1,7 +1,10 @@
+import logging
 import requests
 from django.conf import settings
 from datetime import date
 from .models import WeatherData
+
+logger = logging.getLogger(__name__)
 
 def fetch_weather_for_location(location):
     """
@@ -41,6 +44,6 @@ def fetch_weather_for_location(location):
             )
             return weather
     except Exception as e:
-        print(f"Error fetching weather: {e}")
+        logger.error("Erreur lors de la récupération météo pour %s : %s", location, e)
     
     return None

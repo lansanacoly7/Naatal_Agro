@@ -54,19 +54,20 @@ class SyncService {
         final path = req['path'];
         final data = req['data'];
 
-        // Envoi via Dio sans ré-intercepter les erreurs réseau par la queue
-        // Pour être sûr, on utilise une méthode directe.
-        final response = await _sendRequest(apiClient, method, path, data);
-        if (response.statusCode == 200 || response.statusCode == 201) {
-          debugPrint('[SyncService] Succès: $method $path');
+        await _sendRequest(apiClient, method, path, data);
+        debugPrint('[SyncService] Succès: $method $path');
+      } on DioException catch (e) {
+        final status = e.response?.statusCode;
+        if (status != null && status >= 400 && status < 500 && status != 408 && status != 429) {
+          // Rejet définitif par le serveur (validation, droits...) : rejouer ne servirait à rien
+          debugPrint('[SyncService] Requête abandonnée (HTTP $status): $reqJson');
         } else {
-          // Erreur serveur (pas réseau), on abandonne la requête pour ne pas bloquer la queue
-          debugPrint('[SyncService] Erreur serveur sur $path: ${response.statusCode}');
+          // Réseau coupé ou erreur serveur temporaire : on la garde pour la prochaine synchro
+          debugPrint('[SyncService] Échec temporaire, remise en file.');
+          failedQueue.add(reqJson);
         }
       } catch (e) {
-        // En cas d'erreur réseau persistante, on remet dans la file (les prochaines échoueront sûrement aussi)
-        debugPrint('[SyncService] Échec de la synchro, remise en queue.');
-        failedQueue.add(reqJson);
+        debugPrint('[SyncService] Entrée illisible ignorée: $e');
       }
     }
 
@@ -77,12 +78,10 @@ class SyncService {
   }
 
   static Future<Response> _sendRequest(ApiClient client, String method, String path, dynamic data) {
-    switch (method.toUpperCase()) {
-      case 'POST': return client.post(path, data: data);
-      case 'PUT': return client.put(path, data: data);
-      case 'PATCH': return client.patch(path, data: data);
-      case 'DELETE': return client.delete(path);
-      default: throw Exception('Unsupported method');
+    const allowed = ['POST', 'PUT', 'PATCH', 'DELETE'];
+    if (!allowed.contains(method.toUpperCase())) {
+      throw ArgumentError('Méthode non supportée: $method');
     }
+    return client.replay(method.toUpperCase(), path, data: data);
   }
 }

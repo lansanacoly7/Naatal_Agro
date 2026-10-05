@@ -42,7 +42,9 @@ class ApiClient {
               error.type == DioExceptionType.receiveTimeout) {
             
             final method = error.requestOptions.method.toUpperCase();
-            if (['POST', 'PUT', 'PATCH', 'DELETE'].contains(method)) {
+            // Les requêtes rejouées par SyncService ne doivent pas être remises en file ici
+            final isReplay = error.requestOptions.extra['replay'] == true;
+            if (!isReplay && ['POST', 'PUT', 'PATCH', 'DELETE'].contains(method)) {
               await SyncService.enqueueRequest(
                 method: method,
                 path: error.requestOptions.path,
@@ -52,7 +54,7 @@ class ApiClient {
               return handler.resolve(Response(
                 requestOptions: error.requestOptions,
                 statusCode: 202,
-                data: {'message': 'Action sauvegardée (Offline)'},
+                data: {'message': 'Action sauvegardée (Offline)', 'offline': true},
               ));
             }
           }
@@ -117,6 +119,16 @@ class ApiClient {
 
   Future<Response> patch(String path, {dynamic data}) {
     return _dio.patch(path, data: data);
+  }
+
+  /// Rejoue une requête mise en file hors ligne. Les erreurs réseau sont propagées
+  /// (au lieu d'être converties en faux 202) pour que SyncService garde la requête.
+  Future<Response> replay(String method, String path, {dynamic data}) {
+    return _dio.request(
+      path,
+      data: data,
+      options: Options(method: method, extra: {'replay': true}),
+    );
   }
 
   Future<Response> delete(String path) {

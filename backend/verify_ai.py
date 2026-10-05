@@ -6,7 +6,7 @@ Usage : python verify_ai.py
 import os
 import django
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'core.settings.base')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'core.settings.local')
 django.setup()
 
 from apps.ai_assistant.services import ask_llm

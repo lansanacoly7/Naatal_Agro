@@ -15,11 +15,11 @@ python manage.py check --deploy --settings=core.settings.prod
 
 # 2. Exécution des migrations
 echo "-> Application des migrations en attente..."
-python manage.py migrate --noinput
+python manage.py migrate --noinput --settings=core.settings.prod
 
 # 3. Collecte des fichiers statiques
 echo "-> Collecte des fichiers statiques..."
-python manage.py collectstatic --noinput
+python manage.py collectstatic --noinput --settings=core.settings.prod
 
 cd ..
 

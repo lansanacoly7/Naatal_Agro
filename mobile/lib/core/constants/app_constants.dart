@@ -2,16 +2,25 @@ import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, Tar
 
 /// Constantes globales de l'application Nataal Agro
 class AppConstants {
+  /// URL de l'API injectable à la compilation, utile pour un téléphone réel ou la prod :
+  /// `flutter run --dart-define=API_BASE_URL=http://192.168.1.20:8000/api`
+  static const String _apiBaseUrlOverride = String.fromEnvironment('API_BASE_URL');
+
   // API Backend Django - Dynamique selon l'environnement
   static String get apiBaseUrl {
-    if (kIsWeb) {
-      return 'http://127.0.0.1:8000/api'; // Changé pour 127.0.0.1 au lieu d'une IP fixe pour le dev local
+    if (_apiBaseUrlOverride.isNotEmpty) {
+      return _apiBaseUrlOverride;
     }
-    
+
+    if (kIsWeb) {
+      return 'http://127.0.0.1:8000/api';
+    }
+
     if (defaultTargetPlatform == TargetPlatform.android) {
+      // 10.0.2.2 = machine hôte vue depuis l'émulateur Android
       return 'http://10.0.2.2:8000/api';
     }
-    
+
     return 'http://127.0.0.1:8000/api';
   }
 

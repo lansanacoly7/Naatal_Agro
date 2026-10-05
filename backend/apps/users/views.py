@@ -1,4 +1,5 @@
 from rest_framework import views, permissions, status, generics
+from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
@@ -29,6 +30,8 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 
 class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'auth'
 
 class RegisterSerializer(serializers.ModelSerializer):
     phone_number = serializers.CharField(write_only=True)
@@ -78,6 +81,8 @@ class RegisterSerializer(serializers.ModelSerializer):
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
     permission_classes = [permissions.AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'auth'
     serializer_class = RegisterSerializer
 
 class UpdateFCMTokenView(views.APIView):

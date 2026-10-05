@@ -125,7 +125,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                   const SizedBox(height: 16),
                   _buildFeaturedProducts(data.featuredProducts),
                   const SizedBox(height: 32),
-                  _buildSectionTitle('Calendrier Agricole', badgeText: 'JUIN 2024'),
+                  _buildSectionTitle('Calendrier Agricole', badgeText: _currentMonthLabel()),
                   const SizedBox(height: 16),
                   _buildAgriculturalCalendar(data.calendarEvents),
                   const SizedBox(height: 32),
@@ -371,20 +371,34 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
   // ─────────────────────────────────────────────
   // AGRICULTURAL CALENDAR
   // ─────────────────────────────────────────────
+  /// Mois courant en français, ex. « OCTOBRE 2026 » (évite d'initialiser les locales intl).
+  String _currentMonthLabel() {
+    const months = [
+      'JANVIER', 'FÉVRIER', 'MARS', 'AVRIL', 'MAI', 'JUIN',
+      'JUILLET', 'AOÛT', 'SEPTEMBRE', 'OCTOBRE', 'NOVEMBRE', 'DÉCEMBRE',
+    ];
+    final now = DateTime.now();
+    return '${months[now.month - 1]} ${now.year}';
+  }
+
   Widget _buildAgriculturalCalendar(List<CalendarEvent> events) {
-    CalendarEvent event;
     if (events.isEmpty) {
-      event = CalendarEvent(
-        date: '15\nJUIN',
-        monthYear: 'JUIN 2024',
-        phase: 'PHASE ACTUELLE',
-        title: 'Préparation des sols (Mil)',
-        description: 'Désherbage et labour avant les premières pluies majeures.',
-        isCompleted: true,
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: Colors.grey.withValues(alpha: 0.1)),
+        ),
+        child: const Text(
+          'Aucune activité planifiée. Ajoutez une culture pour alimenter votre calendrier agricole.',
+          style: TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.4),
+        ),
       );
-    } else {
-      event = events.first;
     }
+    final event = events.first;
+    final eventMonth = event.date.contains('\n') ? event.date.split('\n').last : '';
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -425,7 +439,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                         color: AppColors.primary,
                         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
                       ),
-                      child: const Text('JUIN', textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 10, letterSpacing: 1)),
+                      child: Text(eventMonth, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 10, letterSpacing: 1)),
                     ),
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 12),

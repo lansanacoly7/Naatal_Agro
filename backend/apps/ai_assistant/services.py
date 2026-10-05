@@ -123,7 +123,8 @@ def call_gemini(prompt, image_base64=None):
     if not gemini_key:
         return None
         
-    url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
+    model = getattr(settings, 'GEMINI_MODEL', 'gemini-2.5-flash')
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
     headers = {
         "x-goog-api-key": gemini_key,
         "Content-Type": "application/json"

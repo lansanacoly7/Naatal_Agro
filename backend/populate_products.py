@@ -1,7 +1,7 @@
 import os
 import django
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'core.settings.base')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'core.settings.local')
 django.setup()
 
 from apps.markets.models import Product

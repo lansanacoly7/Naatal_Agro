@@ -75,3 +75,48 @@ class AIAssistantSecurityTests(TestCase):
         url = reverse('ai_assistant:ask_ai')
         response = self.client.post(url, {'query': 'Conseille-moi sur le riz.'}, format='json')
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+class AIEndpointGuardTests(TestCase):
+    """Validation des entrées et limitation de débit de /api/ai/ask/."""
+
+    def setUp(self):
+        from django.core.cache import cache
+        cache.clear()
+        self.user = User.objects.create_user(username='+221773000009', phone='+221773000009', password='Motdepasse#2026')
+        self.client = APIClient()
+        self.client.force_authenticate(self.user)
+
+    def test_requires_authentication(self):
+        self.assertEqual(APIClient().post('/api/ai/ask/', {'query': 'x'}, format='json').status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_rejects_empty_request(self):
+        self.assertEqual(self.client.post('/api/ai/ask/', {}, format='json').status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_rejects_overlong_query(self):
+        response = self.client.post('/api/ai/ask/', {'query': 'a' * 1001}, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_rejects_non_text_query(self):
+        response = self.client.post('/api/ai/ask/', {'query': {'sql': 'SELECT 1'}}, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_rejects_oversized_image(self):
+        response = self.client.post('/api/ai/ask/', {'image_base64': 'a' * 7_000_001}, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_ai_scope_is_throttled(self):
+        from unittest.mock import patch
+        from rest_framework.throttling import ScopedRateThrottle
+        with patch.dict(ScopedRateThrottle.THROTTLE_RATES, {'ai': '2/hour'}),                 patch('apps.ai_assistant.views.ask_llm', return_value='ok'):
+            codes = [self.client.post('/api/ai/ask/', {'query': 'bonjour'}, format='json').status_code for _ in range(3)]
+        self.assertEqual(codes, [status.HTTP_201_CREATED, status.HTTP_201_CREATED, status.HTTP_429_TOO_MANY_REQUESTS])
+
+    def test_login_is_throttled(self):
+        from unittest.mock import patch
+        from rest_framework.throttling import ScopedRateThrottle
+        with patch.dict(ScopedRateThrottle.THROTTLE_RATES, {'auth': '3/minute'}):
+            codes = [APIClient().post('/api/users/auth/login/', {'phone_number': '+221000', 'password': 'x'}, format='json').status_code
+                     for _ in range(4)]
+        self.assertEqual(codes[-1], status.HTTP_429_TOO_MANY_REQUESTS)
+        self.assertNotIn(status.HTTP_429_TOO_MANY_REQUESTS, codes[:3])

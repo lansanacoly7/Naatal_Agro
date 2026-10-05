@@ -29,21 +29,24 @@ class DashboardData {
               .toList() ??
           [],
       weather: WeatherSummary.fromJson(json['weather'] ?? {}),
-      alerts: (json['alerts'] as List?)?.map((e) => e.toString()).toList() ?? [],
-      
-      // On mock par défaut s'ils ne viennent pas de l'API pour l'instant
+      // Le backend renvoie des objets {id, type, message, created_at}
+      alerts: (json['alerts'] as List?)
+              ?.map((e) => e is Map ? (e['message'] ?? '').toString() : e.toString())
+              .toList() ??
+          [],
+
       calendarEvents: (json['calendarEvents'] as List?)
               ?.map((e) => CalendarEvent.fromJson(e))
               .toList() ??
-          _mockCalendarEvents(),
+          [],
       featuredProducts: (json['featuredProducts'] as List?)
               ?.map((e) => FeaturedProduct.fromJson(e))
               .toList() ??
-          _mockFeaturedProducts(),
+          const [],
       stockItems: (json['stockItems'] as List?)
               ?.map((e) => StockItem.fromJson(e))
               .toList() ??
-          _mockStockItems(),
+          const [],
     );
   }
 }
@@ -79,6 +82,13 @@ class CalendarEvent {
   }
 }
 
+/// Le backend envoie le prix en nombre (FCFA/kg) ; l'UI affiche une chaîne.
+String _formatPrice(dynamic value) {
+  if (value == null || value == '') return '';
+  if (value is num) return '${value.round()} F/kg';
+  return value.toString();
+}
+
 class FeaturedProduct {
   final String name;
   final String variety;
@@ -99,48 +109,16 @@ class FeaturedProduct {
   factory FeaturedProduct.fromJson(Map<String, dynamic> json) {
     return FeaturedProduct(
       name: json['name'] ?? '',
-      variety: json['variety'] ?? '',
-      imageAsset: json['imageAsset'] ?? json['image_asset'] ?? '',
-      price: json['price'] ?? '',
-      cycle: json['cycle'] ?? '',
-      profitability: json['profitability'] ?? '',
+      variety: (json['variety'] ?? json['category'] ?? '').toString(),
+      imageAsset: (json['imageAsset'] ?? json['image_asset'] ?? '').toString(),
+      price: _formatPrice(json['price']),
+      cycle: (json['cycle'] ?? '').toString(),
+      profitability: (json['profitability'] ?? '').toString(),
     );
   }
 }
 
 // (StockItem is now imported from inventory)
-
-// ------------------ MOCK DATA FUNCTIONS ------------------
-
-List<CalendarEvent> _mockCalendarEvents() {
-  return [
-    CalendarEvent(
-      date: '15\nJUIN',
-      monthYear: 'JUIN 2024',
-      phase: 'PHASE ACTUELLE',
-      title: 'Préparation des sols (Mil)',
-      description: 'Désherbage et labour avant les premières pluies majeures.',
-      isCompleted: true,
-    ),
-  ];
-}
-
-List<FeaturedProduct> _mockFeaturedProducts() {
-  return [
-    FeaturedProduct(name: 'Oignon', variety: 'Violet de Galmi', imageAsset: 'assets/images/products/oignon.png', price: '350 F/kg', cycle: '90-120 j', profitability: 'Haute'),
-    FeaturedProduct(name: 'Mil', variety: 'Souna 3', imageAsset: 'assets/images/products/mil.png', price: '250 F/kg', cycle: '70-90 j', profitability: 'Moyenne'),
-    FeaturedProduct(name: 'Arachide', variety: 'Fleur 11', imageAsset: 'assets/images/products/arachide.png', price: '450 F/kg', cycle: '90-100 j', profitability: 'Élevée'),
-  ];
-}
-
-List<StockItem> _mockStockItems() {
-  return [
-    StockItem(id: '1', name: 'OIGNON', quantity: 1.2, unit: 'T', alertStatus: false, aiStorageAdvice: 'Conserver au sec', updatedAt: ''),
-    StockItem(id: '2', name: 'MIL', quantity: 800, unit: 'kg', alertStatus: false, aiStorageAdvice: 'Protéger des insectes', updatedAt: ''),
-    StockItem(id: '3', name: 'ARACHIDE', quantity: 500, unit: 'kg', alertStatus: false, aiStorageAdvice: 'Aérer régulièrement', updatedAt: ''),
-  ];
-}
-
 
 // ------------------ ANCIENS MODELES (MAINTENUS) ------------------
 

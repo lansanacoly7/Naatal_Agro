@@ -5,7 +5,7 @@ import random
 from django.utils import timezone
 
 # Configuration de Django
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'core.settings.base')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'core.settings.local')
 django.setup()
 
 from django.contrib.auth import get_user_model
