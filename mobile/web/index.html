@@ -29,18 +29,102 @@
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>nataal_agro</title>
+  <title>Naatal Agro — Copilote Agricole Intelligent</title>
   <link rel="manifest" href="manifest.json">
+
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #F4F6F8;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+    }
+    #splash-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background-color: #F4F6F8;
+      z-index: 999999;
+      transition: opacity 0.5s ease-out, visibility 0.5s ease-out;
+    }
+    .splash-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+    .splash-spinner {
+      width: 48px;
+      height: 48px;
+      border: 4px solid rgba(27, 94, 32, 0.15);
+      border-top-color: #1B5E20;
+      border-radius: 50%;
+      animation: spin 0.9s cubic-bezier(0.6, 0.2, 0.4, 0.8) infinite;
+    }
+    .splash-title {
+      margin-top: 24px;
+      font-size: 22px;
+      font-weight: 700;
+      color: #1B5E20;
+      letter-spacing: -0.5px;
+    }
+    .splash-subtitle {
+      margin-top: 8px;
+      font-size: 14px;
+      color: #8E8E93;
+      font-weight: 500;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
 </head>
 <body>
-  <!--
-    You can customize the "flutter_bootstrap.js" script.
-    This is useful to provide a custom configuration to the Flutter loader
-    or to give the user feedback during the initialization process.
+  <div id="splash-screen">
+    <div class="splash-content">
+      <div class="splash-spinner"></div>
+      <div class="splash-title">Naatal Agro</div>
+      <div class="splash-subtitle">Chargement de la plateforme agricole...</div>
+    </div>
+  </div>
 
-    For more details:
-    * https://docs.flutter.dev/platform-integration/web/initialization
-  -->
+  <script>
+    function removeSplashScreen() {
+      var splash = document.getElementById('splash-screen');
+      if (splash && splash.style.opacity !== '0') {
+        splash.style.opacity = '0';
+        splash.style.pointerEvents = 'none';
+        setTimeout(function() {
+          if (splash && splash.parentNode) splash.parentNode.removeChild(splash);
+        }, 500);
+      }
+    }
+
+    // 1. Détection via l'événement officiel Flutter Web
+    window.addEventListener('flutter-first-frame', removeSplashScreen);
+
+    // 2. Détection par insertion du moteur Flutter dans le DOM (flutter-view ou canvas)
+    var observer = new MutationObserver(function(mutations) {
+      if (document.querySelector('flutter-view') || document.querySelector('flt-glass-pane') || document.querySelector('canvas')) {
+        setTimeout(removeSplashScreen, 100);
+        observer.disconnect();
+      }
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    // 3. Fallback de sécurité au bout de 6 secondes
+    setTimeout(removeSplashScreen, 6000);
+  </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

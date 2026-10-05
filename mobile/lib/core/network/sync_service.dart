@@ -31,10 +31,14 @@ class SyncService {
 
   /// Tente de vider la file d'attente si le réseau est de retour
   static Future<void> syncOfflineData(ApiClient apiClient) async {
-    final connectivityResult = await Connectivity().checkConnectivity();
-    if (connectivityResult.contains(ConnectivityResult.none)) {
-      debugPrint('[SyncService] Toujours hors ligne, annulation de la synchro.');
-      return;
+    try {
+      final connectivityResult = await Connectivity().checkConnectivity();
+      if (connectivityResult.contains(ConnectivityResult.none)) {
+        debugPrint('[SyncService] Toujours hors ligne, annulation de la synchro.');
+        return;
+      }
+    } catch (e) {
+      debugPrint('[SyncService] Vérification connectivité non disponible: $e');
     }
 
     final prefs = await SharedPreferences.getInstance();

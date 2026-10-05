@@ -49,11 +49,11 @@ class _NataalAgroAppState extends ConsumerState<NataalAgroApp> {
   /// Rejoue les actions faites hors ligne au démarrage, puis à chaque retour du réseau.
   void _startOfflineSync() {
     final apiClient = ref.read(apiClientProvider);
-    SyncService.syncOfflineData(apiClient);
+    SyncService.syncOfflineData(apiClient).catchError((_) {});
     try {
       _connectivitySub = Connectivity().onConnectivityChanged.listen((results) {
         if (!results.contains(ConnectivityResult.none)) {
-          SyncService.syncOfflineData(apiClient);
+          SyncService.syncOfflineData(apiClient).catchError((_) {});
         }
       });
     } catch (_) {
