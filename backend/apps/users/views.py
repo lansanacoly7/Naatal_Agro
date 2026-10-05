@@ -1,6 +1,8 @@
 from rest_framework import views, permissions, status, generics
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.response import Response
+from rest_framework_simplejwt.exceptions import TokenError
+from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.contrib.auth import get_user_model
@@ -172,3 +174,24 @@ class UpdateProfileView(views.APIView):
                 "user": serializer.data
             }, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class LogoutView(views.APIView):
+    """
+    Déconnexion : invalide (liste noire) le jeton de rafraîchissement envoyé par le mobile.
+    Après cet appel, ce jeton ne peut plus servir à obtenir un nouvel accès.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        refresh = request.data.get('refresh')
+        if not refresh or not isinstance(refresh, str):
+            return Response({"error": "Le paramètre 'refresh' est requis."}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            token = RefreshToken(refresh)
+        except TokenError:
+            return Response({"error": "Jeton de rafraîchissement invalide ou expiré."}, status=status.HTTP_400_BAD_REQUEST)
+        if str(token.get('user_id')) != str(request.user.pk):
+            return Response({"error": "Ce jeton n'appartient pas à l'utilisateur connecté."}, status=status.HTTP_403_FORBIDDEN)
+        token.blacklist()
+        return Response(status=status.HTTP_204_NO_CONTENT)
