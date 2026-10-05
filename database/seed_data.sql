@@ -3,12 +3,13 @@
 -- ========================================================
 
 -- 1. Marchés régionaux du Sénégal
-INSERT INTO markets_market (id, name, region, location_gps, created_at) VALUES
-('b1a2c3d4-0001-4000-8000-000000000001', 'Marché Castors', 'Dakar', '14.7077,-17.4526', CURRENT_TIMESTAMP),
-('b1a2c3d4-0002-4000-8000-000000000002', 'Marché Central', 'Thiès', '14.7928,-16.9267', CURRENT_TIMESTAMP),
-('b1a2c3d4-0003-4000-8000-000000000003', 'Marché de Kaolack', 'Kaolack', '14.1500,-16.0833', CURRENT_TIMESTAMP),
-('b1a2c3d4-0004-4000-8000-000000000004', 'Marché Sor', 'Saint-Louis', '16.0167,-16.4833', CURRENT_TIMESTAMP),
-('b1a2c3d4-0005-4000-8000-000000000005', 'Marché Boucotte', 'Ziguinchor', '12.5833,-16.2667', CURRENT_TIMESTAMP);
+INSERT INTO markets_market (id, name, region, location_gps, rating, opening_time, closing_time) VALUES
+('b1a2c3d4-0001-4000-8000-000000000001', 'Marché Castors', 'Dakar', '14.7077,-17.4526', 4.5, '08:00:00', '18:00:00'),
+('b1a2c3d4-0002-4000-8000-000000000002', 'Marché Central', 'Thiès', '14.7928,-16.9267', 4.3, '08:00:00', '18:00:00'),
+('b1a2c3d4-0003-4000-8000-000000000003', 'Marché de Kaolack', 'Kaolack', '14.1500,-16.0833', 4.1, '08:00:00', '18:00:00'),
+('b1a2c3d4-0004-4000-8000-000000000004', 'Marché Sor', 'Saint-Louis', '16.0167,-16.4833', 4.2, '08:00:00', '18:00:00'),
+('b1a2c3d4-0005-4000-8000-000000000005', 'Marché Boucotte', 'Ziguinchor', '12.5833,-16.2667', 4.0, '08:00:00', '18:00:00');
+
 
 -- 2. Cotations des prix récents
 INSERT INTO markets_price (id, market_id, product_name, price, trend, date) VALUES

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
@@ -25,14 +26,14 @@ class SyncService {
 
     queue.add(jsonEncode(requestMap));
     await prefs.setStringList(_queueKey, queue);
-    print('[SyncService] Requête mise en file d\'attente (offline): $method $path');
+    debugPrint('[SyncService] Requête mise en file d\'attente (offline): $method $path');
   }
 
   /// Tente de vider la file d'attente si le réseau est de retour
   static Future<void> syncOfflineData(ApiClient apiClient) async {
     final connectivityResult = await Connectivity().checkConnectivity();
     if (connectivityResult.contains(ConnectivityResult.none)) {
-      print('[SyncService] Toujours hors ligne, annulation de la synchro.');
+      debugPrint('[SyncService] Toujours hors ligne, annulation de la synchro.');
       return;
     }
 
@@ -43,7 +44,7 @@ class SyncService {
       return;
     }
 
-    print('[SyncService] Synchronisation de ${queue.length} requêtes...');
+    debugPrint('[SyncService] Synchronisation de ${queue.length} requêtes...');
     List<String> failedQueue = [];
 
     for (String reqJson in queue) {
@@ -57,21 +58,21 @@ class SyncService {
         // Pour être sûr, on utilise une méthode directe.
         final response = await _sendRequest(apiClient, method, path, data);
         if (response.statusCode == 200 || response.statusCode == 201) {
-          print('[SyncService] Succès: $method $path');
+          debugPrint('[SyncService] Succès: $method $path');
         } else {
           // Erreur serveur (pas réseau), on abandonne la requête pour ne pas bloquer la queue
-          print('[SyncService] Erreur serveur sur $path: ${response.statusCode}');
+          debugPrint('[SyncService] Erreur serveur sur $path: ${response.statusCode}');
         }
       } catch (e) {
         // En cas d'erreur réseau persistante, on remet dans la file (les prochaines échoueront sûrement aussi)
-        print('[SyncService] Échec de la synchro, remise en queue.');
+        debugPrint('[SyncService] Échec de la synchro, remise en queue.');
         failedQueue.add(reqJson);
       }
     }
 
     await prefs.setStringList(_queueKey, failedQueue);
     if (failedQueue.isEmpty) {
-      print('[SyncService] Synchronisation terminée avec succès.');
+      debugPrint('[SyncService] Synchronisation terminée avec succès.');
     }
   }
 

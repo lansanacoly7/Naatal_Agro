@@ -104,7 +104,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Text('🇸🇳', style: TextStyle(fontSize: 18)),
+                              const Icon(Icons.phone_android_rounded, size: 20, color: AppColors.primary),
                               const SizedBox(width: 8),
                               const Text('+221', style: TextStyle(fontWeight: FontWeight.w500)),
                               const SizedBox(width: 12),
@@ -114,6 +114,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ),
                       ),
                     ),
+
                     Divider(height: 1, color: Colors.black.withValues(alpha: 0.05), indent: 16, endIndent: 16),
                     TextField(
                       controller: _passwordController,

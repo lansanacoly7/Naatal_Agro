@@ -51,7 +51,7 @@ class _B2BMarketplaceScreenState extends ConsumerState<B2BMarketplaceScreen> {
         decoration: BoxDecoration(
           gradient: RadialGradient(
             colors: [
-              AppColors.primary.withOpacity(0.03),
+              AppColors.primary.withValues(alpha: 0.03),
               Colors.transparent,
             ],
             center: const Alignment(0.8, -0.6),
@@ -115,7 +115,7 @@ class _B2BMarketplaceScreenState extends ConsumerState<B2BMarketplaceScreen> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -146,7 +146,7 @@ class _B2BMarketplaceScreenState extends ConsumerState<B2BMarketplaceScreen> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
-                        color: isOpen ? Colors.green.withOpacity(0.8) : Colors.orange.withOpacity(0.8),
+                        color: isOpen ? Colors.green.withValues(alpha: 0.8) : Colors.orange.withValues(alpha: 0.8),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Row(
@@ -198,7 +198,7 @@ class _B2BMarketplaceScreenState extends ConsumerState<B2BMarketplaceScreen> {
                     Container(
                       padding: const EdgeInsets.all(4),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.1),
+                        color: AppColors.primary.withValues(alpha: 0.1),
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(Icons.storefront_rounded, size: 12, color: AppColors.primary),
@@ -330,7 +330,7 @@ class _B2BMarketplaceScreenState extends ConsumerState<B2BMarketplaceScreen> {
                           height: 5,
                           width: 40,
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.5),
+                            color: Colors.white.withValues(alpha: 0.5),
                             borderRadius: BorderRadius.circular(10),
                           ),
                         ),
@@ -343,7 +343,7 @@ class _B2BMarketplaceScreenState extends ConsumerState<B2BMarketplaceScreen> {
                           gradient: LinearGradient(
                             begin: Alignment.topCenter,
                             end: Alignment.bottomCenter,
-                            colors: [Colors.black.withOpacity(0.1), Colors.black.withOpacity(0.7)],
+                            colors: [Colors.black.withValues(alpha: 0.1), Colors.black.withValues(alpha: 0.7)],
                           ),
                         ),
                       ),
@@ -367,9 +367,9 @@ class _B2BMarketplaceScreenState extends ConsumerState<B2BMarketplaceScreen> {
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: AppColors.primary.withOpacity(0.05),
+                          color: AppColors.primary.withValues(alpha: 0.05),
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: AppColors.primary.withOpacity(0.1)),
+                          border: Border.all(color: AppColors.primary.withValues(alpha: 0.1)),
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -441,7 +441,7 @@ class _B2BMarketplaceScreenState extends ConsumerState<B2BMarketplaceScreen> {
                                 if (qty != null && qty > 0 && qty <= double.parse(offer['quantity_kg'].toString())) {
                                   final messenger = ScaffoldMessenger.of(context);
                                   Navigator.pop(context); // Close bottom sheet
-                                  await ref.read(preSaleOffersProvider.notifier).reserveOffer(offer['id'], qty);
+                                  await ref.read(preSaleOffersProvider.notifier).reserveOffer(offer['id'].toString(), qty);
                                   if (mounted) {
                                     messenger.showSnackBar(
                                       SnackBar(

@@ -61,14 +61,23 @@ class PestReport(models.Model):
                 date_reported__gte=seven_days_ago
             ).count()
 
-            # Threshold is 10
-            if count == 10:
-                # Send alert to all users in this location
-                users_in_location = User.objects.filter(location__iexact=self.location)
-                for u in users_in_location:
-                    Notification.objects.create(
-                        user=u,
-                        type="alert",
-                        message=f"Alerte Maximale : Un foyer de {self.pest_name} a été confirmé près de {self.location}. Veuillez prendre vos précautions."
-                    )
+            # Seuil de déclenchement d'alerte : à partir de 10 signalements
+            if count >= 10:
+                one_day_ago = timezone.now() - datetime.timedelta(days=1)
+                already_alerted = Notification.objects.filter(
+                    type="alert",
+                    message__icontains=self.pest_name,
+                    created_at__gte=one_day_ago
+                ).exists()
+
+                if not already_alerted:
+                    target_location = self.location.split(',')[0].strip()
+                    users_in_location = User.objects.filter(location__icontains=target_location)
+                    for u in users_in_location:
+                        Notification.objects.create(
+                            user=u,
+                            type="alert",
+                            message=f"Alerte Maximale : Un foyer de {self.pest_name} a été confirmé près de {self.location}. Veuillez prendre vos précautions."
+                        )
+
 

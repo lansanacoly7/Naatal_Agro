@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -25,6 +24,11 @@ class _MarketsScreenState extends ConsumerState<MarketsScreen> with TickerProvid
   String _activeFilter = 'Tous';
   final List<String> _availableProducts = ['Oignon', 'Tomate', 'Riz', 'Arachide'];
   bool _isMapView = true;
+
+  // Filtre GPS "Autour de moi"
+  bool _nearbyFilterActive = false;
+  double _nearbyRadiusKm = 20.0; // rayon par défaut en km
+  bool _showRadiusSlider = false;
 
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
@@ -114,7 +118,7 @@ class _MarketsScreenState extends ConsumerState<MarketsScreen> with TickerProvid
             padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 12, bottom: 16, left: 16, right: 16),
             decoration: BoxDecoration(
               color: Colors.white,
-              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 15, offset: const Offset(0, 5))],
+              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 15, offset: const Offset(0, 5))],
               borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(24), bottomRight: Radius.circular(24)),
             ),
             child: Column(
@@ -165,7 +169,7 @@ class _MarketsScreenState extends ConsumerState<MarketsScreen> with TickerProvid
                         decoration: BoxDecoration(
                           color: AppColors.primary,
                           borderRadius: BorderRadius.circular(20),
-                          boxShadow: [BoxShadow(color: AppColors.primary.withOpacity(0.3), blurRadius: 6, offset: const Offset(0, 3))],
+                          boxShadow: [BoxShadow(color: AppColors.primary.withValues(alpha: 0.3), blurRadius: 6, offset: const Offset(0, 3))],
                         ),
                         child: DropdownButtonHideUnderline(
                           child: DropdownButton<String>(
@@ -178,16 +182,110 @@ class _MarketsScreenState extends ConsumerState<MarketsScreen> with TickerProvid
                               if (newValue != null) setState(() => _selectedProduct = newValue);
                             },
                             items: _availableProducts.map<DropdownMenuItem<String>>((String value) {
-                              return DropdownMenuItem<String>(value: value, child: Text('🌱 $value'));
+                              return DropdownMenuItem<String>(
+                                value: value,
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.eco_rounded, size: 16, color: Colors.white),
+                                    const SizedBox(width: 8),
+                                    Text(value),
+                                  ],
+                                ),
+                              );
                             }).toList(),
                           ),
                         ),
                       ),
                       const SizedBox(width: 12),
                       _buildFilterChip('Tous'),
-                      _buildFilterChip('💰 Prix'),
-                      _buildFilterChip('✨ Opportunités'),
+                      _buildFilterChip('Prix', icon: Icons.payments_outlined),
+                      _buildFilterChip('Opportunités', icon: Icons.auto_awesome_rounded),
+                      const SizedBox(width: 8),
+                      // Filtre "Autour de moi"
+                      GestureDetector(
+                        onTap: () => setState(() {
+                          _nearbyFilterActive = !_nearbyFilterActive;
+                          _showRadiusSlider = _nearbyFilterActive;
+                          if (!_nearbyFilterActive) _showRadiusSlider = false;
+                        }),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 250),
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: _nearbyFilterActive ? Colors.blue.shade700 : Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: _nearbyFilterActive ? Colors.blue.shade700 : Colors.grey.shade300,
+                            ),
+                            boxShadow: _nearbyFilterActive
+                                ? [BoxShadow(color: Colors.blue.withValues(alpha: 0.3), blurRadius: 6, offset: const Offset(0, 3))]
+                                : [],
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.near_me_rounded,
+                                size: 14,
+                                color: _nearbyFilterActive ? Colors.white : Colors.grey.shade600,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                _nearbyFilterActive
+                                    ? '≤ ${_nearbyRadiusKm.toInt()} km'
+                                    : 'Autour de moi',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                  color: _nearbyFilterActive ? Colors.white : Colors.black87,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                     ],
+                  ),
+                ),
+                // Slider de rayon GPS (animé)
+                AnimatedCrossFade(
+                  duration: const Duration(milliseconds: 300),
+                  crossFadeState: _showRadiusSlider
+                      ? CrossFadeState.showSecond
+                      : CrossFadeState.showFirst,
+                  firstChild: const SizedBox.shrink(),
+                  secondChild: Padding(
+                    padding: const EdgeInsets.only(top: 12),
+                    child: Row(
+                      children: [
+                        Icon(Icons.radio_button_checked, size: 16, color: Colors.blue.shade700),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Rayon : ${_nearbyRadiusKm.toInt()} km',
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                        ),
+                        Expanded(
+                          child: SliderTheme(
+                            data: SliderThemeData(
+                              trackHeight: 4,
+                              thumbColor: Colors.blue.shade700,
+                              activeTrackColor: Colors.blue.shade700,
+                              inactiveTrackColor: Colors.blue.shade100,
+                              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
+                              overlayShape: const RoundSliderOverlayShape(overlayRadius: 16),
+                            ),
+                            child: Slider(
+                              min: 5,
+                              max: 100,
+                              divisions: 19,
+                              value: _nearbyRadiusKm,
+                              onChanged: (val) => setState(() => _nearbyRadiusKm = val),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],
@@ -198,7 +296,7 @@ class _MarketsScreenState extends ConsumerState<MarketsScreen> with TickerProvid
     );
   }
 
-  Widget _buildFilterChip(String label) {
+  Widget _buildFilterChip(String label, {IconData? icon}) {
     final isSelected = _activeFilter == label;
     return GestureDetector(
       onTap: () => setState(() => _activeFilter = label),
@@ -209,9 +307,18 @@ class _MarketsScreenState extends ConsumerState<MarketsScreen> with TickerProvid
           color: isSelected ? Colors.black87 : Colors.white,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: isSelected ? Colors.black87 : Colors.grey.shade300),
-          boxShadow: isSelected ? [BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 4, offset: const Offset(0, 2))] : [],
+          boxShadow: isSelected ? [BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 4, offset: const Offset(0, 2))] : [],
         ),
-        child: Text(label, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: isSelected ? Colors.white : Colors.black87)),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (icon != null) ...[
+              Icon(icon, size: 14, color: isSelected ? Colors.white : Colors.black87),
+              const SizedBox(width: 6),
+            ],
+            Text(label, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: isSelected ? Colors.white : Colors.black87)),
+          ],
+        ),
       ),
     );
   }
@@ -228,7 +335,7 @@ class _MarketsScreenState extends ConsumerState<MarketsScreen> with TickerProvid
         decoration: BoxDecoration(
           color: isSelected ? Colors.white : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
-          boxShadow: isSelected ? [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4)] : [],
+          boxShadow: isSelected ? [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4)] : [],
         ),
         child: Icon(icon, size: 20, color: isSelected ? AppColors.primary : Colors.grey.shade500),
       ),
@@ -267,7 +374,7 @@ class _MarketsScreenState extends ConsumerState<MarketsScreen> with TickerProvid
                             height: 20 + (_pulseAnimation.value * 40),
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: Colors.blue.withOpacity((1 - _pulseAnimation.value) * 0.5),
+                              color: Colors.blue.withValues(alpha: (1 - _pulseAnimation.value) * 0.5),
                             ),
                           ),
                           Container(
@@ -277,7 +384,7 @@ class _MarketsScreenState extends ConsumerState<MarketsScreen> with TickerProvid
                               color: Colors.blue,
                               shape: BoxShape.circle,
                               border: Border.all(color: Colors.white, width: 3),
-                              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 4)],
+                              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 4)],
                             ),
                           ),
                         ],
@@ -294,10 +401,17 @@ class _MarketsScreenState extends ConsumerState<MarketsScreen> with TickerProvid
                 final priceVal = marketPriceObj?.priceValue ?? 0;
                 
                 final isOpportunity = priceVal > avgPrice + 10;
-                final isBad = priceVal < avgPrice - 10;
                 
-                if (_activeFilter == '✨ Opportunités' && !isOpportunity) {
+                if (_activeFilter == 'Opportunités' && !isOpportunity) {
                   return Marker(point: m.latLng!, width: 0, height: 0, child: const SizedBox());
+                }
+
+                // Filtre "Autour de moi" sur la carte
+                if (_nearbyFilterActive) {
+                  final dist = _calculateDistance(_userLocation, m.latLng!);
+                  if (dist > _nearbyRadiusKm) {
+                    return Marker(point: m.latLng!, width: 0, height: 0, child: const SizedBox());
+                  }
                 }
 
                 return Marker(
@@ -328,15 +442,15 @@ class _MarketsScreenState extends ConsumerState<MarketsScreen> with TickerProvid
                 heroTag: 'myLoc',
                 mini: true,
                 backgroundColor: Colors.white,
-                child: const Icon(Icons.my_location_rounded, color: Colors.black87),
                 onPressed: _centerOnUser,
+                child: const Icon(Icons.my_location_rounded, color: Colors.black87),
               ),
               const SizedBox(height: 12),
               Container(
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(8),
-                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 8)],
+                  boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 8)],
                 ),
                 child: Column(
                   children: [
@@ -366,9 +480,9 @@ class _MarketsScreenState extends ConsumerState<MarketsScreen> with TickerProvid
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.95),
+                  color: Colors.white.withValues(alpha: 0.95),
                   borderRadius: BorderRadius.circular(20),
-                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10)],
+                  boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 10)],
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -399,7 +513,16 @@ class _MarketsScreenState extends ConsumerState<MarketsScreen> with TickerProvid
 
   Widget _buildListView(List<Market> markets, List<Price> productPrices, double avgPrice) {
     // Calculer la distance et la renta pour trier la liste
-    final sortedMarkets = List<Market>.from(markets);
+    List<Market> sortedMarkets = List<Market>.from(markets);
+    
+    // Appliquer le filtre "Autour de moi" si actif
+    if (_nearbyFilterActive) {
+      sortedMarkets = sortedMarkets.where((m) {
+        if (m.latLng == null) return false;
+        return _calculateDistance(_userLocation, m.latLng!) <= _nearbyRadiusKm;
+      }).toList();
+    }
+
     sortedMarkets.sort((a, b) {
       if (a.latLng == null || b.latLng == null) return 0;
       final priceA = productPrices.where((p) => p.marketId == a.id).firstOrNull?.priceValue ?? 0;
@@ -446,7 +569,7 @@ class _MarketsScreenState extends ConsumerState<MarketsScreen> with TickerProvid
                   margin: const EdgeInsets.only(bottom: 12),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   elevation: 2,
-                  shadowColor: Colors.black.withOpacity(0.05),
+                  shadowColor: Colors.black.withValues(alpha: 0.05),
                   child: InkWell(
                     onTap: () => _showIntelligentBottomSheet(m, marketPriceObj, avgPrice),
                     borderRadius: BorderRadius.circular(16),
@@ -457,7 +580,7 @@ class _MarketsScreenState extends ConsumerState<MarketsScreen> with TickerProvid
                           Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: trendColor.withOpacity(0.1),
+                              color: trendColor.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Icon(Icons.storefront, color: trendColor),
@@ -486,6 +609,25 @@ class _MarketsScreenState extends ConsumerState<MarketsScreen> with TickerProvid
                                 priceVal > 0 ? '${priceVal.toInt()} F' : '-',
                                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: trendColor),
                               ),
+                              const SizedBox(height: 6),
+                              // Barre dégradé visuel de tendance (vert/rouge)
+                              if (priceVal > 0)
+                                Container(
+                                  width: 80,
+                                  height: 5,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(4),
+                                    gradient: LinearGradient(
+                                      colors: trendColor == Colors.green
+                                          ? [Colors.green.shade200, Colors.green.shade600]
+                                          : trendColor == Colors.red
+                                              ? [Colors.red.shade600, Colors.red.shade200]
+                                              : [Colors.orange.shade300, Colors.orange.shade500],
+                                      begin: Alignment.centerLeft,
+                                      end: Alignment.centerRight,
+                                    ),
+                                  ),
+                                ),
                               const SizedBox(height: 4),
                               Row(
                                 children: [
@@ -595,7 +737,7 @@ class _MarketsScreenState extends ConsumerState<MarketsScreen> with TickerProvid
                       const SizedBox(width: 12),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                        decoration: BoxDecoration(color: Colors.green.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+                        decoration: BoxDecoration(color: Colors.green.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
                         child: const Row(
                           children: [
                             Icon(Icons.verified, size: 14, color: Colors.green),
@@ -659,7 +801,7 @@ class _MarketsScreenState extends ConsumerState<MarketsScreen> with TickerProvid
                   ],
 
                   // Opportunité détectée
-                  if (isOpportunity && currentPrice != null)
+                  if (isOpportunity)
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
@@ -866,7 +1008,7 @@ class _AnimatedMarketPinState extends State<AnimatedMarketPin> {
     final isOpportunity = priceVal > widget.avgPrice + 10;
     final isBad = priceVal < widget.avgPrice - 10;
     
-    bool showPrice = (widget.activeFilter == '💰 Prix' || widget.activeFilter == '✨ Opportunités') && priceVal > 0;
+    bool showPrice = (widget.activeFilter == 'Prix' || widget.activeFilter == 'Opportunités') && priceVal > 0;
     
     Color markerBgColor = Colors.grey.shade900;
     Color textColor = Colors.white;
@@ -909,7 +1051,7 @@ class _AnimatedMarketPinState extends State<AnimatedMarketPin> {
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
-                      color: markerBgColor.withOpacity(_isHovered ? 0.6 : 0.4), 
+                      color: markerBgColor.withValues(alpha: _isHovered ? 0.6 : 0.4), 
                       blurRadius: _isHovered ? 12 : 8, 
                       offset: Offset(0, _isHovered ? 6 : 4)
                     )
@@ -937,7 +1079,7 @@ class _AnimatedMarketPinState extends State<AnimatedMarketPin> {
                       const SizedBox(width: 6),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                        decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(4)),
+                        decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(4)),
                         child: Text(
                           displayMarketName,
                           style: TextStyle(fontSize: 10, color: textColor, fontWeight: FontWeight.bold),
@@ -958,7 +1100,7 @@ class _AnimatedMarketPinState extends State<AnimatedMarketPin> {
                   color: Colors.black87,
                   shape: BoxShape.circle,
                   border: Border.all(color: Colors.white, width: 1.5),
-                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 2)],
+                  boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.3), blurRadius: 2)],
                 ),
               ),
             ],

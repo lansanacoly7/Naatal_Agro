@@ -15,8 +15,8 @@ class AskAIView(views.APIView):
         if not query and not image_base64:
             return Response({"error": "La requête ou l'image est requise."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Call AI service
-        answer = ask_llm(query or "Analyse cette image.", context, image_base64=image_base64)
+        # Call AI service avec cloisonnement de sécurité
+        answer = ask_llm(query or "Analyse cette image.", context, image_base64=image_base64, user=request.user)
 
         # Save to DB
         interaction = AIInteraction.objects.create(

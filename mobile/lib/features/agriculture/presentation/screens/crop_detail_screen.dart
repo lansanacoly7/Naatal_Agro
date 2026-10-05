@@ -254,23 +254,44 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Semis', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
-                Text(_formatDate(widget.crop.plantingDate), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-              ],
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                const Text('Récolte estimée', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
-                Text(_formatDate(widget.crop.expectedHarvestDate), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-              ],
-            ),
+            _buildStageInfo('Semis', _formatDate(widget.crop.plantingDate), progress >= 0.0, CrossAxisAlignment.start),
+            _buildStageInfo('Croissance', 'En cours', progress > 0.0 && progress < 1.0, CrossAxisAlignment.center),
+            _buildStageInfo('Récolte', _formatDate(widget.crop.expectedHarvestDate), progress >= 1.0, CrossAxisAlignment.end),
           ],
         ),
       ],
+    );
+  }
+
+  Widget _buildStageInfo(String title, String subtitle, bool isActive, CrossAxisAlignment alignment) {
+    return Expanded(
+      child: Column(
+        crossAxisAlignment: alignment,
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              color: isActive ? AppColors.primary : AppColors.textSecondary,
+              fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+              fontSize: 13,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            subtitle,
+            style: TextStyle(
+              fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
+              fontSize: 11,
+              color: isActive ? AppColors.textPrimary : Colors.grey.shade500,
+            ),
+            textAlign: alignment == CrossAxisAlignment.end 
+                ? TextAlign.right 
+                : alignment == CrossAxisAlignment.center 
+                    ? TextAlign.center 
+                    : TextAlign.left,
+          ),
+        ],
+      ),
     );
   }
 

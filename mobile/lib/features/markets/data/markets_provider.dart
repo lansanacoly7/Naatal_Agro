@@ -130,7 +130,7 @@ class PreSaleOffersNotifier extends StateNotifier<AsyncValue<List<Map<String, dy
     }
   }
 
-  Future<void> reserveOffer(int offerId, double quantity) async {
+  Future<void> reserveOffer(String offerId, double quantity) async {
     try {
       final response = await _apiClient.post(
         '/markets/b2b-offers/$offerId/reserve/',

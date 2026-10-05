@@ -10,29 +10,56 @@ django.setup()
 
 from django.contrib.auth import get_user_model
 from apps.agriculture.models import Crop, Activity
-from apps.markets.models import Market, Price
+from apps.markets.models import Market, Price, PreSaleOffer
 from apps.weather.models import WeatherData
+from apps.inventory.models import StockItem
+from apps.notifications.models import Notification
 
 User = get_user_model()
 
 def run_seed():
     print("Demarrage du script de seed...")
 
-    # 1. Création de l'utilisateur de test
+    # 1. Création de l'utilisateur de test Agriculteur
     phone_number = "+221770000000"
     user, created = User.objects.get_or_create(username=phone_number, defaults={
         'phone': phone_number,
-        'first_name': 'Lass',
-        'last_name': 'Test',
-        'location': 'Thiès, Sénégal'
+        'first_name': 'Lassana',
+        'last_name': 'Coly',
+        'location': 'Thiès, Sénégal',
+        'role': 'farmer',
+        'language': 'fr',
+        'main_crops': ['Tomate', 'Oignon', 'Arachide']
     })
     
-    if created:
-        user.set_password('password123')
-        user.save()
-        print(f"Utilisateur de test cree: {phone_number} / password123")
-    else:
-        print(f"Utilisateur de test deja existant: {phone_number}")
+    user.set_password('password123')
+    user.first_name = 'Lassana'
+    user.last_name = 'Coly'
+    user.location = 'Thiès, Sénégal'
+    user.role = 'farmer'
+    user.language = 'fr'
+    user.main_crops = ['Tomate', 'Oignon', 'Arachide']
+    user.save()
+    print(f"Agriculteur de test configure: {phone_number} / password123")
+
+    # Création de l'utilisateur de test Acheteur B2B
+    buyer_phone = "+221780000000"
+    buyer, b_created = User.objects.get_or_create(username=buyer_phone, defaults={
+        'phone': buyer_phone,
+        'first_name': 'Amadou',
+        'last_name': 'Diallo',
+        'location': 'Dakar, Sénégal',
+        'role': 'buyer',
+        'language': 'fr'
+    })
+    buyer.set_password('password123')
+    buyer.first_name = 'Amadou'
+    buyer.last_name = 'Diallo'
+    buyer.location = 'Dakar, Sénégal'
+    buyer.role = 'buyer'
+    buyer.save()
+    print(f"Acheteur B2B de test configure: {buyer_phone} / password123")
+
 
     # Nettoyage des anciennes données
     Crop.objects.filter(user=user).delete()
@@ -148,12 +175,62 @@ def run_seed():
     )
     print("Activites agricoles ajoutees")
 
+    # 6. Création des Stocks
+    StockItem.objects.filter(user=user).delete()
+    StockItem.objects.create(
+        user=user,
+        name="Oignon Local (Sacs 25kg)",
+        quantity=120.0,
+        unit="Sacs",
+        alert_status=False,
+        ai_storage_advice="Conserver dans un endroit sec, ventilé et à l'abri de l'humidité du sol."
+    )
+    StockItem.objects.create(
+        user=user,
+        name="Arachide Décortiquée",
+        quantity=45.0,
+        unit="Sacs",
+        alert_status=True,
+        ai_storage_advice="Risque de charançons. Inspecter les sacs et aérer le local de stockage."
+    )
+    print("Stocks ajoutes")
+
+    # 7. Création de Notifications Réelles
+    Notification.objects.filter(user=user).delete()
+    Notification.objects.create(
+        user=user,
+        type="market",
+        message="Le cours de l'oignon local est en hausse de +5% sur le Marché Castors. Opportunité de vente favorable.",
+        is_read=False
+    )
+    Notification.objects.create(
+        user=user,
+        type="weather",
+        message="Alerte Météo : Fortes chaleurs prévues à Thiès (35°C). Pensez à irriguer tôt le matin.",
+        is_read=False
+    )
+    print("Notifications ajoutees")
+
+    # 8. Création d'une Offre de Pré-vente B2B
+    PreSaleOffer.objects.filter(farmer=user).delete()
+    PreSaleOffer.objects.create(
+        farmer=user,
+        product_name="Tomate Fraîche",
+        quantity_kg=500.0,
+        price_per_kg=400.0,
+        availability_date=today + datetime.timedelta(days=20),
+        location="Thiès Nord",
+        status="open"
+    )
+    print("Offre B2B ajoutee")
+
     print("\nSeed termine avec succes !")
     print("=========================================")
-    print("Identifiants de test :")
-    print(f"Téléphone : {phone_number}")
-    print("Mot de passe : password123")
+    print("Comptes de test disponibles :")
+    print(f"1. Agriculteur : {phone_number} / password123")
+    print(f"2. Acheteur B2B: {buyer_phone} / password123")
     print("=========================================")
 
 if __name__ == '__main__':
     run_seed()
+

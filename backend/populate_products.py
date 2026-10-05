@@ -1,6 +1,13 @@
+import os
+import django
+
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'core.settings.base')
+django.setup()
+
 from apps.markets.models import Product
 
 def populate():
+
     Product.objects.all().delete()
 
     products = [

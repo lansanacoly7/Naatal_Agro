@@ -119,7 +119,7 @@ class _TypingIndicatorState extends State<TypingIndicator> with SingleTickerProv
                 width: 6,
                 height: 6,
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.6),
+                  color: AppColors.primary.withValues(alpha: 0.6),
                   shape: BoxShape.circle,
                 ),
               ),
@@ -216,7 +216,7 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
                       gradient: const LinearGradient(colors: [Color(0xFF10B981), Color(0xFF059669)]),
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: [
-                        BoxShadow(color: const Color(0xFF10B981).withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 2)),
+                        BoxShadow(color: const Color(0xFF10B981).withValues(alpha: 0.3), blurRadius: 8, offset: const Offset(0, 2)),
                       ],
                     ),
                     child: const Icon(Icons.auto_awesome, color: Colors.white, size: 20),
@@ -225,11 +225,11 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
                   const Text('Naatal IA', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18, color: Color(0xFF111827))),
                 ],
               ),
-              backgroundColor: Colors.white.withOpacity(0.6),
+              backgroundColor: Colors.white.withValues(alpha: 0.6),
               elevation: 0,
               bottom: PreferredSize(
                 preferredSize: const Size.fromHeight(1),
-                child: Container(color: Colors.grey.withOpacity(0.1), height: 1),
+                child: Container(color: Colors.grey.withValues(alpha: 0.1), height: 1),
               ),
             ),
           ),
@@ -248,7 +248,7 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    AppColors.primary.withOpacity(0.08),
+                    AppColors.primary.withValues(alpha: 0.08),
                     Colors.transparent,
                   ],
                 ),
@@ -265,7 +265,7 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    Colors.orange.withOpacity(0.05),
+                    Colors.orange.withValues(alpha: 0.05),
                     Colors.transparent,
                   ],
                 ),
@@ -304,7 +304,7 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(20),
                           boxShadow: [
-                            BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2)),
+                            BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2)),
                           ],
                         ),
                         child: const Row(
@@ -344,7 +344,7 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
               gradient: const LinearGradient(colors: [Color(0xFF10B981), Color(0xFF059669)]),
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
-                BoxShadow(color: const Color(0xFF10B981).withOpacity(0.3), blurRadius: 20, offset: const Offset(0, 8)),
+                BoxShadow(color: const Color(0xFF10B981).withValues(alpha: 0.3), blurRadius: 20, offset: const Offset(0, 8)),
               ],
             ),
             child: const Icon(Icons.auto_awesome, size: 40, color: Colors.white),
@@ -367,10 +367,10 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
             spacing: 12,
             runSpacing: 12,
             children: [
-              _buildSuggestionChip('🌱', 'Diagnostiquer une maladie', 'Identifie une maladie à partir d\'une photo'),
-              _buildSuggestionChip('📈', 'Calculer ma rentabilité', 'Calcule la rentabilité de mes cultures'),
-              _buildSuggestionChip('🌧️', 'Prévisions météo', 'Quelles sont les prévisions pour mes cultures ?'),
-              _buildSuggestionChip('🚨', 'Signaler au Radar', '', isRadar: true),
+              _buildSuggestionChip(Icons.healing_rounded, 'Diagnostiquer une maladie', 'Identifie une maladie à partir d\'une photo', iconColor: Colors.green),
+              _buildSuggestionChip(Icons.trending_up_rounded, 'Calculer ma rentabilité', 'Calcule la rentabilité de mes cultures', iconColor: Colors.blue),
+              _buildSuggestionChip(Icons.cloud_outlined, 'Prévisions météo', 'Quelles sont les prévisions pour mes cultures ?', iconColor: Colors.teal),
+              _buildSuggestionChip(Icons.warning_amber_rounded, 'Signaler au Radar', '', isRadar: true, iconColor: Colors.red),
             ],
           ),
         ],
@@ -378,9 +378,9 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
     );
   }
 
-  Widget _buildSuggestionChip(String emoji, String title, String prompt, {bool isRadar = false}) {
+  Widget _buildSuggestionChip(IconData icon, String title, String prompt, {bool isRadar = false, Color? iconColor}) {
     return ActionChip(
-      avatar: Text(emoji, style: const TextStyle(fontSize: 16)),
+      avatar: Icon(icon, size: 18, color: iconColor ?? (isRadar ? Colors.red : AppColors.primary)),
       label: Text(title, style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: isRadar ? Colors.red.shade700 : const Color(0xFF374151))),
       backgroundColor: isRadar ? Colors.red.shade50 : Colors.white,
       shape: RoundedRectangleBorder(
@@ -399,6 +399,7 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
     );
   }
 
+
   Widget _buildMessageBubble(AiMessage message, bool isLastAiMessage) {
     final isUser = message.isUser;
     
@@ -416,7 +417,7 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
                 gradient: const LinearGradient(colors: [Color(0xFF10B981), Color(0xFF059669)]),
                 shape: BoxShape.circle,
                 boxShadow: [
-                  BoxShadow(color: const Color(0xFF10B981).withOpacity(0.2), blurRadius: 4, offset: const Offset(0, 2)),
+                  BoxShadow(color: const Color(0xFF10B981).withValues(alpha: 0.2), blurRadius: 4, offset: const Offset(0, 2)),
                 ],
               ),
               child: const Icon(Icons.auto_awesome, color: Colors.white, size: 14),
@@ -433,7 +434,7 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.04),
+                    color: Colors.black.withValues(alpha: 0.04),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -503,7 +504,7 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
-                          BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 8),
+                          BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 8),
                         ],
                         image: DecorationImage(
                           image: FileImage(File(_selectedImage!.path)),
@@ -538,7 +539,7 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
                   borderRadius: BorderRadius.circular(30),
                   border: Border.all(color: Colors.grey.shade200, width: 1.5),
                   boxShadow: [
-                    BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 15, offset: const Offset(0, 4)),
+                    BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 15, offset: const Offset(0, 4)),
                   ],
                 ),
                 child: Row(

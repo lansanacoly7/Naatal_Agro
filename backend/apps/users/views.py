@@ -77,6 +77,58 @@ class UpdateFCMTokenView(views.APIView):
         user.save()
         return Response({"status": "Token mis à jour avec succès."})
 
+class UserProfileSerializer(serializers.ModelSerializer):
+    full_name = serializers.SerializerMethodField()
+    crops_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = (
+            'id',
+            'phone',
+            'username',
+            'email',
+            'first_name',
+            'last_name',
+            'full_name',
+            'role',
+            'location',
+            'language',
+            'date_of_birth',
+            'main_crops',
+            'date_joined',
+            'crops_count',
+        )
+        read_only_fields = ('id', 'username', 'role', 'date_joined', 'crops_count')
+
+    def get_full_name(self, obj):
+        name = f"{obj.first_name} {obj.last_name}".strip()
+        return name if name else obj.first_name or obj.username
+
+    def get_crops_count(self, obj):
+        if hasattr(obj, 'crops'):
+            return obj.crops.count()
+        return len(obj.main_crops or [])
+
+class MeView(views.APIView):
+    """
+    Endpoint retournant ou mettant à jour les données complètes de l'utilisateur connecté.
+    Supporte GET et PATCH.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        serializer = UserProfileSerializer(request.user)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def patch(self, request, *args, **kwargs):
+        user = request.user
+        serializer = UserProfileSerializer(user, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 class UpdateProfileView(views.APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -84,12 +136,22 @@ class UpdateProfileView(views.APIView):
         user = request.user
         language = request.data.get('language')
         location = request.data.get('location')
+        first_name = request.data.get('full_name') or request.data.get('first_name')
+        main_crops = request.data.get('main_crops')
         
         if language is not None:
             user.language = language
         if location is not None:
             user.location = location
+        if first_name is not None:
+            user.first_name = first_name
+        if main_crops is not None:
+            user.main_crops = main_crops
             
         user.save()
-        return Response({"status": "Profil mis à jour avec succès."})
+        return Response({
+            "status": "Profil mis à jour avec succès.",
+            "user": UserProfileSerializer(user).data
+        })
+
 

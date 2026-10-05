@@ -2,49 +2,101 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../auth/data/auth_provider.dart';
+import '../../data/profile_provider.dart';
+import '../../domain/profile_model.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final profileState = ref.watch(profileNotifierProvider);
+
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: CustomScrollView(
-        slivers: [
-          _buildPremiumHeader(context),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.only(left: 20.0, right: 20.0, top: 24.0, bottom: 100.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildSectionTitle('Mon Exploitation', hasEdit: true),
-                  _buildExploitationCard(),
-                  const SizedBox(height: 32),
-                  _buildSectionTitle('Mes Produits Suivis'),
-                  _buildTrackedProducts(),
-                  const SizedBox(height: 32),
-                  _buildSectionTitle('Mes Alertes Prix', badgeCount: 3),
-                  _buildAlertsCard(),
-                  const SizedBox(height: 32),
-                  _buildSectionTitle('Paramètres'),
-                  _buildSettingsSection(),
-                  const SizedBox(height: 32),
-                  _buildLogoutButton(ref, context),
-                  const SizedBox(height: 32),
-                  _buildFooterText(),
-                  const SizedBox(height: 40),
-                ],
-              ),
+      body: profileState.when(
+        loading: () => const Center(
+          child: CircularProgressIndicator(color: AppColors.primary),
+        ),
+        error: (err, _) => Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline_rounded, size: 48, color: Colors.redAccent),
+                const SizedBox(height: 16),
+                Text(
+                  'Erreur de chargement du profil',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  err.toString(),
+                  style: const TextStyle(color: Colors.grey, fontSize: 13),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 20),
+                ElevatedButton.icon(
+                  onPressed: () => ref.read(profileNotifierProvider.notifier).loadProfile(),
+                  icon: const Icon(Icons.refresh_rounded, color: Colors.white),
+                  label: const Text('Réessayer', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+                ),
+                const SizedBox(height: 12),
+                TextButton(
+                  onPressed: () => ref.read(authStateProvider.notifier).logout(),
+                  child: const Text('Se déconnecter', style: TextStyle(color: Colors.redAccent)),
+                ),
+              ],
             ),
           ),
-        ],
+        ),
+        data: (profile) => RefreshIndicator(
+          color: AppColors.primary,
+          onRefresh: () => ref.read(profileNotifierProvider.notifier).loadProfile(),
+          child: CustomScrollView(
+            slivers: [
+              _buildPremiumHeader(context, profile, ref),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 20.0, right: 20.0, top: 48.0, bottom: 100.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildSectionTitle(
+                        'Mon Compte & Exploitation',
+                        hasEdit: true,
+                        onEdit: () => _showEditProfileDialog(context, ref, profile),
+                      ),
+                      _buildExploitationCard(profile),
+                      const SizedBox(height: 32),
+                      _buildSectionTitle('Mes Cultures Enregistrées'),
+                      _buildTrackedProducts(context, profile),
+                      const SizedBox(height: 32),
+                      _buildSectionTitle('Mes Alertes Actives', badgeCount: 2),
+                      _buildAlertsCard(),
+                      const SizedBox(height: 32),
+                      _buildSectionTitle('Paramètres du Compte'),
+                      _buildSettingsSection(profile),
+                      const SizedBox(height: 32),
+                      _buildLogoutButton(ref, context),
+                      const SizedBox(height: 32),
+                      _buildFooterText(),
+                      const SizedBox(height: 40),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
 
-  Widget _buildPremiumHeader(BuildContext context) {
+  Widget _buildPremiumHeader(BuildContext context, UserProfile profile, WidgetRef ref) {
     return SliverToBoxAdapter(
       child: Stack(
         clipBehavior: Clip.none,
@@ -55,7 +107,7 @@ class ProfileScreen extends ConsumerWidget {
             width: double.infinity,
             decoration: const BoxDecoration(
               gradient: LinearGradient(
-                colors: [Color(0xFF2E7D32), Color(0xFF1B5E20)], // Deep green gradients
+                colors: [Color(0xFF2E7D32), Color(0xFF1B5E20)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -74,7 +126,7 @@ class ProfileScreen extends ConsumerWidget {
                     height: 150,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: Colors.white.withOpacity(0.05),
+                      color: Colors.white.withValues(alpha: 0.05),
                     ),
                   ),
                 ),
@@ -87,7 +139,7 @@ class ProfileScreen extends ConsumerWidget {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             const Text(
-                              'Profil',
+                              'Mon Profil',
                               style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 24,
@@ -95,13 +147,10 @@ class ProfileScreen extends ConsumerWidget {
                                 letterSpacing: 0.5,
                               ),
                             ),
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.2),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(Icons.notifications_outlined, color: Colors.white),
+                            IconButton(
+                              onPressed: () => ref.read(profileNotifierProvider.notifier).loadProfile(),
+                              icon: const Icon(Icons.refresh_rounded, color: Colors.white),
+                              tooltip: 'Actualiser',
                             ),
                           ],
                         ),
@@ -112,57 +161,71 @@ class ProfileScreen extends ConsumerWidget {
                               padding: const EdgeInsets.all(4),
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                border: Border.all(color: Colors.white.withOpacity(0.5), width: 2),
+                                border: Border.all(color: Colors.white.withValues(alpha: 0.5), width: 2),
                               ),
                               child: CircleAvatar(
-                                radius: 40,
+                                radius: 36,
                                 backgroundColor: Colors.white,
-                                child: Text('MD', style: TextStyle(color: AppColors.primary, fontSize: 24, fontWeight: FontWeight.bold)),
+                                child: Text(
+                                  profile.initials,
+                                  style: const TextStyle(
+                                    color: AppColors.primary,
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
                               ),
                             ),
-                            const SizedBox(width: 20),
+                            const SizedBox(width: 18),
                             Expanded(
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Text(
-                                    'Moussa Diallo',
-                                    style: TextStyle(
+                                  Text(
+                                    profile.fullName.isNotEmpty ? profile.fullName : profile.phone,
+                                    style: const TextStyle(
                                       color: Colors.white,
-                                      fontSize: 22,
+                                      fontSize: 20,
                                       fontWeight: FontWeight.bold,
                                     ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                   const SizedBox(height: 4),
                                   Row(
                                     children: [
-                                      const Icon(Icons.verified_user_rounded, color: Colors.amber, size: 16),
+                                      Icon(
+                                        profile.isVerified ? Icons.verified_rounded : Icons.person_rounded,
+                                        color: profile.isVerified ? Colors.amber : Colors.white70,
+                                        size: 16,
+                                      ),
                                       const SizedBox(width: 4),
                                       Text(
-                                        'Agriculteur Premium',
+                                        profile.roleDisplay,
                                         style: TextStyle(
-                                          color: Colors.white.withOpacity(0.9),
-                                          fontSize: 14,
+                                          color: Colors.white.withValues(alpha: 0.9),
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w500,
                                         ),
                                       ),
                                     ],
                                   ),
-                                  const SizedBox(height: 8),
+                                  const SizedBox(height: 6),
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                     decoration: BoxDecoration(
-                                      color: Colors.white.withOpacity(0.15),
+                                      color: Colors.white.withValues(alpha: 0.18),
                                       borderRadius: BorderRadius.circular(20),
                                     ),
-                                    child: const Row(
+                                    child: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        Icon(Icons.location_on, color: Colors.white, size: 12),
-                                        SizedBox(width: 4),
+                                        const Icon(Icons.location_on_rounded, color: Colors.white, size: 12),
+                                        const SizedBox(width: 4),
                                         Text(
-                                          'Dakar, Sénégal',
-                                          style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
+                                          profile.location.isNotEmpty ? profile.location : 'Sénégal',
+                                          style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
                                         ),
                                       ],
                                     ),
@@ -180,29 +243,29 @@ class ProfileScreen extends ConsumerWidget {
             ),
           ),
           Positioned(
-            bottom: -40,
+            bottom: -32,
             child: Container(
               width: MediaQuery.of(context).size.width * 0.88,
-              height: 90,
+              height: 84,
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(24),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.primary.withOpacity(0.15),
-                    blurRadius: 20,
-                    offset: const Offset(0, 10),
+                    color: AppColors.primary.withValues(alpha: 0.12),
+                    blurRadius: 18,
+                    offset: const Offset(0, 8),
                   ),
                 ],
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  _buildPremiumStat('Produits', '12', Icons.inventory_2_rounded, Colors.blue),
-                  Container(width: 1, height: 40, color: Colors.grey.shade200),
-                  _buildPremiumStat('Alertes', '8', Icons.notifications_active_rounded, Colors.orange),
-                  Container(width: 1, height: 40, color: Colors.grey.shade200),
-                  _buildPremiumStat('Croissance', '+24%', Icons.trending_up_rounded, Colors.green),
+                  _buildPremiumStat('Cultures', '${profile.cropsCount}', Icons.grass_rounded, Colors.green),
+                  Container(width: 1, height: 36, color: Colors.grey.shade200),
+                  _buildPremiumStat('Téléphone', profile.phone.isNotEmpty ? profile.phone.substring(profile.phone.length > 9 ? profile.phone.length - 9 : 0) : '-', Icons.phone_android_rounded, Colors.blue),
+                  Container(width: 1, height: 36, color: Colors.grey.shade200),
+                  _buildPremiumStat('Statut', profile.isVerified ? 'Vérifié' : 'Actif', Icons.check_circle_rounded, Colors.teal),
                 ],
               ),
             ),
@@ -218,14 +281,15 @@ class ProfileScreen extends ConsumerWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Icon(icon, size: 16, color: color),
-            const SizedBox(width: 6),
+            const SizedBox(width: 4),
             Text(
               value,
               style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.w900,
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
                 color: Colors.grey.shade800,
               ),
             ),
@@ -235,7 +299,7 @@ class ProfileScreen extends ConsumerWidget {
         Text(
           label,
           style: TextStyle(
-            fontSize: 13,
+            fontSize: 12,
             fontWeight: FontWeight.w500,
             color: Colors.grey.shade500,
           ),
@@ -244,7 +308,7 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildSectionTitle(String title, {bool hasEdit = false, int? badgeCount}) {
+  Widget _buildSectionTitle(String title, {bool hasEdit = false, VoidCallback? onEdit, int? badgeCount}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16.0),
       child: Row(
@@ -264,7 +328,7 @@ class ProfileScreen extends ConsumerWidget {
               if (badgeCount != null) ...[
                 const SizedBox(width: 8),
                 Container(
-                  padding: const EdgeInsets.all(6),
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                   decoration: const BoxDecoration(
                     color: Colors.redAccent,
                     shape: BoxShape.circle,
@@ -278,18 +342,22 @@ class ProfileScreen extends ConsumerWidget {
             ],
           ),
           if (hasEdit)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: const Row(
-                children: [
-                  Icon(Icons.edit_rounded, size: 14, color: AppColors.primary),
-                  SizedBox(width: 4),
-                  Text('Modifier', style: TextStyle(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.bold)),
-                ],
+            InkWell(
+              onTap: onEdit,
+              borderRadius: BorderRadius.circular(20),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.edit_rounded, size: 14, color: AppColors.primary),
+                    SizedBox(width: 4),
+                    Text('Modifier', style: TextStyle(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.bold)),
+                  ],
+                ),
               ),
             ),
         ],
@@ -297,13 +365,13 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildExploitationCard() {
+  Widget _buildExploitationCard(UserProfile profile) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 15, offset: const Offset(0, 5)),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 15, offset: const Offset(0, 5)),
         ],
       ),
       child: Column(
@@ -313,24 +381,24 @@ class ProfileScreen extends ConsumerWidget {
             child: Row(
               children: [
                 Container(
-                  width: 90,
-                  height: 90,
+                  width: 80,
+                  height: 80,
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(colors: [Color(0xFFE8F5E9), Color(0xFFC8E6C9)]),
                     borderRadius: BorderRadius.circular(20),
                   ),
-                  child: const Icon(Icons.landscape_rounded, size: 48, color: AppColors.primary),
+                  child: const Icon(Icons.agriculture_rounded, size: 40, color: AppColors.primary),
                 ),
-                const SizedBox(width: 20),
+                const SizedBox(width: 18),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildRichIconText(Icons.location_on_rounded, 'Pikine, Dakar'),
+                      _buildRichIconText(Icons.location_on_rounded, profile.location.isNotEmpty ? profile.location : 'Zone non renseignée'),
                       const SizedBox(height: 10),
-                      _buildRichIconText(Icons.square_foot_rounded, '2.5 Hectares'),
+                      _buildRichIconText(Icons.badge_rounded, profile.roleDisplay),
                       const SizedBox(height: 10),
-                      _buildRichIconText(Icons.water_drop_rounded, "Irrigation goute à goute", isHighlight: true),
+                      _buildRichIconText(Icons.phone_outlined, profile.phone, isHighlight: true),
                     ],
                   ),
                 ),
@@ -338,19 +406,21 @@ class ProfileScreen extends ConsumerWidget {
             ),
           ),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
             decoration: BoxDecoration(
               color: Colors.grey.shade50,
               borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(24), bottomRight: Radius.circular(24)),
             ),
             child: Row(
               children: [
-                Icon(Icons.grass_rounded, size: 20, color: Colors.grey.shade500),
+                Icon(Icons.eco_rounded, size: 18, color: Colors.grey.shade600),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    'Spécialités : Maraîchage, Céréales',
-                    style: TextStyle(color: Colors.grey.shade700, fontWeight: FontWeight.w500),
+                    profile.mainCrops.isNotEmpty
+                        ? 'Cultures principales : ${profile.mainCrops.join(", ")}'
+                        : 'Aucune culture enregistrée pour le moment',
+                    style: TextStyle(color: Colors.grey.shade700, fontWeight: FontWeight.w500, fontSize: 13),
                   ),
                 ),
               ],
@@ -364,13 +434,13 @@ class ProfileScreen extends ConsumerWidget {
   Widget _buildRichIconText(IconData icon, String text, {bool isHighlight = false}) {
     return Row(
       children: [
-        Icon(icon, size: 18, color: isHighlight ? Colors.blue : Colors.grey.shade500),
+        Icon(icon, size: 18, color: isHighlight ? AppColors.primary : Colors.grey.shade500),
         const SizedBox(width: 10),
         Expanded(
           child: Text(
             text,
             style: TextStyle(
-              color: isHighlight ? Colors.blue.shade700 : Colors.grey.shade800,
+              color: isHighlight ? AppColors.primary : Colors.grey.shade800,
               fontSize: 14,
               fontWeight: isHighlight ? FontWeight.bold : FontWeight.w500,
             ),
@@ -380,38 +450,84 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildTrackedProducts() {
+  Widget _buildTrackedProducts(BuildContext context, UserProfile profile) {
+    if (profile.mainCrops.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.grey.shade200),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.info_outline_rounded, color: Colors.grey, size: 22),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Ajoutez vos parcelles et cultures pour activer le suivi personnalisé.',
+                style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Wrap(
-      spacing: 12,
-      runSpacing: 12,
-      children: [
-        _buildPremiumChip('🧅 Oignon Local'),
-        _buildPremiumChip('🌾 Mil'),
-        _buildPremiumChip('🥜 Arachide'),
-        _buildPremiumChip('➕ Ajouter', isAction: true),
-      ],
+      spacing: 10,
+      runSpacing: 10,
+      children: profile.mainCrops.map((crop) {
+        return _buildCropChip(crop);
+      }).toList(),
     );
   }
 
-  Widget _buildPremiumChip(String label, {bool isAction = false}) {
+  Widget _buildCropChip(String cropName) {
+    IconData icon = Icons.grass_rounded;
+    Color color = AppColors.primary;
+    final lower = cropName.toLowerCase();
+    if (lower.contains('oignon')) {
+      icon = Icons.circle_outlined;
+      color = Colors.purple.shade400;
+    } else if (lower.contains('arachide')) {
+      icon = Icons.grain_rounded;
+      color = Colors.amber.shade700;
+    } else if (lower.contains('mil')) {
+      icon = Icons.grass_rounded;
+      color = Colors.orange.shade700;
+    } else if (lower.contains('tomate')) {
+      icon = Icons.lens;
+      color = Colors.redAccent;
+    } else if (lower.contains('riz')) {
+      icon = Icons.rice_bowl_outlined;
+      color = Colors.teal.shade700;
+    }
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: isAction ? AppColors.primary : Colors.white,
-        border: isAction ? null : Border.all(color: Colors.grey.shade200),
+        color: Colors.white,
+        border: Border.all(color: Colors.grey.shade200),
         borderRadius: BorderRadius.circular(16),
-        boxShadow: isAction ? [
-          BoxShadow(color: AppColors.primary.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 4)),
-        ] : [
-          BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 5, offset: const Offset(0, 2)),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 5, offset: const Offset(0, 2)),
         ],
       ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: isAction ? Colors.white : Colors.grey.shade800,
-          fontWeight: FontWeight.bold,
-        ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: color),
+          const SizedBox(width: 8),
+          Text(
+            cropName,
+            style: TextStyle(
+              color: Colors.grey.shade800,
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -422,33 +538,16 @@ class ProfileScreen extends ConsumerWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 15, offset: const Offset(0, 5)),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 15, offset: const Offset(0, 5)),
         ],
       ),
       child: Column(
         children: [
           _buildAlertRow('Oignon Local', 'Prix > 450 FCFA/kg', true, icon: Icons.trending_up_rounded, color: Colors.green),
           Divider(height: 1, color: Colors.grey.shade100, indent: 20, endIndent: 20),
-          _buildAlertRow('Arachide', 'Prix < 550 FCFA/kg', true, icon: Icons.trending_down_rounded, color: Colors.red),
+          _buildAlertRow('Arachide décortiquée', 'Prix < 550 FCFA/kg', true, icon: Icons.trending_down_rounded, color: Colors.red),
           Divider(height: 1, color: Colors.grey.shade100, indent: 20, endIndent: 20),
-          _buildAlertRow('Tomate', 'Prix > 700 FCFA/kg', false, icon: Icons.trending_up_rounded, color: Colors.grey),
-          Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: SizedBox(
-              width: double.infinity,
-              height: 48,
-              child: ElevatedButton.icon(
-                onPressed: () {},
-                icon: const Icon(Icons.add_alert_rounded, color: AppColors.primary),
-                label: const Text('Créer une alerte', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary.withOpacity(0.1),
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                ),
-              ),
-            ),
-          )
+          _buildAlertRow('Tomate industrielle', 'Prix > 700 FCFA/kg', false, icon: Icons.trending_up_rounded, color: Colors.grey),
         ],
       ),
     );
@@ -456,24 +555,24 @@ class ProfileScreen extends ConsumerWidget {
 
   Widget _buildAlertRow(String title, String subtitle, bool isActive, {required IconData icon, required Color color}) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
+      padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 14.0),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(icon, color: color, size: 24),
+            child: Icon(icon, color: color, size: 22),
           ),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: isActive ? Colors.black87 : Colors.grey)),
-                const SizedBox(height: 4),
+                Text(title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: isActive ? Colors.black87 : Colors.grey)),
+                const SizedBox(height: 3),
                 Text(subtitle, style: TextStyle(color: Colors.grey.shade500, fontSize: 13)),
               ],
             ),
@@ -489,22 +588,22 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildSettingsSection() {
+  Widget _buildSettingsSection(UserProfile profile) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 15, offset: const Offset(0, 5)),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 15, offset: const Offset(0, 5)),
         ],
       ),
       child: Column(
         children: [
+          _buildPremiumTile(Icons.phone_rounded, 'Numéro de téléphone', Colors.teal, subtitle: profile.phone),
+          _buildPremiumTile(Icons.language_rounded, 'Langue', Colors.blue, subtitle: profile.language.toUpperCase() == 'WO' ? 'Wolof' : 'Français'),
           _buildPremiumTile(Icons.notifications_active_rounded, 'Notifications', Colors.orange, subtitle: 'Activées'),
-          _buildPremiumTile(Icons.language_rounded, 'Langue', Colors.blue, subtitle: 'Français'),
-          _buildPremiumTile(Icons.security_rounded, 'Sécurité & Confidentialité', Colors.green),
-          _buildPremiumTile(Icons.headset_mic_rounded, 'Aide & Support', Colors.purple),
-          _buildPremiumTile(Icons.star_rounded, "Noter l'application", Colors.amber, isLast: true),
+          _buildPremiumTile(Icons.security_rounded, 'Sécurité du compte', Colors.green, subtitle: 'Mot de passe sécurisé'),
+          _buildPremiumTile(Icons.headset_mic_rounded, 'Assistance & Support', Colors.purple, isLast: true),
         ],
       ),
     );
@@ -514,28 +613,21 @@ class ProfileScreen extends ConsumerWidget {
     return Column(
       children: [
         ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
           leading: Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: iconColor.withOpacity(0.1),
+              color: iconColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(icon, color: iconColor),
+            child: Icon(icon, color: iconColor, size: 20),
           ),
-          title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-          subtitle: subtitle != null ? Text(subtitle, style: TextStyle(color: Colors.grey.shade500)) : null,
-          trailing: Container(
-            padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade50,
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Colors.grey),
-          ),
+          title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+          subtitle: subtitle != null ? Text(subtitle, style: TextStyle(color: Colors.grey.shade500, fontSize: 12)) : null,
+          trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Colors.grey),
           onTap: () {},
         ),
-        if (!isLast) Divider(height: 1, color: Colors.grey.shade100, indent: 70, endIndent: 20),
+        if (!isLast) Divider(height: 1, color: Colors.grey.shade100, indent: 64, endIndent: 20),
       ],
     );
   }
@@ -543,7 +635,7 @@ class ProfileScreen extends ConsumerWidget {
   Widget _buildLogoutButton(WidgetRef ref, BuildContext context) {
     return SizedBox(
       width: double.infinity,
-      height: 56,
+      height: 54,
       child: ElevatedButton(
         onPressed: () {
           ref.read(authStateProvider.notifier).logout();
@@ -561,7 +653,7 @@ class ProfileScreen extends ConsumerWidget {
           children: [
             Icon(Icons.logout_rounded, color: Colors.redAccent),
             SizedBox(width: 8),
-            Text('Se déconnecter', style: TextStyle(color: Colors.redAccent, fontSize: 16, fontWeight: FontWeight.bold)),
+            Text('Se déconnecter', style: TextStyle(color: Colors.redAccent, fontSize: 15, fontWeight: FontWeight.bold)),
           ],
         ),
       ),
@@ -573,7 +665,7 @@ class ProfileScreen extends ConsumerWidget {
       child: Column(
         children: [
           const Text(
-            'NAATAL AGRO V2.0',
+            'NAATAL AGRO V1.0',
             style: TextStyle(
               color: Colors.grey,
               fontSize: 12,
@@ -583,13 +675,106 @@ class ProfileScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            'Propulsé par Naatal Tech Sénégal',
+            'Plateforme Agricole Intelligente pour le Sénégal',
             style: TextStyle(
               color: Colors.grey.shade400,
-              fontSize: 10,
+              fontSize: 11,
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showEditProfileDialog(BuildContext context, WidgetRef ref, UserProfile profile) {
+    final nameController = TextEditingController(text: profile.fullName);
+    final locationController = TextEditingController(text: profile.location);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('Modifier mon profil', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded),
+                    onPressed: () => Navigator.pop(ctx),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: nameController,
+                decoration: InputDecoration(
+                  labelText: 'Nom complet',
+                  prefixIcon: const Icon(Icons.person_rounded),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: locationController,
+                decoration: InputDecoration(
+                  labelText: 'Localisation / Région',
+                  prefixIcon: const Icon(Icons.location_on_rounded),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                ),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: () async {
+                    Navigator.pop(ctx);
+                    try {
+                      await ref.read(profileNotifierProvider.notifier).updateProfile(
+                        fullName: nameController.text.trim(),
+                        location: locationController.text.trim(),
+                      );
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Profil mis à jour avec succès'),
+                            backgroundColor: AppColors.primary,
+                          ),
+                        );
+                      }
+                    } catch (e) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Erreur: $e'),
+                            backgroundColor: Colors.redAccent,
+                          ),
+                        );
+                      }
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                  child: const Text('Enregistrer', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

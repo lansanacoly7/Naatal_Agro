@@ -74,7 +74,7 @@ class MainShell extends StatelessWidget {
         decoration: BoxDecoration(
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.06),
+              color: Colors.black.withValues(alpha: 0.06),
               blurRadius: 20,
               offset: const Offset(0, -5),
             ),
@@ -84,7 +84,7 @@ class MainShell extends StatelessWidget {
           selectedIndex: selectedIndex,
           onDestinationSelected: (index) => _onItemTapped(index, context),
           backgroundColor: Colors.white,
-          indicatorColor: AppColors.primary.withOpacity(0.12),
+          indicatorColor: AppColors.primary.withValues(alpha: 0.12),
           elevation: 0,
           destinations: const [
             NavigationDestination(
@@ -152,7 +152,7 @@ class BuyerShell extends StatelessWidget {
         decoration: BoxDecoration(
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.06),
+              color: Colors.black.withValues(alpha: 0.06),
               blurRadius: 20,
               offset: const Offset(0, -5),
             ),
@@ -162,7 +162,7 @@ class BuyerShell extends StatelessWidget {
           selectedIndex: selectedIndex,
           onDestinationSelected: (index) => _onItemTapped(index, context),
           backgroundColor: Colors.white,
-          indicatorColor: AppColors.primary.withOpacity(0.12),
+          indicatorColor: AppColors.primary.withValues(alpha: 0.12),
           elevation: 0,
           destinations: const [
             NavigationDestination(

@@ -78,7 +78,7 @@ class MarketDetailScreen extends ConsumerWidget {
               const Spacer(),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(color: Colors.amber.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+                decoration: BoxDecoration(color: Colors.amber.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
                 child: Row(
                   children: [
                     const Icon(Icons.star_rounded, color: Colors.amber, size: 16),
@@ -94,7 +94,7 @@ class MarketDetailScreen extends ConsumerWidget {
             children: [
               Container(
                 padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(color: Colors.green.withOpacity(0.1), shape: BoxShape.circle),
+                decoration: BoxDecoration(color: Colors.green.withValues(alpha: 0.1), shape: BoxShape.circle),
                 child: const Icon(Icons.access_time_rounded, size: 16, color: Colors.green),
               ),
               const SizedBox(width: 8),
@@ -149,12 +149,25 @@ class MarketDetailScreen extends ConsumerWidget {
   }
 
   Widget _buildPriceRow(Price price) {
-    String emoji = "🌱";
-    if (price.productName.toLowerCase().contains("oignon")) emoji = "🧅";
-    if (price.productName.toLowerCase().contains("arachide")) emoji = "🥜";
-    if (price.productName.toLowerCase().contains("mil")) emoji = "🌾";
-    if (price.productName.toLowerCase().contains("tomate")) emoji = "🍅";
-    if (price.productName.toLowerCase().contains("riz")) emoji = "🍚";
+    IconData productIcon = Icons.eco_rounded;
+    Color productIconColor = AppColors.primary;
+    final nameLower = price.productName.toLowerCase();
+    if (nameLower.contains("oignon")) {
+      productIcon = Icons.circle_outlined;
+      productIconColor = Colors.purple.shade400;
+    } else if (nameLower.contains("arachide")) {
+      productIcon = Icons.grain_rounded;
+      productIconColor = Colors.amber.shade700;
+    } else if (nameLower.contains("mil")) {
+      productIcon = Icons.grass_rounded;
+      productIconColor = Colors.orange.shade600;
+    } else if (nameLower.contains("tomate")) {
+      productIcon = Icons.lens;
+      productIconColor = Colors.redAccent;
+    } else if (nameLower.contains("riz")) {
+      productIcon = Icons.rice_bowl_outlined;
+      productIconColor = Colors.teal.shade600;
+    }
 
     IconData trendIcon;
     Color trendColor;
@@ -175,7 +188,14 @@ class MarketDetailScreen extends ConsumerWidget {
       ),
       child: Row(
         children: [
-          Text(emoji, style: const TextStyle(fontSize: 20)),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: productIconColor.withValues(alpha: 0.12),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(productIcon, size: 18, color: productIconColor),
+          ),
           const SizedBox(width: 12),
           Expanded(child: Text(price.productName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16))),
           Text('${price.priceValue.toInt()} FCFA/kg', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
@@ -193,7 +213,7 @@ class MarketDetailScreen extends ConsumerWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 15, offset: const Offset(0, 5))],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 15, offset: const Offset(0, 5))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -238,7 +258,7 @@ class MarketDetailScreen extends ConsumerWidget {
               const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(color: Colors.green.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+                decoration: BoxDecoration(color: Colors.green.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
                 child: const Text('Haussière', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 12)),
               ),
             ],
@@ -258,8 +278,8 @@ class MarketDetailScreen extends ConsumerWidget {
           const SizedBox(height: 16),
           _buildInfoRow('Produits principaux', 'Oignon, Tomate, Pomme de terre'),
           _buildInfoRow('Prix mis à jour', 'Aujourd\'hui • 08:30'),
-          _buildInfoRow('Niveau d\'activité', '🟢 Élevé'),
-          _buildInfoRow('Accessibilité', '🟢 Bonne (Routes goudronnées)'),
+          _buildInfoRow('Niveau d\'activité', 'Élevé'),
+          _buildInfoRow('Accessibilité', 'Bonne (Routes goudronnées)'),
         ],
       ),
     );
@@ -346,7 +366,7 @@ class SparklinePainter extends CustomPainter {
       ..shader = LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
-        colors: [Colors.green.withOpacity(0.3), Colors.green.withOpacity(0.0)],
+        colors: [Colors.green.withValues(alpha: 0.3), Colors.green.withValues(alpha: 0.0)],
       ).createShader(Rect.fromLTWH(0, 0, size.width, size.height))
       ..style = PaintingStyle.fill;
 
