@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart' hide Path;
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/network/paginated_response.dart';
 import '../../data/markets_provider.dart';
 import '../../data/models/market.dart';
 import '../../data/models/price.dart';
@@ -76,25 +77,63 @@ class _MarketsScreenState extends ConsumerState<MarketsScreen> with TickerProvid
 
   @override
   Widget build(BuildContext context) {
-    final marketsAsync = ref.watch(marketsListProvider);
+    final marketsState = ref.watch(marketsPaginationNotifierProvider);
     final pricesAsync = ref.watch(pricesListProvider);
 
     return Scaffold(
       backgroundColor: AppColors.background,
       extendBodyBehindAppBar: true,
-      body: marketsAsync.when(
-        data: (markets) => pricesAsync.when(
-          data: (prices) => _buildContent(markets, prices),
-          loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
-          error: (err, _) => Center(child: Text('Erreur Prix: $err')),
-        ),
-        loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
-        error: (err, _) => Center(child: Text('Erreur Marchés: $err')),
-      ),
+      body: marketsState.isLoading && marketsState.items.isEmpty
+          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+          : marketsState.error != null && marketsState.items.isEmpty
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.error_outline, color: Colors.red, size: 48),
+                        const SizedBox(height: 16),
+                        Text('Erreur Marchés', style: Theme.of(context).textTheme.titleLarge),
+                        const SizedBox(height: 8),
+                        Text(marketsState.error!, textAlign: TextAlign.center),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: () => ref.read(marketsPaginationNotifierProvider.notifier).refresh(),
+                          child: const Text('Réessayer'),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              : pricesAsync.when(
+                  data: (prices) => _buildContent(marketsState, prices),
+                  loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+                  error: (err, _) => Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24.0),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.error_outline, color: Colors.red, size: 48),
+                          const SizedBox(height: 16),
+                          Text('Erreur Prix', style: Theme.of(context).textTheme.titleLarge),
+                          const SizedBox(height: 8),
+                          Text(err.toString(), textAlign: TextAlign.center),
+                          const SizedBox(height: 16),
+                          ElevatedButton(
+                            onPressed: () => ref.invalidate(pricesListProvider),
+                            child: const Text('Réessayer'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
     );
   }
 
-  Widget _buildContent(List<Market> markets, List<Price> prices) {
+  Widget _buildContent(PaginatedState<Market> marketsState, List<Price> prices) {
     final productPrices = prices.where((p) => p.productName.toLowerCase() == _selectedProduct.toLowerCase()).toList();
     double avgPrice = 0;
     if (productPrices.isNotEmpty) {
@@ -105,9 +144,9 @@ class _MarketsScreenState extends ConsumerState<MarketsScreen> with TickerProvid
       children: [
         // CONTENU (Carte ou Liste)
         if (_isMapView)
-          _buildMapView(markets, productPrices, avgPrice)
+          _buildMapView(marketsState.items, productPrices, avgPrice)
         else
-          _buildListView(markets, productPrices, avgPrice),
+          _buildListView(marketsState, productPrices, avgPrice),
 
         // HEADER COMPLETEMENT REFAIT (PROPRE, FOND BLANC)
         Positioned(
@@ -511,9 +550,9 @@ class _MarketsScreenState extends ConsumerState<MarketsScreen> with TickerProvid
     );
   }
 
-  Widget _buildListView(List<Market> markets, List<Price> productPrices, double avgPrice) {
+  Widget _buildListView(PaginatedState<Market> marketsState, List<Price> productPrices, double avgPrice) {
     // Calculer la distance et la renta pour trier la liste
-    List<Market> sortedMarkets = List<Market>.from(markets);
+    List<Market> sortedMarkets = List<Market>.from(marketsState.items);
     
     // Appliquer le filtre "Autour de moi" si actif
     if (_nearbyFilterActive) {
@@ -531,122 +570,196 @@ class _MarketsScreenState extends ConsumerState<MarketsScreen> with TickerProvid
       return priceB.compareTo(priceA);
     });
 
+    final hasFooter = marketsState.hasMore || marketsState.isLoadingMore;
+    final totalCount = sortedMarkets.length + (hasFooter ? 1 : 0);
+
     return Container(
       color: AppColors.background,
-      child: Column(
-        children: [
-          SizedBox(height: MediaQuery.of(context).padding.top + 130), // Espace pour le header
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              itemCount: sortedMarkets.length,
-              itemBuilder: (context, index) {
-                final m = sortedMarkets[index];
-                if (m.latLng == null) return const SizedBox.shrink();
-
-                final marketPriceObj = productPrices.where((p) => p.marketId == m.id).firstOrNull;
-                final priceVal = marketPriceObj?.priceValue ?? 0;
-                
-                Color trendColor = Colors.orange;
-                String trendText = "Stagnant";
-                IconData trendIcon = Icons.trending_flat;
-
-                if (priceVal > 0) {
-                  if (priceVal > avgPrice + 10) {
-                    trendColor = Colors.green;
-                    trendText = "Favorable";
-                    trendIcon = Icons.trending_up;
-                  } else if (priceVal < avgPrice - 10) {
-                    trendColor = Colors.red;
-                    trendText = "Défavorable";
-                    trendIcon = Icons.trending_down;
-                  }
-                }
-
-                double distanceKm = _calculateDistance(_userLocation, m.latLng!);
-
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  elevation: 2,
-                  shadowColor: Colors.black.withValues(alpha: 0.05),
-                  child: InkWell(
-                    onTap: () => _showIntelligentBottomSheet(m, marketPriceObj, avgPrice),
-                    borderRadius: BorderRadius.circular(16),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: trendColor.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Icon(Icons.storefront, color: trendColor),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(m.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                                const SizedBox(height: 4),
-                                Row(
-                                  children: [
-                                    Icon(Icons.location_on, size: 14, color: Colors.grey.shade500),
-                                    const SizedBox(width: 4),
-                                    Text('${distanceKm.toStringAsFixed(1)} km', style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Text(
-                                priceVal > 0 ? '${priceVal.toInt()} F' : '-',
-                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: trendColor),
+      child: RefreshIndicator(
+        onRefresh: () async {
+          await ref.read(marketsPaginationNotifierProvider.notifier).refresh();
+          ref.invalidate(pricesListProvider);
+        },
+        color: AppColors.primary,
+        child: Column(
+          children: [
+            SizedBox(height: MediaQuery.of(context).padding.top + 130), // Espace pour le header
+            Expanded(
+              child: sortedMarkets.isEmpty
+                  ? Center(
+                      child: SingleChildScrollView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(24),
+                              decoration: BoxDecoration(
+                                color: Colors.orange.withValues(alpha: 0.1),
+                                shape: BoxShape.circle,
                               ),
-                              const SizedBox(height: 6),
-                              // Barre dégradé visuel de tendance (vert/rouge)
-                              if (priceVal > 0)
-                                Container(
-                                  width: 80,
-                                  height: 5,
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(4),
-                                    gradient: LinearGradient(
-                                      colors: trendColor == Colors.green
-                                          ? [Colors.green.shade200, Colors.green.shade600]
-                                          : trendColor == Colors.red
-                                              ? [Colors.red.shade600, Colors.red.shade200]
-                                              : [Colors.orange.shade300, Colors.orange.shade500],
-                                      begin: Alignment.centerLeft,
-                                      end: Alignment.centerRight,
+                              child: const Icon(Icons.storefront_outlined, size: 64, color: Colors.orange),
+                            ),
+                            const SizedBox(height: 24),
+                            Text(
+                              'Aucun marché trouvé',
+                              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.textPrimary,
+                                  ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Modifiez votre recherche ou élargissez le rayon GPS.',
+                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: AppColors.textSecondary,
+                                  ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  : ListView.builder(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      itemCount: totalCount,
+                      itemBuilder: (context, index) {
+                        if (index == sortedMarkets.length) {
+                          if (marketsState.isLoadingMore) {
+                            return const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 20),
+                              child: Center(
+                                child: CircularProgressIndicator(color: AppColors.primary),
+                              ),
+                            );
+                          }
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            child: Center(
+                              child: OutlinedButton.icon(
+                                icon: const Icon(Icons.arrow_downward, color: AppColors.primary),
+                                label: const Text(
+                                  'Charger plus de marchés',
+                                  style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
+                                ),
+                                style: OutlinedButton.styleFrom(
+                                  side: const BorderSide(color: AppColors.primary),
+                                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                ),
+                                onPressed: () => ref.read(marketsPaginationNotifierProvider.notifier).loadMore(),
+                              ),
+                            ),
+                          );
+                        }
+
+                        final m = sortedMarkets[index];
+                        if (m.latLng == null) return const SizedBox.shrink();
+
+                        final marketPriceObj = productPrices.where((p) => p.marketId == m.id).firstOrNull;
+                        final priceVal = marketPriceObj?.priceValue ?? 0;
+                        
+                        Color trendColor = Colors.orange;
+                        String trendText = "Stagnant";
+                        IconData trendIcon = Icons.trending_flat;
+
+                        if (priceVal > 0) {
+                          if (priceVal > avgPrice + 10) {
+                            trendColor = Colors.green;
+                            trendText = "Favorable";
+                            trendIcon = Icons.trending_up;
+                          } else if (priceVal < avgPrice - 10) {
+                            trendColor = Colors.red;
+                            trendText = "Défavorable";
+                            trendIcon = Icons.trending_down;
+                          }
+                        }
+
+                        double distanceKm = _calculateDistance(_userLocation, m.latLng!);
+
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          elevation: 2,
+                          shadowColor: Colors.black.withValues(alpha: 0.05),
+                          child: InkWell(
+                            onTap: () => _showIntelligentBottomSheet(m, marketPriceObj, avgPrice),
+                            borderRadius: BorderRadius.circular(16),
+                            child: Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: trendColor.withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Icon(Icons.storefront, color: trendColor),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(m.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                                        const SizedBox(height: 4),
+                                        Row(
+                                          children: [
+                                            Icon(Icons.location_on, size: 14, color: Colors.grey.shade500),
+                                            const SizedBox(width: 4),
+                                            Text('${distanceKm.toStringAsFixed(1)} km', style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
+                                          ],
+                                        ),
+                                      ],
                                     ),
                                   ),
-                                ),
-                              const SizedBox(height: 4),
-                              Row(
-                                children: [
-                                  Text(trendText, style: TextStyle(color: trendColor, fontSize: 12, fontWeight: FontWeight.bold)),
-                                  const SizedBox(width: 4),
-                                  Icon(trendIcon, size: 14, color: trendColor),
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    children: [
+                                      Text(
+                                        priceVal > 0 ? '${priceVal.toInt()} F' : '-',
+                                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: trendColor),
+                                      ),
+                                      const SizedBox(height: 6),
+                                      // Barre dégradé visuel de tendance (vert/rouge)
+                                      if (priceVal > 0)
+                                        Container(
+                                          width: 80,
+                                          height: 5,
+                                          decoration: BoxDecoration(
+                                            borderRadius: BorderRadius.circular(4),
+                                            gradient: LinearGradient(
+                                              colors: trendColor == Colors.green
+                                                  ? [Colors.green.shade200, Colors.green.shade600]
+                                                  : trendColor == Colors.red
+                                                      ? [Colors.red.shade600, Colors.red.shade200]
+                                                      : [Colors.orange.shade300, Colors.orange.shade500],
+                                              begin: Alignment.centerLeft,
+                                              end: Alignment.centerRight,
+                                            ),
+                                          ),
+                                        ),
+                                      const SizedBox(height: 4),
+                                      Row(
+                                        children: [
+                                          Text(trendText, style: TextStyle(color: trendColor, fontSize: 12, fontWeight: FontWeight.bold)),
+                                          const SizedBox(width: 4),
+                                          Icon(trendIcon, size: 14, color: trendColor),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
                                 ],
                               ),
-                            ],
+                            ),
                           ),
-                        ],
-                      ),
+                        );
+                      },
                     ),
-                  ),
-                );
-              },
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

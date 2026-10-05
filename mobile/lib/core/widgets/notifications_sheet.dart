@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../theme/app_theme.dart';
 import '../constants/app_constants.dart';
+import '../network/paginated_response.dart';
 import '../../features/auth/data/auth_provider.dart';
 
 /// Modèle local pour les notifications
@@ -54,6 +55,9 @@ class _NotificationsContent extends StatefulWidget {
 
 class _NotificationsContentState extends State<_NotificationsContent> {
   bool _isLoading = true;
+  bool _isLoadingMore = false;
+  int _currentPage = 1;
+  bool _hasMore = false;
   List<AppNotification> _notifications = [];
   String? _error;
 
@@ -63,37 +67,61 @@ class _NotificationsContentState extends State<_NotificationsContent> {
     _fetchNotifications();
   }
 
-  Future<void> _fetchNotifications() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
+  Future<void> _fetchNotifications({bool loadMore = false}) async {
+    if (loadMore) {
+      if (_isLoadingMore || !_hasMore) return;
+      setState(() => _isLoadingMore = true);
+    } else {
+      setState(() {
+        _isLoading = true;
+        _error = null;
+      });
+    }
 
     try {
+      final pageToFetch = loadMore ? _currentPage + 1 : 1;
       final apiClient = widget.ref.read(apiClientProvider);
-      final response = await apiClient.get(AppConstants.notificationsEndpoint);
-      if (response.statusCode == 200 && response.data is List) {
-        final list = (response.data as List)
-            .map((e) => AppNotification.fromJson(e as Map<String, dynamic>))
-            .toList();
+      final response = await apiClient.get(
+        AppConstants.notificationsEndpoint,
+        queryParams: {'page': pageToFetch, 'page_size': 20},
+      );
+
+      if (response.statusCode == 200) {
+        final paginated = PaginatedResponse<AppNotification>.fromData(
+          response.data,
+          (json) => AppNotification.fromJson(json),
+        );
+
         if (mounted) {
           setState(() {
-            _notifications = list;
-            _isLoading = false;
+            if (loadMore) {
+              _notifications = [..._notifications, ...paginated.results];
+              _currentPage = pageToFetch;
+              _isLoadingMore = false;
+            } else {
+              _notifications = paginated.results;
+              _currentPage = 1;
+              _isLoading = false;
+            }
+            _hasMore = paginated.hasMore;
           });
         }
       } else {
         if (mounted) {
           setState(() {
             _isLoading = false;
+            _isLoadingMore = false;
+            _error = 'Erreur lors du chargement des notifications (${response.statusCode})';
           });
         }
       }
     } catch (e) {
+      debugPrint('Erreur _fetchNotifications: $e');
       if (mounted) {
         setState(() {
-          _error = 'Impossible de charger les notifications';
+          _error = 'Impossible de charger les notifications : $e';
           _isLoading = false;
+          _isLoadingMore = false;
         });
       }
     }
@@ -116,7 +144,9 @@ class _NotificationsContentState extends State<_NotificationsContent> {
           );
         }
       });
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('Erreur _markAsRead: $e');
+    }
   }
 
   Future<void> _markAllAsRead() async {
@@ -143,7 +173,18 @@ class _NotificationsContentState extends State<_NotificationsContent> {
           ),
         );
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('Erreur _markAllAsRead: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur: $e'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
   }
 
   IconData _getTypeIcon(String type) {
@@ -231,10 +272,10 @@ class _NotificationsContentState extends State<_NotificationsContent> {
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Text(_error!, style: TextStyle(color: Colors.grey.shade600)),
+                            Text(_error!, style: TextStyle(color: Colors.grey.shade600), textAlign: TextAlign.center),
                             const SizedBox(height: 8),
                             ElevatedButton(
-                              onPressed: _fetchNotifications,
+                              onPressed: () => _fetchNotifications(),
                               child: const Text('Réessayer'),
                             ),
                           ],
@@ -242,56 +283,87 @@ class _NotificationsContentState extends State<_NotificationsContent> {
                       )
                     : _notifications.isEmpty
                         ? Center(
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.notifications_off_outlined, size: 48, color: Colors.grey.shade400),
-                                const SizedBox(height: 12),
-                                Text(
-                                  'Aucune notification pour le moment',
-                                  style: TextStyle(color: Colors.grey.shade600, fontSize: 15),
-                                ),
-                              ],
+                            child: SingleChildScrollView(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.notifications_off_outlined, size: 48, color: Colors.grey.shade400),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    'Aucune notification pour le moment',
+                                    style: TextStyle(color: Colors.grey.shade600, fontSize: 15),
+                                  ),
+                                ],
+                              ),
                             ),
                           )
-                        : ListView.separated(
-                            itemCount: _notifications.length,
-                            separatorBuilder: (_, __) => Divider(height: 1, color: Colors.grey.shade100),
-                            itemBuilder: (ctx, index) {
-                              final notif = _notifications[index];
-                              final color = _getTypeColor(notif.type);
-                              return ListTile(
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-                                leading: Container(
-                                  padding: const EdgeInsets.all(10),
-                                  decoration: BoxDecoration(
-                                    color: color.withValues(alpha: 0.12),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Icon(_getTypeIcon(notif.type), color: color, size: 22),
-                                ),
-                                title: Text(
-                                  notif.message,
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: notif.isRead ? FontWeight.normal : FontWeight.w600,
-                                    color: notif.isRead ? AppColors.textSecondary : AppColors.textPrimary,
-                                    height: 1.3,
-                                  ),
-                                ),
-                                trailing: !notif.isRead
-                                    ? Container(
-                                        width: 8,
-                                        height: 8,
-                                        decoration: const BoxDecoration(
-                                          color: AppColors.primary,
-                                          shape: BoxShape.circle,
+                        : RefreshIndicator(
+                            onRefresh: () => _fetchNotifications(),
+                            color: AppColors.primary,
+                            child: ListView.separated(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              itemCount: _notifications.length + (_hasMore || _isLoadingMore ? 1 : 0),
+                              separatorBuilder: (_, __) => Divider(height: 1, color: Colors.grey.shade100),
+                              itemBuilder: (ctx, index) {
+                                if (index == _notifications.length) {
+                                  if (_isLoadingMore) {
+                                    return const Padding(
+                                      padding: EdgeInsets.symmetric(vertical: 16),
+                                      child: Center(
+                                        child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+                                      ),
+                                    );
+                                  }
+                                  return Padding(
+                                    padding: const EdgeInsets.symmetric(vertical: 8),
+                                    child: Center(
+                                      child: TextButton.icon(
+                                        onPressed: () => _fetchNotifications(loadMore: true),
+                                        icon: const Icon(Icons.arrow_downward, size: 16, color: AppColors.primary),
+                                        label: const Text(
+                                          'Charger plus',
+                                          style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
                                         ),
-                                      )
-                                    : null,
-                                onTap: notif.isRead ? null : () => _markAsRead(notif.id),
-                              );
-                            },
+                                      ),
+                                    ),
+                                  );
+                                }
+                                final notif = _notifications[index];
+                                final color = _getTypeColor(notif.type);
+                                return ListTile(
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                                  leading: Container(
+                                    padding: const EdgeInsets.all(10),
+                                    decoration: BoxDecoration(
+                                      color: color.withValues(alpha: 0.12),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Icon(_getTypeIcon(notif.type), color: color, size: 22),
+                                  ),
+                                  title: Text(
+                                    notif.message,
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: notif.isRead ? FontWeight.normal : FontWeight.w600,
+                                      color: notif.isRead ? AppColors.textSecondary : AppColors.textPrimary,
+                                      height: 1.3,
+                                    ),
+                                  ),
+                                  trailing: !notif.isRead
+                                      ? Container(
+                                          width: 8,
+                                          height: 8,
+                                          decoration: const BoxDecoration(
+                                            color: AppColors.primary,
+                                            shape: BoxShape.circle,
+                                          ),
+                                        )
+                                      : null,
+                                  onTap: notif.isRead ? null : () => _markAsRead(notif.id),
+                                );
+                              },
+                            ),
                           ),
           ),
         ],

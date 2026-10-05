@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/notifications_sheet.dart';
+import '../../../../core/network/paginated_response.dart';
 
 // Imports pour Mes Cultures
 import '../../data/agriculture_provider.dart';
@@ -100,71 +101,109 @@ class _CropsListScreenState extends ConsumerState<CropsListScreen> with SingleTi
   // ==========================================
 
   Widget _buildMesCulturesTab() {
-    final cropsAsync = ref.watch(cropsProvider);
+    final paginatedState = ref.watch(cropsPaginationNotifierProvider);
 
     return RefreshIndicator(
       onRefresh: () async {
-        ref.invalidate(cropsProvider);
+        await ref.read(cropsPaginationNotifierProvider.notifier).refresh();
       },
       color: AppColors.primary,
-      child: cropsAsync.when(
-        data: (crops) => _buildCropsList(context, crops),
-        loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
-        error: (error, stack) => Center(
+      child: paginatedState.isLoading && paginatedState.items.isEmpty
+          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+          : paginatedState.error != null && paginatedState.items.isEmpty
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.error_outline, color: Colors.red, size: 48),
+                        const SizedBox(height: 16),
+                        Text('Erreur de chargement', style: Theme.of(context).textTheme.titleLarge),
+                        const SizedBox(height: 8),
+                        Text(paginatedState.error!, textAlign: TextAlign.center),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: () => ref.read(cropsPaginationNotifierProvider.notifier).refresh(),
+                          child: const Text('Réessayer'),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              : _buildCropsList(context, paginatedState),
+    );
+  }
+
+  Widget _buildCropsList(BuildContext context, PaginatedState<Crop> state) {
+    if (state.items.isEmpty) {
+      return Center(
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.error_outline, color: Colors.red, size: 48),
-              const SizedBox(height: 16),
-              Text('Erreur de chargement', style: Theme.of(context).textTheme.titleLarge),
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.green.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.eco_rounded, size: 64, color: Colors.green),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'Aucune culture enregistrée',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+              ),
               const SizedBox(height: 8),
-              Text(error.toString(), textAlign: TextAlign.center),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () => ref.invalidate(cropsProvider),
-                child: const Text('Réessayer'),
+              Text(
+                'Commencez par ajouter votre première parcelle.',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
               ),
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildCropsList(BuildContext context, List<Crop> crops) {
-    if (crops.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: Colors.green.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.eco_rounded, size: 64, color: Colors.green),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'Aucune culture enregistrée',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: AppColors.textPrimary),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Commencez par ajouter votre première parcelle.',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
-            ),
-          ],
-        ),
       );
     }
 
+    final hasFooter = state.hasMore || state.isLoadingMore;
+    final totalCount = state.items.length + (hasFooter ? 1 : 0);
+
     return ListView.builder(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 100),
-      itemCount: crops.length,
+      itemCount: totalCount,
       itemBuilder: (context, index) {
-        final crop = crops[index];
+        if (index == state.items.length) {
+          if (state.isLoadingMore) {
+            return const Padding(
+              padding: EdgeInsets.symmetric(vertical: 20),
+              child: Center(
+                child: CircularProgressIndicator(color: AppColors.primary),
+              ),
+            );
+          }
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            child: Center(
+              child: OutlinedButton.icon(
+                icon: const Icon(Icons.arrow_downward, color: AppColors.primary),
+                label: const Text(
+                  'Charger plus de cultures',
+                  style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
+                ),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: AppColors.primary),
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                onPressed: () => ref.read(cropsPaginationNotifierProvider.notifier).loadMore(),
+              ),
+            ),
+          );
+        }
+        final crop = state.items[index];
         return _buildCropCard(context, crop);
       },
     );
@@ -293,6 +332,7 @@ class _CropsListScreenState extends ConsumerState<CropsListScreen> with SingleTi
                             if (confirm == true) {
                               try {
                                 await ref.read(agricultureRepositoryProvider).deleteCrop(crop.id);
+                                ref.read(cropsPaginationNotifierProvider.notifier).refresh();
                                 ref.invalidate(cropsProvider);
                                 if (context.mounted) {
                                   ScaffoldMessenger.of(context).showSnackBar(
@@ -312,6 +352,7 @@ class _CropsListScreenState extends ConsumerState<CropsListScreen> with SingleTi
                           } else if (value == 'harvest') {
                             try {
                               await ref.read(agricultureRepositoryProvider).updateCrop(crop.id, {'status': 'harvested'});
+                              ref.read(cropsPaginationNotifierProvider.notifier).refresh();
                               ref.invalidate(cropsProvider);
                               if (context.mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
@@ -1036,6 +1077,7 @@ class _CropsListScreenState extends ConsumerState<CropsListScreen> with SingleTi
                           'status': currentStatus,
                         };
                         await ref.read(agricultureRepositoryProvider).updateCrop(crop.id, updatedData);
+                        ref.read(cropsPaginationNotifierProvider.notifier).refresh();
                         ref.invalidate(cropsProvider);
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
