@@ -1,0 +1,188 @@
+[
+  {
+    "slug": "oignon",
+    "name": "Oignon (Niayes)",
+    "scientific_name": "Allium cepa",
+    "category": "legume",
+    "summary": "Culture maraîchère des Niayes conduite en pépinière puis repiquée. Fiche tirée du guide de bonnes pratiques du Ministère de l'Agriculture (projet PIESAN). [1]",
+    "zones": "Niayes. [1]",
+    "cycle_days_min": 70,
+    "cycle_days_max": 120,
+    "calendar": "Le guide distingue trois périodes de semis en pépinière : octobre (culture hâtive, « primeur »), novembre-décembre (saison) et janvier-février (arrière-saison : cultures tardive et semi-tardive). Variétés citées : primeur, Violet de Galmi, Texas Early Grano, Noflaye, Goldor, Gandiol F1, Orient F1, Red Passion et Goudamy ; saison, les mêmes avec Mercedes, Safari et Belami ; arrière-saison, Red Créole, Yakar, Rouge d'Amposta, Jaune espagnol, Gao, Violet de Galmi, Orient F1 et Gandiol F1. Le repiquage se fait au stade 5 à 6 feuilles, 45 à 50 jours après le semis. La récolte intervient après un cycle de 70 à 120 jours selon les variétés. [1]",
+    "soil_and_sowing": "Sols sablonneux à sablo-limoneux ; éviter les sols lourds et humides et les précédents ail, oignon et persil. Pépinière : planches de 5 m sur 1 m avec des allées de 50 cm, fumure organique bien décomposée (2 à 3 kg par m²) incorporée, semis en lignes de 1 cm de profondeur espacées de 10 cm à raison de 4 à 6 g de graines par m², puis paillage et arrosage en pluie fine. Repiquage : bandes de 1 à 1,2 m de large et 10 m de long avec des allées de 50 cm, écartement de 10 cm sur la ligne et 20 cm entre les lignes, tôt le matin ou en fin d'après-midi, jusqu'au collet sans enterrer trop profond, puis arrosage immédiat. [1]",
+    "water_needs": "5 à 6 litres d'eau par m² et par jour, de préférence tôt le matin et tard le soir, en pépinière comme en culture, jusqu'à la bulbaison. Quand 30 % des feuilles jaunies sont couchées au sol, arrêter progressivement l'irrigation. [1]",
+    "fertilization": "Fumure de fond : matière organique bien décomposée (une brouette par planche) et engrais minéral 10-10-20 à 25 g par m² (une boîte d'allumettes pleine représente 25 à 30 g). Fumure d'entretien : 10-10-20 à 25 g par m² en trois apports, 20, 40 et 60 jours après le repiquage. Ne jamais utiliser d'urée sur l'oignon. [1]",
+    "pests_diseases": [
+      {
+        "name": "Surveillance et traitements",
+        "advice": "Le guide ne nomme pas de ravageur précis. Surveiller régulièrement la pépinière et la parcelle ; en cas d'attaque, intervenir aussitôt avec l'appui d'un technicien, en privilégiant les produits biologiques ou naturels et uniquement ceux autorisés par la législation en vigueur. Désherber et biner 4 à 5 fois pour aérer le sol. [1]"
+      }
+    ],
+    "harvest": "Couper le feuillage à 5 cm du collet, attendre 10 à 15 jours après l'arrêt de l'irrigation puis arracher les bulbes à la main avec précaution. Sécher au champ 1 à 2 jours, trier par calibre, puis conserver sur des claies dans un lieu propre, sec, frais et bien aéré ; en sacs ou cageots posés sur des palettes (1,5 t par palette, espacées d'un mètre). [1]",
+    "yield_info": "",
+    "limitations": "Le guide ne donne ni rendement attendu ni liste de ravageurs. Le tableau des périodes de semis est à valider avec un technicien de votre zone.",
+    "sources": [
+      {
+        "title": "Bonnes pratiques de production d'oignon dans les Niayes (livret français-wolof)",
+        "publisher": "Ministère de l'Agriculture et de l'Équipement rural, projet PIESAN",
+        "year": "mis en ligne en 2022",
+        "url": "https://agriculture.gouv.sn/wp-content/uploads/2022/06/Livret-oignon-francais-wolof.pdf"
+      }
+    ]
+  },
+  {
+    "slug": "tomate-industrielle",
+    "name": "Tomate industrielle (vallée du fleuve Sénégal)",
+    "scientific_name": "Solanum lycopersicum",
+    "category": "legume",
+    "summary": "Culture irriguée de contre-saison pour la transformation en concentré, introduite dans la vallée en 1969. [1]",
+    "zones": "Vallée du fleuve Sénégal. [1]",
+    "cycle_days_min": null,
+    "cycle_days_max": null,
+    "calendar": "Production exclusivement en contre-saison. Semis en octobre-novembre ; pépinière de moins de 25 jours en novembre-décembre ; récolte à partir de 3 mois après le repiquage, en février, mars et avril, avec le pic de production en mars-avril. [1]",
+    "soil_and_sowing": "Les semences hybrides n'expriment leur potentiel que si tout le paquet technique est respecté : durée de pépinière, quantité de graines et densité de plants. Éviter le voisinage des cucurbitacées. [1]",
+    "water_needs": "Adapter l'intervalle entre les irrigations aux caractéristiques du sol ; la dépendance à l'irrigation collective limite la liberté du producteur sur ce point. [1]",
+    "fertilization": "La source cite l'urée, le 9-23-30 et les engrais foliaires comme premier poste de dépense (27 % des charges) mais ne donne pas de doses. La source précise que la fiche technique de la culture doit être adaptée chaque année aux produits disponibles : se référer à la fiche en vigueur. [1]",
+    "pests_diseases": [
+      {
+        "name": "Bactériose, viroses et mineuses",
+        "advice": "Forte pression parasitaire signalée dans la vallée. La source relève que les dates et les doses d'application des produits phytosanitaires ne sont pas toujours respectées, surtout en début et en fin de culture, et que les changements de produits d'une année à l'autre compliquent la maîtrise des traitements. [1]"
+      }
+    ],
+    "harvest": "À partir de 3 mois après le repiquage. [1]",
+    "yield_info": "Rendements très variables selon les pratiques : de 5 à 60 t/ha, avec une moyenne de 20 t/ha. [1]",
+    "limitations": "Document de synthèse économique : il ne donne ni écartements, ni doses de fertilisation, ni calendrier de traitements. Se référer à la fiche technique de l'industriel et à la SAED.",
+    "sources": [
+      {
+        "title": "Livrable 3 : note de synthèse, filière tomate au Sénégal (SAED)",
+        "publisher": "SAED, chantier COSTEA/ROA-SAGI, rédaction Alassane Ba",
+        "year": "2021",
+        "url": "https://www.comite-costea.fr/wp-content/uploads/SAED_Senegal_filiere-Tomate-VF.pdf"
+      }
+    ]
+  },
+  {
+    "slug": "arachide",
+    "name": "Arachide",
+    "scientific_name": "Arachis hypogaea",
+    "category": "legumineuse",
+    "summary": "Culture pluviale du bassin arachidier, aussi cultivée en irrigué dans la vallée. Le choix de la variété dépend de la pluviométrie de la zone. [1] [2]",
+    "zones": "Bassin arachidier : variétés de 80 jours dans le nord (Louga), de 90 jours au centre (Thiès, Diourbel, Kaolack) et de 105 à 120 jours dans le sud (Nioro du Rip, Tambacounda). Fleur 11 est aussi recommandée en culture irriguée dans la région du fleuve et autour du lac de Guiers. [1]",
+    "cycle_days_min": 80,
+    "cycle_days_max": 125,
+    "calendar": "Semer dès la première pluie de 20 mm ou plus ; les semis précoces sont conseillés pour de bons rendements. Une pluviométrie utile d'environ 400 mm sur 4 mois permet les variétés hâtives (90 jours), 600 à 900 mm sur 5 mois les variétés semi-tardives (110 jours), plus de 900 mm les tardives (125 jours). Variétés vulgarisées et cycles : GC 8-35 (80 jours), Fleur 11 et 55-437 (90 jours), 73-33 (105 jours), CH 119-20 (110 jours), 28-206 (120 jours), 57-313 et 69-101 (125 jours). [1] [2]",
+    "soil_and_sowing": "Ne pas cultiver l'arachide deux saisons de suite sur la même parcelle. Labour de 10 à 20 cm sur sol léger (15 à 20 cm sur sol un peu lourd) dès que le sol est mouillé par une pluie de plus de 20 mm. Densité : 40 cm sur 15 cm (environ 170 000 pieds par hectare, 50 à 60 kg de graines) pour les petites graines (Spanish, Valencia) ; 60 cm sur 15 cm (environ 110 000 pieds par hectare, 60 à 70 kg de graines) pour les grosses graines (Virginia). Test de germination sur 4 lots de 100 graines : semences utilisables si la moyenne atteint au moins 85 %. [2]",
+    "water_needs": "",
+    "fertilization": "Une fumure minérale légère (NPK ou NP) est rentable, davantage encore avec un apport organique, de préférence sur la céréale en rotation. Le Sénégal vulgarise des formules NPK comme le 6-20-10 dans le sud du bassin ; la source ne donne pas de dose. Apports localisés en ligne, dans des poquets à 10 cm des plants, au 10e et au 15e jour après le semis. [2]",
+    "pests_diseases": [
+      {
+        "name": "Rosette",
+        "advice": "Se protéger avec des variétés résistantes ; la variété 69-101 est décrite comme résistante à la rosette. [1] [2]"
+      },
+      {
+        "name": "Rouille et cercosporiose",
+        "advice": "Fleur 11 y est sensible : la pression est faible dans le centre du bassin, mais demande un suivi particulier en culture irriguée. [1]"
+      },
+      {
+        "name": "Aspergillus flavus (aflatoxine)",
+        "advice": "Le déficit hydrique en fin de cycle et une mauvaise maturation des gousses augmentent les attaques. La variété 55-437 est décrite comme résistante à l'aflatoxine. Dans le sud du bassin, préférer 73-33 ou 28-206 à Fleur 11. [1]"
+      },
+      {
+        "name": "Semences et stocks",
+        "advice": "Traiter les semences par enrobage à sec avec un fongicide et les stocks avec un insecticide. [2]"
+      }
+    ],
+    "harvest": "Arracher les plants quand 70 à 80 % des gousses sont mûres (intérieur des gousses brunâtre) et faire des sondages avant la date théorique de fin de cycle. Secouer les plants puis les laisser ressuyer en andains, gousses en l'air. [2]",
+    "yield_info": "Dans les essais, Fleur 11 donne en moyenne 30 % de rendement de plus que 55-437 ; plus de 5 t de gousses par hectare en culture irriguée dans la vallée du fleuve et autour du lac de Guiers. [1]",
+    "limitations": "La carte variétale date de 1996 : vérifier auprès de l'ISRA ou de l'ANCAR la liste actuelle des variétés recommandées. La fiche technique IFDC couvre l'Afrique de l'Ouest : elle ne précise pas les doses de fumure propres au Sénégal.",
+    "sources": [
+      {
+        "title": "La carte variétale de l'arachide au Sénégal (D. Clavel, O. N'Doye), Agriculture et développement n° 14",
+        "publisher": "ISRA / CIRAD",
+        "year": "1997",
+        "url": "https://agritrop.cirad.fr/389448/1/document_389448.pdf"
+      },
+      {
+        "title": "Fiche technique : itinéraire technique de l'arachide",
+        "publisher": "IFDC",
+        "year": "2019",
+        "url": "https://ifdc.org/wp-content/uploads/2019/07/FICHE-TECHNIQUE-2-ITINERAIRE-TECHNIQUE-DE-L%E2%80%99ARACHIDE-GROUNDNUT-TECHNICAL-ITINERARY.pdf"
+      }
+    ]
+  },
+  {
+    "slug": "mil",
+    "name": "Mil",
+    "scientific_name": "Pennisetum glaucum",
+    "category": "cereale",
+    "summary": "Céréale de l'hivernage adaptée aux sols sableux. Deux variétés précoces de référence au catalogue officiel : Souna III et IBV 8004. [1]",
+    "zones": "Souna III : 250 à 750 mm de pluie par an, diffusée dans le sud des régions de Thiès et de Kaolack et dans la région de Tambacounda. IBV 8004 : 300 à 750 mm, diffusée dans le sud de Louga et de Diourbel, le centre de Thiès et le nord de Gossas. [1]",
+    "cycle_days_min": 75,
+    "cycle_days_max": 95,
+    "calendar": "Souna III : 85 à 95 jours du semis à la maturation, 50 % de floraison à 56 jours. IBV 8004 : 75 à 85 jours, 50 % de floraison à 54 jours. [1] Dans l'essai de Saint-Louis, le semis a eu lieu le 18 août 2016 pour une culture de 90 jours. [2]",
+    "soil_and_sowing": "Les sols du Sénégal sont généralement sableux et pauvres en éléments nutritifs. Dans l'essai de l'Université Gaston Berger (Souna 3, Saint-Louis, 2016) : labour à 20 cm suivi d'un hersage, semis en poquets (une pincée de grains) espacés de 90 cm sur 90 cm, démariage 15 jours après la levée à 3 plants par poquet. [2]",
+    "water_needs": "L'essai de Saint-Louis utilisait un goutte-à-goutte de 1 litre par poquet et par jour : ce n'est pas une référence pour la culture pluviale. [2]",
+    "fertilization": "Meilleur résultat de l'essai : NPK 10-10-20 à 150 kg par hectare en fumure de fond, plus 100 kg par hectare d'urée en deux apports (50 kg au tallage et 50 kg à la montaison), soit 1 657 kg de grains par hectare. Le compost (10 t par hectare) et les litières de Faidherbia albida ou de filao (5 t par hectare) n'ont pas eu d'effet significatif dans cet essai. [2]",
+    "pests_diseases": [
+      {
+        "name": "Mildiou et charbon",
+        "advice": "Souna III est sensible au mildiou (moins de 18 % des plantes touchées) et peu sensible au charbon ; IBV 8004 est sensible au mildiou (moins de 5 % des plantes) et peu sensible au charbon. [1]"
+      }
+    ],
+    "harvest": "",
+    "yield_info": "Rendement potentiel : 2 à 2,5 t par hectare pour Souna III, 2,5 à 3 t par hectare pour IBV 8004. [1] L'essai de Saint-Louis a obtenu au mieux 1,66 t par hectare. [2]",
+    "limitations": "Les variétés viennent du catalogue variétal officiel (document non daté). Les doses de fumure viennent d'un essai universitaire sur une seule saison, pas d'une recommandation de vulgarisation : à confirmer auprès de l'ANCAR ou de l'ISRA. Le mil sanio (cycle long, Casamance) n'est pas couvert.",
+    "sources": [
+      {
+        "title": "Catalogue variétal du Sénégal",
+        "publisher": "Ministère de l'Agriculture, Direction de l'Agriculture, Division des semences",
+        "year": "",
+        "url": "http://www.seysoo.com/GECSEM/site/Docs/Catalogue_varietal_Senegal.pdf"
+      },
+      {
+        "title": "Effets de l'application de différents fertilisants sur la fertilité des sols, la croissance et le rendement du mil dans la commune de Gandon (M. D. Diallo et al.), Revue Africaine d'Environnement et d'Agriculture 2(2)",
+        "publisher": "Université Gaston Berger de Saint-Louis et partenaires",
+        "year": "2019",
+        "url": "https://agritrop.cirad.fr/593162/1/Diallo%20et%20al.,%20RAFEA%202019.pdf"
+      }
+    ]
+  },
+  {
+    "slug": "riz-irrigue",
+    "name": "Riz irrigué (vallée du fleuve Sénégal)",
+    "scientific_name": "Oryza sativa",
+    "category": "cereale",
+    "summary": "Riz irrigué cultivé avec les variétés Sahel, qui couvrent plus de 90 % des rizières irriguées de la vallée. [3]",
+    "zones": "Vallée du fleuve Sénégal. [1] [3]",
+    "cycle_days_min": 90,
+    "cycle_days_max": 120,
+    "calendar": "Sahel 108, cycle court de 90 à 110 jours : hivernage et contre-saison. Sahel 201, Sahel 202, Sahel 177 et IR 1529, cycle moyen de 110 à 120 jours : surtout l'hivernage. [1] Les dates de semis et de repiquage ne figurent pas dans nos sources : se référer au calendrier cultural de la SAED pour votre périmètre.",
+    "soil_and_sowing": "Chez les producteurs intensifs de la vallée, la dose de semis moyenne est de 130 kg par hectare (pratique observée, pas une recommandation). [1]",
+    "water_needs": "",
+    "fertilization": "Les normes recommandées citées sont de 300 kg d'urée et 150 kg de NPK par hectare ; les producteurs intensifs utilisent des doses supérieures. Le fractionnement et les dates d'apport ne figurent pas dans nos sources. [1]",
+    "pests_diseases": [],
+    "harvest": "",
+    "yield_info": "Rendement moyen de 5,5 t par hectare en irrigué en 2023, contre 3,4 t en pluvial [2], avec des pics de 8 à 9 t [1]. Au champ, 6 à 7 t par hectare selon AfricaRice, pour un potentiel supérieur à 10 t. [3]",
+    "limitations": "Fiche volontairement incomplète : calendrier cultural, gestion de l'eau, adventices, maladies et récolte ne sont pas documentés ici. À compléter avec une source de la SAED ou d'AfricaRice.",
+    "sources": [
+      {
+        "title": "Synthèse des études sur l'état des lieux de la chaîne de valeur riz au Sénégal (A. A. Fall)",
+        "publisher": "Inter-réseaux Développement rural",
+        "year": "2015",
+        "url": "https://www.inter-reseaux.org/wp-content/uploads/rapport_final_etude_etat_des_lieux_filiere_riz_au_senegal_.pdf"
+      },
+      {
+        "title": "Note politique : production du riz au Sénégal, déterminants et perspectives",
+        "publisher": "DAPSA, Ministère de l'Agriculture (données 2023)",
+        "year": "2023",
+        "url": "https://www.dapsa.gouv.sn/sites/default/files/publications/NOTE%20POLITIQUE%20%20Production%20du%20riz%20au%20S%C3%A9n%C3%A9gal%20%20D%C3%A9terminants%20et%20Perspectives%20DAPSA.pdf"
+      },
+      {
+        "title": "Variétés Sahel",
+        "publisher": "AfricaRice",
+        "year": "",
+        "url": "https://www.africarice-fr.org/varietes-sahel"
+      }
+    ]
+  }
+]

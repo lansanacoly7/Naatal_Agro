@@ -99,3 +99,43 @@ class PestReport(models.Model):
                         )
 
 
+
+
+class AgronomicGuide(models.Model):
+    """
+    Fiche technique d'une culture du Sénégal, rédigée uniquement à partir de sources citées.
+
+    Règle de contenu : un champ vide signifie « non documenté par nos sources » (jamais une valeur
+    devinée). Les repères [1], [2]… renvoient à la liste ``sources`` de la fiche.
+    """
+    CATEGORY_CHOICES = [
+        ('legume', 'Légume'),
+        ('cereale', 'Céréale'),
+        ('legumineuse', 'Légumineuse'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    slug = models.SlugField(max_length=80, unique=True)
+    name = models.CharField(max_length=120)
+    scientific_name = models.CharField(max_length=120, blank=True)
+    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES)
+    summary = models.TextField()
+    zones = models.TextField(blank=True, help_text="Zones de culture au Sénégal")
+    cycle_days_min = models.PositiveSmallIntegerField(null=True, blank=True)
+    cycle_days_max = models.PositiveSmallIntegerField(null=True, blank=True)
+    calendar = models.TextField(blank=True, help_text="Calendrier de semis, repiquage et récolte")
+    soil_and_sowing = models.TextField(blank=True, help_text="Sol, préparation, semis, densité")
+    water_needs = models.TextField(blank=True)
+    fertilization = models.TextField(blank=True)
+    pests_diseases = models.JSONField(default=list, blank=True, help_text="Liste de {name, advice}")
+    harvest = models.TextField(blank=True)
+    yield_info = models.TextField(blank=True)
+    limitations = models.TextField(blank=True, help_text="Limites et points à vérifier avant de s'appuyer sur la fiche")
+    sources = models.JSONField(default=list, help_text="Liste de {title, publisher, year, url}")
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name

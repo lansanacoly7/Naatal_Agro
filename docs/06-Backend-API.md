@@ -293,6 +293,30 @@ POST /agriculture/crops/{id}/activities/
 
 ---
 
+## 7.3 Fiches agronomiques (lecture seule)
+
+```http
+GET /api/agriculture/guides/                 # liste (accepte ?category=legume|cereale|legumineuse et ?search=)
+GET /api/agriculture/guides/<slug>/          # détail : oignon, tomate-industrielle, arachide, mil, riz-irrigue
+```
+
+Chaque fiche contient : `name`, `scientific_name`, `category`, `summary`, `zones`, `cycle_days_min/max`, `calendar`,
+`soil_and_sowing`, `water_needs`, `fertilization`, `pests_diseases` (liste de `{name, advice}`), `harvest`, `yield_info`,
+`limitations` et `sources` (liste de `{title, publisher, year, url}`).
+
+**Règles de contenu** (testées automatiquement) :
+
+- Un champ vide signifie « non documenté par nos sources », jamais une valeur devinée.
+- Chaque texte rempli porte un repère `[n]` qui renvoie à la n-ième entrée de `sources`.
+- Chaque fiche indique ses `limitations` (par exemple une source ancienne ou un essai sur une seule saison).
+- Les fiches sont dans `backend/apps/agriculture/data/agronomic_guides.json`. Elles sont chargées par la migration
+  `0005_load_agronomic_guides` ; après une modification du fichier : `python manage.py load_agronomic_guides`.
+
+Les fiches sont des repères d'information, pas des prescriptions : les produits phytosanitaires et les doses doivent être
+confirmés auprès d'un conseiller agricole (ANCAR, SAED, ISRA) et des produits autorisés par la législation.
+
+---
+
 # 8. Markets API (logique décisionnelle)
 
 ---

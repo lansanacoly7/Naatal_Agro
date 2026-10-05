@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Activity, Crop, PestReport
+from .models import Activity, AgronomicGuide, Crop, PestReport
 
 
 class ActivityInline(admin.TabularInline):
@@ -35,3 +35,11 @@ class PestReportAdmin(admin.ModelAdmin):
     search_fields = ('pest_name', 'location', 'description', 'user__username')
     date_hierarchy = 'date_reported'
     list_select_related = ('user',)
+
+
+@admin.register(AgronomicGuide)
+class AgronomicGuideAdmin(admin.ModelAdmin):
+    list_display = ('name', 'category', 'cycle_days_min', 'cycle_days_max', 'updated_at')
+    list_filter = ('category',)
+    search_fields = ('name', 'scientific_name', 'summary')
+    prepopulated_fields = {'slug': ('name',)}

@@ -114,7 +114,8 @@ Légende : **AGY** = Antigravity, **CLA** = Claude. La colonne « Définition de
 | Mise à jour du rapport pour le retrait du module B2B | Propriétaire et CLA | À faire |
 | Construction Docker réelle (Docker Desktop à lancer) | AGY | À faire |
 | Pagination (documents ↔ code) | CLA puis AGY | À faire |
-| Écrans produit encore sur données simulées | CLA puis AGY | À faire |
+| Écrans produit encore sur données simulées : brancher `mock_product_database.dart` sur `/api/agriculture/guides/` (API prête, 5 fiches sourcées) | AGY | À faire |
+| Compléter la fiche riz (calendrier, eau, maladies) et ajouter d'autres cultures, avec sources | CLA | À faire |
 | Notifications push sur téléphone | AGY, après projet Firebase | À faire |
 | Écrans mobiles de confidentialité : case de consentement à l'inscription, export de mes données, suppression du compte (API prête : `/api/privacy/`) | AGY | À faire |
 | Passer `PRIVACY_CONSENT_REQUIRED=True` une fois la case de consentement livrée | CLA | À faire |
