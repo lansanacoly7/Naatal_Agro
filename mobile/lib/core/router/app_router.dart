@@ -28,7 +28,13 @@ import '../../features/markets/presentation/screens/b2b_marketplace_screen.dart'
 import '../../features/markets/presentation/screens/product_detail_screen.dart';
 import '../../features/markets/presentation/screens/market_comparison_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
-
+import '../../features/profile/presentation/screens/price_alerts_screen.dart';
+import '../../features/profile/presentation/screens/notifications_screen.dart';
+import '../../features/profile/presentation/screens/edit_profile_screen.dart';
+import '../../features/profile/presentation/screens/settings_notifications_screen.dart';
+import '../../features/profile/presentation/screens/settings_language_screen.dart';
+import '../../features/profile/presentation/screens/settings_security_screen.dart';
+import '../../features/profile/presentation/screens/settings_support_screen.dart';
 /// Shell avec Bottom Navigation Bar premium — Navigation principale
 class MainShell extends StatelessWidget {
   final Widget child;
@@ -412,6 +418,41 @@ final routerProvider = Provider<GoRouter>((ref) {
             initialStock: (extra['stock'] as num?)?.toDouble() ?? 0.0,
           );
         },
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: '/price-alerts',
+        builder: (context, state) => const PriceAlertsScreen(),
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: '/notifications',
+        builder: (context, state) => const NotificationsScreen(),
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: '/edit-profile',
+        builder: (context, state) => const EditProfileScreen(),
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: '/settings-notifications',
+        builder: (context, state) => const SettingsNotificationsScreen(),
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: '/settings-language',
+        builder: (context, state) => const SettingsLanguageScreen(),
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: '/settings-security',
+        builder: (context, state) => const SettingsSecurityScreen(),
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: '/settings-support',
+        builder: (context, state) => const SettingsSupportScreen(),
       ),
     ],
   );

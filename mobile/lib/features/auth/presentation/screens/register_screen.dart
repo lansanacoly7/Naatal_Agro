@@ -110,22 +110,36 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
     setState(() => _isVerifying = true);
     
-    // Simulate OTP verification delay
-    await Future.delayed(const Duration(seconds: 1));
+    // Convert date of birth from dd/mm/yyyy to yyyy-mm-dd if provided
+    String? formattedDob;
+    if (_dobController.text.trim().isNotEmpty) {
+      final parts = _dobController.text.trim().split('/');
+      if (parts.length == 3) {
+        final day = parts[0].padLeft(2, '0');
+        final month = parts[1].padLeft(2, '0');
+        final year = parts[2];
+        formattedDob = '$year-$month-$day';
+      }
+    }
 
     // Actually register via backend
     await ref.read(authStateProvider.notifier).register(
-      _nameController.text.trim(),
-      _phoneController.text.trim(),
-      _passwordController.text,
-      'fr',
-      _selectedRegion ?? 'Sénégal',
+      fullName: _nameController.text.trim(),
+      phone: _phoneController.text.trim(),
+      password: _passwordController.text,
+      language: 'fr',
+      location: _selectedRegion ?? 'Sénégal',
+      email: _emailController.text.trim(),
+      dateOfBirth: formattedDob,
+      mainCrops: _selectedCrops,
     );
 
     final authState = ref.read(authStateProvider);
     if (authState.hasError && mounted) {
       setState(() => _isVerifying = false);
-      _showError(authState.error.toString());
+      final rawError = authState.error.toString();
+      final cleanError = rawError.replaceAll('Exception: ', '');
+      _showError(cleanError);
     }
     // Si succès, le routeur s'en chargera
   }

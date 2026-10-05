@@ -33,10 +33,10 @@ class RegisterSerializer(serializers.ModelSerializer):
     phone_number = serializers.CharField(write_only=True)
     full_name = serializers.CharField(write_only=True)
     password = serializers.CharField(write_only=True)
-    language = serializers.CharField(write_only=True, required=False)
-    location = serializers.CharField(write_only=True, required=False)
+    language = serializers.CharField(write_only=True, required=False, default='fr')
+    location = serializers.CharField(write_only=True, required=False, allow_blank=True, default='')
     role = serializers.ChoiceField(choices=User.ROLE_CHOICES, write_only=True, required=False, default='farmer')
-    email = serializers.EmailField(write_only=True, required=False, allow_blank=True)
+    email = serializers.EmailField(write_only=True, required=False, allow_blank=True, default='')
     date_of_birth = serializers.DateField(write_only=True, required=False, allow_null=True)
     main_crops = serializers.JSONField(write_only=True, required=False, default=list)
 
@@ -44,10 +44,17 @@ class RegisterSerializer(serializers.ModelSerializer):
         model = User
         fields = ('phone_number', 'full_name', 'password', 'language', 'location', 'role', 'email', 'date_of_birth', 'main_crops')
 
+    def validate_phone_number(self, value):
+        cleaned_phone = value.replace(" ", "").strip()
+        if User.objects.filter(username=cleaned_phone).exists() or User.objects.filter(phone=cleaned_phone).exists():
+            raise serializers.ValidationError("Ce numéro de téléphone est déjà enregistré.")
+        return cleaned_phone
+
     def create(self, validated_data):
+        phone_num = validated_data['phone_number']
         user = User.objects.create_user(
-            username=validated_data['phone_number'],
-            phone=validated_data['phone_number'],
+            username=phone_num,
+            phone=phone_num,
             password=validated_data['password'],
             first_name=validated_data['full_name'],
             language=validated_data.get('language', 'fr'),

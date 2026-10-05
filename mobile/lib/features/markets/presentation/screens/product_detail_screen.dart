@@ -216,43 +216,52 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        _buildActionButton(Icons.sensors, 'Prédire', const Color(0xFF673AB7)),
-        _buildActionButton(Icons.notifications_active, 'Alerte', Colors.amber.shade700),
-        _buildActionButton(Icons.inventory_2, 'Mon Stock', Colors.brown.shade400),
-        _buildActionButton(Icons.chat_bubble, 'Chatbot', AppColors.primary),
+        _buildActionButton(Icons.sensors, 'Prédire', const Color(0xFF673AB7), () {
+          double priceValue = double.tryParse(widget.price.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0.0;
+          context.push('/price-analysis', extra: {
+            'product': widget.productName,
+            'price': priceValue,
+          });
+        }),
+        _buildActionButton(Icons.notifications_active, 'Alerte', Colors.amber.shade700, () => context.push('/price-alerts')),
+        _buildActionButton(Icons.inventory_2, 'Mon Stock', Colors.brown.shade400, () => context.push('/inventory')),
+        _buildActionButton(Icons.chat_bubble, 'Chatbot', AppColors.primary, () => context.push('/ai')),
       ],
     );
   }
 
-  Widget _buildActionButton(IconData icon, String label, Color color) {
-    return Column(
-      children: [
-        Container(
-          width: 60,
-          height: 60,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
+  Widget _buildActionButton(IconData icon, String label, Color color, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Icon(icon, color: color, size: 24),
           ),
-          child: Icon(icon, color: color, size: 24),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          label,
-          style: const TextStyle(
-            color: AppColors.textPrimary,
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
+          const SizedBox(height: 8),
+          Text(
+            label,
+            style: const TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 

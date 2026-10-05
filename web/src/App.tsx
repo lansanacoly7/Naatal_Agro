@@ -67,7 +67,7 @@ export function App() {
               <Bell size={20} color="#64748B" />
             </button>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'white', padding: '6px 16px', borderRadius: '14px', border: '1px solid #E2E8F0' }}>
-              <div style={{ width: '36px', height: '36px', background: '#2E7D32', borderRadius: '50%', color: 'white', display: 'flex', alignItems: 'center', justifyCenter: 'center', fontWeight: 'bold' }}>
+              <div style={{ width: '36px', height: '36px', background: '#2E7D32', borderRadius: '50%', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
                 A
               </div>
               <span style={{ fontWeight: '600', fontSize: '14px' }}>Admin ISEP</span>

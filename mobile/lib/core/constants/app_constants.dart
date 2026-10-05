@@ -4,15 +4,18 @@ import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, Tar
 class AppConstants {
   // API Backend Django - Dynamique selon l'environnement
   static String get apiBaseUrl {
-    if (kIsWeb) {
-      return 'http://127.0.0.1:8000/api'; // Changé pour 127.0.0.1 au lieu d'une IP fixe pour le dev local
-    }
-    
+    // For web use localhost (CORS must be configured on the server)
+    if (kIsWeb) return 'http://localhost:8000/api';
+    // Android emulators route localhost via 10.0.2.2
     if (defaultTargetPlatform == TargetPlatform.android) {
       return 'http://10.0.2.2:8000/api';
     }
-    
-    return 'http://127.0.0.1:8000/api';
+    // iOS simulators can also use localhost directly
+    if (defaultTargetPlatform == TargetPlatform.iOS) {
+      return 'http://localhost:8000/api';
+    }
+    // Default to the LAN IP for physical devices
+    return 'http://192.168.1.31:8000/api';
   }
 
   // Endpoints Auth

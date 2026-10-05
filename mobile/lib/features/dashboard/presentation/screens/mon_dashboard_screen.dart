@@ -35,12 +35,12 @@ class _MonDashboardScreenState extends ConsumerState<MonDashboardScreen> {
           children: [
             _buildSectionTitle('Performances Financières'),
             const SizedBox(height: 16),
-            _buildFinancialStats(),
+            _buildFinancialStats(context),
             
             const SizedBox(height: 32),
             _buildSectionTitle('État de mon Stock'),
             const SizedBox(height: 16),
-            _buildStockInfo(),
+            _buildStockInfo(context),
             
             const SizedBox(height: 32),
             _buildSectionTitle('Naatal IA - Stock & Récoltes'),
@@ -59,19 +59,43 @@ class _MonDashboardScreenState extends ConsumerState<MonDashboardScreen> {
     );
   }
 
-  Widget _buildSectionTitle(String title) {
-    return Text(
-      title,
-      style: const TextStyle(
-        fontSize: 18,
-        fontWeight: FontWeight.w800,
-        color: AppColors.primary,
-      ),
+  Widget _buildSectionTitle(String title, {String? actionText, VoidCallback? onAction}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+            color: AppColors.primary,
+          ),
+        ),
+        if (actionText != null && onAction != null)
+          GestureDetector(
+            onTap: onAction,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                actionText,
+                style: const TextStyle(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 
   // 1. Finances : Chiffre d'affaires, Revenus, Pertes
-  Widget _buildFinancialStats() {
+  Widget _buildFinancialStats(BuildContext context) {
     return Column(
       children: [
         Container(
@@ -160,13 +184,27 @@ class _MonDashboardScreenState extends ConsumerState<MonDashboardScreen> {
             ),
           ],
         ),
+        const SizedBox(height: 16),
+        ElevatedButton.icon(
+          onPressed: () => context.push('/performances'),
+          icon: const Icon(Icons.analytics, size: 18),
+          label: const Text('Gérer mes revenus et performances'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.primary,
+            foregroundColor: Colors.white,
+            minimumSize: const Size(double.infinity, 48),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        ),
       ],
     );
   }
 
   // 2. Stock : Quantité de stock
-  Widget _buildStockInfo() {
-    return Container(
+  Widget _buildStockInfo(BuildContext context) {
+    return Column(
+      children: [
+        Container(
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
@@ -181,6 +219,20 @@ class _MonDashboardScreenState extends ConsumerState<MonDashboardScreen> {
           _buildStockItem('Arachide', '1.2 Tonnes', 'Prêt à la vente', Icons.sell),
         ],
       ),
+    ),
+        const SizedBox(height: 16),
+        ElevatedButton.icon(
+          onPressed: () => context.push('/inventory'),
+          icon: const Icon(Icons.inventory_2_outlined, size: 18),
+          label: const Text('Gérer mon stock'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.primary,
+            foregroundColor: Colors.white,
+            minimumSize: const Size(double.infinity, 48),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        ),
+      ],
     );
   }
 

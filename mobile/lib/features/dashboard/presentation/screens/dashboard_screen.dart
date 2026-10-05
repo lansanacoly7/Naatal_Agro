@@ -187,48 +187,60 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
         ),
         Row(
           children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4)),
-                ],
+            GestureDetector(
+              onTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Recherche globale bientôt disponible')),
+                );
+              },
+              child: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4)),
+                  ],
+                ),
+                child: const Icon(Icons.search, color: AppColors.textPrimary, size: 20),
               ),
-              child: const Icon(Icons.search, color: AppColors.textPrimary, size: 20),
             ),
             const SizedBox(width: 12),
-            Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4)),
-                    ],
-                  ),
-                  child: const Icon(Icons.notifications_outlined, color: AppColors.textPrimary, size: 20),
-                ),
-                Positioned(
-                  top: -2,
-                  right: -2,
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
+            GestureDetector(
+              onTap: () {
+                context.push('/notifications');
+              },
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
                     decoration: BoxDecoration(
-                      color: AppColors.error,
+                      color: Colors.white,
                       shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 2),
+                      boxShadow: [
+                        BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4)),
+                      ],
                     ),
-                    child: const Text('2', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                    child: const Icon(Icons.notifications_outlined, color: AppColors.textPrimary, size: 20),
                   ),
-                ),
-              ],
+                  Positioned(
+                    top: -2,
+                    right: -2,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: AppColors.error,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 2),
+                      ),
+                      child: const Text('2', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -294,7 +306,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
           ),
           const SizedBox(height: 24),
           ElevatedButton(
-            onPressed: () {},
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Prévisions météo complètes à venir !')),
+              );
+            },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.white,
               foregroundColor: AppColors.primary,
@@ -324,7 +340,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
       children: [
         _buildActionItem(Icons.insights, 'Dashboard', () => context.push('/mon_dashboard')), 
         _buildActionItem(Icons.calendar_month_outlined, 'Calendrier', () => context.push('/calendar')), 
-        _buildActionItem(Icons.notifications_active_outlined, 'Alerte', () {}), // Bientôt disponible
+        _buildActionItem(Icons.notifications_active_outlined, 'Alerte', () => context.push('/price-alerts')),
         _buildActionItem(Icons.auto_awesome, 'Naatal IA', () => context.go('/ai')),
       ],
     );

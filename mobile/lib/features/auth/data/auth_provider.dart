@@ -49,10 +49,30 @@ class AuthNotifier extends StateNotifier<AsyncValue<bool>> {
   }
 
   /// Action d'inscription
-  Future<void> register(String fullName, String phone, String password, String language, String location, {String role = 'farmer'}) async {
+  Future<void> register({
+    required String fullName,
+    required String phone,
+    required String password,
+    String language = 'fr',
+    String location = '',
+    String role = 'farmer',
+    String? email,
+    String? dateOfBirth,
+    List<String> mainCrops = const [],
+  }) async {
     state = const AsyncValue.loading();
     try {
-      await _repository.register(fullName, phone, password, language, location, role: role);
+      await _repository.register(
+        fullName: fullName,
+        phone: phone,
+        password: password,
+        language: language,
+        location: location,
+        role: role,
+        email: email,
+        dateOfBirth: dateOfBirth,
+        mainCrops: mainCrops,
+      );
       state = const AsyncValue.data(true);
     } catch (e, st) {
       state = AsyncValue.error(e, st);

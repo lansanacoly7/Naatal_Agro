@@ -33,6 +33,12 @@ class ApiClient {
           return handler.next(options);
         },
         onError: (error, handler) async {
+          final path = error.requestOptions.path;
+          // Exclure les endpoints d'authentification de la mise en file d'attente offline
+          if (path.contains('/auth/')) {
+            return handler.next(error);
+          }
+
           // Si c'est une erreur réseau, on met en file d'attente les mutations
           if (error.type == DioExceptionType.connectionTimeout || 
               error.type == DioExceptionType.connectionError ||
