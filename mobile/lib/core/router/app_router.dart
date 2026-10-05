@@ -24,7 +24,6 @@ import '../../features/agriculture/data/models/crop.dart';
 import '../../features/agriculture/presentation/screens/crop_detail_screen.dart';
 import '../../features/ai/presentation/screens/ai_chat_screen.dart';
 import '../../features/markets/presentation/screens/markets_screen.dart';
-import '../../features/markets/presentation/screens/b2b_marketplace_screen.dart';
 import '../../features/markets/presentation/screens/product_detail_screen.dart';
 import '../../features/markets/presentation/screens/market_comparison_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
@@ -119,72 +118,8 @@ class MainShell extends StatelessWidget {
   }
 }
 
-/// Shell pour le Profil Acheteur / B2B Trader
-class BuyerShell extends StatelessWidget {
-  final Widget child;
-
-  const BuyerShell({super.key, required this.child});
-
-  int _calculateSelectedIndex(BuildContext context) {
-    final location = GoRouterState.of(context).matchedLocation;
-    if (location.startsWith('/buyer_profile')) return 1;
-    return 0; // B2B Marketplace Home
-  }
-
-  void _onItemTapped(int index, BuildContext context) {
-    switch (index) {
-      case 0:
-        context.go('/buyer_home');
-        break;
-      case 1:
-        context.go('/buyer_profile');
-        break;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final selectedIndex = _calculateSelectedIndex(context);
-
-    return Scaffold(
-      body: child,
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.06),
-              blurRadius: 20,
-              offset: const Offset(0, -5),
-            ),
-          ],
-        ),
-        child: NavigationBar(
-          selectedIndex: selectedIndex,
-          onDestinationSelected: (index) => _onItemTapped(index, context),
-          backgroundColor: Colors.white,
-          indicatorColor: AppColors.primary.withValues(alpha: 0.12),
-          elevation: 0,
-          destinations: const [
-            NavigationDestination(
-              icon: Icon(Icons.storefront_outlined),
-              selectedIcon: Icon(Icons.storefront_rounded, color: AppColors.primary),
-              label: 'Marketplace B2B',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.person_outline_rounded),
-              selectedIcon: Icon(Icons.person_rounded, color: AppColors.primary),
-              label: 'Mon Profil',
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 final _rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
 final _shellNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'farmerShell');
-final _buyerShellNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'buyerShell');
 
 final hasSeenOnboardingProvider = StateProvider<bool>((ref) {
   final prefs = ref.watch(sharedPreferencesProvider);
@@ -192,7 +127,6 @@ final hasSeenOnboardingProvider = StateProvider<bool>((ref) {
 });
 
 final welcomeStateProvider = StateProvider<bool>((ref) => false);
-final roleStateProvider = StateProvider<String>((ref) => 'farmer');
 
 class RouterNotifier extends ChangeNotifier {
   final Ref _ref;
@@ -203,17 +137,12 @@ class RouterNotifier extends ChangeNotifier {
       (previous, next) async {
         if (previous?.value != next.value) {
           _ref.read(welcomeStateProvider.notifier).state = false;
-          if (next.value == true) {
-            final role = await _ref.read(apiClientProvider).getUserRole();
-            _ref.read(roleStateProvider.notifier).state = role;
-          }
         }
         notifyListeners();
       },
     );
     _ref.listen<bool>(hasSeenOnboardingProvider, (previous, next) => notifyListeners());
     _ref.listen<bool>(welcomeStateProvider, (previous, next) => notifyListeners());
-    _ref.listen<String>(roleStateProvider, (previous, next) => notifyListeners());
   }
 }
 
@@ -232,7 +161,6 @@ final routerProvider = Provider<GoRouter>((ref) {
       final authState = ref.read(authStateProvider);
       final hasSeenWelcome = ref.read(welcomeStateProvider);
       final hasSeenOnboarding = ref.read(hasSeenOnboardingProvider);
-      final role = ref.read(roleStateProvider);
 
       final loc = state.matchedLocation;
       final isAuthRoute = loc == '/login' || loc == '/register' || loc == '/onboarding';
@@ -268,13 +196,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         }
 
         if (isGoingToLogin || isGoingToRegister || isGoingToOnboarding || isGoingToWelcome) {
-          return role == 'buyer' ? '/buyer_home' : '/';
-        }
-
-        if (role == 'buyer' && (state.matchedLocation == '/' || state.matchedLocation.startsWith('/agriculture'))) {
-          return '/buyer_home';
-        }
-        if (role == 'farmer' && state.matchedLocation.startsWith('/buyer_home')) {
           return '/';
         }
       }
@@ -311,20 +232,6 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: '/profile',
-            builder: (context, state) => const ProfileScreen(),
-          ),
-        ],
-      ),
-      ShellRoute(
-        navigatorKey: _buyerShellNavigatorKey,
-        builder: (context, state, child) => BuyerShell(child: child),
-        routes: [
-          GoRoute(
-            path: '/buyer_home',
-            builder: (context, state) => const B2BMarketplaceScreen(),
-          ),
-          GoRoute(
-            path: '/buyer_profile',
             builder: (context, state) => const ProfileScreen(),
           ),
         ],

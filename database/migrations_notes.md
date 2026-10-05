@@ -11,7 +11,7 @@ Les applications Django doivent être migrées dans l'ordre de leurs dépendance
 
 1. `users` : Modèle personnalisé `User` (hérite de `AbstractUser` avec identifiant `phone_number` / `username` et `UUIDField`).
 2. `agriculture` : Modèles `Crop` (relié à `User`), `Activity` (relié à `Crop`), `PestReport` (relié à `User`).
-3. `markets` : Modèles `Market`, `Price` (relié à `Market`), `Product`, `PreSaleOffer` (relié à `User`), `PreSaleReservation` (relié à `PreSaleOffer` et `User`).
+3. `markets` : Modèles `Market`, `Price` (relié à `Market`), `Product`.
 4. `weather` : Modèle `WeatherData` (enregistrements horodatés par région).
 5. `notifications` : Modèle `Notification` (relié à `User` pour les alertes ravageurs, météo et cours des marchés).
 6. `inventory` : Modèle `StockItem` (relié à `User` avec suivi d'alerte et stockage IA).

@@ -1,9 +1,10 @@
 from django.test import TestCase
 from django.urls import reverse
 from django.contrib.auth import get_user_model
+from django.utils import timezone
 from rest_framework.test import APIClient
 from rest_framework import status
-from apps.markets.models import Market, Price, Product, PreSaleOffer, PreSaleReservation
+from apps.markets.models import Market, Price, Product
 
 User = get_user_model()
 
@@ -18,19 +19,16 @@ class MarketsAppTests(TestCase):
             role='farmer',
             location='Thiès, Sénégal'
         )
-        self.buyer = User.objects.create_user(
-            username='+221772000002',
-            phone='+221772000002',
-            password='password123',
-            first_name='Mariama',
-            role='buyer',
-            location='Dakar, Sénégal'
-        )
 
-        self.market = Market.objects.create(
+        self.market_castors = Market.objects.create(
             name='Marché Castors',
             region='Dakar',
             rating=4.5
+        )
+        self.market_kaolack = Market.objects.create(
+            name='Marché Central de Kaolack',
+            region='Kaolack',
+            rating=4.2
         )
 
         self.product_onion = Product.objects.create(
@@ -51,9 +49,22 @@ class MarketsAppTests(TestCase):
             is_trending=False
         )
 
+        self.price_onion_castors = Price.objects.create(
+            market=self.market_castors,
+            product_name='Oignon Local Galmi',
+            price='600.00',
+            date=timezone.now().date()
+        )
+        self.price_onion_kaolack = Price.objects.create(
+            market=self.market_kaolack,
+            product_name='Oignon Local Galmi',
+            price='550.00',
+            date=timezone.now().date()
+        )
+
     def test_products_list_and_filter(self):
         """Vérifie le listing des produits avec filtre catégorie et recherche."""
-        self.client.force_authenticate(user=self.buyer)
+        self.client.force_authenticate(user=self.farmer)
         url = reverse('markets:product-list')
 
         # Liste complète
@@ -73,79 +84,43 @@ class MarketsAppTests(TestCase):
         self.assertEqual(len(response_search.data), 1)
         self.assertEqual(response_search.data[0]['name'], 'Riz Vallée Parfumé')
 
-    def test_b2b_offer_creation_by_farmer(self):
-        """Vérifie la création d'une offre B2B par un producteur."""
+        # Filtre tendance
+        response_trending = self.client.get(url, {'is_trending': 'true'})
+        self.assertEqual(response_trending.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response_trending.data), 1)
+        self.assertEqual(response_trending.data[0]['name'], 'Oignon Local Galmi')
+
+    def test_markets_list(self):
+        """Vérifie le listing des marchés agricoles régionaux."""
         self.client.force_authenticate(user=self.farmer)
-        url = reverse('markets:presale-offer-list')
-        offer_data = {
-            'product_name': 'Oignon Violet',
-            'quantity_kg': 1500.0,
-            'price_per_kg': '450.00',
-            'availability_date': '2026-04-01',
-            'location': 'Thiès, Sénégal',
-            'status': 'open'
-        }
-        response = self.client.post(url, offer_data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertTrue(PreSaleOffer.objects.filter(product_name='Oignon Violet').exists())
+        url = reverse('markets:market-list')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 2)
 
-    def test_b2b_offer_reservation_flow(self):
-        """Vérifie le cycle complet de réservation B2B avec calcul des stocks."""
-        offer = PreSaleOffer.objects.create(
-            farmer=self.farmer,
-            product_name='Tomate Industrielle',
-            quantity_kg=1000.0,
-            price_per_kg='300.00',
-            availability_date='2026-05-01',
-            location='Podor, Sénégal',
-            status='open'
-        )
+    def test_prices_list_and_filter(self):
+        """Vérifie le listing et le filtrage des cotations des prix selon le marché et le produit."""
+        self.client.force_authenticate(user=self.farmer)
+        url = reverse('markets:price-list')
 
-        self.client.force_authenticate(user=self.buyer)
-        reserve_url = reverse('markets:presale-offer-reserve', kwargs={'pk': str(offer.id)})
+        # Tous les prix
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 2)
 
-        # 1. Réservation impossible si quantité excessive
-        excess_response = self.client.post(reserve_url, {'quantity_reserved': 1200}, format='json')
-        self.assertEqual(excess_response.status_code, status.HTTP_400_BAD_REQUEST)
+        # Filtrer par marché
+        response_market = self.client.get(url, {'market': str(self.market_castors.id)})
+        self.assertEqual(response_market.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response_market.data), 1)
+        self.assertEqual(float(response_market.data[0]['price']), 600.0)
 
-        # 2. Réservation partielle valide (400 kg)
-        valid_response = self.client.post(reserve_url, {'quantity_reserved': 400}, format='json')
-        self.assertEqual(valid_response.status_code, status.HTTP_201_CREATED)
-        offer.refresh_from_db()
-        self.assertEqual(offer.quantity_kg, 600.0)
-        self.assertEqual(offer.status, 'open')
-        self.assertEqual(PreSaleReservation.objects.filter(offer=offer).count(), 1)
+        # Filtrer par nom de produit
+        response_prod = self.client.get(url, {'product': 'Oignon'})
+        self.assertEqual(response_prod.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response_prod.data), 2)
 
-        # 3. Réservation du solde restant (600 kg) -> l'offre passe à "reserved"
-        final_response = self.client.post(reserve_url, {'quantity_reserved': 600}, format='json')
-        self.assertEqual(final_response.status_code, status.HTTP_201_CREATED)
-        offer.refresh_from_db()
-        self.assertEqual(offer.quantity_kg, 0.0)
-        self.assertEqual(offer.status, 'reserved')
-
-        # 4. Tentative de réservation sur une offre fermée / réservée -> refusée
-        closed_response = self.client.post(reserve_url, {'quantity_reserved': 50}, format='json')
-        self.assertEqual(closed_response.status_code, status.HTTP_400_BAD_REQUEST)
-
-    def test_b2b_offer_modification_by_non_owner_forbidden(self):
-        """Vérifie qu'un autre utilisateur ne peut ni modifier ni supprimer l'offre d'un producteur (anti-IDOR)."""
-        offer = PreSaleOffer.objects.create(
-            farmer=self.farmer,
-            product_name='Piment Doux',
-            quantity_kg=200.0,
-            price_per_kg='1200.00',
-            availability_date='2026-06-01',
-            location='Mboro, Sénégal',
-            status='open'
-        )
-        # L'acheteur tente d'altérer l'offre du producteur
-        self.client.force_authenticate(user=self.buyer)
-        detail_url = reverse('markets:presale-offer-detail', kwargs={'pk': str(offer.id)})
-
-        patch_response = self.client.patch(detail_url, {'price_per_kg': '100.00'}, format='json')
-        self.assertEqual(patch_response.status_code, status.HTTP_403_FORBIDDEN)
-
-        delete_response = self.client.delete(detail_url)
-        self.assertEqual(delete_response.status_code, status.HTTP_403_FORBIDDEN)
-        self.assertTrue(PreSaleOffer.objects.filter(id=offer.id).exists())
-
+    def test_unauthenticated_access_rejected(self):
+        """Vérifie que l'accès aux endpoints de marché requiert une authentification."""
+        url = reverse('markets:market-list')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)

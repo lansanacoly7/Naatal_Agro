@@ -5,7 +5,7 @@ from django.db import models
 class User(AbstractUser):
     ROLE_CHOICES = [
         ('farmer', 'Agriculteur'),
-        ('buyer', 'Acheteur B2B'),
+        ('admin', 'Administrateur'),
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

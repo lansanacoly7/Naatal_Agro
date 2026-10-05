@@ -1,6 +1,5 @@
 import uuid
 from django.db import models
-from django.conf import settings
 
 class Market(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -51,34 +50,4 @@ class Product(models.Model):
 
     def __str__(self):
         return self.name
-
-class PreSaleOffer(models.Model):
-    STATUS_CHOICES = [
-        ('open', 'Ouverte'),
-        ('reserved', 'Réservée'),
-        ('sold', 'Vendue'),
-    ]
-
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    farmer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='presale_offers')
-    product_name = models.CharField(max_length=255) # ex: "Oignon Galmi"
-    quantity_kg = models.FloatField()
-    price_per_kg = models.DecimalField(max_digits=10, decimal_places=2)
-    availability_date = models.DateField()
-    location = models.CharField(max_length=255)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='open')
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"{self.quantity_kg}kg de {self.product_name} par {self.farmer.username}"
-
-class PreSaleReservation(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    offer = models.ForeignKey(PreSaleOffer, on_delete=models.CASCADE, related_name='reservations')
-    buyer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='reservations_made')
-    quantity_reserved = models.FloatField()
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"Réservation de {self.quantity_reserved}kg par {self.buyer.username}"
 

@@ -10,7 +10,7 @@ django.setup()
 
 from django.contrib.auth import get_user_model
 from apps.agriculture.models import Crop, Activity
-from apps.markets.models import Market, Price, PreSaleOffer
+from apps.markets.models import Market, Price
 from apps.weather.models import WeatherData
 from apps.inventory.models import StockItem
 from apps.notifications.models import Notification
@@ -41,24 +41,6 @@ def run_seed():
     user.main_crops = ['Tomate', 'Oignon', 'Arachide']
     user.save()
     print(f"Agriculteur de test configure: {phone_number} / password123")
-
-    # Création de l'utilisateur de test Acheteur B2B
-    buyer_phone = "+221780000000"
-    buyer, b_created = User.objects.get_or_create(username=buyer_phone, defaults={
-        'phone': buyer_phone,
-        'first_name': 'Amadou',
-        'last_name': 'Diallo',
-        'location': 'Dakar, Sénégal',
-        'role': 'buyer',
-        'language': 'fr'
-    })
-    buyer.set_password('password123')
-    buyer.first_name = 'Amadou'
-    buyer.last_name = 'Diallo'
-    buyer.location = 'Dakar, Sénégal'
-    buyer.role = 'buyer'
-    buyer.save()
-    print(f"Acheteur B2B de test configure: {buyer_phone} / password123")
 
 
     # Nettoyage des anciennes données
@@ -211,24 +193,10 @@ def run_seed():
     )
     print("Notifications ajoutees")
 
-    # 8. Création d'une Offre de Pré-vente B2B
-    PreSaleOffer.objects.filter(farmer=user).delete()
-    PreSaleOffer.objects.create(
-        farmer=user,
-        product_name="Tomate Fraîche",
-        quantity_kg=500.0,
-        price_per_kg=400.0,
-        availability_date=today + datetime.timedelta(days=20),
-        location="Thiès Nord",
-        status="open"
-    )
-    print("Offre B2B ajoutee")
-
     print("\nSeed termine avec succes !")
     print("=========================================")
-    print("Comptes de test disponibles :")
+    print("Compte de test disponible :")
     print(f"1. Agriculteur : {phone_number} / password123")
-    print(f"2. Acheteur B2B: {buyer_phone} / password123")
     print("=========================================")
 
 if __name__ == '__main__':

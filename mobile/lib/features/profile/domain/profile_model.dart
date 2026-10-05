@@ -100,12 +100,10 @@ class UserProfile {
     switch (role.toLowerCase()) {
       case 'farmer':
         return 'Producteur / Agriculteur';
-      case 'buyer':
-        return 'Acheteur / Commerçant';
       case 'admin':
         return 'Administrateur';
       default:
-        return 'Utilisateur';
+        return 'Producteur / Agriculteur';
     }
   }
 }

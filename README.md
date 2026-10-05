@@ -6,15 +6,15 @@
 
 ## 🚀 Fonctionnalités Principales (V1)
 
-1. **Authentification Sécurisée** : Connexion par numéro de téléphone sénégalais (+221) et JWT, avec sélection du rôle (Agriculteur / Acheteur B2B).
+1. **Authentification Sécurisée** : Connexion par numéro de téléphone sénégalais (+221) et JWT avec stockage sécurisé dans le Keystore/Keychain.
 2. **Tableau de Bord Contextuel** : Suivi des cultures actives, surfaces exploitées, météo locale et cours des marchés en temps réel.
 3. **Gestion des Cultures & Parcelles** : Suivi des stades végétatifs (semis, croissance, récolte), journal d'activités et préventions des risques phytosanitaires.
-4. **Cotations des Marchés & Marketplace B2B** : Suivi des prix dans les marchés régionaux (Castors, Tilène, Kaolack, Touba, Saint-Louis) et système de réservation de pré-ventes.
-5. **Météo Agricole Prédictive** : Alertes climatiques et prévisions de précipitations.
+4. **Cotations des Marchés Agricoles** : Suivi cartographique et comparatif des prix dans les marchés régionaux (Castors, Tilène, Kaolack, Touba, Saint-Louis).
+5. **Météo Agricole Prédictive** : Alertes climatiques et prévisions de précipitations géolocalisées.
 6. **Naatal IA Décisionnelle** : 
-   - Conseils culturaux adaptés aux terroirs sénégalais.
+   - Conseils agronomiques contextualisés aux parcelles et terroirs sénégalais.
    - Diagnostic phytosanitaire par vision artificielle (Gemini).
-   - Analyse de rentabilité et Text-to-SQL sécurisé (Groq).
+   - Analyse décisionnelle sécurisée sans fuite de données inter-exploitations (Groq / Llama-3.1).
 7. **Profil d'Exploitant Dynamique** : Vue complète de l'exploitation, des cultures suivies et paramètres personnalisés.
 
 ---

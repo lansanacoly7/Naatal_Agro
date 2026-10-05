@@ -19,13 +19,13 @@ class UserAuthAndProfileTests(TestCase):
             location='Thiès, Sénégal',
             main_crops=['Oignon', 'Tomate']
         )
-        self.buyer_user = User.objects.create_user(
+        self.admin_user = User.objects.create_user(
             username='+221779876543',
             phone='+221779876543',
             password='securepassword123',
             first_name='Awa',
             last_name='Ndiaye',
-            role='buyer',
+            role='admin',
             location='Dakar, Sénégal'
         )
 
@@ -34,7 +34,7 @@ class UserAuthAndProfileTests(TestCase):
         self.assertEqual(self.farmer_user.role, 'farmer')
         self.assertEqual(self.farmer_user.phone, '+221771234567')
         self.assertEqual(len(self.farmer_user.main_crops), 2)
-        self.assertEqual(self.buyer_user.role, 'buyer')
+        self.assertEqual(self.admin_user.role, 'admin')
 
     def test_register_new_farmer(self):
         """Teste l'inscription d'un nouvel utilisateur via l'API."""
