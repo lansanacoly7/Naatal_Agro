@@ -38,6 +38,8 @@ class SyncService {
         return;
       }
     } catch (e) {
+      // Le plugin de connectivité peut être absent (web, tests) : on tente quand même
+      // l'envoi, les échecs réseau remettent chaque requête en file.
       debugPrint('[SyncService] Vérification connectivité non disponible: $e');
     }
 

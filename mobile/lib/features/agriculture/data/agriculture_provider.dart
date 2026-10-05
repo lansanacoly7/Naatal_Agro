@@ -31,6 +31,17 @@ class AgricultureRepository {
     }
   }
 
+  Future<void> updateCrop(String cropId, Map<String, dynamic> cropData) async {
+    final response = await _apiClient.patch(
+      '${AppConstants.cropsEndpoint}$cropId/',
+      data: cropData,
+    );
+    
+    if (response.statusCode != 200) {
+      throw Exception('Erreur lors de la mise à jour de la culture');
+    }
+  }
+
   Future<void> deleteCrop(String cropId) async {
     final response = await _apiClient.delete(
       '${AppConstants.cropsEndpoint}$cropId/',

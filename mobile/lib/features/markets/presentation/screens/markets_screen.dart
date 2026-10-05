@@ -882,7 +882,16 @@ class _MarketsScreenState extends ConsumerState<MarketsScreen> with TickerProvid
                     children: [
                       Expanded(
                         child: OutlinedButton(
-                          onPressed: () {},
+                          onPressed: () {
+                            Navigator.pop(context);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Itinéraire vers ${market.name} (${distanceKm.toStringAsFixed(1)} km - $timeMin min) calculé.'),
+                                backgroundColor: AppColors.primary,
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          },
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),

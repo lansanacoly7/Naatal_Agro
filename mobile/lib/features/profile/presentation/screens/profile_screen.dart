@@ -1,15 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/notifications_sheet.dart';
 import '../../../auth/data/auth_provider.dart';
 import '../../data/profile_provider.dart';
 import '../../domain/profile_model.dart';
 
-class ProfileScreen extends ConsumerWidget {
+class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends ConsumerState<ProfileScreen> {
+  bool _onionAlert = true;
+  bool _peanutAlert = true;
+  bool _tomatoAlert = false;
+
+  @override
+  Widget build(BuildContext context) {
     final profileState = ref.watch(profileNotifierProvider);
 
     return Scaffold(
@@ -543,17 +553,65 @@ class ProfileScreen extends ConsumerWidget {
       ),
       child: Column(
         children: [
-          _buildAlertRow('Oignon Local', 'Prix > 450 FCFA/kg', true, icon: Icons.trending_up_rounded, color: Colors.green),
+          _buildAlertRow(
+            'Oignon Local',
+            'Prix > 450 FCFA/kg',
+            _onionAlert,
+            icon: Icons.trending_up_rounded,
+            color: Colors.green,
+            onChanged: (val) {
+              setState(() => _onionAlert = val);
+              _showAlertFeedback('Oignon Local', val);
+            },
+          ),
           Divider(height: 1, color: Colors.grey.shade100, indent: 20, endIndent: 20),
-          _buildAlertRow('Arachide décortiquée', 'Prix < 550 FCFA/kg', true, icon: Icons.trending_down_rounded, color: Colors.red),
+          _buildAlertRow(
+            'Arachide décortiquée',
+            'Prix < 550 FCFA/kg',
+            _peanutAlert,
+            icon: Icons.trending_down_rounded,
+            color: Colors.red,
+            onChanged: (val) {
+              setState(() => _peanutAlert = val);
+              _showAlertFeedback('Arachide décortiquée', val);
+            },
+          ),
           Divider(height: 1, color: Colors.grey.shade100, indent: 20, endIndent: 20),
-          _buildAlertRow('Tomate industrielle', 'Prix > 700 FCFA/kg', false, icon: Icons.trending_up_rounded, color: Colors.grey),
+          _buildAlertRow(
+            'Tomate industrielle',
+            'Prix > 700 FCFA/kg',
+            _tomatoAlert,
+            icon: Icons.trending_up_rounded,
+            color: Colors.grey,
+            onChanged: (val) {
+              setState(() => _tomatoAlert = val);
+              _showAlertFeedback('Tomate industrielle', val);
+            },
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildAlertRow(String title, String subtitle, bool isActive, {required IconData icon, required Color color}) {
+  void _showAlertFeedback(String title, bool active) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(active ? 'Alerte activée pour $title' : 'Alerte désactivée pour $title'),
+        duration: const Duration(seconds: 2),
+        backgroundColor: active ? AppColors.primary : Colors.grey.shade800,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  Widget _buildAlertRow(
+    String title,
+    String subtitle,
+    bool isActive, {
+    required IconData icon,
+    required Color color,
+    required ValueChanged<bool> onChanged,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 14.0),
       child: Row(
@@ -579,7 +637,7 @@ class ProfileScreen extends ConsumerWidget {
           ),
           Switch(
             value: isActive,
-            onChanged: (val) {},
+            onChanged: onChanged,
             activeThumbColor: Colors.white,
             activeTrackColor: AppColors.primary,
           ),
@@ -599,17 +657,55 @@ class ProfileScreen extends ConsumerWidget {
       ),
       child: Column(
         children: [
-          _buildPremiumTile(Icons.phone_rounded, 'Numéro de téléphone', Colors.teal, subtitle: profile.phone),
-          _buildPremiumTile(Icons.language_rounded, 'Langue', Colors.blue, subtitle: profile.language.toUpperCase() == 'WO' ? 'Wolof' : 'Français'),
-          _buildPremiumTile(Icons.notifications_active_rounded, 'Notifications', Colors.orange, subtitle: 'Activées'),
-          _buildPremiumTile(Icons.security_rounded, 'Sécurité du compte', Colors.green, subtitle: 'Mot de passe sécurisé'),
-          _buildPremiumTile(Icons.headset_mic_rounded, 'Assistance & Support', Colors.purple, isLast: true),
+          _buildPremiumTile(
+            Icons.phone_rounded,
+            'Numéro de téléphone',
+            Colors.teal,
+            subtitle: profile.phone,
+            onTap: () => _showPhoneInfoDialog(context, profile),
+          ),
+          _buildPremiumTile(
+            Icons.language_rounded,
+            'Langue',
+            Colors.blue,
+            subtitle: profile.language.toUpperCase() == 'WO' ? 'Wolof' : 'Français',
+            onTap: () => _showLanguageSelectionDialog(context, profile),
+          ),
+          _buildPremiumTile(
+            Icons.notifications_active_rounded,
+            'Notifications',
+            Colors.orange,
+            subtitle: 'Centre d\'alertes & notifications',
+            onTap: () => showNotificationsSheet(context, ref),
+          ),
+          _buildPremiumTile(
+            Icons.security_rounded,
+            'Sécurité du compte',
+            Colors.green,
+            subtitle: 'Sessions actives & Mot de passe',
+            onTap: () => _showSecurityDialog(context, profile),
+          ),
+          _buildPremiumTile(
+            Icons.headset_mic_rounded,
+            'Assistance & Support',
+            Colors.purple,
+            subtitle: 'Support Naatal 24/7',
+            isLast: true,
+            onTap: () => _showSupportDialog(context),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildPremiumTile(IconData icon, String title, Color iconColor, {String? subtitle, bool isLast = false}) {
+  Widget _buildPremiumTile(
+    IconData icon,
+    String title,
+    Color iconColor, {
+    String? subtitle,
+    bool isLast = false,
+    VoidCallback? onTap,
+  }) {
     return Column(
       children: [
         ListTile(
@@ -625,7 +721,7 @@ class ProfileScreen extends ConsumerWidget {
           title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
           subtitle: subtitle != null ? Text(subtitle, style: TextStyle(color: Colors.grey.shade500, fontSize: 12)) : null,
           trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Colors.grey),
-          onTap: () {},
+          onTap: onTap,
         ),
         if (!isLast) Divider(height: 1, color: Colors.grey.shade100, indent: 64, endIndent: 20),
       ],
@@ -774,6 +870,291 @@ class ProfileScreen extends ConsumerWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  void _showPhoneInfoDialog(BuildContext context, UserProfile profile) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.all(24),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Numéro de téléphone', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                IconButton(icon: const Icon(Icons.close_rounded), onPressed: () => Navigator.pop(ctx)),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.teal.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.teal.withValues(alpha: 0.2)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.phone_android_rounded, color: Colors.teal, size: 28),
+                  const SizedBox(width: 14),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(profile.phone, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.teal)),
+                      const SizedBox(height: 2),
+                      const Text('Numéro principal lié au compte (Sénégal)', style: TextStyle(fontSize: 12, color: Colors.black54)),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Ce numéro est utilisé pour la réception des alertes météo par SMS, les notifications de prix des marchés hebdomadaires et l\'authentification sécurisée.',
+              style: TextStyle(color: Colors.grey, fontSize: 13, height: 1.4),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(ctx),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                ),
+                child: const Text('Fermer', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showLanguageSelectionDialog(BuildContext context, UserProfile profile) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.all(24),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Choisir la langue', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                IconButton(icon: const Icon(Icons.close_rounded), onPressed: () => Navigator.pop(ctx)),
+              ],
+            ),
+            const SizedBox(height: 16),
+            ListTile(
+              leading: const Text('🇸🇳', style: TextStyle(fontSize: 24)),
+              title: const Text('Français (Sénégal)', style: TextStyle(fontWeight: FontWeight.bold)),
+              trailing: profile.language.toUpperCase() != 'WO' ? const Icon(Icons.check_circle, color: AppColors.primary) : null,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              tileColor: profile.language.toUpperCase() != 'WO' ? AppColors.primary.withValues(alpha: 0.08) : null,
+              onTap: () async {
+                Navigator.pop(ctx);
+                await ref.read(profileNotifierProvider.notifier).updateProfile(language: 'FR');
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Langue configurée : Français'), backgroundColor: AppColors.primary),
+                  );
+                }
+              },
+            ),
+            const SizedBox(height: 8),
+            ListTile(
+              leading: const Text('🇸🇳', style: TextStyle(fontSize: 24)),
+              title: const Text('Wolof (Senegaal)', style: TextStyle(fontWeight: FontWeight.bold)),
+              trailing: profile.language.toUpperCase() == 'WO' ? const Icon(Icons.check_circle, color: AppColors.primary) : null,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              tileColor: profile.language.toUpperCase() == 'WO' ? AppColors.primary.withValues(alpha: 0.08) : null,
+              onTap: () async {
+                Navigator.pop(ctx);
+                await ref.read(profileNotifierProvider.notifier).updateProfile(language: 'WO');
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Làkk bi soppee na ci Wolof'), backgroundColor: AppColors.primary),
+                  );
+                }
+              },
+            ),
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showSecurityDialog(BuildContext context, UserProfile profile) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.all(24),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Sécurité du compte', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                IconButton(icon: const Icon(Icons.close_rounded), onPressed: () => Navigator.pop(ctx)),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.green.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.green.withValues(alpha: 0.2)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.verified_user_rounded, color: Colors.green, size: 28),
+                  const SizedBox(width: 14),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Session Sécurisée JWT', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.green)),
+                        SizedBox(height: 2),
+                        Text('Chiffrement des requêtes HTTPS / TLS actif', style: TextStyle(fontSize: 12, color: Colors.black54)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            const ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(Icons.lock_clock_rounded, color: Colors.black54),
+              title: Text('Renouvellement automatique de session', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+              subtitle: Text('Validité du jeton d\'accès gérée par TokenRefreshService', style: TextStyle(fontSize: 12, color: Colors.grey)),
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Votre session et vos données sont protégées par les normes de sécurité Naatal Agro.'),
+                      backgroundColor: AppColors.primary,
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                ),
+                child: const Text('Compris', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showSupportDialog(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.all(24),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Assistance & Support', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                IconButton(icon: const Icon(Icons.close_rounded), onPressed: () => Navigator.pop(ctx)),
+              ],
+            ),
+            const SizedBox(height: 16),
+            ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(color: Colors.green.withValues(alpha: 0.1), shape: BoxShape.circle),
+                child: const Icon(Icons.phone_in_talk_rounded, color: Colors.green, size: 20),
+              ),
+              title: const Text('Centre d\'appels gratuit', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+              subtitle: const Text('+221 33 800 00 00 (07h00 - 21h00)', style: TextStyle(color: Colors.grey, fontSize: 12)),
+              onTap: () {
+                Navigator.pop(ctx);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Ligne verte : +221 33 800 00 00'), backgroundColor: AppColors.primary),
+                );
+              },
+            ),
+            ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(color: Colors.teal.withValues(alpha: 0.1), shape: BoxShape.circle),
+                child: const Icon(Icons.chat_rounded, color: Colors.teal, size: 20),
+              ),
+              title: const Text('Support WhatsApp Agricole', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+              subtitle: const Text('+221 77 000 00 00 (24h/24)', style: TextStyle(color: Colors.grey, fontSize: 12)),
+              onTap: () {
+                Navigator.pop(ctx);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Contact WhatsApp : +221 77 000 00 00'), backgroundColor: AppColors.primary),
+                );
+              },
+            ),
+            ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(color: Colors.blue.withValues(alpha: 0.1), shape: BoxShape.circle),
+                child: const Icon(Icons.email_outlined, color: Colors.blue, size: 20),
+              ),
+              title: const Text('Email d\'assistance', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+              subtitle: const Text('support@naatalagro.sn', style: TextStyle(color: Colors.grey, fontSize: 12)),
+              onTap: () {
+                Navigator.pop(ctx);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Email d\'assistance : support@naatalagro.sn'), backgroundColor: AppColors.primary),
+                );
+              },
+            ),
+            const SizedBox(height: 16),
+          ],
         ),
       ),
     );

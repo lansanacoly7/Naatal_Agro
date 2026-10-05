@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/notifications_sheet.dart';
 
 // Imports pour Mes Cultures
 import '../../data/agriculture_provider.dart';
@@ -60,7 +61,7 @@ class _CropsListScreenState extends ConsumerState<CropsListScreen> with SingleTi
         actions: [
           IconButton(
             icon: const Icon(Icons.notifications_outlined, color: Colors.black87),
-            onPressed: () {},
+            onPressed: () => showNotificationsSheet(context, ref),
           ),
         ],
         bottom: TabBar(
@@ -87,13 +88,7 @@ class _CropsListScreenState extends ConsumerState<CropsListScreen> with SingleTi
           backgroundColor: AppColors.primary,
           child: const Icon(Icons.add, color: Colors.white),
           onPressed: () {
-            if (_tabController.index == 0) {
-              context.push('/agriculture/add');
-            } else {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Fonctionnalité d\'ajout à venir')),
-              );
-            }
+            context.push('/agriculture/add');
           },
         ),
       ),
@@ -313,9 +308,26 @@ class _CropsListScreenState extends ConsumerState<CropsListScreen> with SingleTi
                               }
                             }
                           } else if (value == 'edit') {
-                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Fonctionnalité de modification à venir')));
+                            _showEditCropDialog(context, ref, crop);
                           } else if (value == 'harvest') {
-                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Statut mis à jour : Récolté')));
+                            try {
+                              await ref.read(agricultureRepositoryProvider).updateCrop(crop.id, {'status': 'harvested'});
+                              ref.invalidate(cropsProvider);
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Culture "${crop.name}" marquée comme récoltée avec succès'),
+                                    backgroundColor: Colors.green,
+                                  ),
+                                );
+                              }
+                            } catch (e) {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('Erreur: ${e.toString()}'), backgroundColor: Colors.red),
+                                );
+                              }
+                            }
                           } else if (value == 'details') {
                             context.push('/crop_detail', extra: crop);
                           }
@@ -907,9 +919,7 @@ class _CropsListScreenState extends ConsumerState<CropsListScreen> with SingleTi
                       ),
                       GestureDetector(
                         onTap: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Action sur ${product.name}')),
-                          );
+                          context.push('/agriculture/add');
                         },
                         child: Container(
                           padding: const EdgeInsets.all(6),
@@ -929,5 +939,132 @@ class _CropsListScreenState extends ConsumerState<CropsListScreen> with SingleTi
         ],
       ),
     ));
+  }
+
+  void _showEditCropDialog(BuildContext context, WidgetRef ref, Crop crop) {
+    final nameController = TextEditingController(text: crop.name);
+    final areaController = TextEditingController(text: crop.areaSize.toString());
+    final locationController = TextEditingController(text: crop.location);
+    String currentStatus = crop.status;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setModalState) => Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Modifier : ${crop.name}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded),
+                      onPressed: () => Navigator.pop(ctx),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: nameController,
+                  decoration: InputDecoration(
+                    labelText: 'Nom de la culture',
+                    prefixIcon: const Icon(Icons.grass_rounded),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: areaController,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    labelText: 'Superficie (ha)',
+                    prefixIcon: const Icon(Icons.square_foot_rounded),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: locationController,
+                  decoration: InputDecoration(
+                    labelText: 'Localisation',
+                    prefixIcon: const Icon(Icons.location_on_rounded),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                DropdownButtonFormField<String>(
+                  initialValue: currentStatus,
+                  decoration: InputDecoration(
+                    labelText: 'Statut',
+                    prefixIcon: const Icon(Icons.info_outline_rounded),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                  items: const [
+                    DropdownMenuItem(value: 'active', child: Text('En croissance (Active)')),
+                    DropdownMenuItem(value: 'harvested', child: Text('Récoltée')),
+                    DropdownMenuItem(value: 'paused', child: Text('En pause')),
+                  ],
+                  onChanged: (val) {
+                    if (val != null) {
+                      setModalState(() => currentStatus = val);
+                    }
+                  },
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      Navigator.pop(ctx);
+                      try {
+                        final updatedData = {
+                          'name': nameController.text.trim(),
+                          'area_size': double.tryParse(areaController.text.trim()) ?? crop.areaSize,
+                          'location': locationController.text.trim(),
+                          'status': currentStatus,
+                        };
+                        await ref.read(agricultureRepositoryProvider).updateCrop(crop.id, updatedData);
+                        ref.invalidate(cropsProvider);
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Culture mise à jour avec succès'),
+                              backgroundColor: AppColors.primary,
+                            ),
+                          );
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Erreur: $e'), backgroundColor: Colors.redAccent),
+                          );
+                        }
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    ),
+                    child: const Text('Enregistrer', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

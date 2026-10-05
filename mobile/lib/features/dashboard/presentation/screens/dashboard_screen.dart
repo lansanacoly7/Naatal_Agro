@@ -6,6 +6,7 @@ import '../../data/dashboard_provider.dart';
 import '../../data/models/dashboard_data.dart';
 import '../../../inventory/data/models/stock_item.dart';
 import '../widgets/market_prices_section.dart';
+import '../../../../core/widgets/notifications_sheet.dart';
 import 'package:go_router/go_router.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
@@ -200,35 +201,38 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
               child: const Icon(Icons.search, color: AppColors.textPrimary, size: 20),
             ),
             const SizedBox(width: 12),
-            Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4)),
-                    ],
-                  ),
-                  child: const Icon(Icons.notifications_outlined, color: AppColors.textPrimary, size: 20),
-                ),
-                Positioned(
-                  top: -2,
-                  right: -2,
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
+            GestureDetector(
+              onTap: () => showNotificationsSheet(context, ref),
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
                     decoration: BoxDecoration(
-                      color: AppColors.error,
+                      color: Colors.white,
                       shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 2),
+                      boxShadow: [
+                        BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4)),
+                      ],
                     ),
-                    child: const Text('2', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                    child: const Icon(Icons.notifications_outlined, color: AppColors.textPrimary, size: 20),
                   ),
-                ),
-              ],
+                  Positioned(
+                    top: -2,
+                    right: -2,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: AppColors.error,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 2),
+                      ),
+                      child: const Text('2', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -281,7 +285,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                 child: Padding(
                   padding: const EdgeInsets.only(left: 16.0),
                   child: Text(
-                    'Pluies prévues ce soir',
+                    weather.rainfall > 0 
+                        ? 'Pluie : ${weather.rainfall.toStringAsFixed(1)} mm' 
+                        : (weather.temp >= 32 ? 'Fort ensoleillement' : 'Ciel dégagé / Favorable'),
                     style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.9),
                       fontSize: 16,
@@ -294,7 +300,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
           ),
           const SizedBox(height: 24),
           ElevatedButton(
-            onPressed: () {},
+            onPressed: () => _showWeatherDetails(context, weather),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.white,
               foregroundColor: AppColors.primary,
@@ -315,6 +321,91 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     );
   }
 
+  void _showWeatherDetails(BuildContext context, WeatherSummary weather) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2))),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Bulletin Météo Agricole', style: Theme.of(ctx).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 4),
+                    Text(weather.location, style: TextStyle(color: Colors.grey.shade600, fontSize: 14)),
+                  ],
+                ),
+                Text('${weather.temp.toInt()}°C', style: const TextStyle(fontSize: 36, fontWeight: FontWeight.bold, color: AppColors.primary)),
+              ],
+            ),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                _buildWeatherStat(Icons.water_drop_outlined, 'Humidité', '${weather.humidity.toInt()}%', Colors.blue),
+                const SizedBox(width: 12),
+                _buildWeatherStat(Icons.cloud_outlined, 'Précipitations', '${weather.rainfall.toStringAsFixed(1)} mm', Colors.indigo),
+                const SizedBox(width: 12),
+                _buildWeatherStat(Icons.air_rounded, 'Vent', '14 km/h', Colors.teal),
+              ],
+            ),
+            const SizedBox(height: 24),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(16)),
+              child: Row(
+                children: [
+                  const Icon(Icons.tips_and_updates_rounded, color: AppColors.primary),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      weather.rainfall > 5 
+                        ? 'Fortes pluies : reportez les pulvérisations pour éviter le lessivage des intrants.'
+                        : (weather.temp >= 32 
+                            ? 'Forte chaleur : irriguez de préférence tôt le matin ou après 17h.'
+                            : 'Conditions climatiques optimales pour l\'entretien et la fertilisation des parcelles.'),
+                      style: const TextStyle(fontSize: 13, color: AppColors.textPrimary, height: 1.3),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWeatherStat(IconData icon, String label, String value, Color color) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+        decoration: BoxDecoration(color: Colors.grey.shade50, borderRadius: BorderRadius.circular(14), border: Border.all(color: Colors.grey.shade200)),
+        child: Column(
+          children: [
+            Icon(icon, color: color, size: 22),
+            const SizedBox(height: 6),
+            Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+            const SizedBox(height: 2),
+            Text(label, style: TextStyle(color: Colors.grey.shade500, fontSize: 11)),
+          ],
+        ),
+      ),
+    );
+  }
+
   // ─────────────────────────────────────────────
   // QUICK ACTIONS
   // ─────────────────────────────────────────────
@@ -324,7 +415,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
       children: [
         _buildActionItem(Icons.insights, 'Dashboard', () => context.push('/mon_dashboard')), 
         _buildActionItem(Icons.calendar_month_outlined, 'Calendrier', () => context.push('/calendar')), 
-        _buildActionItem(Icons.notifications_active_outlined, 'Alerte', () {}), // Bientôt disponible
+        _buildActionItem(Icons.notifications_active_outlined, 'Alertes', () => showNotificationsSheet(context, ref)), 
         _buildActionItem(Icons.auto_awesome, 'Naatal IA', () => context.go('/ai')),
       ],
     );
@@ -519,7 +610,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
               const SizedBox(width: 12),
               Expanded(
                 child: ElevatedButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Activité "${event.title}" marquée comme terminée.'),
+                        backgroundColor: AppColors.primary,
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  },
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     minimumSize: const Size(0, 48),

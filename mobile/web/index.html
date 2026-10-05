@@ -83,6 +83,18 @@
       color: #8E8E93;
       font-weight: 500;
     }
+    .splash-error { color: #B3261E; max-width: 320px; line-height: 1.4; }
+    .splash-retry {
+      margin-top: 20px;
+      padding: 10px 24px;
+      border: 0;
+      border-radius: 10px;
+      background: #1B5E20;
+      color: #FFFFFF;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
     @keyframes spin {
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
@@ -122,9 +134,32 @@
     });
     observer.observe(document.body, { childList: true, subtree: true });
 
-    // 3. Fallback de sécurité au bout de 6 secondes
-    setTimeout(removeSplashScreen, 6000);
+    // 3. Échec de démarrage : on n'efface JAMAIS le splash en silence (écran blanc),
+    //    on affiche un message d'erreur et un bouton pour réessayer.
+    function showStartupError(detail) {
+      var splash = document.getElementById('splash-screen');
+      if (!splash) return;
+      if (observer) observer.disconnect();
+      if (detail) console.error('[Naatal Agro] Échec du démarrage : ' + detail);
+      var content = splash.querySelector('.splash-content');
+      content.innerHTML =
+        '<div class="splash-title">Naatal Agro</div>' +
+        '<div class="splash-subtitle splash-error">Impossible de démarrer l’application. ' +
+        'Vérifiez votre connexion puis réessayez.</div>' +
+        '<button class="splash-retry" onclick="window.location.reload()">Réessayer</button>';
+    }
+
+    window.addEventListener('error', function(event) {
+      if (document.getElementById('splash-screen')) showStartupError(event.message);
+    });
+    window.addEventListener('unhandledrejection', function(event) {
+      if (document.getElementById('splash-screen')) showStartupError(String(event.reason));
+    });
+    // Délai maximal de démarrage (réseau lent compris)
+    setTimeout(function() {
+      if (document.getElementById('splash-screen')) showStartupError('délai de démarrage dépassé');
+    }, 20000);
   </script>
-  <script src="flutter_bootstrap.js" async></script>
+  <script src="flutter_bootstrap.js" async onerror="showStartupError('flutter_bootstrap.js introuvable')"></script>
 </body>
 </html>

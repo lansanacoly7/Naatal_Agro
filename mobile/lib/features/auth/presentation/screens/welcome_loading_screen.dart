@@ -31,15 +31,18 @@ class _WelcomeLoadingScreenState extends ConsumerState<WelcomeLoadingScreen> wit
       CurvedAnimation(parent: _controller, curve: const Interval(0.0, 0.5, curve: Curves.easeOutBack)),
     );
 
-    _controller.forward();
-
-    // Simuler un temps de chargement/préparation des données
-    Future.delayed(const Duration(seconds: 5), () {
-      if (mounted) {
-        // Indiquer au routeur qu'on a vu l'écran de bienvenue
-        ref.read(welcomeStateProvider.notifier).state = true;
+    _controller.addStatusListener((status) {
+      if (status == AnimationStatus.completed && mounted) {
+        // Transition immédiate vers le dashboard dès la fin de l'animation d'accueil
+        Future.delayed(const Duration(milliseconds: 300), () {
+          if (mounted) {
+            ref.read(welcomeStateProvider.notifier).state = true;
+          }
+        });
       }
     });
+
+    _controller.forward();
   }
 
   @override

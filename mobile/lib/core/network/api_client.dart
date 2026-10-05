@@ -11,7 +11,8 @@ class ApiClient {
   late final Dio _dio;
   final FlutterSecureStorage _secureStorage;
 
-  ApiClient({FlutterSecureStorage? secureStorage})
+  /// [httpClientAdapter] permet d'injecter un faux serveur dans les tests.
+  ApiClient({FlutterSecureStorage? secureStorage, HttpClientAdapter? httpClientAdapter})
       : _secureStorage = secureStorage ?? const FlutterSecureStorage() {
     _dio = Dio(
       BaseOptions(
@@ -24,6 +25,10 @@ class ApiClient {
         },
       ),
     );
+
+    if (httpClientAdapter != null) {
+      _dio.httpClientAdapter = httpClientAdapter;
+    }
 
     // Intercepteur JWT — injecte le token automatiquement depuis le stockage sécurisé
     _dio.interceptors.add(

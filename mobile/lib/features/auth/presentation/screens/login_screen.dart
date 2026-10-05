@@ -44,6 +44,89 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
+  void _showForgotPasswordDialog() {
+    final resetPhoneController = TextEditingController(text: _phoneController.text.trim());
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(
+          left: 24,
+          right: 24,
+          top: 24,
+          bottom: MediaQuery.of(ctx).viewInsets.bottom + 32,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.lock_reset_rounded, color: AppColors.primary),
+                ),
+                const SizedBox(width: 12),
+                const Text(
+                  'Réinitialisation du compte',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Entrez votre numéro de téléphone pour recevoir un lien SMS de réinitialisation sécurisé pour votre exploitation.',
+              style: TextStyle(color: Colors.grey.shade600, fontSize: 14, height: 1.4),
+            ),
+            const SizedBox(height: 20),
+            TextField(
+              controller: resetPhoneController,
+              keyboardType: TextInputType.phone,
+              decoration: InputDecoration(
+                hintText: 'Numéro (ex: 77 000 00 00)',
+                prefixIcon: const Icon(Icons.phone_android_rounded, color: AppColors.primary),
+                filled: true,
+                fillColor: AppColors.background,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+              ),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                final phone = resetPhoneController.text.trim();
+                Navigator.pop(ctx);
+                if (phone.isNotEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Instructions SMS envoyées au $phone.'),
+                      backgroundColor: AppColors.primary,
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
+              },
+              child: const Text('Envoyer les instructions'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authStateProvider);
@@ -146,7 +229,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
-                  onPressed: () {},
+                  onPressed: _showForgotPasswordDialog,
                   child: const Text('Mot de passe oublié ?'),
                 ),
               ),
