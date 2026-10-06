@@ -1,3 +1,6 @@
+import datetime
+
+from django.utils import timezone
 from rest_framework import views, permissions, status
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.response import Response
@@ -7,6 +10,31 @@ from .services import answer_question
 
 MAX_QUERY_LENGTH = 1000
 MAX_IMAGE_BASE64_LENGTH = 7_000_000  # ~5 Mo d'image
+MAX_HISTORY_TURNS = 12
+CONVERSATION_WINDOW = datetime.timedelta(minutes=30)  # sans historique envoyé, on reprend la conversation récente
+
+
+def clean_history(raw):
+    """Valide l'historique envoyé par l'application ; renvoie None s'il est absent ou invalide."""
+    if not isinstance(raw, list):
+        return None
+    turns = []
+    for item in raw[-MAX_HISTORY_TURNS:]:
+        if (isinstance(item, dict) and item.get('role') in ('user', 'assistant')
+                and isinstance(item.get('content'), str) and item['content'].strip()):
+            turns.append({'role': item['role'], 'content': item['content'][:MAX_QUERY_LENGTH * 2]})
+    return turns
+
+
+def recent_history(user):
+    """Derniers échanges de l'utilisateur (30 dernières minutes), du plus ancien au plus récent."""
+    since = timezone.now() - CONVERSATION_WINDOW
+    interactions = AIInteraction.objects.filter(user=user, created_at__gte=since).order_by('-created_at')[:6]
+    turns = []
+    for interaction in reversed(list(interactions)):
+        turns.append({'role': 'user', 'content': interaction.query})
+        turns.append({'role': 'assistant', 'content': interaction.response})
+    return turns
 
 class AskAIView(views.APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -34,7 +62,10 @@ class AskAIView(views.APIView):
 
         # Call AI service avec cloisonnement de sécurité
         safe_query = query.strip() if query else "Analyse cette image."
-        result = answer_question(safe_query, context, image_base64=image_base64, user=request.user)
+        history = clean_history(request.data.get('history'))
+        if history is None:
+            history = recent_history(request.user)
+        result = answer_question(safe_query, context, image_base64=image_base64, user=request.user, history=history)
 
         # Save to DB : la réponse, d'où elle vient (fiches, conseil général) et les sources citées
         interaction = AIInteraction.objects.create(
@@ -44,6 +75,7 @@ class AskAIView(views.APIView):
             context_type=context,
             origin=result['origin'],
             sources=result['sources'],
+            suggestions=result.get('suggestions', []),
         )
 
         serializer = AIInteractionSerializer(interaction)

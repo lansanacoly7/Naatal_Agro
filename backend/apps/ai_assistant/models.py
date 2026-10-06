@@ -18,6 +18,7 @@ class AIInteraction(models.Model):
     # D'où vient la réponse : fiches Naatal (database), fiches + web, web seul, ou conseil général sans source
     origin = models.CharField(max_length=20, choices=ORIGIN_CHOICES, default='general')
     sources = models.JSONField(default=list, blank=True, help_text='Sources citées : [{number, title, publisher, url, type}]')
+    suggestions = models.JSONField(default=list, blank=True, help_text="Questions de relance proposées à l'utilisateur")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

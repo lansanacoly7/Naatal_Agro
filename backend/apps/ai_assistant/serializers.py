@@ -5,4 +5,4 @@ class AIInteractionSerializer(serializers.ModelSerializer):
     class Meta:
         model = AIInteraction
         fields = '__all__'
-        read_only_fields = ['id', 'user', 'response', 'origin', 'sources', 'created_at']
+        read_only_fields = ['id', 'user', 'response', 'origin', 'sources', 'suggestions', 'created_at']

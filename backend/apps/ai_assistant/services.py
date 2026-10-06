@@ -1,5 +1,7 @@
 import json
 import logging
+import re
+import time
 import requests
 from django.conf import settings
 from django.utils import timezone
@@ -13,7 +15,7 @@ SYSTEM_PROMPT = """Tu es le copilote agronomique intelligent de Naatal Agro, la 
 Ton rôle est d'apporter des conseils agronomiques précis, pratiques, contextualisés et immédiatement applicables par les producteurs sénégalais.
 
 RÈGLES D'OR :
-1. Réponds de façon concise, bienveillante et professionnelle en français (avec des termes locaux si pertinents, ex: Louma, Niayes, Casamance).
+1. Réponds comme un conseiller de terrain qui discute : phrases courtes, ton chaleureux, en français simple (termes locaux si pertinents, ex: Louma, Niayes, Casamance). Jamais de cours ni de pavé.
 2. Base-toi en priorité sur les données réelles fournies dans le profil et les exploitations de l'utilisateur.
 3. Ne divulgue jamais de données techniques internes ou d'informations d'autres exploitants.
 4. Si une maladie ou un ravageur est détecté, propose des solutions de lutte intégrée (biologiques et conventionnelles homologuées au Sénégal).
@@ -108,8 +110,8 @@ def call_groq(prompt):
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": prompt}
         ],
-        "temperature": 0.2,
-        "max_tokens": 800
+        "temperature": 0.4,
+        "max_tokens": 600
     }
     try:
         res = requests.post(url, json=payload, headers=headers, timeout=10)
@@ -120,12 +122,26 @@ def call_groq(prompt):
         logger.error(f"[Groq Service] Exception : {e}")
     return None
 
+def _image_mime_type(image_base64):
+    """Type réel de l'image d'après ses premiers octets (la galerie peut fournir du PNG ou du WebP)."""
+    import base64
+    try:
+        head = base64.b64decode(image_base64[:64] + '=' * (-len(image_base64[:64]) % 4))
+    except Exception:
+        return 'image/jpeg'
+    if head.startswith(b'\x89PNG'):
+        return 'image/png'
+    if head[:4] == b'RIFF' and head[8:12] == b'WEBP':
+        return 'image/webp'
+    return 'image/jpeg'
+
+
 def call_gemini(prompt, image_base64=None):
     gemini_key = getattr(settings, 'GEMINI_API_KEY', None)
     if not gemini_key:
         return None
         
-    model = getattr(settings, 'GEMINI_MODEL', 'gemini-2.5-flash')
+    model = getattr(settings, 'GEMINI_MODEL', 'gemini-3.8-flash')
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
     headers = {
         "x-goog-api-key": gemini_key,
@@ -136,16 +152,21 @@ def call_gemini(prompt, image_base64=None):
     if image_base64:
         parts.append({
             "inline_data": {
-                "mime_type": "image/jpeg",
+                "mime_type": _image_mime_type(image_base64),
                 "data": image_base64
             }
         })
 
     payload = {
-        "contents": [{"parts": parts}]
+        "contents": [{"parts": parts}],
+        "generationConfig": {"temperature": 0.4, "maxOutputTokens": 700, "thinkingConfig": {"thinkingBudget": 0}},
     }
     try:
-        res = requests.post(url, json=payload, headers=headers, timeout=12)
+        res = requests.post(url, json=payload, headers=headers, timeout=15)
+        if res.status_code in (429, 503):
+            # pic de demande côté Google : un seul nouvel essai, rapide
+            time.sleep(1.5)
+            res = requests.post(url, json=payload, headers=headers, timeout=15)
         if res.status_code == 200:
             return res.json()['candidates'][0]['content']['parts'][0]['text']
         logger.warning(f"[Gemini Service] Statut HTTP {res.status_code}: {res.text}")
@@ -162,13 +183,26 @@ def call_llm(prompt, image_base64=None):
         res = call_gemini(prompt)
     return res
 
+CONVERSATION_RULES = """
+STYLE DE CONVERSATION (aussi important que l'exactitude) :
+- Tu es dans une discussion : réponds court. 2 à 4 phrases, ou 3 puces au maximum, environ 60 mots. Va à l'essentiel et ne dis pas tout.
+- Si la question est large ou vague (ex. « je veux cultiver des patates douces »), donne 1 ou 2 phrases utiles puis pose UNE question pour préciser (zone, saison, surface) ou propose de détailler.
+- Aère : paragraphes courts, puces commençant par « - », un seul **mot clé** en gras au besoin. Aucun titre, aucun tableau.
+- Tiens compte de la CONVERSATION EN COURS : ne répète pas ce qui a déjà été dit, comprends les suites (« et l'engrais ? »).
+- Si l'utilisateur demande plus de détails, développe alors, de façon structurée.
+- Termine TOUJOURS par une dernière ligne exactement de la forme :
+SUGGESTIONS: question 1 | question 2 | question 3
+(2 ou 3 questions courtes, de 3 à 7 mots, que le producteur pourrait poser ensuite, écrites à la première personne ou à l'impératif).
+"""
+
 GROUNDED_RULES = """Tu réponds à une question d'agriculture pour un producteur sénégalais.
 RÈGLES ABSOLUES :
 1. Utilise UNIQUEMENT les informations des FICHES ci-dessous. N'ajoute aucun fait, chiffre, dose, produit ou date qui n'y figure pas.
 2. Cite la source de chaque information avec son numéro entre crochets, par exemple [1], comme dans les fiches.
 3. Si la question porte sur une information absente des fiches, dis clairement qu'elle n'est pas disponible dans nos fiches vérifiées. Ne la devine pas.
 4. Pour les produits phytosanitaires et les doses, rappelle de confirmer avec un conseiller agricole (ANCAR, SAED).
-5. Réponse courte, concrète, en français simple."""
+5. Cite au moins une source [n] dans ta réponse.
+""" + CONVERSATION_RULES
 
 GENERAL_NOTICE = "Réponse générale, non issue de nos fiches vérifiées : à confirmer auprès d'un conseiller agricole."
 SOURCES_UNAVAILABLE_NOTICE = (
@@ -212,16 +246,104 @@ def _with_sources_footer(answer, sources):
     return f"{answer}\n\nSources :\n{footer}"
 
 
+MAX_SUGGESTIONS = 3
+SUGGESTIONS_LINE = re.compile(r'^\s*SUGGESTIONS?\s*:\s*(.+?)\s*$', re.IGNORECASE | re.MULTILINE)
+SENTENCE_END = re.compile(r'(?<=[.!?])\s+')
+SHORT_ANSWER_CHARS = 380
+
+
+def split_suggestions(raw):
+    """Sépare la réponse du modèle de sa ligne « SUGGESTIONS: a | b | c » ; renvoie (texte, [suggestions])."""
+    if not raw:
+        return raw, []
+    suggestions = []
+    for match in SUGGESTIONS_LINE.finditer(raw):
+        for item in match.group(1).split('|'):
+            item = item.strip(' -*"«»')
+            if item and item not in suggestions:
+                suggestions.append(item)
+    cleaned = SUGGESTIONS_LINE.sub('', raw).strip()
+    return cleaned, suggestions[:MAX_SUGGESTIONS]
+
+
+def _shorten(text, limit=SHORT_ANSWER_CHARS):
+    """Garde les premières phrases du texte, sans dépasser la limite (coupe toujours en fin de phrase)."""
+    flat = ' '.join(line.strip() for line in text.splitlines() if line.strip())
+    kept = ''
+    for sentence in SENTENCE_END.split(flat):
+        if kept and len(kept) + len(sentence) + 1 > limit:
+            break
+        kept = f'{kept} {sentence}'.strip()
+    if not MARKER.search(kept):
+        # le résumé garde la source de la fiche, même si la phrase qui la porte a été coupée
+        marker = MARKER.search(flat)
+        if marker:
+            kept = f'{kept} {marker.group(0)}'
+    return kept
+
+
+def default_suggestions(retrieval):
+    """Questions de relance tirées des fiches, quand le modèle n'en propose pas."""
+    if not retrieval.guides:
+        return []
+    name = retrieval.guides[0].name
+    asked = {section.label for section in retrieval.sections}
+    candidates = [
+        ('Semis et calendrier', f'Quand semer : {name.lower()} ?'),
+        ('Fertilisation', f'Quel engrais pour : {name.lower()} ?'),
+        ('Maladies et ravageurs', 'Quelles maladies surveiller ?'),
+        ('Eau et irrigation', "Combien d'eau faut-il ?"),
+        ('Récolte et conservation', 'Quand récolter ?'),
+        ('Rendement', 'Quel rendement espérer ?'),
+    ]
+    return [text.replace(' : ', ' ') for label, text in candidates if label not in asked][:MAX_SUGGESTIONS]
+
+
 def build_fiche_answer(retrieval):
-    """Réponse construite directement depuis les fiches, sans modèle de langage."""
-    blocks = [f"{section.guide.name} : {section.label}\n{section.text}" for section in retrieval.sections]
+    """
+    Réponse courte construite directement depuis les fiches, sans modèle de langage.
+    Une question large (« je veux cultiver… ») reçoit une présentation brève et une invitation à préciser.
+    """
+    blocks = []
+    broad = len(retrieval.sections) == 1 and retrieval.sections[0].label == 'Fiche complète'
+    if broad:
+        guide = retrieval.sections[0].guide
+        first = next((section for section in retrieval.sections if section.guide == guide), None)
+        intro = _shorten(first.text.removeprefix('Présentation : '), 300)
+        blocks.append(f"{guide.name} : {intro}")
+        blocks.append("Que voulez-vous savoir en premier : le semis, l'engrais, l'eau ou les maladies ?")
+    else:
+        for section in retrieval.sections[:3]:
+            blocks.append(f"**{section.guide.name} — {section.label}**\n{_shorten(section.text)}")
     missing = _missing_sentence(retrieval)
     if missing:
         blocks.append(missing)
     return "\n\n".join(blocks)
 
 
-def _grounded_prompt(query, retrieval, farmer_context):
+def history_block(history):
+    """Texte de la conversation en cours (les derniers échanges), pour le modèle."""
+    lines = []
+    for turn in (history or [])[-8:]:
+        who = 'Producteur' if turn.get('role') == 'user' else 'Assistant'
+        content = str(turn.get('content', '')).split('\n\nSources :')[0].strip()
+        if content:
+            lines.append(f"{who} : {content[:500]}")
+    return "\n".join(lines)
+
+
+def _retrieve_with_history(query, history):
+    """Si la question seule ne désigne aucune culture (« et l'engrais ? »), s'appuie sur les messages précédents."""
+    retrieval = retrieve(query)
+    if retrieval.guides or not history:
+        return retrieval
+    previous = ' '.join(t['content'] for t in history if t.get('role') == 'user' and t.get('content'))
+    if not previous:
+        return retrieval
+    return retrieve(f'{previous[-300:]} {query}') if retrieve(previous[-300:]).guides else retrieval
+
+
+def _grounded_prompt(query, retrieval, farmer_context, history=None):
     sources = "\n".join(_source_line(src) for src in retrieval.sources)
     sheets = "\n\n".join(
         f"Culture : {section.guide.name} | Sujet : {section.label}\n{section.text}" for section in retrieval.sections)
@@ -231,6 +353,7 @@ def _grounded_prompt(query, retrieval, farmer_context):
         f"### SOURCES\n{sources}\n\n"
         f"### FICHES NAATAL AGRO (données vérifiées)\n{sheets}\n\n"
         f"### PROFIL DE L'EXPLOITANT (données privées, pour adapter la réponse)\n```json\n{context_str}\n```\n\n"
+        f"### CONVERSATION EN COURS\n{history_block(history) or '(début de la conversation)'}\n\n"
         f"### QUESTION DU PRODUCTEUR\n{query}\n"
     )
 
@@ -251,13 +374,15 @@ def _validated_llm_answer(raw, sources):
     return cleaned if MARKER.search(cleaned) else None
 
 
-def answer_question(query, context='general', image_base64=None, user=None):
+def answer_question(query, context='general', image_base64=None, user=None, history=None):
     """
-    Point d'entrée du copilote IA de Naatal Agro. Renvoie ``{'answer', 'origin', 'sources'}``.
+    Point d'entrée du copilote IA de Naatal Agro.
+    Renvoie ``{'answer', 'origin', 'sources', 'suggestions'}``.
 
     Ordre de priorité : 1) nos fiches agronomiques (base de données), avec leurs sources ;
     2) à défaut, un conseil général clairement signalé comme non sourcé.
     Le diagnostic par image reste un conseil général (pas de fiche pour une photo).
+    ``history`` : derniers échanges de la conversation, ``[{'role': 'user'|'assistant', 'content': str}]``.
     """
     if image_base64:
         vision_prompt = (
@@ -265,20 +390,27 @@ def answer_question(query, context='general', image_base64=None, user=None):
             f"Question / Remarque : '{query}'.\n"
             f"1. Identifie la culture et la maladie ou le ravageur visible avec certitude.\n"
             f"2. Indique la sévérité et les symptômes caractéristiques.\n"
-            f"3. Recommande un traitement curatif et préventif adapté au climat sénégalais."
+            f"3. Recommande un traitement curatif et préventif adapté au climat sénégalais.\n"
+            f"Réponds en peu de mots, avec des puces courtes, puis termine par la ligne SUGGESTIONS: "
+            f"question 1 | question 2 | question 3."
         )
         response = call_llm(vision_prompt, image_base64=image_base64)
-        answer = response or "Le service de vision IA est indisponible. Veuillez vérifier vos clés API."
-        return {'answer': answer, 'origin': 'general', 'sources': []}
+        if not response:
+            return {'answer': "Le service de vision IA est indisponible. Veuillez vérifier vos clés API.",
+                    'origin': 'general', 'sources': [], 'suggestions': []}
+        answer, suggestions = split_suggestions(response)
+        return {'answer': answer, 'origin': 'general', 'sources': [], 'suggestions': suggestions}
 
     farmer_context = get_farmer_context(user)
-    retrieval = retrieve(query)
+    retrieval = _retrieve_with_history(query, history)
 
     if retrieval.sections:
-        raw = call_llm(_grounded_prompt(query, retrieval, farmer_context))
-        answer = _validated_llm_answer(raw, retrieval.sources)
+        raw = call_llm(_grounded_prompt(query, retrieval, farmer_context, history))
+        raw_answer, suggestions = split_suggestions(raw)
+        answer = _validated_llm_answer(raw_answer, retrieval.sources)
         if answer is None:
             answer = build_fiche_answer(retrieval)
+            suggestions = []
         else:
             missing = _missing_sentence(retrieval)
             if missing:
@@ -286,27 +418,35 @@ def answer_question(query, context='general', image_base64=None, user=None):
         sources = _cited_sources(answer, retrieval.sources)
         if any(source.get('scope', 'senegal') != 'senegal' for source in sources):
             answer = f"{answer}\n\n{REGIONAL_NOTICE}"
-        return {'answer': _with_sources_footer(answer, retrieval.sources), 'origin': 'database', 'sources': sources}
+        return {
+            'answer': _with_sources_footer(answer, retrieval.sources),
+            'origin': 'database',
+            'sources': sources,
+            'suggestions': suggestions or default_suggestions(retrieval),
+        }
 
     context_str = json.dumps(farmer_context, ensure_ascii=False, indent=2)
     prompt = (
+        f"{CONVERSATION_RULES}\n"
         f"### DONNÉES CLOISONNÉES DE L'EXPLOITANT (Source certifiée Naatal Agro) :\n"
         f"```json\n{context_str}\n```\n\n"
         f"### CONTEXTE MÉTIER : {context}\n"
+        f"### CONVERSATION EN COURS :\n{history_block(history) or '(début de la conversation)'}\n\n"
         f"### QUESTION DU PRODUCTEUR : {query}\n\n"
-        f"Réponds de manière directe, concrète et utile pour l'exploitant :"
+        f"Réponds de façon courte, concrète et utile pour l'exploitant :"
     )
     llm_response = call_llm(prompt)
     missing = _missing_sentence(retrieval)
     if not llm_response:
         parts = [part for part in (missing, SOURCES_UNAVAILABLE_NOTICE) if part]
-        return {'answer': "\n\n".join(parts), 'origin': 'general', 'sources': []}
-    parts = [llm_response]
+        return {'answer': "\n\n".join(parts), 'origin': 'general', 'sources': [], 'suggestions': []}
+    text, suggestions = split_suggestions(llm_response)
+    parts = [text]
     if missing:
         parts.append(missing)
     if retrieval.is_agricultural:
         parts.append(GENERAL_NOTICE)
-    return {'answer': "\n\n".join(parts), 'origin': 'general', 'sources': []}
+    return {'answer': "\n\n".join(parts), 'origin': 'general', 'sources': [], 'suggestions': suggestions}
 
 
 def ask_llm(query, context='general', image_base64=None, user=None):

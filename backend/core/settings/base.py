@@ -17,9 +17,9 @@ load_dotenv(BASE_DIR / '.env')
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-dev-only-do-not-use-in-production')
 
 OPENWEATHER_API_KEY = os.getenv('API_KEY_OPENWEATHER')
-GROQ_API_KEY = os.getenv('API_KEY_GROQ')
-GEMINI_API_KEY = os.getenv('API_KEY_GEMINI')
-GEMINI_MODEL = os.getenv('GEMINI_MODEL', 'gemini-2.5-flash')
+GROQ_API_KEY = os.getenv('API_KEY_GROQ') or os.getenv('GROQ_API_KEY')
+GEMINI_API_KEY = os.getenv('API_KEY_GEMINI') or os.getenv('GEMINI_API_KEY')
+GEMINI_MODEL = os.getenv('GEMINI_MODEL', 'gemini-3.8-flash')
 
 # Sites dont les informations peuvent alimenter les fiches agronomiques (sources institutionnelles).
 # Une proposition dont la source n'est pas sur l'un de ces domaines (en https) ne peut pas être approuvée.
