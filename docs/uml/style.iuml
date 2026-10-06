@@ -1,0 +1,36 @@
+' Style commun des diagrammes Naatal Agro (inclus avec !include style.iuml)
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundCorner 12
+skinparam defaultFontName "Segoe UI"
+skinparam defaultFontSize 13
+skinparam ArrowColor #2E7D32
+skinparam ArrowThickness 1.3
+skinparam titleFontSize 20
+skinparam titleFontColor #1B5E20
+skinparam legendBackgroundColor #F4F6F8
+skinparam legendBorderColor #C8E6C9
+skinparam ActorBorderColor #1B5E20
+skinparam ActorBackgroundColor #E8F5E9
+skinparam ActorFontStyle bold
+skinparam PackageBorderColor #81C784
+skinparam PackageBackgroundColor #F6FBF6
+skinparam PackageFontColor #1B5E20
+skinparam UsecaseBackgroundColor #E8F5E9
+skinparam UsecaseBorderColor #2E7D32
+skinparam ClassBackgroundColor #FFFFFF
+skinparam ClassBorderColor #2E7D32
+skinparam ClassHeaderBackgroundColor #E8F5E9
+skinparam ClassAttributeIconSize 0
+skinparam RectangleBorderColor #1B5E20
+skinparam RectangleBackgroundColor #FFFFFF
+skinparam NoteBackgroundColor #FFF4D6
+skinparam NoteBorderColor #F2A900
+skinparam SequenceLifeLineBorderColor #81C784
+skinparam SequenceGroupBorderColor #81C784
+skinparam SequenceGroupBackgroundColor #F6FBF6
+skinparam ParticipantBackgroundColor #E8F5E9
+skinparam ParticipantBorderColor #2E7D32
+skinparam SequenceDividerBackgroundColor #FFF4D6
+skinparam SequenceBoxBorderColor #C8E6C9
+skinparam SequenceBoxBackgroundColor #F6FBF6

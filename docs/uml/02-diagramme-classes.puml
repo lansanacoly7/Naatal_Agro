@@ -1,0 +1,257 @@
+@startuml 02a-diagramme-classes-donnees
+!include style.iuml
+set separator none
+hide empty methods
+skinparam linetype ortho
+skinparam nodesep 30
+skinparam ranksep 45
+title Naatal Agro – Diagramme de classes (1/2) : les données
+
+package "Utilisateurs" #F6FBF6 {
+  class User {
+    +id : UUID
+    +phone : str
+    +first_name : str
+    +location : str
+    +language : str = "fr"
+    +role : farmer | admin
+    +date_of_birth : date
+    +main_crops : list
+    +fcm_token : str
+    +privacy_accepted_at : datetime
+    +privacy_policy_version : str
+    --
+    +check_password(mot_de_passe) : bool
+  }
+}
+package "Agriculture" #F6FBF6 {
+  class Crop <<culture>> {
+    +id : UUID
+    +name : str
+    +crop_type : str
+    +planting_date : date
+    +expected_harvest_date : date
+    +status : str = "active"
+    +area_size : float  (ha)
+    +location : str
+  }
+  class Activity <<activité>> {
+    +id : UUID
+    +activity_type : str
+    +description : text
+    +date : date
+    +cost : decimal
+  }
+  class PestReport <<signalement>> {
+    +id : UUID
+    +pest_name : str
+    +location : str
+    +description : text
+    +date_reported : datetime
+  }
+  class AgronomicGuide <<fiche>> {
+    +slug : str  {unique}
+    +name : str
+    +scientific_name : str
+    +category : legume | cereale | legumineuse | fruit
+    +summary : text
+    +calendar : text
+    +soil_and_sowing : text
+    +water_needs : text
+    +fertilization : text
+    +pests_diseases : list
+    +harvest : text
+    +yield_info : text
+    +limitations : text
+    +sources : list
+    +locally_edited : bool
+  }
+  class KnowledgeProposal <<proposition>> {
+    +field : str
+    +pest_name : str
+    +proposed_text : text
+    +quote : text
+    +source_title : str
+    +source_publisher : str
+    +source_url : url
+    +status : pending | approved | rejected
+    +reviewed_at : datetime
+    +review_note : str
+  }
+}
+package "Marchés" #F6FBF6 {
+  class Market <<marché>> {
+    +id : UUID
+    +name : str
+    +region : str
+    +location_gps : str
+    +rating : decimal
+    +opening_time : time
+    +closing_time : time
+  }
+  class Price <<prix>> {
+    +id : UUID
+    +product_name : str
+    +price : decimal
+    +trend : hausse | baisse | stable
+    +date : date
+  }
+  class Product <<produit>> {
+    +id : UUID
+    +name : str
+    +category : str
+    +current_price : decimal
+    +trend_percentage : decimal
+    +is_trending : bool
+  }
+}
+package "Météo" #F6FBF6 {
+  class WeatherData <<météo>> {
+    +id : UUID
+    +location : str
+    +temperature : float
+    +humidity : float
+    +rainfall : float  (mm)
+    +forecast_date : date
+  }
+}
+package "Exploitation : stock et finances" #F6FBF6 {
+  class StockItem <<stock>> {
+    +id : UUID
+    +name : str
+    +quantity : float
+    +unit : str
+    +alert_status : bool
+    +ai_storage_advice : text
+  }
+  class Sale <<vente>> {
+    +id : UUID
+    +quantity_sold : float
+    +price_per_unit : decimal
+    +date : date
+    +buyer : str
+    --
+    +total_revenue : float
+  }
+  class Transaction <<transaction>> {
+    +id : UUID
+    +transaction_type : income | expense
+    +amount : decimal
+    +date : date
+    +description : str
+  }
+}
+package "Assistant et notifications" #F6FBF6 {
+  class AIInteraction <<échange IA>> {
+    +id : UUID
+    +query : text
+    +response : text
+    +context_type : str
+    +origin : database | general
+    +sources : list
+    +created_at : datetime
+  }
+  class Notification <<notification>> {
+    +id : UUID
+    +type : weather | crop | market
+    +message : text
+    +is_read : bool
+  }
+}
+
+User "1" *-- "0..*" Crop : possède
+Crop "1" *-- "0..*" Activity : journal
+Crop "1" *-- "0..*" Sale : récoltes vendues
+User "1" *-- "0..*" PestReport : signale
+User "1" *-- "0..*" StockItem : stocke
+User "1" *-- "0..*" Transaction : enregistre
+User "1" *-- "0..*" Notification : reçoit
+User "1" *-- "0..*" AIInteraction : pose
+Market "1" *-- "0..*" Price : affiche
+AgronomicGuide "1" *-- "0..*" KnowledgeProposal : reçoit
+KnowledgeProposal "0..*" --> "0..1" User : relue par (admin)
+
+note bottom of User
+  Chaque culture, stock, vente, transaction,
+  notification et échange IA appartient à un
+  seul utilisateur et n'est visible que par lui.
+end note
+note bottom of Price
+  Rattaché au produit par son nom
+  (pas de lien direct avec Product).
+end note
+note bottom of AgronomicGuide
+  Champ vide = « non documenté ».
+  Chaque info porte un repère [n] vers ses sources.
+end note
+
+legend right
+  Losange plein = composition : si l'utilisateur
+  est supprimé, ses données le sont aussi.
+endlegend
+@enduml
+
+@startuml 02b-diagramme-classes-services
+!include style.iuml
+set separator none
+hide empty methods
+skinparam linetype ortho
+skinparam nodesep 30
+skinparam ranksep 45
+title Naatal Agro – Diagramme de classes (2/2) : la logique métier
+
+package "Services" #FFF9E6 {
+  class AssistantService <<service>> {
+    +answer_question(question, contexte, image, user)
+    +build_fiche_answer()
+  }
+  class KnowledgeRetriever <<service>> {
+    +retrieve(question)
+    +detect_topics()
+  }
+  class LLMClient <<service externe>> {
+    +call_llm(prompt, image)
+    +call_groq(prompt)
+    +call_gemini(prompt, image)
+  }
+  class KnowledgeReview <<service>> {
+    +approve_proposal(proposition, admin)
+    +reject_proposal(proposition, admin)
+    +is_trusted_url(url)
+  }
+  class FirebaseService <<service externe>> {
+    +send_push_notification(jeton, titre, texte)
+  }
+  class WeatherService <<service externe>> {
+    +fetch_weather(lieu)
+  }
+}
+class AgronomicGuide <<fiche>>
+class KnowledgeProposal <<proposition>>
+class AIInteraction <<échange IA>>
+class Notification <<notification>>
+class StockItem <<stock>>
+class WeatherData <<météo>>
+class User
+
+AssistantService ..> KnowledgeRetriever : 1. cherche d'abord\ndans les fiches
+AssistantService ..> LLMClient : 2. reformule avec\nles sources
+AssistantService ..> AIInteraction : 3. enregistre l'échange
+KnowledgeRetriever ..> AgronomicGuide : lit
+KnowledgeReview ..> KnowledgeProposal : valide / rejette
+KnowledgeReview ..> AgronomicGuide : complète
+KnowledgeReview ..> User : trace l'administrateur
+StockItem ..> LLMClient : conseil de stockage
+Notification ..> FirebaseService : envoie l'alerte
+WeatherService ..> WeatherData : met à jour
+
+note right of LLMClient
+  Essaie Groq d'abord, puis Gemini si
+  Groq ne répond pas. Les photos vont
+  directement à Gemini.
+end note
+note bottom of KnowledgeReview
+  Une proposition n'est acceptée que si sa
+  source est sur un site de confiance (https).
+end note
+@enduml

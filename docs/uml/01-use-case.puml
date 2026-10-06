@@ -1,0 +1,135 @@
+@startuml 01-use-case
+!include style.iuml
+skinparam linetype ortho
+skinparam nodesep 25
+skinparam ranksep 60
+left to right direction
+title Naatal Agro – Diagramme de cas d'utilisation (V1)
+
+actor "Agriculteur\n(producteur)" as F
+actor "Administrateur" as A
+actor "Services IA\n(Groq / Gemini)" as IA <<système>>
+actor "Firebase\n(notifications push)" as FCM <<système>>
+actor "OpenWeather\n(météo)" as OW <<système>>
+
+rectangle "Application Naatal Agro" {
+
+  package "Compte et confidentialité" {
+    usecase "S'inscrire\n(consentement RGPD)" as UC1
+    usecase "Se connecter\n(téléphone + mot de passe)" as UC2
+    usecase "Se déconnecter" as UC3
+    usecase "Modifier son profil" as UC4
+    usecase "Changer son mot de passe" as UC5
+    usecase "Consulter la politique\nde confidentialité" as UC6
+    usecase "Exporter ses données" as UC7
+    usecase "Supprimer son compte" as UC8
+  }
+
+  package "Cultures" {
+    usecase "Gérer ses cultures" as UC10
+    usecase "Noter les activités\nd'une culture" as UC11
+    usecase "Signaler un ravageur" as UC12
+    usecase "Consulter les fiches\nagronomiques" as UC13
+  }
+
+  package "Marchés et météo" {
+    usecase "Consulter les prix\ndes marchés" as UC20
+    usecase "Comparer les marchés" as UC21
+    usecase "Voir les marchés\nsur la carte" as UC22
+    usecase "Consulter la météo" as UC23
+    usecase "Actualiser les données\nmétéo (automatique)" as UC24
+  }
+
+  package "Assistant intelligent" {
+    usecase "Poser une question\nà l'assistant" as UC30
+    usecase "Envoyer une photo\npour un diagnostic" as UC31
+    usecase "Consulter l'historique\ndes échanges" as UC32
+    usecase "Répondre depuis\nles fiches sourcées" as UC33
+  }
+
+  package "Exploitation" {
+    usecase "Consulter le tableau\nde bord" as UC40
+    usecase "Gérer son stock" as UC41
+    usecase "Obtenir un conseil\nde stockage" as UC42
+    usecase "Enregistrer une vente" as UC43
+    usecase "Suivre revenus\net dépenses" as UC44
+  }
+
+  package "Notifications" {
+    usecase "Consulter ses\nnotifications" as UC50
+    usecase "Marquer comme lues" as UC51
+    usecase "Recevoir une alerte\nsur son téléphone" as UC52
+  }
+
+  package "Administration" {
+    usecase "Valider ou rejeter une\nproposition de fiche" as UC60
+    usecase "Gérer marchés, prix\net fiches" as UC61
+    usecase "Vérifier que la source\nest de confiance" as UC62
+  }
+}
+
+F --> UC1
+F --> UC2
+F --> UC3
+F --> UC4
+F --> UC5
+F --> UC6
+F --> UC7
+F --> UC8
+F --> UC10
+F --> UC11
+F --> UC12
+F --> UC13
+F --> UC20
+F --> UC21
+F --> UC22
+F --> UC23
+F --> UC30
+F --> UC31
+F --> UC32
+F --> UC40
+F --> UC41
+F --> UC43
+F --> UC44
+F --> UC50
+F --> UC51
+F --> UC52
+
+UC11 .> UC10 : <<extend>>
+UC21 .> UC20 : <<extend>>
+UC22 .> UC20 : <<extend>>
+UC30 ..> UC33 : <<include>>
+UC41 ..> UC42 : <<include>>
+UC1 ..> UC6 : <<include>>
+UC51 .> UC50 : <<extend>>
+UC60 ..> UC62 : <<include>>
+
+UC30 --> IA
+UC31 --> IA
+UC42 --> IA
+UC52 --> FCM
+UC24 --> OW
+A --> UC24
+
+A --> UC60
+A --> UC61
+A --> UC2
+
+note right of UC13
+  Chaque fiche cite ses sources.
+  Un champ vide = « non documenté ».
+end note
+
+note bottom of UC60
+  Rien n'entre dans une fiche
+  sans validation humaine.
+end note
+
+legend right
+  |= Légende |= |
+  | Trait plein | L'acteur utilise la fonction |
+  | <<include>> | Fait toujours partie du cas |
+  | <<extend>> | Option ajoutée au cas |
+  | <<système>> | Service externe |
+endlegend
+@enduml

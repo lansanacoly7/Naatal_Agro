@@ -1,0 +1,154 @@
+@startuml 03a-sequence-connexion
+!include style.iuml
+autonumber "<b>0"
+title Naatal Agro – Séquence 1/3 : connexion, session et déconnexion
+
+actor "Agriculteur" as F
+participant "Application\nmobile" as M
+database "Coffre sécurisé\ndu téléphone" as C
+participant "Serveur\nNaatal Agro" as S
+database "Base de données" as DB
+
+== Connexion ==
+F -> M : saisit son numéro (+221…)\net son mot de passe
+M -> S : POST /users/auth/login/
+S -> S : limite anti-piratage\n(10 essais / minute)
+S -> DB : cherche le compte,\nvérifie le mot de passe
+alt identifiants corrects
+  S --> M : jeton d'accès (1 jour)\n+ jeton de renouvellement (7 jours)\n+ rôle, nom, lieu
+  M -> C : range les jetons
+  M --> F : affiche le tableau de bord
+else identifiants incorrects
+  S --> M : erreur 401
+  M --> F : « Numéro ou mot de passe incorrect »
+end
+
+== Utilisation : le jeton accompagne chaque demande ==
+F -> M : ouvre « Marchés »
+M -> C : lit le jeton d'accès
+M -> S : GET /markets/ (Authorization : Bearer …)
+S -> DB : lit les données
+S --> M : liste des marchés
+M --> F : affiche l'écran
+
+== Jeton expiré : renouvellement automatique ==
+M -> S : GET /agriculture/crops/
+S --> M : 401 (jeton d'accès expiré)
+M -> S : POST /users/auth/refresh/ (jeton de renouvellement)
+S -> DB : ancien jeton mis sur liste noire
+S --> M : nouveaux jetons
+M -> C : remplace les jetons
+M -> S : rejoue la demande d'origine
+S --> M : données demandées
+note right of M
+  L'agriculteur ne voit rien :
+  il reste connecté sans ressaisir
+  son mot de passe.
+end note
+
+== Déconnexion ==
+F -> M : appuie sur « Se déconnecter »
+M -> S : POST /users/auth/logout/ (jeton de renouvellement)
+S -> DB : jeton mis sur liste noire
+S --> M : 204 (terminé)
+M -> C : efface les jetons
+M --> F : retour à l'écran de connexion
+@enduml
+
+@startuml 03b-sequence-assistant
+!include style.iuml
+autonumber "<b>0"
+title Naatal Agro – Séquence 2/3 : une question posée à l'assistant intelligent
+
+actor "Agriculteur" as F
+participant "Application\nmobile" as M
+participant "Serveur\n(vue IA)" as V
+participant "Recherche dans\nles fiches" as R
+database "Fiches\nagronomiques" as G
+participant "Groq" as GQ <<IA externe>>
+participant "Gemini" as GM <<IA externe>>
+database "Historique\ndes échanges" as H
+
+F -> M : « Quand semer l'oignon ? »
+M -> V : POST /ai/ask/ (question)
+V -> V : contrôles : connecté, 30 questions/heure max,\ntexte ≤ 1000 caractères
+V -> R : answer_question(question)
+R -> G : repère la culture (oignon)\net le sujet (semis)
+G --> R : sections de la fiche + sources numérotées
+
+alt la question concerne une fiche connue
+  R -> GQ : consigne stricte : « utilise UNIQUEMENT\nces fiches, cite [1], [2]… »
+  alt Groq indisponible
+    R -> GM : même consigne
+    GM --> R : réponse
+  else Groq répond
+    GQ --> R : réponse
+  end
+  R -> R : vérifie que la réponse cite de vraies sources\n(les repères inventés sont retirés)
+  alt réponse non conforme ou IA indisponible
+    R -> R : réponse construite directement\nà partir de la fiche
+  end
+  R --> V : réponse + sources\norigine = « database »
+else aucune fiche ne correspond
+  R -> GQ : conseil général (+ contexte de l'exploitant)
+  GQ --> R : réponse
+  R --> V : réponse marquée « non issue de nos fiches\nvérifiées : à confirmer »\norigine = « general »
+end
+
+V -> H : enregistre la question, la réponse,\nl'origine et les sources
+V --> M : 201 (échange enregistré)
+M --> F : affiche la réponse avec ses sources
+
+note over F, H
+  Si l'agriculteur envoie une photo, la demande va
+  directement à Gemini (diagnostic), sans passer par les fiches,
+  et la réponse est toujours marquée « conseil général ».
+end note
+@enduml
+
+@startuml 03c-sequence-validation-fiche
+!include style.iuml
+autonumber "<b>0"
+title Naatal Agro – Séquence 3/3 : enrichir une fiche agronomique (validation humaine)
+
+actor "Contributeur\n(équipe)" as C
+actor "Administrateur" as A
+participant "Interface\nd'administration" as UI
+participant "Contrôle\ndes sources" as K
+database "Propositions" as P
+database "Fiches\nagronomiques" as G
+
+== Dépôt d'une proposition ==
+C -> UI : propose un texte pour la fiche « Oignon »,\navec l'extrait exact et l'adresse de la source
+UI -> P : enregistre (statut « à valider »)
+note right of P : Rien n'est ajouté à la fiche\nà ce stade.
+
+== Relecture par l'administrateur ==
+A -> UI : ouvre les propositions à valider
+UI -> P : liste (statut « à valider »)
+A -> UI : choisit « Approuver »
+UI -> K : approve_proposal(proposition)
+K -> K : déjà traitée ?
+K -> K : source sur un site de confiance (https) ?\n(ISRA, FAO, ANCAR, ministère…)
+K -> K : extrait exact présent ?\nnom du ravageur renseigné si nécessaire ?
+
+alt contrôles réussis
+  K -> G : ajoute le texte à la bonne section,\navec son repère de source [n]
+  K -> G : fiche marquée « modifiée localement »\n(protégée des mises à jour automatiques)
+  K -> P : statut « approuvée »,\nadministrateur et date enregistrés
+  UI --> A : « Proposition approuvée »
+else un contrôle échoue
+  K --> UI : erreur expliquée\n(source non fiable, extrait manquant…)
+  UI --> A : proposition inchangée
+end
+
+== Rejet ==
+A -> UI : choisit « Rejeter » (avec une note)
+UI -> K : reject_proposal(proposition)
+K -> P : statut « rejetée »\n(conservée pour mémoire)
+
+note over C, G
+  Effet pour l'agriculteur : l'assistant et les fiches
+  utilisent ensuite ce nouveau texte, avec sa source.
+end note
+@enduml
