@@ -86,7 +86,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       _buildTrackedProducts(context, profile),
                       const SizedBox(height: 32),
                       _buildSectionTitle('Mes Alertes Actives', badgeCount: 2),
-                      _buildAlertsCard(),
+                      _buildAlertsCard(context),
                       const SizedBox(height: 32),
                       _buildSectionTitle('Paramètres du Compte'),
                       _buildSettingsSection(profile),
@@ -542,7 +542,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
   }
 
-  Widget _buildAlertsCard() {
+  Widget _buildAlertsCard(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -1160,3 +1160,114 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
   }
 }
+
+class TrackedProductsWidget extends StatefulWidget {
+  const TrackedProductsWidget({super.key});
+
+  @override
+  State<TrackedProductsWidget> createState() => _TrackedProductsWidgetState();
+}
+
+class _TrackedProductsWidgetState extends State<TrackedProductsWidget> {
+  final List<String> _trackedProducts = ['Oignon Local', 'Mil', 'Arachide'];
+  final List<String> _availableProducts = ['Tomate', 'Riz', 'Maïs', 'Manioc', 'Niébé'];
+
+  void _showAddProductDialog() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Text('Ajouter un produit suivi', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              ),
+              if (_availableProducts.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.all(20.0),
+                  child: Text('Tous les produits disponibles sont déjà suivis !', style: TextStyle(color: Colors.grey)),
+                )
+              else
+                ..._availableProducts.map((product) => ListTile(
+                  title: Text(product, style: const TextStyle(fontWeight: FontWeight.w500)),
+                  trailing: const Icon(Icons.add_circle_outline_rounded, color: AppColors.primary),
+                  onTap: () {
+                    setState(() {
+                      _trackedProducts.add(product);
+                      _availableProducts.remove(product);
+                    });
+                    Navigator.pop(context);
+                  },
+                )),
+              const SizedBox(height: 10),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 12,
+      runSpacing: 12,
+      children: [
+        ..._trackedProducts.map((p) => _buildPremiumChip(p)),
+        GestureDetector(
+          onTap: _showAddProductDialog,
+          child: _buildPremiumChip('Ajouter', isAction: true),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPremiumChip(String label, {bool isAction = false}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: isAction ? AppColors.primary : Colors.white,
+        border: isAction ? null : Border.all(color: Colors.grey.shade200),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: isAction ? [
+          BoxShadow(color: AppColors.primary.withValues(alpha: 0.3), blurRadius: 10, offset: const Offset(0, 4)),
+        ] : [
+          BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 5, offset: const Offset(0, 2)),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (isAction) ...[
+            const Icon(Icons.add, color: Colors.white, size: 16),
+            const SizedBox(width: 4),
+          ],
+          Text(
+            label,
+            style: TextStyle(
+              color: isAction ? Colors.white : Colors.grey.shade800,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          if (!isAction) ...[
+            const SizedBox(width: 8),
+            GestureDetector(
+              onTap: () {
+                setState(() {
+                  _trackedProducts.remove(label);
+                  _availableProducts.add(label);
+                  _availableProducts.sort();
+                });
+              },
+              child: Icon(Icons.close_rounded, size: 16, color: Colors.grey.shade400),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+

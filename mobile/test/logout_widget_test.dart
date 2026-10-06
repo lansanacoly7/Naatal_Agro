@@ -22,16 +22,18 @@ class _FakeAuthRepository implements AuthRepository {
   }
 
   @override
-  Future<Map<String, dynamic>> register(
-    String fullName,
-    String phone,
-    String password,
-    String language,
-    String location, {
+  Future<void> register({
+    required String fullName,
+    required String phone,
+    required String password,
+    String language = 'fr',
+    String location = '',
     String role = 'farmer',
+    String? email,
+    String? dateOfBirth,
+    List<String> mainCrops = const [],
   }) async {
     authenticated = true;
-    return {'access': 'fake-access', 'refresh': 'fake-refresh'};
   }
 
   @override

@@ -6,7 +6,6 @@ import '../../data/dashboard_provider.dart';
 import '../../data/models/dashboard_data.dart';
 import '../../../inventory/data/models/stock_item.dart';
 import '../widgets/market_prices_section.dart';
-import '../../../../core/widgets/notifications_sheet.dart';
 import 'package:go_router/go_router.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
@@ -194,21 +193,30 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
         ),
         Row(
           children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4)),
-                ],
+            GestureDetector(
+              onTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Recherche globale bientôt disponible')),
+                );
+              },
+              child: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4)),
+                  ],
+                ),
+                child: const Icon(Icons.search, color: AppColors.textPrimary, size: 20),
               ),
-              child: const Icon(Icons.search, color: AppColors.textPrimary, size: 20),
             ),
             const SizedBox(width: 12),
             GestureDetector(
-              onTap: () => showNotificationsSheet(context, ref),
+              onTap: () {
+                context.push('/notifications');
+              },
               child: Stack(
                 clipBehavior: Clip.none,
                 children: [
@@ -421,7 +429,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
       children: [
         _buildActionItem(Icons.insights, 'Dashboard', () => context.push('/mon_dashboard')), 
         _buildActionItem(Icons.calendar_month_outlined, 'Calendrier', () => context.push('/calendar')), 
-        _buildActionItem(Icons.notifications_active_outlined, 'Alertes', () => showNotificationsSheet(context, ref)), 
+        _buildActionItem(Icons.notifications_active_outlined, 'Alertes', () => context.push('/price-alerts')),
         _buildActionItem(Icons.auto_awesome, 'Naatal IA', () => context.go('/ai')),
       ],
     );

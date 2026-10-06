@@ -1,6 +1,8 @@
 import 'package:dio/dio.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/constants/app_constants.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../../../core/cache/local_cache.dart';
 
 class AuthRepository {
   final ApiClient _apiClient;
@@ -46,7 +48,17 @@ class AuthRepository {
   }
 
   /// Inscription d'un nouvel utilisateur
-  Future<void> register(String fullName, String phone, String password, String language, String location, {String role = 'farmer'}) async {
+  Future<void> register({
+    required String fullName,
+    required String phone,
+    required String password,
+    String language = 'fr',
+    String location = '',
+    String role = 'farmer',
+    String? email,
+    String? dateOfBirth,
+    List<String> mainCrops = const [],
+  }) async {
     try {
       final formattedPhone = _formatPhone(phone);
       final response = await _apiClient.post(
@@ -58,10 +70,13 @@ class AuthRepository {
           'language': language,
           'location': location,
           'role': role,
+          if (email != null && email.isNotEmpty) 'email': email,
+          if (dateOfBirth != null && dateOfBirth.isNotEmpty) 'date_of_birth': dateOfBirth,
+          if (mainCrops.isNotEmpty) 'main_crops': mainCrops,
         },
       );
 
-      if (response.statusCode == 201) {
+      if (response.statusCode == 200 || response.statusCode == 201) {
         // Si l'inscription réussit, on connecte directement l'utilisateur
         await login(formattedPhone, password);
       } else {
@@ -69,15 +84,36 @@ class AuthRepository {
       }
     } on DioException catch (e) {
       if (e.response?.statusCode == 400) {
+        final data = e.response?.data;
+        if (data is Map) {
+          if (data.containsKey('phone_number')) {
+            final err = data['phone_number'];
+            throw Exception(err is List ? err.first : err.toString());
+          }
+          if (data.containsKey('non_field_errors')) {
+            final err = data['non_field_errors'];
+            throw Exception(err is List ? err.first : err.toString());
+          }
+          if (data.containsKey('detail')) {
+            throw Exception(data['detail'].toString());
+          }
+        }
         throw Exception('Ce numéro est déjà utilisé ou les données sont invalides.');
       }
-      throw Exception('Impossible de s\'inscrire pour le moment.');
+      throw Exception('Impossible de se connecter au serveur. Vérifiez votre connexion.');
     }
   }
 
   /// Déconnexion : invalide le jeton côté serveur puis purge le stockage local
   Future<void> logout() async {
     await _apiClient.logoutFromServer();
+    
+    // Purger le cache hors ligne de cet utilisateur
+    final userId = await _apiClient.getUserId();
+    final prefs = await SharedPreferences.getInstance();
+    final cache = LocalCache(prefs, userId);
+    await cache.clearUserCache();
+
     await _apiClient.clearTokens();
   }
 

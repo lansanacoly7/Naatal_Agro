@@ -6,12 +6,16 @@ class PaginatedResponse<T> {
   final String? next;
   final String? previous;
   final List<T> results;
+  final bool isFromCache;
+  final DateTime? cachedAt;
 
   PaginatedResponse({
     required this.count,
     this.next,
     this.previous,
     required this.results,
+    this.isFromCache = false,
+    this.cachedAt,
   });
 
   bool get hasMore => next != null && next!.isNotEmpty;
@@ -79,6 +83,8 @@ class PaginatedState<T> {
   final String? error;
   final int currentPage;
   final bool hasMore;
+  final bool isFromCache;
+  final DateTime? cachedAt;
 
   const PaginatedState({
     this.items = const [],
@@ -87,6 +93,8 @@ class PaginatedState<T> {
     this.error,
     this.currentPage = 1,
     this.hasMore = false,
+    this.isFromCache = false,
+    this.cachedAt,
   });
 
   PaginatedState<T> copyWith({
@@ -97,6 +105,8 @@ class PaginatedState<T> {
     bool clearError = false,
     int? currentPage,
     bool? hasMore,
+    bool? isFromCache,
+    DateTime? cachedAt,
   }) {
     return PaginatedState<T>(
       items: items ?? this.items,
@@ -105,6 +115,8 @@ class PaginatedState<T> {
       error: clearError ? null : (error ?? this.error),
       currentPage: currentPage ?? this.currentPage,
       hasMore: hasMore ?? this.hasMore,
+      isFromCache: isFromCache ?? this.isFromCache,
+      cachedAt: cachedAt ?? this.cachedAt,
     );
   }
 }

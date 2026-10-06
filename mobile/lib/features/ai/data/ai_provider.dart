@@ -37,13 +37,7 @@ class ChatNotifier extends StateNotifier<List<AiMessage>> {
   final AiRepository _repository;
   bool isLoading = false;
 
-  ChatNotifier(this._repository) : super([
-    AiMessage(
-      text: 'Bonjour ! Je suis Naatal IA, votre copilote agricole. Comment puis-je vous aider avec votre exploitation aujourd\'hui ?',
-      isUser: false,
-      timestamp: DateTime.now(),
-    )
-  ]);
+  ChatNotifier(this._repository) : super([]);
 
   Future<void> sendMessage(String text, {String? imageBase64, String? imagePath}) async {
     if (text.trim().isEmpty && imageBase64 == null) return;
@@ -71,9 +65,18 @@ class ChatNotifier extends StateNotifier<List<AiMessage>> {
       isLoading = false;
     }
   }
+
+  void clearChat() {
+    state = [];
+    isLoading = false;
+  }
 }
 
 final chatProvider = StateNotifierProvider<ChatNotifier, List<AiMessage>>((ref) {
   final repository = ref.watch(aiRepositoryProvider);
   return ChatNotifier(repository);
 });
+
+// NAATAL_IA_IMPROVEMENT : Provider pour la langue
+final aiLanguageProvider = StateProvider<String>((ref) => 'Fr');
+
