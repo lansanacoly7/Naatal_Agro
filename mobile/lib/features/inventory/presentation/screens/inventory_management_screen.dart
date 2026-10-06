@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../data/inventory_provider.dart';
 import '../../data/models/stock_item.dart';
+import '../../../../shared/utils/data_refresh.dart';
 
 class InventoryManagementScreen extends ConsumerWidget {
   const InventoryManagementScreen({super.key});
@@ -236,7 +237,7 @@ class InventoryManagementScreen extends ConsumerWidget {
                   width: double.infinity,
                   height: 50,
                   child: ElevatedButton(
-                    onPressed: () {
+                    onPressed: () async {
                       final quantity = double.tryParse(quantityController.text) ?? 0.0;
                       if (nameController.text.isNotEmpty && quantity > 0) {
                         final newItem = StockItem(
@@ -247,8 +248,16 @@ class InventoryManagementScreen extends ConsumerWidget {
                           alertStatus: false,
                           updatedAt: '',
                         );
-                        ref.read(inventoryNotifierProvider.notifier).addStock(newItem);
-                        Navigator.pop(context);
+                        final messenger = ScaffoldMessenger.of(context);
+                        final navigator = Navigator.of(context);
+                        try {
+                          await ref.read(inventoryNotifierProvider.notifier).addStock(newItem);
+                        } catch (_) {
+                          messenger.showSnackBar(const SnackBar(content: Text('Enregistrement impossible. Vérifiez votre connexion.')));
+                          return;
+                        }
+                        refreshAfterDataChange(ref);
+                        navigator.pop();
                       }
                     },
                     style: ElevatedButton.styleFrom(

@@ -41,7 +41,7 @@ class InventoryNotifier extends StateNotifier<AsyncValue<List<StockItem>>> {
     try {
       final response = await _apiClient.post('/inventory/', data: item.toJson());
       if (response.statusCode == 201) {
-        fetchInventory(); // Refresh the list
+        await fetchInventory(); // Refresh the list
       }
     } catch (e) {
       // Handle error

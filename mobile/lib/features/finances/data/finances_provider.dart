@@ -40,7 +40,7 @@ class TransactionsNotifier extends StateNotifier<AsyncValue<List<TransactionItem
     try {
       final response = await _apiClient.post('/finances/transactions/', data: item.toJson());
       if (response.statusCode == 201) {
-        fetchTransactions(); // Refresh the list
+        await fetchTransactions(); // Refresh the list
       }
     } catch (e) {
       rethrow;

@@ -7,6 +7,7 @@ import '../../data/models/dashboard_data.dart';
 import '../../../inventory/data/models/stock_item.dart';
 import '../widgets/market_prices_section.dart';
 import 'package:go_router/go_router.dart';
+import '../../../profile/data/profile_provider.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -73,9 +74,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
   }
 
   Widget _buildContent(BuildContext context, DashboardData data) {
+    // Identité de l'utilisateur connecté : la même source que l'écran Profil
+    final profile = ref.watch(profileNotifierProvider).valueOrNull;
+    final firstName = (profile?.fullName.trim().split(RegExp(r'\s+')).first) ?? '';
+    final location = (profile?.location.trim().isNotEmpty ?? false) ? profile!.location.trim() : 'Sénégal';
+
     return RefreshIndicator(
       onRefresh: () async {
         ref.invalidate(dashboardDataProvider);
+        await ref.read(profileNotifierProvider.notifier).loadProfile();
       },
       color: AppColors.primary,
       child: CustomScrollView(
@@ -89,11 +96,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildHeader(),
+                  _buildHeader(location),
                   const SizedBox(height: 24),
-                  const Text(
-                    'Bonjour, Moussa',
-                    style: TextStyle(
+                  Text(
+                    firstName.isEmpty ? 'Bonjour' : 'Bonjour, $firstName',
+                    style: const TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
                       color: AppColors.textPrimary,
@@ -151,7 +158,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
   // ─────────────────────────────────────────────
   // HEADER
   // ─────────────────────────────────────────────
-  Widget _buildHeader() {
+  Widget _buildHeader(String location) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -178,9 +185,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                   children: [
                     Icon(Icons.location_on, size: 12, color: AppColors.primary),
                     const SizedBox(width: 4),
-                    const Text(
-                      'Dakar, Sénégal',
-                      style: TextStyle(
+                    Text(
+                      location,
+                      style: const TextStyle(
                         color: AppColors.textSecondary,
                         fontSize: 12,
                       ),
