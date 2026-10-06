@@ -144,8 +144,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               Center(
                 child: Image.asset(
                   'assets/images/naatal_agro_logo-removebg-preview.png',
-                  height: 80,
-                  errorBuilder: (context, error, stackTrace) => const SizedBox(height: 80, width: 80),
+                  height: 140,
+                  errorBuilder: (context, error, stackTrace) => const SizedBox(height: 140, width: 140),
                 ),
               ),
               const SizedBox(height: 40),

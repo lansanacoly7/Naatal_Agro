@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../data/finances_provider.dart';
 import '../../data/models/financial_summary.dart';
+import '../../../../shared/utils/data_refresh.dart';
 
 class FinancialPerformanceScreen extends ConsumerWidget {
   const FinancialPerformanceScreen({super.key});
@@ -228,72 +229,129 @@ class FinancialPerformanceScreen extends ConsumerWidget {
     final amountController = TextEditingController();
     final descController = TextEditingController();
     String type = 'income';
+    String? errorText;
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        return Container(
-          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-          decoration: const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-          child: Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Ajouter une Transaction', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 20),
-                DropdownMenu<String>(
-                  initialSelection: type,
-                  onSelected: (val) => type = val ?? 'income',
-                  dropdownMenuEntries: const [
-                    DropdownMenuEntry(value: 'income', label: 'Revenu (+)'),
-                    DropdownMenuEntry(value: 'expense', label: 'Dépense (-)'),
-                  ],
+      useSafeArea: true,
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            final isIncome = type == 'income';
+            final accent = isIncome ? AppColors.primary : AppColors.error;
+
+            Widget typeButton(String value, String label, IconData icon) {
+              final selected = type == value;
+              final color = value == 'income' ? AppColors.primary : AppColors.error;
+              return Expanded(
+                child: GestureDetector(
+                  onTap: () => setSheetState(() => type = value),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    decoration: BoxDecoration(
+                      color: selected ? color : AppColors.background,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(icon, size: 20, color: selected ? Colors.white : AppColors.textSecondary),
+                        const SizedBox(width: 8),
+                        Text(
+                          label,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            color: selected ? Colors.white : AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: amountController,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(labelText: 'Montant (CFA)', border: OutlineInputBorder()),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: descController,
-                  decoration: const InputDecoration(labelText: 'Description', border: OutlineInputBorder()),
-                ),
-                const SizedBox(height: 24),
-                SizedBox(
-                  width: double.infinity,
-                  height: 50,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      final amount = double.tryParse(amountController.text) ?? 0.0;
-                      if (descController.text.isNotEmpty && amount > 0) {
+              );
+            }
+
+            return Padding(
+              padding: EdgeInsets.fromLTRB(24, 0, 24, 24 + MediaQuery.of(context).viewInsets.bottom),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const Text(
+                      'Nouvelle transaction',
+                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Enregistrez une recette ou une dépense.',
+                      style: TextStyle(color: AppColors.textSecondary),
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      children: [
+                        typeButton('income', 'Revenu', Icons.south_west_rounded),
+                        const SizedBox(width: 10),
+                        typeButton('expense', 'Dépense', Icons.north_east_rounded),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    TextField(
+                      controller: amountController,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700, color: accent),
+                      decoration: InputDecoration(
+                        hintText: '0',
+                        suffixText: 'CFA',
+                        errorText: errorText,
+                        fillColor: AppColors.background,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: descController,
+                      textCapitalization: TextCapitalization.sentences,
+                      decoration: const InputDecoration(
+                        hintText: 'Description (ex : vente de tomates)',
+                        prefixIcon: Icon(Icons.notes_rounded),
+                        fillColor: AppColors.background,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(backgroundColor: accent),
+                      onPressed: () async {
+                        final amount = double.tryParse(amountController.text.replaceAll(',', '.')) ?? 0.0;
+                        if (amount <= 0 || descController.text.trim().isEmpty) {
+                          setSheetState(() => errorText = 'Saisissez un montant et une description');
+                          return;
+                        }
                         final newItem = TransactionItem(
                           id: '',
                           type: type,
                           amount: amount,
                           date: DateTime.now().toIso8601String().split('T')[0],
-                          description: descController.text,
+                          description: descController.text.trim(),
                         );
-                        ref.read(transactionsNotifierProvider.notifier).addTransaction(newItem);
-                        ref.invalidate(financialSummaryProvider); // Refresh summary
-                        Navigator.pop(context);
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        try {
+                          await ref.read(transactionsNotifierProvider.notifier).addTransaction(newItem);
+                        } catch (_) {
+                          setSheetState(() => errorText = 'Enregistrement impossible. Vérifiez votre connexion.');
+                          return;
+                        }
+                        // Résumé, tableau de bord et profil sont rechargés avec la nouvelle transaction
+                        refreshAfterDataChange(ref);
+                        if (sheetContext.mounted) Navigator.pop(sheetContext);
+                      },
+                      child: const Text('Enregistrer'),
                     ),
-                    child: const Text('Enregistrer', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-                  ),
+                  ],
                 ),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         );
       },
     );

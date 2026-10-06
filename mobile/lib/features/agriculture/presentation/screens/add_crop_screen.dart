@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../data/agriculture_provider.dart';
+import '../../../../shared/utils/data_refresh.dart';
 
 class AddCropScreen extends ConsumerStatefulWidget {
   const AddCropScreen({super.key});
@@ -13,12 +14,14 @@ class AddCropScreen extends ConsumerStatefulWidget {
 }
 
 class _AddCropScreenState extends ConsumerState<AddCropScreen> {
+  static const _suggestedCrops = ['Mil', 'Maïs', 'Arachide', 'Riz', 'Tomate', 'Oignon', 'Manioc', 'Niébé'];
+
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _cropTypeController = TextEditingController();
   final _areaSizeController = TextEditingController();
   final _locationController = TextEditingController();
-  
+
   DateTime? _plantingDate;
   DateTime? _harvestDate;
   bool _isLoading = false;
@@ -77,14 +80,10 @@ class _AddCropScreenState extends ConsumerState<AddCropScreen> {
       };
 
       await ref.read(agricultureRepositoryProvider).addCrop(cropData);
-      
+
       // Invalidate providers so Dashboard and Crops List refresh
-      ref.invalidate(cropsProvider);
-      ref.invalidate(cropsPaginationNotifierProvider);
-      // We don't import dashboardProvider here to avoid circular dependency, 
-      // but going back to root will re-trigger its FutureProvider if invalidated,
-      // or we can just let pull-to-refresh handle it. For real-time we'd use a shared notifier.
-      
+      refreshAfterDataChange(ref);
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Culture ajoutée avec succès !'), backgroundColor: Colors.green),
@@ -113,89 +112,198 @@ class _AddCropScreenState extends ConsumerState<AddCropScreen> {
     super.dispose();
   }
 
+  bool _isSelectedCrop(String crop) => _cropTypeController.text.trim().toLowerCase() == crop.toLowerCase();
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Nouvelle Culture', style: TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.white,
-        elevation: 0,
+        title: const Text('Nouvelle culture', style: TextStyle(fontWeight: FontWeight.w700)),
+        backgroundColor: AppColors.background,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Text(
-                'Détails de la parcelle',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 16),
-              _buildTextField(
-                controller: _nameController,
-                label: 'Nom de la parcelle (ex: Champ Nord)',
-                icon: Icons.label_outline,
-              ),
-              const SizedBox(height: 16),
-              _buildTextField(
-                controller: _cropTypeController,
-                label: 'Type de culture (ex: Tomate, Riz)',
-                icon: Icons.grass_rounded,
-              ),
-              const SizedBox(height: 16),
-              _buildTextField(
-                controller: _areaSizeController,
-                label: 'Surface en hectares (ha)',
-                icon: Icons.landscape_rounded,
-                isNumber: true,
-              ),
-              const SizedBox(height: 16),
-              _buildTextField(
-                controller: _locationController,
-                label: 'Localisation (Région, Ville)',
-                icon: Icons.location_on_outlined,
-              ),
-              const SizedBox(height: 32),
-              const Text(
-                'Calendrier',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 16),
-              _buildDateSelector(
-                label: 'Date de semis',
-                date: _plantingDate,
-                onTap: () => _selectDate(context, true),
-              ),
-              const SizedBox(height: 16),
-              _buildDateSelector(
-                label: 'Date de récolte estimée',
-                date: _harvestDate,
-                onTap: () => _selectDate(context, false),
-              ),
-              const SizedBox(height: 48),
-              SizedBox(
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _submitForm,
-                  style: ElevatedButton.styleFrom(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
-                  child: _isLoading
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text(
-                          'Ajouter la culture',
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                        ),
+      body: Form(
+        key: _formKey,
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+          children: [
+            _buildHeader(),
+            const SizedBox(height: 20),
+            _buildSection(
+              title: 'Parcelle',
+              icon: Icons.landscape_rounded,
+              children: [
+                _buildTextField(
+                  controller: _nameController,
+                  label: 'Nom de la parcelle',
+                  hint: 'ex : Champ Nord',
+                  icon: Icons.label_outline_rounded,
                 ),
-              ),
-            ],
+                const SizedBox(height: 14),
+                _buildTextField(
+                  controller: _areaSizeController,
+                  label: 'Surface',
+                  hint: 'ex : 1.5',
+                  icon: Icons.straighten_rounded,
+                  isNumber: true,
+                  suffix: 'ha',
+                ),
+                const SizedBox(height: 14),
+                _buildTextField(
+                  controller: _locationController,
+                  label: 'Localisation',
+                  hint: 'Région, ville',
+                  icon: Icons.location_on_outlined,
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            _buildSection(
+              title: 'Culture',
+              icon: Icons.eco_rounded,
+              children: [
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (final crop in _suggestedCrops)
+                      ChoiceChip(
+                        label: Text(crop),
+                        selected: _isSelectedCrop(crop),
+                        showCheckmark: false,
+                        selectedColor: AppColors.primary,
+                        labelStyle: TextStyle(
+                          color: _isSelectedCrop(crop) ? Colors.white : AppColors.textPrimary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        onSelected: (_) => setState(() => _cropTypeController.text = crop),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                _buildTextField(
+                  controller: _cropTypeController,
+                  label: 'Type de culture',
+                  hint: 'Choisissez ci-dessus ou saisissez',
+                  icon: Icons.grass_rounded,
+                  onChanged: (_) => setState(() {}),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            _buildSection(
+              title: 'Calendrier',
+              icon: Icons.event_rounded,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildDateSelector(
+                        label: 'Semis',
+                        date: _plantingDate,
+                        onTap: () => _selectDate(context, true),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildDateSelector(
+                        label: 'Récolte estimée',
+                        date: _harvestDate,
+                        onTap: () => _selectDate(context, false),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+      bottomNavigationBar: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+          child: ElevatedButton.icon(
+            onPressed: _isLoading ? null : _submitForm,
+            icon: _isLoading
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
+                  )
+                : const Icon(Icons.check_rounded),
+            label: Text(_isLoading ? 'Ajout en cours…' : 'Ajouter la culture'),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [AppColors.primary, AppColors.primaryLight],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(color: AppColors.primary.withValues(alpha: 0.25), blurRadius: 20, offset: const Offset(0, 8)),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.18), shape: BoxShape.circle),
+            child: const Icon(Icons.agriculture_rounded, color: Colors.white, size: 28),
+          ),
+          const SizedBox(width: 16),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Ajoutez votre parcelle',
+                  style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  'Suivez-la de la semence à la récolte.',
+                  style: TextStyle(color: Colors.white70, fontSize: 13.5),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSection({required String title, required IconData icon, required List<Widget> children}) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 14, offset: const Offset(0, 4)),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 20, color: AppColors.primary),
+              const SizedBox(width: 8),
+              Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+            ],
+          ),
+          const SizedBox(height: 16),
+          ...children,
+        ],
       ),
     );
   }
@@ -203,25 +311,25 @@ class _AddCropScreenState extends ConsumerState<AddCropScreen> {
   Widget _buildTextField({
     required TextEditingController controller,
     required String label,
+    required String hint,
     required IconData icon,
     bool isNumber = false,
+    String? suffix,
+    ValueChanged<String>? onChanged,
   }) {
     return TextFormField(
       controller: controller,
+      onChanged: onChanged,
       keyboardType: isNumber ? const TextInputType.numberWithOptions(decimal: true) : TextInputType.text,
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: Icon(icon, color: AppColors.primary),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey.shade300),
-        ),
+        hintText: hint,
+        suffixText: suffix,
+        prefixIcon: Icon(icon, color: AppColors.primary, size: 22),
+        fillColor: AppColors.background,
       ),
       validator: (value) {
-        if (value == null || value.isEmpty) {
+        if (value == null || value.trim().isEmpty) {
           return 'Ce champ est requis';
         }
         if (isNumber && double.tryParse(value) == null) {
@@ -237,34 +345,40 @@ class _AddCropScreenState extends ConsumerState<AddCropScreen> {
     required DateTime? date,
     required VoidCallback onTap,
   }) {
+    final hasDate = date != null;
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(16),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey.shade300),
-          borderRadius: BorderRadius.circular(12),
+          color: hasDate ? AppColors.primary.withValues(alpha: 0.08) : AppColors.background,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: hasDate ? AppColors.primary : Colors.transparent, width: 1.5),
         ),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Icon(Icons.calendar_today, color: AppColors.primary),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(label, style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
-                  const SizedBox(height: 4),
-                  Text(
-                    date != null ? _dateFormatter.format(date) : 'Sélectionner une date',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: date != null ? Colors.black : Colors.grey,
-                      fontWeight: date != null ? FontWeight.w500 : FontWeight.normal,
-                    ),
+            Row(
+              children: [
+                const Icon(Icons.calendar_today_rounded, size: 16, color: AppColors.primary),
+                const SizedBox(width: 6),
+                Flexible(
+                  child: Text(
+                    label,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(color: AppColors.textSecondary, fontSize: 12.5),
                   ),
-                ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              hasDate ? _dateFormatter.format(date) : 'Choisir',
+              style: TextStyle(
+                fontSize: 15.5,
+                fontWeight: FontWeight.w700,
+                color: hasDate ? AppColors.textPrimary : AppColors.textSecondary,
               ),
             ),
           ],

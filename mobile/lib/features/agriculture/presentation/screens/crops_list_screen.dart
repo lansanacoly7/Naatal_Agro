@@ -13,6 +13,7 @@ import '../../data/models/crop.dart';
 // Imports pour Catalogue
 import '../../../markets/data/markets_provider.dart';
 import '../../../markets/data/models/product.dart';
+import '../../../../shared/utils/data_refresh.dart';
 
 class CropsListScreen extends ConsumerStatefulWidget {
   const CropsListScreen({super.key});
@@ -85,10 +86,11 @@ class _CropsListScreenState extends ConsumerState<CropsListScreen> with SingleTi
         ],
       ),
       floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 90.0),
-        child: FloatingActionButton(
+        padding: const EdgeInsets.only(bottom: 4.0),
+        child: FloatingActionButton.extended(
           backgroundColor: AppColors.primary,
-          child: const Icon(Icons.add, color: Colors.white),
+          icon: const Icon(Icons.add, color: Colors.white),
+          label: const Text('Nouvelle culture', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
           onPressed: () {
             context.push('/agriculture/add');
           },
@@ -179,7 +181,7 @@ class _CropsListScreenState extends ConsumerState<CropsListScreen> with SingleTi
 
     return ListView.builder(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 100),
+      padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 88),
       itemCount: totalCount,
       itemBuilder: (context, index) {
         if (index == state.items.length) {
@@ -341,6 +343,7 @@ class _CropsListScreenState extends ConsumerState<CropsListScreen> with SingleTi
                                 await ref.read(agricultureRepositoryProvider).deleteCrop(crop.id);
                                 ref.read(cropsPaginationNotifierProvider.notifier).refresh();
                                 ref.invalidate(cropsProvider);
+                                refreshAfterDataChange(ref);
                                 if (context.mounted) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(content: Text('Culture supprimée avec succès')),
@@ -361,6 +364,7 @@ class _CropsListScreenState extends ConsumerState<CropsListScreen> with SingleTi
                               await ref.read(agricultureRepositoryProvider).updateCrop(crop.id, {'status': 'harvested'});
                               ref.read(cropsPaginationNotifierProvider.notifier).refresh();
                               ref.invalidate(cropsProvider);
+                                refreshAfterDataChange(ref);
                               if (context.mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
@@ -558,7 +562,10 @@ class _CropsListScreenState extends ConsumerState<CropsListScreen> with SingleTi
                         );
                       },
                       decoration: InputDecoration(
+                        filled: false,
                         border: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        focusedBorder: InputBorder.none,
                         hintText: 'Rechercher un produit...',
                         hintStyle: TextStyle(color: Colors.grey.shade400),
                       ),
@@ -819,7 +826,7 @@ class _CropsListScreenState extends ConsumerState<CropsListScreen> with SingleTi
         }
 
         return SliverPadding(
-          padding: const EdgeInsets.only(left: 16.0, right: 16.0, top: 8.0, bottom: 100.0),
+          padding: const EdgeInsets.only(left: 16.0, right: 16.0, top: 8.0, bottom: 88.0),
           sliver: SliverGrid(
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
@@ -1086,6 +1093,7 @@ class _CropsListScreenState extends ConsumerState<CropsListScreen> with SingleTi
                         await ref.read(agricultureRepositoryProvider).updateCrop(crop.id, updatedData);
                         ref.read(cropsPaginationNotifierProvider.notifier).refresh();
                         ref.invalidate(cropsProvider);
+                                refreshAfterDataChange(ref);
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
