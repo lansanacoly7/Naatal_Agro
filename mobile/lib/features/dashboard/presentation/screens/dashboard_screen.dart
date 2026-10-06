@@ -6,7 +6,6 @@ import '../../data/dashboard_provider.dart';
 import '../../data/models/dashboard_data.dart';
 import '../../../inventory/data/models/stock_item.dart';
 import '../widgets/market_prices_section.dart';
-import '../../../../core/widgets/notifications_sheet.dart';
 import 'package:go_router/go_router.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {

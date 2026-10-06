@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -219,5 +220,29 @@ class ApiClient {
   Future<String> getUserRole() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('user_role') ?? 'farmer';
+  }
+
+  /// Extraire l'ID utilisateur depuis le token JWT
+  Future<String> getUserId() async {
+    try {
+      final token = await _secureStorage.read(key: AppConstants.accessTokenKey);
+      if (token == null || token.isEmpty) return 'anonymous';
+      
+      final parts = token.split('.');
+      if (parts.length != 3) return 'anonymous';
+      
+      String payload = parts[1];
+      // Pad to be a multiple of 4
+      while (payload.length % 4 != 0) {
+        payload += '=';
+      }
+      
+      final decoded = utf8.decode(base64Url.decode(payload));
+      final Map<String, dynamic> data = jsonDecode(decoded);
+      
+      return data['user_id']?.toString() ?? 'anonymous';
+    } catch (e) {
+      return 'anonymous';
+    }
   }
 }

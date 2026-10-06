@@ -42,12 +42,12 @@ class SettingsSecurityScreen extends ConsumerWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4))]),
+        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 10, offset: const Offset(0, 4))]),
         child: ListTile(
           contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
           leading: Container(
             padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(color: isDanger ? Colors.red.withOpacity(0.1) : Colors.grey.shade100, borderRadius: BorderRadius.circular(12)),
+            decoration: BoxDecoration(color: isDanger ? Colors.red.withValues(alpha: 0.1) : Colors.grey.shade100, borderRadius: BorderRadius.circular(12)),
             child: Icon(icon, color: isDanger ? Colors.red : AppColors.primary),
           ),
           title: Text(title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: color)),

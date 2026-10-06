@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/notifications_sheet.dart';
 import '../../../../core/network/paginated_response.dart';
+import '../../../../core/widgets/offline_cache_banner.dart';
 
 // Imports pour Mes Cultures
 import '../../data/agriculture_provider.dart';
@@ -131,7 +132,13 @@ class _CropsListScreenState extends ConsumerState<CropsListScreen> with SingleTi
                     ),
                   ),
                 )
-              : _buildCropsList(context, paginatedState),
+              : Column(
+                  children: [
+                    if (paginatedState.isFromCache && paginatedState.cachedAt != null)
+                      OfflineCacheBanner(cachedAt: paginatedState.cachedAt!),
+                    Expanded(child: _buildCropsList(context, paginatedState)),
+                  ],
+                ),
     );
   }
 

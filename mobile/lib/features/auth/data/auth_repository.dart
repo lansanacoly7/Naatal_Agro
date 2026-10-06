@@ -1,6 +1,8 @@
 import 'package:dio/dio.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/constants/app_constants.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../../../core/cache/local_cache.dart';
 
 class AuthRepository {
   final ApiClient _apiClient;
@@ -105,6 +107,13 @@ class AuthRepository {
   /// Déconnexion : invalide le jeton côté serveur puis purge le stockage local
   Future<void> logout() async {
     await _apiClient.logoutFromServer();
+    
+    // Purger le cache hors ligne de cet utilisateur
+    final userId = await _apiClient.getUserId();
+    final prefs = await SharedPreferences.getInstance();
+    final cache = LocalCache(prefs, userId);
+    await cache.clearUserCache();
+
     await _apiClient.clearTokens();
   }
 

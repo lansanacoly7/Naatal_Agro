@@ -133,7 +133,7 @@ class _PriceAlertsScreenState extends State<PriceAlertsScreen> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 15,
             offset: const Offset(0, 5),
           ),
@@ -146,7 +146,7 @@ class _PriceAlertsScreenState extends State<PriceAlertsScreen> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
+                color: color.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Icon(icon, color: color, size: 28),
@@ -311,7 +311,7 @@ class _AddAlertBottomSheetState extends State<AddAlertBottomSheet> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       decoration: BoxDecoration(
-                        color: _isUpCondition ? Colors.green.withOpacity(0.1) : Colors.grey.shade100,
+                        color: _isUpCondition ? Colors.green.withValues(alpha: 0.1) : Colors.grey.shade100,
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
                           color: _isUpCondition ? Colors.green : Colors.transparent,
@@ -339,7 +339,7 @@ class _AddAlertBottomSheetState extends State<AddAlertBottomSheet> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       decoration: BoxDecoration(
-                        color: !_isUpCondition ? Colors.red.withOpacity(0.1) : Colors.grey.shade100,
+                        color: !_isUpCondition ? Colors.red.withValues(alpha: 0.1) : Colors.grey.shade100,
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
                           color: !_isUpCondition ? Colors.red : Colors.transparent,

@@ -77,13 +77,13 @@ class _SettingsNotificationsScreenState extends State<SettingsNotificationsScree
 
   Widget _buildSwitchTile(String title, String subtitle, bool value, Function(bool) onChanged) {
     return Container(
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4))]),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 10, offset: const Offset(0, 4))]),
       child: SwitchListTile(
         title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
         subtitle: Padding(padding: const EdgeInsets.only(top: 4.0), child: Text(subtitle, style: TextStyle(color: Colors.grey.shade500, fontSize: 13))),
         value: value,
         onChanged: onChanged,
-        activeColor: Colors.white,
+        activeThumbColor: Colors.white,
         activeTrackColor: AppColors.primary,
         contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),

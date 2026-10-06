@@ -1,7 +1,10 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/network/paginated_response.dart';
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/cache/local_cache.dart';
 import '../../auth/data/auth_provider.dart';
 import 'models/crop.dart';
 
@@ -17,18 +20,52 @@ class AgricultureRepository {
     if (page != null) queryParams['page'] = page;
     if (pageSize != null) queryParams['page_size'] = pageSize;
 
-    final response = await _apiClient.get(
-      AppConstants.cropsEndpoint,
-      queryParams: queryParams.isNotEmpty ? queryParams : null,
-    );
+    final prefs = await SharedPreferences.getInstance();
+    final userId = await _apiClient.getUserId();
+    final cache = LocalCache(prefs, userId);
+    final cacheKey = 'crops_page_$page';
 
-    if (response.statusCode == 200) {
-      return PaginatedResponse<Crop>.fromData(
-        response.data,
-        (json) => Crop.fromJson(json),
+    try {
+      final response = await _apiClient.get(
+        AppConstants.cropsEndpoint,
+        queryParams: queryParams.isNotEmpty ? queryParams : null,
       );
-    } else {
-      throw Exception('Erreur lors du chargement des cultures (${response.statusCode})');
+
+      if (response.statusCode == 200) {
+        if (page == null || page == 1) {
+          await cache.write(cacheKey, response.data);
+        }
+        return PaginatedResponse<Crop>.fromData(
+          response.data,
+          (json) => Crop.fromJson(json),
+        );
+      } else {
+        throw Exception('Erreur lors du chargement des cultures (${response.statusCode})');
+      }
+    } on DioException catch (e) {
+      if (e.type == DioExceptionType.connectionTimeout || 
+          e.type == DioExceptionType.connectionError ||
+          e.type == DioExceptionType.receiveTimeout) {
+        if (page == null || page == 1) {
+          final cachedEntry = await cache.read(cacheKey);
+          if (cachedEntry != null) {
+            final paginated = PaginatedResponse<Crop>.fromData(
+              cachedEntry.data,
+              (json) => Crop.fromJson(json),
+            );
+            // On signale que ça vient du cache
+            return PaginatedResponse<Crop>(
+              count: paginated.count,
+              next: paginated.next,
+              previous: paginated.previous,
+              results: paginated.results,
+              isFromCache: true,
+              cachedAt: cachedEntry.cachedAt,
+            );
+          }
+        }
+      }
+      rethrow;
     }
   }
 
@@ -93,6 +130,8 @@ class CropsPaginationNotifier extends StateNotifier<PaginatedState<Crop>> {
         isLoading: false,
         currentPage: 1,
         hasMore: response.hasMore,
+        isFromCache: response.isFromCache,
+        cachedAt: response.cachedAt,
         clearError: true,
       );
     } catch (e) {

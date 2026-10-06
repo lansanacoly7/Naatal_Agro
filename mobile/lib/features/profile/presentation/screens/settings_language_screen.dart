@@ -46,7 +46,7 @@ class _SettingsLanguageScreenState extends State<SettingsLanguageScreen> {
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(color: isSelected ? AppColors.primary : Colors.transparent, width: 2),
-                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4))],
+                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 10, offset: const Offset(0, 4))],
               ),
               child: RadioListTile<String>(
                 title: Text(lang['name']!, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: isAvailable ? Colors.black87 : Colors.grey)),

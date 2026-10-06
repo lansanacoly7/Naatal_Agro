@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/notifications_sheet.dart';
 import '../../../auth/data/auth_provider.dart';
@@ -1234,9 +1233,9 @@ class _TrackedProductsWidgetState extends State<TrackedProductsWidget> {
         border: isAction ? null : Border.all(color: Colors.grey.shade200),
         borderRadius: BorderRadius.circular(16),
         boxShadow: isAction ? [
-          BoxShadow(color: AppColors.primary.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 4)),
+          BoxShadow(color: AppColors.primary.withValues(alpha: 0.3), blurRadius: 10, offset: const Offset(0, 4)),
         ] : [
-          BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 5, offset: const Offset(0, 2)),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 5, offset: const Offset(0, 2)),
         ],
       ),
       child: Row(
