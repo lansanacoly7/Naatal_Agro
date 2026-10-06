@@ -10,6 +10,8 @@ final profileRepositoryProvider = Provider<ProfileRepository>((ref) {
 
 final profileNotifierProvider = StateNotifierProvider<ProfileNotifier, AsyncValue<UserProfile>>((ref) {
   final repository = ref.watch(profileRepositoryProvider);
+  // Re-créer et recharger le profil dès que l'utilisateur se connecte ou se déconnecte
+  ref.watch(authStateProvider);
   return ProfileNotifier(repository);
 });
 

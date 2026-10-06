@@ -1,5 +1,5 @@
 class UserProfile {
-  final int id;
+  final dynamic id;
   final String phone;
   final String fullName;
   final String role;
@@ -25,13 +25,15 @@ class UserProfile {
 
   factory UserProfile.fromJson(Map<String, dynamic> json) {
     return UserProfile(
-      id: json['id'] as int? ?? 0,
-      phone: json['phone'] as String? ?? '',
-      fullName: json['full_name'] as String? ?? '',
+      id: json['id']?.toString() ?? '0',
+      phone: json['phone'] as String? ?? json['username'] as String? ?? '',
+      fullName: json['full_name'] as String? ?? json['first_name'] as String? ?? '',
       role: json['role'] as String? ?? 'farmer',
       language: json['language'] as String? ?? 'fr',
       location: json['location'] as String? ?? 'Sénégal',
-      cropsCount: json['crops_count'] as int? ?? 0,
+      cropsCount: (json['crops_count'] is int)
+          ? json['crops_count'] as int
+          : (int.tryParse(json['crops_count']?.toString() ?? '0') ?? 0),
       mainCrops: (json['main_crops'] as List<dynamic>?)
               ?.map((e) => e.toString())
               .toList() ??
@@ -39,7 +41,9 @@ class UserProfile {
       isVerified: json['is_verified'] as bool? ?? false,
       createdAt: json['created_at'] != null
           ? DateTime.tryParse(json['created_at'] as String)
-          : null,
+          : (json['date_joined'] != null
+              ? DateTime.tryParse(json['date_joined'] as String)
+              : null),
     );
   }
 
@@ -58,7 +62,7 @@ class UserProfile {
   }
 
   UserProfile copyWith({
-    int? id,
+    dynamic id,
     String? phone,
     String? fullName,
     String? role,

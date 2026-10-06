@@ -19,6 +19,17 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   bool _tomatoAlert = false;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final current = ref.read(profileNotifierProvider);
+      if (current.hasError) {
+        ref.read(profileNotifierProvider.notifier).loadProfile();
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final profileState = ref.watch(profileNotifierProvider);
 
