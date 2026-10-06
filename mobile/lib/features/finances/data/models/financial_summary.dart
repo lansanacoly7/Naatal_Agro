@@ -37,7 +37,8 @@ class TransactionItem {
     return TransactionItem(
       id: json['id'] ?? '',
       type: json['transaction_type'] ?? 'income',
-      amount: (json['amount'] as num?)?.toDouble() ?? 0.0,
+      // L'API renvoie les montants décimaux sous forme de texte ("5689.00")
+      amount: double.tryParse('${json['amount']}') ?? 0.0,
       date: json['date'] ?? '',
       description: json['description'] ?? '',
     );
