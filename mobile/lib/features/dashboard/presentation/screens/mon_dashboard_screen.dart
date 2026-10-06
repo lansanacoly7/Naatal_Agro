@@ -30,8 +30,9 @@ class _MonDashboardScreenState extends ConsumerState<MonDashboardScreen> {
       ),
       body: RefreshIndicator(
         onRefresh: () async {
-          // Simuler le rafraîchissement ou appeler une méthode du provider
-          await Future.delayed(const Duration(seconds: 1));
+          // TODO: Mettre à jour avec le vrai provider financier/stock quand il sera créé. 
+          // En attendant, on utilise un await vide au lieu d'un mock avec délai artificiel.
+          await Future.value();
         },
         color: AppColors.primary,
         child: SingleChildScrollView(
