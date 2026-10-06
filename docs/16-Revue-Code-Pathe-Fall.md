@@ -92,7 +92,7 @@ L'application plante immédiatement à la compilation sur ta branche.
 - **Ce qui ne va pas :**
   Ajout d'une fausse liste `aiInteractionProvider` avec des données inventées (`Prix du mil  Touba`).
 - **Ce qu'il faut faire :**
-  Supprimer cette liste fictive. L'historique IA est géré par l'endpoint Django `/ai/chat/` et la table `AIInteraction`.
+  Supprimer cette liste fictive. L'historique IA est fourni par l'endpoint Django `GET /api/ai/ask/` (20 derniers échanges, avec `origin` et `sources`) et la table `AIInteraction`.
 
 ---
 
@@ -107,8 +107,9 @@ L'application plante immédiatement à la compilation sur ta branche.
   _buildActionTile(Icons.delete_forever_rounded, 'Supprimer mon compte', ..., onTap: () {}),
   ```
 - **Ce qu'il faut faire :**
-  1. **Changer de mot de passe :** Ouvrir une boîte de dialogue ou une page demandant l'ancien mot de passe et le nouveau mot de passe, et appeler l'endpoint réel déjà créé par Claude : `POST /api/users/auth/change-password/`.
-  2. **Supprimer mon compte :** Afficher une boîte de dialogue de confirmation stricte et appeler l'endpoint de suppression conforme : `POST /api/privacy/account/delete/`.
+  1. **Changer de mot de passe :** Ouvrir une boîte de dialogue ou une page demandant l'ancien mot de passe et le nouveau mot de passe, et appeler l'endpoint réel : `POST /api/users/auth/password/change/` avec `{"old_password": "...", "new_password": "..."}`. Réponse `204` : **toutes les sessions sont fermées**, l'application doit donc déconnecter l'utilisateur et le renvoyer à l'écran de connexion. Erreurs `400` : mot de passe actuel incorrect ou nouveau mot de passe refusé (afficher les messages du champ `new_password`).
+  2. **Supprimer mon compte :** Afficher une boîte de dialogue de confirmation stricte qui redemande le mot de passe, et appeler `POST /api/privacy/delete-account/` avec `{"password": "..."}`. Réponse `204` : le compte et toutes ses données sont effacés ; purger le stockage local (jetons, cache, file hors ligne) puis revenir à l'écran de connexion. `400` : mot de passe incorrect.
+  3. Contrats complets : `docs/06-Backend-API.md` §5 et §12.1.
 
 #### B. Préférences de notifications (`mobile/lib/features/profile/presentation/screens/settings_notifications_screen.dart`)
 - **Ce qui ne va pas :**
@@ -131,6 +132,67 @@ L'application plante immédiatement à la compilation sur ta branche.
 - **Fichier :** `mobile/lib/features/dashboard/presentation/screens/mon_dashboard_screen.dart`
 - **Problème :** Tu as retiré le widget `RefreshIndicator` qui permet à l'utilisateur de tirer l'écran vers le bas pour rafraîchir ses données financières et de stock.
 - **Correction :** Ré-englober le `SingleChildScrollView` dans un `RefreshIndicator(onRefresh: ..., child: ...)`.
+
+---
+
+### 🔵 Tâche n°5 (nouvelle) : Lecture hors ligne — cache local des listes principales
+
+**À faire seulement après les correctifs n°1 à n°4** (l'application doit compiler et `flutter test` doit être vert).
+
+**Pourquoi.** Aujourd'hui, les **actions** faites sans réseau sont conservées et rejouées au retour de la connexion (`mobile/lib/core/network/sync_service.dart`, testé). Mais la **consultation** ne l'est pas : sans réseau, une liste affiche seulement une erreur, même si l'utilisateur l'a chargée il y a cinq minutes. Pour un producteur en zone à faible couverture, c'est le premier frein à l'usage.
+
+**Objectif.** Sans réseau, l'utilisateur consulte les dernières données déjà chargées, avec la mention claire qu'elles datent d'un moment précis.
+
+**Périmètre minimal (à mettre en cache) :**
+
+| Donnée | Endpoint | Point de départ dans le code |
+|---|---|---|
+| Cultures de l'utilisateur | `GET /api/agriculture/crops/` | `AgricultureRepository.getCropsPaginated` (`agriculture_provider.dart`) |
+| Prix et produits du marché | `GET /api/markets/prices/`, `GET /api/markets/products/` | `markets_provider.dart` |
+| Fiches agronomiques | `GET /api/agriculture/guides/` | à brancher avec le remplacement de `mock_product_database.dart` |
+| Tableau de bord | `GET /api/dashboard/` | `dashboard_provider.dart` |
+
+**À NE PAS mettre en cache :** jetons, mot de passe, données financières, échanges avec l'assistant IA, notifications. Aucune donnée d'un autre utilisateur ne doit jamais être visible.
+
+**Conception attendue :**
+
+1. **Stratégie « réseau d'abord, cache en secours ».** Si la requête réussit : afficher et **enregistrer** le résultat avec sa date. Si elle échoue pour cause réseau (`DioExceptionType.connectionError`, `connectionTimeout`, `receiveTimeout`) : lire le cache. S'il n'y a pas de cache : état d'erreur avec le bouton « Réessayer » existant. Une erreur serveur (4xx, 5xx) n'est **pas** remplacée par le cache.
+2. **Un composant réutilisable** dans `mobile/lib/core/cache/` (par exemple `LocalCache`) : écrire, lire (avec la date d'enregistrement) et supprimer du JSON, avec une **clé propre à chaque utilisateur** (identifiant de l'utilisateur dans la clé). Utiliser `shared_preferences`, déjà présent dans le projet : aucune nouvelle dépendance sans justification écrite.
+3. **Affichage.** Les états de liste portent `isFromCache` et `cachedAt`. Quand les données viennent du cache, un bandeau discret indique « Données enregistrées le 05/10 à 14:30 (hors connexion) ». Réutiliser l'indicateur hors ligne global déjà présent, ne pas en créer un second.
+4. **Pagination.** Mettre en cache la **première page** (`page=1`). Hors ligne, « charger plus » n'est pas proposé.
+5. **Déconnexion et suppression de compte.** Le cache de l'utilisateur est **purgé** (sinon l'utilisateur suivant sur le même téléphone verrait les données du précédent). Le point d'appel est `AuthRepository.logout()`.
+6. **Durée de vie.** Au-delà de 7 jours, le cache n'est plus affiché (donnée trop ancienne pour être fiable) : état d'erreur normal.
+
+**Tests exigés** (dans `mobile/test/`, sur le modèle de `sync_service_test.dart` qui utilise un faux serveur via `httpClientAdapter`) :
+
+- écriture puis lecture du cache, avec la date ;
+- deux utilisateurs différents : aucune fuite de l'un vers l'autre ;
+- purge à la déconnexion ;
+- cache expiré au-delà de 7 jours ;
+- panne réseau avec cache : la liste est servie depuis le cache et `isFromCache` vaut vrai ;
+- panne réseau sans cache : erreur ;
+- erreur 500 avec cache présent : l'erreur est affichée, le cache n'est pas utilisé ;
+- réseau rétabli : les données fraîches remplacent le cache.
+
+**Critères d'acceptation (tous obligatoires) :**
+
+1. `flutter analyze lib` : « No issues found ! » et `flutter test` : 100 % de réussite (coller les sorties).
+2. Démonstration sur émulateur : charger les cultures avec le serveur allumé, **couper le réseau** (mode avion), rouvrir l'écran : les cultures s'affichent avec le bandeau de date. Puis se déconnecter : le cache a disparu.
+3. Aucune donnée simulée ni valeur en dur (`Future.delayed`, listes inventées).
+4. Un commit par sujet (composant de cache, branchement des cultures, branchement des prix, etc.), fichiers ajoutés un par un.
+
+**Si le temps manque.** Ne livrer que les **cultures** (le cas le plus parlant), proprement et testé, plutôt que les quatre à moitié. Le reste sera présenté comme « prévu » dans le rapport (`docs/18-Preparation-Soutenance.md`).
+
+---
+
+### ⚪ À ne PAS modifier : écrans volontairement simulés
+
+Deux écrans sont **conservés tels quels volontairement**, en attendant l'implémentation de la vérification par SMS :
+
+- Connexion : « Mot de passe oublié ? » (affiche « Instructions SMS envoyées » sans appeler le serveur).
+- Inscription : l'étape « Vérification » par code OTP (aucun code n'est envoyé ni contrôlé).
+
+Ne pas les supprimer, ne pas les « réparer » en inventant un faux appel : l'intégration réelle (fournisseur de SMS) fera l'objet d'une tâche dédiée. En démonstration, les présenter comme **simulés** tant que ce n'est pas branché.
 
 ---
 
