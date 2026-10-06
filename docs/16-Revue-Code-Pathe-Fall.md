@@ -4,7 +4,7 @@
 **Auteur :** Antigravity (Pair-programming / Tech Lead Naatal Agro)  
 **Date :** 5 Octobre 2026  
 **Branche auditée :** `origin/pathe_fall` (Commits `2fd1e78` et `33d1073`)  
-**Statut actuel :** ❌ **Refusé en l'état (Non compilable & Mocks interdits)** — Acceptable après application des correctifs ci-dessous.
+**Statut actuel (6 octobre) :** ✅ **Livraison n°1 fusionnée dans `test`** (compile, 34 tests Flutter et 191 tests backend verts, `flutter analyze` sans problème). Les correctifs n°1 à n°4 et la tâche n°5 (cache hors ligne) sont faits. **Reste à faire : la section 6 de ce fichier** (corrections trouvées à la relecture + nouvelles tâches).
 
 ---
 
@@ -228,3 +228,81 @@ git push origin pathe_fall
 ```
 
 Dès que ces étapes sont respectées et que `flutter test` est vert, ton travail sera immédiatement validé et intégré dans la branche principale !
+
+
+---
+
+## 6. Relecture de ta livraison du 6 octobre : corrections et nouvelles tâches
+
+**Merci Pathé : ta livraison est fusionnée.** Elle compile, `flutter analyze` ne signale rien et les 34 tests Flutter passent. Ton cache hors ligne (`LocalCache`) respecte la spécification : une clé par utilisateur, expiration à 7 jours, purge à la déconnexion, bandeau de date, et 242 lignes de tests. C'est du bon travail.
+
+À la relecture du code fusionné, j'ai trouvé des points à corriger. Certains viennent d'une **erreur de ce fichier** : la première version citait de mauvais chemins d'API, que j'ai corrigés depuis (§3, correctif n°3). Tu avais déjà codé avec les anciens chemins, ce n'est pas ta faute.
+
+Récupère d'abord `test` : `git fetch origin` puis `git merge origin/test` dans ta branche, avant de commencer.
+
+### 🔴 A. Corrections de ta livraison (prioritaires, petites)
+
+| N° | Où | Problème constaté | Correction attendue |
+|---|---|---|---|
+| A1 | `settings_security_screen.dart`, changement de mot de passe | Appelle `/users/auth/change-password/`, qui **n'existe pas** (erreur 404). Le mot de passe n'est donc jamais changé. | Appeler `POST /users/auth/password/change/` avec `{"old_password", "new_password"}`. Réponse `204` : toutes les sessions sont fermées, donc **déconnecter l'utilisateur** et le renvoyer à la connexion. `400` : afficher les messages du champ `new_password` ou `old_password`. |
+| A2 | même fichier, suppression de compte | Appelle `/privacy/account/delete/`, qui **n'existe pas**, et n'envoie pas le mot de passe. | Demander le mot de passe dans la boîte de dialogue et appeler `POST /privacy/delete-account/` avec `{"password": "..."}`. `204` : purger le stockage local (jetons, cache, file hors ligne) puis revenir à la connexion. `400` : « Mot de passe incorrect ». |
+| A3 | même fichier | Textes **inventés** : « Dernière modification : il y a 3 mois » et « 1 appareil actif ». La tuile « Appareils connectés » est un bouton mort (`onTap: () {}`). | Supprimer ce faux sous-titre (le serveur ne fournit pas la date) et retirer la tuile « Appareils connectés ». |
+| A4 | mêmes dialogues | Les erreurs s'affichent brutes : `Erreur: DioException [...]`. | Afficher un message clair en français : réseau (« Connexion faible. Réessayez. »), mot de passe incorrect, erreur serveur. Ne jamais afficher une exception brute. |
+| A5 | `mobile/android/app/src/main/AndroidManifest.xml` | `usesCleartextTraffic="true"` est dans le manifeste **principal** : une application publiée accepterait le trafic non chiffré. | Garder cette option **uniquement** en développement : la déplacer dans `mobile/android/app/src/debug/AndroidManifest.xml`. |
+
+Pour A1 et A2, ajoute un test (faux serveur avec `httpClientAdapter`, comme dans `test/auth_refresh_test.dart`) qui vérifie le **chemin appelé** et le comportement sur 204 et 400.
+
+### 🔵 B. Nouvelles tâches (par ordre de priorité pour la soutenance)
+
+#### Tâche n°7 — Écrans des fiches agronomiques (la plus importante pour la démo)
+
+**Pourquoi.** Le serveur fournit déjà 19 fiches de cultures sourcées (`GET /api/agriculture/guides/`, voir `docs/06-Backend-API.md` §7.3). L'application ne les affiche nulle part. C'est ce que le jury voudra voir : « comment semer le niébé ? » avec sa source.
+
+**À faire :**
+
+1. Un écran **liste** des fiches : catégorie (légume, céréale, légumineuse, fruit) en filtre, champ de recherche (`?search=`), une carte par fiche (nom, catégorie, cycle si connu).
+2. Un écran **détail** (`GET /api/agriculture/guides/<slug>/`) avec les rubriques dans cet ordre : présentation, zones, calendrier, sol et semis, eau, fertilisation, maladies et ravageurs, récolte, rendement. **Une rubrique vide n'est pas affichée** (vide signifie « non documenté », jamais une valeur inventée).
+3. En bas, **toujours** : la section « Sources » (titre, éditeur, année, lien) et le texte de `limitations` bien visible. Si une source a `scope` différent de `senegal`, afficher « Référence hors Sénégal, à adapter ».
+4. Les repères `[1]`, `[2]` dans les textes renvoient à la liste des sources : les laisser visibles.
+5. **Hors ligne** : réutiliser ton `LocalCache` pour mettre en cache la liste et chaque fiche consultée, avec ton bandeau de date.
+6. Aucune donnée en dur : tout vient de l'API. Les deux écrans produit qui utilisent `mock_product_database.dart` peuvent pointer vers la fiche correspondante (par `slug`) quand elle existe.
+
+**Tests exigés :** lecture du modèle (champs vides, `sources`, `scope`), liste filtrée, détail sans rubrique vide, cache hors ligne (réseau coupé : la fiche s'affiche avec le bandeau).
+
+#### Tâche n°8 — Assistant IA : afficher d'où vient la réponse
+
+**Pourquoi.** Chaque réponse de `POST /api/ai/ask/` contient maintenant `origin` (`database` = depuis nos fiches ; `general` = conseil général sans source) et `sources`. L'écran de chat les ignore.
+
+**À faire :** sous chaque réponse de l'assistant, un badge « Fiches Naatal Agro » (`database`) ou « Conseil général, non sourcé » (`general`) ; si `sources` n'est pas vide, une liste repliable (titre, éditeur, année). L'historique (`GET /api/ai/ask/`) doit afficher les mêmes badges. Le texte `response` contient déjà le pied « Sources : » : ne pas l'afficher deux fois (ou masquer ce pied dans le texte et utiliser la liste).
+
+**Tests exigés :** modèle d'interaction avec et sans `sources`, affichage du badge selon `origin`.
+
+#### Tâche n°6 — « Mon Dashboard » : retirer les valeurs inventées
+
+**Pourquoi.** `mon_dashboard_screen.dart` affiche des valeurs écrites à la main : « 2 450 000 FCFA », « +12 % par rapport au mois dernier », des stocks (« Oignon Local 2,5 tonnes »), des conseils de l'IA et des « tendances » écrits en dur. Un utilisateur réel verrait les chiffres d'un autre.
+
+**À faire :**
+- Chiffre d'affaires, revenus et dépenses : `GET /api/finances/summary/` (fournisseur `finances_provider.dart` déjà présent).
+- Stock : `GET /api/inventory/` (fournisseur `inventory_provider.dart` déjà présent).
+- « Naatal IA » et « Tendances & Investissements » : aucune API ne fournit ces textes. **Supprimer** ces deux sections (ou les remplacer par un bouton vers l'assistant). Aucun texte de conseil écrit en dur.
+- Quand il n'y a pas de données : un état vide clair (« Aucune vente enregistrée »), jamais des zéros inventés ni des exemples.
+- Le `RefreshIndicator` doit relancer réellement les requêtes (`ref.invalidate(...)`).
+
+**Tests exigés :** écran avec données (faux fournisseurs), état vide, erreur réseau avec bouton « Réessayer ».
+
+#### Tâche n°9 — Consentement et export des données
+
+**À faire :**
+1. **Inscription** : une case à cocher « J'accepte la politique de confidentialité » avec un lien qui affiche le texte (`GET /api/privacy/policy/`, champs `version` et `content`). Envoyer `"privacy_accepted": true` dans la requête d'inscription. Inscription impossible sans la case cochée.
+2. **Réglages, « Sécurité & Confidentialité »** : une ligne « Télécharger mes données » qui appelle `GET /api/privacy/export/` et propose d'enregistrer ou partager le fichier JSON.
+
+Dès que la case de consentement est livrée, le serveur passera `PRIVACY_CONSENT_REQUIRED` à `True` (c'est Claude qui le fait, ne pas toucher au backend).
+
+**Tests exigés :** l'inscription envoie `privacy_accepted`, le bouton d'inscription est désactivé sans consentement.
+
+### ⚪ Rappels
+
+- Laisser **tels quels** les deux écrans SMS simulés (« Mot de passe oublié » et code OTP) : c'est volontaire (voir plus haut).
+- Ne pas toucher au dossier `web/` ni lancer de build web : le mobile uniquement.
+- Un commit par sujet, fichiers ajoutés un par un (jamais `git add .`), `flutter analyze` sans problème et `flutter test` à 100 % avant chaque `git push origin pathe_fall`.
+- Ordre conseillé : **A1 à A5, puis n°7, n°8, n°6, n°9**. Si le temps manque, mieux vaut n°7 et n°8 bien faits que quatre tâches à moitié.
