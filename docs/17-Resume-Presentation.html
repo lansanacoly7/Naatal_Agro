@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Naatal Agro – Résumé pour la présentation</title>
+<style>
+  :root{
+    --bg:#f6f8f3; --card:#ffffff; --text:#1f2a1f; --muted:#5b6b5b;
+    --green:#2e7d32; --green-soft:#e3f1e3; --accent:#f2a900; --accent-soft:#fff4d6;
+    --red-soft:#fde8e6; --red:#b3261e; --line:#dfe6da; --head:#2e7d32; --head-text:#ffffff;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#121712; --card:#1b231b; --text:#e8efe6; --muted:#a3b2a1;
+      --green:#7fd286; --green-soft:#1f3322; --accent:#ffc83d; --accent-soft:#3a3010;
+      --red-soft:#3a1f1c; --red:#ff8a80; --line:#2c382c; --head:#1f3322; --head-text:#e8efe6;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#121712; --card:#1b231b; --text:#e8efe6; --muted:#a3b2a1;
+    --green:#7fd286; --green-soft:#1f3322; --accent:#ffc83d; --accent-soft:#3a3010;
+    --red-soft:#3a1f1c; --red:#ff8a80; --line:#2c382c; --head:#1f3322; --head-text:#e8efe6;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);
+    font:17px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+  header{background:var(--head);color:var(--head-text);padding:36px 16px 30px;text-align:center;position:relative}
+  #theme-toggle{position:absolute;top:12px;right:12px;background:transparent;color:inherit;
+    border:1px solid currentColor;border-radius:999px;padding:6px 14px;font:inherit;font-size:.9rem;cursor:pointer}
+  #theme-toggle:hover{background:rgba(255,255,255,.15)}
+  #theme-toggle:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  header h1{margin:0 0 6px;font-size:2rem}
+  header p{margin:4px auto;max-width:640px;opacity:.95}
+  .team{margin-top:14px;font-size:.95rem;opacity:.9}
+  main{max-width:860px;margin:0 auto;padding:20px 16px 60px}
+  nav{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 20px}
+  nav a{background:var(--card);border:1px solid var(--line);color:var(--text);
+    padding:6px 12px;border-radius:999px;text-decoration:none;font-size:.9rem}
+  nav a:hover{border-color:var(--green)}
+  section{background:var(--card);border:1px solid var(--line);border-radius:14px;
+    padding:20px 22px;margin:16px 0}
+  h2{margin:0 0 10px;font-size:1.3rem;color:var(--green)}
+  h3{margin:14px 0 4px;font-size:1.05rem}
+  p{margin:8px 0}
+  ul{margin:8px 0;padding-left:22px}
+  li{margin:4px 0}
+  .big{font-size:1.1rem;background:var(--green-soft);border-radius:10px;padding:12px 14px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin-top:10px}
+  .box{background:var(--green-soft);border-radius:10px;padding:12px 14px}
+  .box b{display:block;margin-bottom:2px}
+  .flow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:12px 0}
+  .flow span{background:var(--accent-soft);border:1px solid var(--accent);border-radius:10px;padding:6px 12px;font-size:.95rem}
+  .flow i{font-style:normal;color:var(--muted)}
+  .warn{background:var(--red-soft);border-left:4px solid var(--red);border-radius:8px;padding:12px 14px}
+  details{border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin:8px 0;background:var(--bg)}
+  summary{cursor:pointer;font-weight:600}
+  details p{margin:8px 0 2px}
+  table{width:100%;border-collapse:collapse;margin-top:8px;font-size:.95rem}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--muted);font-weight:600}
+  footer{text-align:center;color:var(--muted);font-size:.85rem;padding:10px 16px 30px}
+  @media print{
+    body{background:#fff;color:#000;font-size:14px}
+    nav,#theme-toggle{display:none} section{break-inside:avoid;border-color:#ccc}
+    header{background:#fff;color:#000;border-bottom:2px solid #000}
+    details{display:block} details>*{display:block}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <button id="theme-toggle" type="button" aria-label="Changer de thème"></button>
+  <h1>🌾 Naatal Agro</h1>
+  <p>Une application qui aide les agriculteurs du Sénégal à mieux décider : quand semer, quand vendre, comment soigner leurs cultures.</p>
+  <div class="team">Lansana Coly · Pathe Fall · El hadji Ibrahima Kâ · El hadji Sanor Mangane</div>
+</header>
+
+<main>
+<nav>
+  <a href="#idee">L'idée</a>
+  <a href="#fait">Ce que ça fait</a>
+  <a href="#marche">Comment ça marche</a>
+  <a href="#ia">L'intelligence artificielle</a>
+  <a href="#secu">Sécurité</a>
+  <a href="#etat">Où on en est</a>
+  <a href="#questions">Questions du prof</a>
+</nav>
+
+<section id="idee">
+  <h2>1. L'idée en une phrase</h2>
+  <p class="big">Naatal Agro est un <b>copilote de poche pour l'agriculteur</b> : sur son téléphone, il voit la météo de son champ, les prix des marchés, le suivi de ses cultures, et il peut poser des questions à un assistant intelligent.</p>
+
+  <h3>Quel problème on règle ?</h3>
+  <ul>
+    <li><b>Il manque d'informations au même endroit</b> : météo d'un côté, prix de l'autre.</li>
+    <li><b>On décide surtout « à l'habitude »</b>, sans outil pour savoir si c'est le bon moment.</li>
+    <li><b>On perd de l'argent sans le voir</b> : vendre trop tôt, au mauvais marché, au mauvais prix.</li>
+    <li><b>Les outils existants sont trop compliqués</b> ou pas adaptés à la réalité locale.</li>
+  </ul>
+  <p>Notre réponse : <b>un seul écran simple, en français, pensé pour le Sénégal</b>, qui accompagne l'agriculteur « du semis jusqu'à la vente ».</p>
+</section>
+
+<section id="fait">
+  <h2>2. Ce que l'application permet de faire</h2>
+  <div class="grid">
+    <div class="box"><b>🔐 Se connecter</b>Avec son numéro de téléphone sénégalais (+221) et un mot de passe.</div>
+    <div class="box"><b>🏠 Tableau de bord</b>Une page d'accueil avec l'essentiel : cultures, météo, prix.</div>
+    <div class="box"><b>🌱 Suivre ses cultures</b>Ce qui est planté, à quel stade (semis, croissance, récolte), les problèmes de maladies.</div>
+    <div class="box"><b>💰 Voir les prix des marchés</b>Comparer les prix entre marchés (Castors, Tilène, Kaolack, Touba, Saint-Louis…).</div>
+    <div class="box"><b>⛅ Météo</b>Prévisions et alertes pour la zone de l'agriculteur.</div>
+    <div class="box"><b>🗺️ Carte</b>Voir les marchés sur une carte.</div>
+    <div class="box"><b>🤖 Assistant intelligent</b>Poser une question, ou envoyer une photo d'une plante malade.</div>
+    <div class="box"><b>📦 Stock et finances</b>Noter ce qu'on a en stock, ses ventes, ses dépenses, et voir son solde.</div>
+    <div class="box"><b>🔔 Notifications</b>Recevoir des alertes sur le téléphone.</div>
+  </div>
+</section>
+
+<section id="marche">
+  <h2>3. Comment ça marche (sans jargon)</h2>
+  <p>Pense à un restaurant :</p>
+  <div class="flow">
+    <span>📱 Le téléphone = la salle et le menu</span><i>→</i>
+    <span>⚙️ Le serveur = la cuisine</span><i>→</i>
+    <span>🗄️ La base de données = le garde-manger</span>
+  </div>
+  <table>
+    <tr><th>Morceau</th><th>Son rôle</th><th>Outil utilisé</th></tr>
+    <tr><td>📱 <b>L'application mobile</b></td><td>Ce que l'agriculteur voit et touche.</td><td>Flutter</td></tr>
+    <tr><td>⚙️ <b>Le serveur</b></td><td>Il reçoit les demandes, vérifie qui est qui, applique les règles, répond.</td><td>Django (Python)</td></tr>
+    <tr><td>🗄️ <b>La base de données</b></td><td>Là où tout est rangé : comptes, cultures, prix, historique.</td><td>SQLite pendant le développement, PostgreSQL à la mise en ligne</td></tr>
+    <tr><td>🤖 <b>Les assistants IA</b></td><td>Réfléchissent à la question posée.</td><td>Gemini et Groq</td></tr>
+    <tr><td>🔔 <b>Les alertes</b></td><td>Envoient les messages sur le téléphone.</td><td>Firebase</td></tr>
+    <tr><td>💻 <b>Le site web</b></td><td>Version à venir pour ordinateur (pour l'instant très simple).</td><td>React</td></tr>
+  </table>
+  <p><b>Exemple :</b> l'agriculteur ouvre l'app → elle demande les prix au serveur → le serveur va les chercher dans la base de données → il les renvoie → l'écran s'affiche.</p>
+  <p><b>Important :</b> chaque partie est rangée dans son propre « tiroir » (cultures, marchés, météo, IA…). Si on modifie l'une, on ne casse pas les autres. C'est ce qu'on appelle une application <i>modulaire</i>.</p>
+</section>
+
+<section id="ia">
+  <h2>4. L'assistant intelligent : pourquoi on peut lui faire confiance</h2>
+  <p>Une IA peut se tromper et inventer. Nous avons donc mis des garde-fous :</p>
+  <ol>
+    <li><b>Il répond d'abord avec nos fiches techniques</b> sur les cultures (oignon, tomate, arachide, mil, riz), écrites à partir de sources sérieuses : ministère de l'agriculture, ISRA, FAO, etc.</li>
+    <li><b>Il cite ses sources</b> dans la réponse.</li>
+    <li><b>Si l'information n'existe pas dans nos fiches, il le dit</b> au lieu d'inventer.</li>
+    <li><b>Une nouvelle information n'entre dans la base que si elle vient d'un site officiel</b> et après validation.</li>
+    <li><b>Limite d'utilisation</b> : 30 questions par heure et par personne, pour éviter les abus et les coûts.</li>
+    <li><b>Les clés secrètes des IA restent sur le serveur</b>, jamais dans le téléphone.</li>
+  </ol>
+  <p>Avec une photo, l'assistant peut aussi aider à reconnaître une maladie de plante.</p>
+</section>
+
+<section id="secu">
+  <h2>5. La sécurité, en simple</h2>
+  <ul>
+    <li><b>Les mots de passe ne sont jamais stockés en clair</b> : ils sont transformés pour être illisibles.</li>
+    <li><b>La connexion donne un « badge » temporaire</b> (il expire, on peut l'annuler à la déconnexion). Il est rangé dans le coffre sécurisé du téléphone.</li>
+    <li><b>Chacun ne voit que ses propres données</b> : un agriculteur ne peut pas lire les cultures, le stock ou les finances d'un autre.</li>
+    <li><b>Limites anti-piratage</b> : trop d'essais de connexion en peu de temps = bloqué quelques instants.</li>
+    <li><b>Protection des données personnelles</b> : on demande le consentement à l'inscription, l'utilisateur peut <b>télécharger ses données</b> et <b>supprimer son compte</b>.</li>
+    <li><b>Mode hors ligne</b> : si le réseau est mauvais, l'application affiche « hors ligne » et garde ce qui a déjà été chargé.</li>
+  </ul>
+</section>
+
+<section id="etat">
+  <h2>6. Où on en est, honnêtement</h2>
+  <p>Mieux vaut le dire nous-mêmes que de se faire surprendre par le prof.</p>
+  <h3>✅ Ce qui est solide</h3>
+  <ul>
+    <li>Le serveur fonctionne et est <b>testé : 175 tests automatiques passent</b> (ils vérifient que tout marche comme prévu).</li>
+    <li>L'application mobile passe le contrôle de qualité du code sans aucune erreur.</li>
+    <li>Connexion, déconnexion, profil, cultures, marchés, météo, stock, finances, IA, notifications côté serveur : en place.</li>
+    <li>Une chaîne automatique (CI) relance les tests à chaque modification.</li>
+  </ul>
+  <div class="warn">
+    <h3 style="margin-top:0">⚠️ Ce qui n'est pas encore fini</h3>
+    <ul>
+      <li><b>Certains écrans affichent des données d'exemple</b> (fiche produit, comparaison de marchés, calendrier des cultures) et pas encore les vraies données du serveur.</li>
+      <li><b>La vérification du code reçu par SMS est simulée</b> à l'inscription : l'écran existe mais ne vérifie pas vraiment.</li>
+      <li><b>Le site web</b> est seulement une démonstration.</li>
+      <li><b>Les notifications sur téléphone</b> : le serveur est prêt, mais l'application ne les reçoit pas encore.</li>
+      <li><b>Pas encore en ligne</b> : il manque la connexion sécurisée (https) et la surveillance du serveur avant un vrai lancement.</li>
+    </ul>
+  </div>
+  <p>C'est normal pour un projet de fin de formation : <b>le cœur fonctionne, la finition et la mise en ligne restent à faire.</b></p>
+</section>
+
+<section id="questions">
+  <h2>7. Questions que le prof peut poser</h2>
+
+  <details><summary>Pourquoi ce projet ? À qui ça sert ?</summary>
+    <p>Aux agriculteurs du Sénégal qui n'ont pas d'outil simple pour décider. Au lieu de jongler entre plusieurs sources, ils ont tout dans une seule application.</p></details>
+
+  <details><summary>En quoi c'est différent d'une simple application météo ?</summary>
+    <p>On ne donne pas juste la météo : on relie la météo, les cultures, les prix et un assistant, pour aider à décider (quand vendre, quoi faire cette semaine).</p></details>
+
+  <details><summary>Pourquoi ces technologies (Flutter, Django…) ?</summary>
+    <p>Flutter : un seul code pour Android et iPhone. Django : solide, sécurisé, rapide à développer. Gemini et Groq : deux IA qui se relaient si l'une est en panne.</p></details>
+
+  <details><summary>Que se passe-t-il si l'IA se trompe ?</summary>
+    <p>Elle répond d'abord avec nos fiches sourcées, cite ses sources et admet quand elle ne sait pas. Une information nouvelle n'est acceptée que depuis un site officiel, après validation.</p></details>
+
+  <details><summary>Et s'il n'y a pas d'internet ?</summary>
+    <p>L'application le signale et garde les données déjà chargées. Elle se resynchronise dès que le réseau revient. C'est important au Sénégal en zone rurale.</p></details>
+
+  <details><summary>Comment protégez-vous les données ?</summary>
+    <p>Mots de passe illisibles, badge de connexion temporaire rangé dans le coffre du téléphone, chacun ne voit que ses données, limites anti-piratage, consentement, export et suppression du compte.</p></details>
+
+  <details><summary>Comment savez-vous que ça marche ?</summary>
+    <p>175 tests automatiques côté serveur, des tests côté application, et une vérification automatique à chaque modification du code.</p></details>
+
+  <details><summary>Qu'est-ce qui reste à faire ?</summary>
+    <p>Brancher les écrans qui affichent encore des exemples sur les vraies données, vérifier réellement le code SMS, recevoir les notifications, finir le site web, puis la mise en ligne sécurisée.</p></details>
+
+  <details><summary>Comment vous êtes-vous organisés à quatre ?</summary>
+    <p>Chacun a travaillé sur sa branche dans Git (outil qui garde l'historique et évite d'écraser le travail des autres). Les modifications sont relues avant d'être fusionnées. Tout le monde doit pouvoir expliquer l'ensemble du projet.</p></details>
+</section>
+
+<section>
+  <h2>8. À retenir avant demain</h2>
+  <ul>
+    <li>Naatal Agro = <b>un copilote agricole sur téléphone</b> : météo + marchés + cultures + assistant.</li>
+    <li>Trois blocs : <b>téléphone</b> (ce qu'on voit), <b>serveur</b> (le cerveau), <b>base de données</b> (la mémoire).</li>
+    <li>L'IA est <b>encadrée</b> : sources citées, pas d'invention, limites d'usage.</li>
+    <li>Les données de chacun sont <b>privées et protégées</b>.</li>
+    <li>On est <b>honnêtes sur ce qui reste à finir</b>.</li>
+  </ul>
+</section>
+</main>
+
+<footer>Naatal Agro · Projet de fin de formation · ISEP</footer>
+<script>
+(function(){
+  var root=document.documentElement, btn=document.getElementById('theme-toggle');
+  var mq=window.matchMedia('(prefers-color-scheme: dark)');
+  function current(){return root.getAttribute('data-theme')||(mq.matches?'dark':'light');}
+  function paint(){btn.textContent=current()==='dark'?'☀️ Mode clair':'🌙 Mode sombre';}
+  try{var saved=localStorage.getItem('naatal-theme');if(saved==='dark'||saved==='light')root.setAttribute('data-theme',saved);}catch(e){}
+  btn.addEventListener('click',function(){
+    var next=current()==='dark'?'light':'dark';
+    root.setAttribute('data-theme',next);
+    try{localStorage.setItem('naatal-theme',next);}catch(e){}
+    paint();
+  });
+  paint();
+})();
+</script>
+</body>
+</html>
