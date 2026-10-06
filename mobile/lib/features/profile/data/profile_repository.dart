@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/constants/app_constants.dart';
@@ -9,45 +10,42 @@ class ProfileRepository {
 
   ProfileRepository(this._apiClient);
 
-  static const String _profileCacheKey = 'cached_user_profile';
+  /// Préfixe du cache de profil : une entrée par utilisateur (jamais partagée entre comptes).
+  static const String profileCachePrefix = 'cached_user_profile_';
+
+  Future<String> _cacheKey() async => '$profileCachePrefix${await _apiClient.getUserId()}';
 
   /// Récupère le profil réel de l'utilisateur connecté via /api/users/me/
+  ///
+  /// Le cache local ne sert qu'en cas de coupure réseau ou d'erreur serveur (5xx), et uniquement
+  /// pour le compte actuellement connecté. Une réponse du serveur « refusé » (401, 403, 404…)
+  /// n'est jamais remplacée par le profil d'un autre compte.
   Future<UserProfile> getProfile() async {
+    final cacheKey = await _cacheKey();
     try {
       final response = await _apiClient.get(AppConstants.profileEndpoint);
       if (response.statusCode == 200 && response.data != null) {
         final profile = UserProfile.fromJson(response.data as Map<String, dynamic>);
-        // Sauvegarde locale pour usage hors-ligne
-        try {
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setString(_profileCacheKey, jsonEncode(profile.toJson()));
-        } catch (_) {}
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(cacheKey, jsonEncode(profile.toJson()));
         return profile;
       }
-    } catch (e) {
-      // En cas de coupure réseau ou erreur, utiliser le cache local si disponible
-      try {
-        final prefs = await SharedPreferences.getInstance();
-        final cached = prefs.getString(_profileCacheKey);
-        if (cached != null) {
-          final data = jsonDecode(cached) as Map<String, dynamic>;
-          return UserProfile.fromJson(data);
-        }
-      } catch (_) {}
+      throw Exception('Impossible de charger le profil utilisateur.');
+    } on DioException catch (e) {
+      final status = e.response?.statusCode;
+      final serverRefused = status != null && status < 500;
+      if (serverRefused) rethrow;
+      final cached = await _readCached(cacheKey);
+      if (cached != null) return cached;
       rethrow;
     }
+  }
 
-    // Si le serveur a répondu un code != 200, tenter aussi le cache
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final cached = prefs.getString(_profileCacheKey);
-      if (cached != null) {
-        final data = jsonDecode(cached) as Map<String, dynamic>;
-        return UserProfile.fromJson(data);
-      }
-    } catch (_) {}
-
-    throw Exception('Impossible de charger le profil utilisateur.');
+  Future<UserProfile?> _readCached(String cacheKey) async {
+    final prefs = await SharedPreferences.getInstance();
+    final cached = prefs.getString(cacheKey);
+    if (cached == null) return null;
+    return UserProfile.fromJson(jsonDecode(cached) as Map<String, dynamic>);
   }
 
   /// Met à jour le profil de l'utilisateur (nom, localisation, langue)

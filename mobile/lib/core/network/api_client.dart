@@ -208,6 +208,10 @@ class ApiClient {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('user_role');
     await prefs.remove('user_location');
+    // Profils mis en cache : aucun ne doit survivre à la session (y compris l'ancienne clé unique)
+    for (final key in prefs.getKeys().where((k) => k.startsWith('cached_user_profile')).toList()) {
+      await prefs.remove(key);
+    }
   }
 
   /// Vérifier si l'utilisateur possède un jeton d'accès sécurisé
