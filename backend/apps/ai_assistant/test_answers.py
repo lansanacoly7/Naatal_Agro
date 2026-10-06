@@ -46,19 +46,19 @@ class AnswerQuestionTests(TestCase):
 
     def test_missing_information_is_stated_after_a_cited_answer(self):
         with patch(LLM, return_value='Le riz Sahel 108 a un cycle court [1].'):
-            result = answer_question('Cycle et besoins en eau du riz ?')
+            result = answer_question('Cycle et maladies du riz ?')
         self.assertIn('Information non disponible dans nos fiches vérifiées', result['answer'])
 
     def test_nothing_known_about_the_topic_says_so_instead_of_guessing(self):
         with patch(LLM, return_value=None):
-            result = answer_question('Quels sont les besoins en eau du riz ?')
+            result = answer_question('Quelles maladies attaquent le riz ?')
         self.assertEqual(result['origin'], 'general')
         self.assertIn('Information non disponible dans nos fiches vérifiées', result['answer'])
         self.assertEqual(result['sources'], [])
 
     def test_unknown_crop_gets_a_flagged_general_answer(self):
-        with patch(LLM, return_value='Le manioc aime les sols légers.'):
-            result = answer_question('Comment cultiver le manioc ?')
+        with patch(LLM, return_value='Le fonio aime les sols légers.'):
+            result = answer_question('Comment cultiver le fonio ?')
         self.assertEqual(result['origin'], 'general')
         self.assertIn('non issue de nos fiches vérifiées', result['answer'])
         self.assertEqual(result['sources'], [])
@@ -70,7 +70,7 @@ class AnswerQuestionTests(TestCase):
 
     def test_unknown_crop_without_llm_reports_unavailability(self):
         with patch(LLM, return_value=None):
-            result = answer_question('Comment cultiver le manioc ?')
+            result = answer_question('Comment cultiver le fonio ?')
         self.assertIn('temporairement indisponible', result['answer'])
 
     def test_image_diagnosis_stays_general(self):
@@ -131,7 +131,22 @@ class AskEndpointOriginTests(TestCase):
     def test_client_cannot_forge_origin_or_sources(self):
         with patch(LLM, return_value=None):
             response = self.client.post(
-                '/api/ai/ask/', {'query': 'Comment cultiver le manioc ?', 'origin': 'database',
+                '/api/ai/ask/', {'query': 'Comment cultiver le fonio ?', 'origin': 'database',
                                  'sources': [{'number': 1, 'title': 'faux'}]}, format='json')
         self.assertEqual(response.json()['origin'], 'general')
         self.assertEqual(response.json()['sources'], [])
+
+
+class RegionalSourceNoticeTests(TestCase):
+    def test_answer_citing_a_non_senegalese_source_is_flagged(self):
+        with patch(LLM, return_value=None):
+            result = answer_question("Quel engrais pour l'arachide ?")
+        self.assertIn('hors Sénégal', result['answer'])
+        self.assertTrue(any(source['scope'] == 'west_africa' for source in result['sources']))
+        self.assertIn('référence hors Sénégal, à adapter', result['answer'])
+
+    def test_answer_citing_only_senegalese_sources_has_no_regional_notice(self):
+        with patch(LLM, return_value=None):
+            result = answer_question("Quel engrais pour l'oignon ?")
+        self.assertNotIn('hors Sénégal', result['answer'])
+        self.assertTrue(all(source['scope'] == 'senegal' for source in result['sources']))

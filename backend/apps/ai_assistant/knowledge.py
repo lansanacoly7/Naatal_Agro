@@ -11,17 +11,11 @@ from dataclasses import dataclass, field
 
 from apps.agriculture.models import AgronomicGuide
 
-# Mots du nom d'une fiche qui ne désignent pas la culture (pour ne pas confondre « vallée » avec une culture)
-NAME_STOPWORDS = {
-    'industrielle', 'irrigue', 'irriguee', 'vallee', 'fleuve', 'senegal', 'niayes', 'bassin', 'arachidier',
-    'dans', 'des', 'les', 'sur', 'pour',
-}
-
 # (clé, libellé, mots déclencheurs, champs de la fiche à renvoyer)
 TOPICS = [
     ('sowing', 'Semis et calendrier',
      ['semer', 'semis', 'semez', 'semons', 'seme', 'planter', 'plantation', 'repiquage', 'repiquer', 'pepiniere',
-      'quand', 'periode', 'calendrier', 'date', 'preparation', 'densite', 'ecartement', 'germination'],
+      'calendrier', 'preparation', 'densite', 'ecartement', 'germination'],
      ['calendar', 'soil_and_sowing']),
     ('fertilization', 'Fertilisation',
      ['engrais', 'fertilisation', 'fertiliser', 'fumure', 'fumier', 'npk', 'uree', 'dose', 'compost', 'amendement'],
@@ -35,7 +29,7 @@ TOPICS = [
      ['water_needs']),
     ('harvest', 'Récolte et conservation',
      ['recolte', 'recolter', 'maturite', 'stockage', 'stocker', 'conservation', 'conserver', 'sechage'],
-     ['harvest']),
+     ['harvest', 'calendar']),  # le calendrier donne souvent la période de récolte (mangue, niébé, mil…)
     ('yield', 'Rendement',
      ['rendement', 'rendements', 'production', 'tonnes', 'productivite'],
      ['yield_info']),
@@ -80,12 +74,37 @@ def _contains_term(normalized_text, term):
 
 
 def guide_terms(guide):
-    """Termes qui désignent la culture d'une fiche : alias, mots significatifs du nom, nom scientifique."""
+    """
+    Termes qui désignent la culture d'une fiche : ses alias, son nom (sans la précision entre parenthèses)
+    et son nom scientifique complet. Le nom n'est jamais découpé en mots : « Pomme de terre » ne doit pas
+    réagir à la seule présence du mot « terre ».
+    """
+    base_name = re.sub(r'\(.*?\)', ' ', guide.name)
     terms = set(guide.aliases or [])
-    terms.update(w for w in normalize(guide.name).split() if len(w) >= 3 and w not in NAME_STOPWORDS)
+    terms.add(base_name)
     if guide.scientific_name:
-        terms.add(guide.scientific_name)
+        terms.add(re.sub(r'\(.*?\)', ' ', guide.scientific_name))
     return {normalize(t) for t in terms if normalize(t)}
+
+
+# Termes qui, une fois les accents retirés, se confondent avec un mot courant : ils ne désignent la culture
+# que si la question est écrite avec l'accent d'origine ou si elle parle clairement d'agriculture.
+AMBIGUOUS_TERMS = {'mais': 'maïs'}
+
+
+def _has_agricultural_context(normalized_query):
+    return (any(_contains_term(normalized_query, t) for t in AGRI_TERMS)
+            or bool(detect_topics(normalized_query)))
+
+
+def _guide_matches(guide, raw_query, normalized_query):
+    for term in guide_terms(guide):
+        if not _contains_term(normalized_query, term):
+            continue
+        accented = AMBIGUOUS_TERMS.get(term)
+        if accented is None or accented in raw_query.lower() or _has_agricultural_context(normalized_query):
+            return True
+    return False
 
 
 def detect_topics(normalized_query):
@@ -127,8 +146,7 @@ def retrieve(query):
     """Cherche dans les fiches ce qui répond à la question ; renvoie sections, manques et sources."""
     normalized = normalize(query)
     result = Retrieval()
-    guides = [g for g in AgronomicGuide.objects.all()
-              if any(_contains_term(normalized, t) for t in guide_terms(g))]
+    guides = [g for g in AgronomicGuide.objects.all() if _guide_matches(g, query, normalized)]
     result.guides = guides
     result.is_agricultural = bool(guides) or any(_contains_term(normalized, t) for t in AGRI_TERMS)
     if not guides:
@@ -152,6 +170,7 @@ def retrieve(query):
                 'publisher': source.get('publisher', ''),
                 'year': source.get('year', ''),
                 'url': source.get('url', ''),
+                'scope': source.get('scope', 'senegal'),
                 'type': 'fiche',
             })
         return source_index[key]

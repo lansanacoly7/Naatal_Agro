@@ -27,7 +27,7 @@ TRUSTED_WEB_DOMAINS = [
     d.strip().lower() for d in os.getenv(
         'TRUSTED_WEB_DOMAINS',
         'agriculture.gouv.sn,dapsa.gouv.sn,isra.sn,ancar.sn,saed.sn,anacim.sn,fao.org,cirad.fr,ifdc.org,'
-        'africarice.org,africarice-fr.org,inter-reseaux.org,cgiar.org,icrisat.org,ird.fr,comite-costea.fr,wur.nl,cta.int'
+        'africarice.org,africarice-fr.org,isra-bame.sn,inter-reseaux.org,cgiar.org,icrisat.org,ird.fr,comite-costea.fr,wur.nl,cta.int'
     ).split(',') if d.strip()
 ]
 

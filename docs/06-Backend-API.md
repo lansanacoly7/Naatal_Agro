@@ -297,12 +297,25 @@ POST /agriculture/crops/{id}/activities/
 
 ```http
 GET /api/agriculture/guides/                 # liste (accepte ?category=legume|cereale|legumineuse|fruit et ?search=)
-GET /api/agriculture/guides/<slug>/          # détail : oignon, tomate-industrielle, arachide, mil, riz-irrigue, carotte, sorgho, mangue
+GET /api/agriculture/guides/<slug>/          # détail : 19 fiches (voir la liste ci-dessous)
 ```
 
 Chaque fiche contient : `name`, `scientific_name`, `category`, `summary`, `zones`, `cycle_days_min/max`, `calendar`,
 `soil_and_sowing`, `water_needs`, `fertilization`, `pests_diseases` (liste de `{name, advice}`), `harvest`, `yield_info`,
 `limitations` et `sources` (liste de `{title, publisher, year, url}`).
+
+Fiches disponibles (`slug`) et niveau des sources :
+
+| Catégorie | Fiches | Sources principales |
+|---|---|---|
+| Légumes | `oignon`, `carotte` (guides du ministère, PIESAN, 2022) ; `tomate-industrielle` (SAED, 2021) ; `pomme-de-terre`, `chou`, `aubergine`, `piment`, `gombo`, `patate-douce`, `melon`, `bissap` (bilan ISRA/ITA/CIRAD, 2005) | Sénégal |
+| Céréales | `mil`, `riz-irrigue`, `sorgho`, `mais` | Sénégal (ISRA, CIRAD, DAPSA, SAED) |
+| Légumineuses et tubercules | `arachide` (ISRA/CIRAD 1997 et IFDC 2019, ce dernier hors Sénégal), `niebe`, `manioc` | Sénégal, sauf mention |
+| Fruits | `mangue` (CIRAD, 2017) | Sénégal |
+
+Chaque source porte un champ `scope` : `senegal` (décrit des pratiques ou résultats au Sénégal), `west_africa` ou `international`
+(référence régionale, à adapter). L'assistant signale toute réponse qui s'appuie sur une source hors Sénégal.
+Les sources de 2005 ne reprennent volontairement aucun nom de pesticide : plusieurs produits cités à l'époque sont aujourd'hui interdits.
 
 **Règles de contenu** (testées automatiquement) :
 

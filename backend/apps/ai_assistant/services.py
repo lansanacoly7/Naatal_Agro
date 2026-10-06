@@ -177,10 +177,18 @@ SOURCES_UNAVAILABLE_NOTICE = (
 )
 
 
+REGIONAL_SCOPE_LABEL = "référence hors Sénégal, à adapter"
+REGIONAL_NOTICE = (
+    "Certaines informations viennent de références hors Sénégal (Afrique de l'Ouest) : "
+    "à confirmer auprès d'un conseiller agricole (ANCAR, SAED) avant de les appliquer."
+)
+
+
 def _source_line(source):
     year = f" ({source['year']})" if source.get('year') else ''
     publisher = f", {source['publisher']}" if source.get('publisher') else ''
-    return f"[{source['number']}] {source['title']}{publisher}{year}"
+    scope = f" [{REGIONAL_SCOPE_LABEL}]" if source.get('scope', 'senegal') != 'senegal' else ''
+    return f"[{source['number']}] {source['title']}{publisher}{year}{scope}"
 
 
 def _missing_sentence(retrieval):
@@ -276,6 +284,8 @@ def answer_question(query, context='general', image_base64=None, user=None):
             if missing:
                 answer = f"{answer}\n\n{missing}"
         sources = _cited_sources(answer, retrieval.sources)
+        if any(source.get('scope', 'senegal') != 'senegal' for source in sources):
+            answer = f"{answer}\n\n{REGIONAL_NOTICE}"
         return {'answer': _with_sources_footer(answer, retrieval.sources), 'origin': 'database', 'sources': sources}
 
     context_str = json.dumps(farmer_context, ensure_ascii=False, indent=2)

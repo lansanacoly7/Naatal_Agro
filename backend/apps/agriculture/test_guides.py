@@ -15,7 +15,7 @@ User = get_user_model()
 LIST_URL = '/api/agriculture/guides/'
 TEXT_FIELDS = ('summary', 'zones', 'calendar', 'soil_and_sowing', 'water_needs', 'fertilization',
                'harvest', 'yield_info')
-EXPECTED_SLUGS = {'oignon', 'tomate-industrielle', 'arachide', 'mil', 'riz-irrigue', 'carotte', 'sorgho', 'mangue'}
+EXPECTED_SLUGS = {'oignon', 'tomate-industrielle', 'arachide', 'mil', 'riz-irrigue', 'carotte', 'sorgho', 'mangue', 'pomme-de-terre', 'chou', 'aubergine', 'piment', 'gombo', 'patate-douce', 'manioc', 'melon', 'bissap', 'mais', 'niebe'}
 MARKER = re.compile(r'\[(\d+)\]')
 
 
@@ -104,11 +104,11 @@ class GuideApiTests(TestCase):
         self.assertTrue(any(p['name'] == 'Rosette' for p in data['pests_diseases']))
 
     def test_unknown_slug_is_404(self):
-        self.assertEqual(self.client.get(f'{LIST_URL}manioc/').status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(self.client.get(f'{LIST_URL}igname/').status_code, status.HTTP_404_NOT_FOUND)
 
     def test_filter_by_category(self):
         data = self.client.get(LIST_URL, {'category': 'cereale'}).json()
-        self.assertEqual({g['slug'] for g in data}, {'mil', 'riz-irrigue', 'sorgho'})
+        self.assertEqual({g['slug'] for g in data}, {'mil', 'riz-irrigue', 'sorgho', 'mais'})
 
     def test_search_by_name_and_scientific_name(self):
         self.assertEqual([g['slug'] for g in self.client.get(LIST_URL, {'search': 'oignon'}).json()], ['oignon'])
@@ -138,3 +138,19 @@ class AutomaticSyncTests(TestCase):
 
         self.assertEqual(AgronomicGuide.objects.count(), len(EXPECTED_SLUGS))
         self.assertEqual(AgronomicGuide.objects.get(slug='mil').summary, 'Validé par un relecteur.')
+
+
+class SourceScopeTests(TestCase):
+    """Chaque source dit si elle décrit le Sénégal ou une référence régionale à adapter."""
+    ALLOWED_SCOPES = {'senegal', 'west_africa', 'international'}
+
+    def test_every_source_declares_a_valid_scope(self):
+        for guide in read_guides():
+            for source in guide['sources']:
+                self.assertIn(source.get('scope'), self.ALLOWED_SCOPES, f"{guide['slug']} : {source['title'][:50]}")
+
+    def test_a_guide_built_only_on_non_senegalese_sources_must_say_so(self):
+        for guide in read_guides():
+            if all(source['scope'] != 'senegal' for source in guide['sources']):
+                self.assertRegex(guide['limitations'].lower(), r"hors sénégal|afrique de l'ouest|à adapter|international",
+                                 f"{guide['slug']} : limites silencieuses sur l'origine des sources")
