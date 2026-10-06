@@ -9,8 +9,9 @@ class CropViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        # Restreint strictement aux cultures de l'utilisateur authentifié
-        return Crop.objects.filter(user=self.request.user)
+        # Restreint strictement aux cultures de l'utilisateur authentifié ; les activités imbriquées
+        # sont chargées en une seule requête (sinon une requête supplémentaire par culture)
+        return Crop.objects.filter(user=self.request.user).prefetch_related('activities')
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)

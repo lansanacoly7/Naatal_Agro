@@ -2,7 +2,7 @@ from rest_framework import viewsets, permissions, views
 from rest_framework.response import Response
 from .models import Sale, Transaction
 from .serializers import SaleSerializer, TransactionSerializer
-from django.db.models import Sum
+from django.db.models import ExpressionWrapper, F, FloatField, Sum
 from datetime import datetime, timedelta
 
 class SaleViewSet(viewsets.ModelViewSet):
@@ -10,7 +10,8 @@ class SaleViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return Sale.objects.filter(crop__user=self.request.user)
+        # select_related : le serializer affiche le nom de la culture (sinon une requête par vente)
+        return Sale.objects.filter(crop__user=self.request.user).select_related('crop')
 
 class TransactionViewSet(viewsets.ModelViewSet):
     serializer_class = TransactionSerializer
@@ -28,9 +29,10 @@ class FinancialSummaryView(views.APIView):
     def get(self, request, *args, **kwargs):
         user = request.user
         
-        # Calculate revenues from sales
-        sales = Sale.objects.filter(crop__user=user)
-        sales_revenue = sum(sale.total_revenue for sale in sales)
+        # Recettes des ventes : calculées par la base (une requête), sans charger chaque vente en mémoire
+        sales_revenue = Sale.objects.filter(crop__user=user).aggregate(
+            total=Sum(ExpressionWrapper(F('quantity_sold') * F('price_per_unit'), output_field=FloatField()))
+        )['total'] or 0
 
         # Calculate from Transactions
         incomes = Transaction.objects.filter(user=user, transaction_type='income').aggregate(Sum('amount'))['amount__sum'] or 0
