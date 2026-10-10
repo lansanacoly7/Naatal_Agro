@@ -91,7 +91,7 @@ class _PriceAnalysisScreenState extends ConsumerState<PriceAnalysisScreen> {
       final repository = ref.read(aiRepositoryProvider);
       // On enrichit le contexte de la question avec les infos du produit
       final contextualQuery = "Concernant le produit ${widget.productName} (Prix actuel: ${widget.currentPrice.toInt()} FCFA): $text";
-      final responseText = await repository.askQuestion(contextualQuery);
+      final responseText = (await repository.askQuestion(contextualQuery)).text;
       
       if (mounted) {
         setState(() {

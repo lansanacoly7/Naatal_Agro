@@ -4,11 +4,23 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart' hide Path;
 import '../../../../core/theme/app_theme.dart';
-import '../../../../core/network/paginated_response.dart';
 import '../../data/markets_provider.dart';
 import '../../data/models/market.dart';
 import '../../data/models/price.dart';
 import 'market_detail_screen.dart';
+
+/// Situation d'un marché par rapport à la moyenne du produit sélectionné.
+enum _Level { high, mid, low, none }
+
+/// Filtre de situation de prix.
+enum _PriceFilter { all, high, low }
+
+const _levelColors = {
+  _Level.high: Color(0xFF2E7D32),
+  _Level.mid: Color(0xFFEF8F00),
+  _Level.low: Color(0xFFC62828),
+  _Level.none: Color(0xFF546E7A),
+};
 
 class MarketsScreen extends ConsumerStatefulWidget {
   const MarketsScreen({super.key});
@@ -17,746 +29,147 @@ class MarketsScreen extends ConsumerStatefulWidget {
   ConsumerState<MarketsScreen> createState() => _MarketsScreenState();
 }
 
-class _MarketsScreenState extends ConsumerState<MarketsScreen> with TickerProviderStateMixin {
+class _MarketsScreenState extends ConsumerState<MarketsScreen> {
+  static const LatLng _userLocation = LatLng(14.6928, -17.4467); // Dakar
+
   final MapController _mapController = MapController();
-  final LatLng _userLocation = const LatLng(14.6928, -17.4467); // Dakar centre (sur terre)
-  
-  String _selectedProduct = 'Oignon';
-  String _activeFilter = 'Tous';
-  final List<String> _availableProducts = ['Oignon', 'Tomate', 'Riz', 'Arachide'];
+  final TextEditingController _searchController = TextEditingController();
+
+  String? _selectedProduct; // null = aucun produit (marchés seuls)
+  bool _productInitialised = false;
+  _PriceFilter _priceFilter = _PriceFilter.all;
   bool _isMapView = true;
+  String _query = '';
 
-  // Filtre GPS "Autour de moi"
-  bool _nearbyFilterActive = false;
-  double _nearbyRadiusKm = 20.0; // rayon par défaut en km
-  bool _showRadiusSlider = false;
-
-  late AnimationController _pulseController;
-  late Animation<double> _pulseAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _pulseController = AnimationController(vsync: this, duration: const Duration(seconds: 2))..repeat(reverse: false);
-    _pulseAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _pulseController, curve: Curves.easeOut),
-    );
-  }
+  bool _nearbyActive = false;
+  double _radiusKm = 50;
+  double _zoom = 7.5;
 
   @override
   void dispose() {
-    _pulseController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
-  double _calculateDistance(LatLng p1, LatLng p2) {
-    var p = 0.017453292519943295;
-    var a = 0.5 - cos((p2.latitude - p1.latitude) * p)/2 + 
-            cos(p1.latitude * p) * cos(p2.latitude * p) * 
-            (1 - cos((p2.longitude - p1.longitude) * p))/2;
-    return 12742 * asin(sqrt(a)); 
+  // ---------- Données ----------
+
+  double _distanceKm(LatLng a, LatLng b) {
+    const p = 0.017453292519943295;
+    final h = 0.5 -
+        cos((b.latitude - a.latitude) * p) / 2 +
+        cos(a.latitude * p) * cos(b.latitude * p) * (1 - cos((b.longitude - a.longitude) * p)) / 2;
+    return 12742 * asin(sqrt(h));
   }
 
-  void _centerOnUser() {
-    if (_isMapView) {
-      _mapController.move(_userLocation, 14.0); // Zoom plus proche sur l'utilisateur
+  /// Dernier prix connu de chaque marché pour le produit sélectionné.
+  Map<String, Price> _latestPrices(List<Price> prices) {
+    final product = _selectedProduct?.toLowerCase();
+    if (product == null) return {};
+    final result = <String, Price>{};
+    for (final p in prices) {
+      if (p.productName.toLowerCase() != product) continue;
+      final current = result[p.marketId];
+      if (current == null || p.date.compareTo(current.date) > 0) result[p.marketId] = p;
     }
-  }
-  
-  void _zoomIn() {
-    if (_isMapView) {
-      _mapController.move(_mapController.camera.center, _mapController.camera.zoom + 1);
-    }
+    return result;
   }
 
-  void _zoomOut() {
-    if (_isMapView) {
-      _mapController.move(_mapController.camera.center, _mapController.camera.zoom - 1);
-    }
+  _Level _level(Price? price, double avg) {
+    if (price == null || avg <= 0) return _Level.none;
+    if (price.priceValue >= avg * 1.05) return _Level.high;
+    if (price.priceValue <= avg * 0.95) return _Level.low;
+    return _Level.mid;
   }
+
+  /// Marchés filtrés (recherche, GPS, situation de prix).
+  List<Market> _visibleMarkets(List<Market> all, Map<String, Price> prices, double avg) {
+    final q = _query.trim().toLowerCase();
+    return all.where((m) {
+      if (m.latLng == null) return false;
+      if (q.isNotEmpty && !('${m.name} ${m.region}'.toLowerCase().contains(q))) return false;
+      if (_nearbyActive && _distanceKm(_userLocation, m.latLng!) > _radiusKm) return false;
+      final level = _level(prices[m.id], avg);
+      if (_priceFilter == _PriceFilter.high && level != _Level.high) return false;
+      if (_priceFilter == _PriceFilter.low && level != _Level.low) return false;
+      return true;
+    }).toList();
+  }
+
+  // ---------- Build ----------
 
   @override
   Widget build(BuildContext context) {
-    final marketsState = ref.watch(marketsPaginationNotifierProvider);
+    final marketsAsync = ref.watch(marketsListProvider);
     final pricesAsync = ref.watch(pricesListProvider);
+    final productsAsync = ref.watch(allProductsProvider);
+
+    if (marketsAsync.isLoading || pricesAsync.isLoading) {
+      return const Scaffold(
+        backgroundColor: AppColors.background,
+        body: Center(child: CircularProgressIndicator(color: AppColors.primary)),
+      );
+    }
+    final error = marketsAsync.error ?? pricesAsync.error;
+    if (error != null) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.cloud_off_rounded, size: 44, color: AppColors.textSecondary),
+                const SizedBox(height: 12),
+                const Text('Impossible de charger les marchés', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+                const SizedBox(height: 4),
+                Text('$error', textAlign: TextAlign.center, maxLines: 3, overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                const SizedBox(height: 16),
+                FilledButton(
+                  onPressed: () {
+                    ref.invalidate(marketsListProvider);
+                    ref.invalidate(pricesListProvider);
+                  },
+                  child: const Text('Réessayer'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    final markets = marketsAsync.value ?? [];
+    final prices = pricesAsync.value ?? [];
+
+    // Catalogue complet : produits de l'application + produits ayant des prix
+    final names = <String>{
+      ...?productsAsync.value?.map((p) => p.name.trim()),
+      ...prices.map((p) => p.productName.trim()),
+    }..removeWhere((n) => n.isEmpty);
+    final products = names.toList()..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+
+    if (!_productInitialised && products.isNotEmpty) {
+      _productInitialised = true;
+      _selectedProduct = products.firstWhere((n) => n.toLowerCase() == 'oignon', orElse: () => products.first);
+    }
+
+    final latest = _latestPrices(prices);
+    final avg = latest.isEmpty ? 0.0 : latest.values.map((p) => p.priceValue).reduce((a, b) => a + b) / latest.length;
+    final visible = _visibleMarkets(markets, latest, avg);
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      extendBodyBehindAppBar: true,
-      body: marketsState.isLoading && marketsState.items.isEmpty
-          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
-          : marketsState.error != null && marketsState.items.isEmpty
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24.0),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.error_outline, color: Colors.red, size: 48),
-                        const SizedBox(height: 16),
-                        Text('Erreur Marchés', style: Theme.of(context).textTheme.titleLarge),
-                        const SizedBox(height: 8),
-                        Text(marketsState.error!, textAlign: TextAlign.center),
-                        const SizedBox(height: 16),
-                        ElevatedButton(
-                          onPressed: () => ref.read(marketsPaginationNotifierProvider.notifier).refresh(),
-                          child: const Text('Réessayer'),
-                        ),
-                      ],
-                    ),
-                  ),
-                )
-              : pricesAsync.when(
-                  data: (prices) => _buildContent(marketsState, prices),
-                  loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
-                  error: (err, _) => Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(24.0),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(Icons.error_outline, color: Colors.red, size: 48),
-                          const SizedBox(height: 16),
-                          Text('Erreur Prix', style: Theme.of(context).textTheme.titleLarge),
-                          const SizedBox(height: 8),
-                          Text(err.toString(), textAlign: TextAlign.center),
-                          const SizedBox(height: 16),
-                          ElevatedButton(
-                            onPressed: () => ref.invalidate(pricesListProvider),
-                            child: const Text('Réessayer'),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-    );
-  }
-
-  Widget _buildContent(PaginatedState<Market> marketsState, List<Price> prices) {
-    final productPrices = prices.where((p) => p.productName.toLowerCase() == _selectedProduct.toLowerCase()).toList();
-    double avgPrice = 0;
-    if (productPrices.isNotEmpty) {
-      avgPrice = productPrices.map((p) => p.priceValue).reduce((a, b) => a + b) / productPrices.length;
-    }
-
-    return Stack(
-      children: [
-        // CONTENU (Carte ou Liste)
-        if (_isMapView)
-          _buildMapView(marketsState.items, productPrices, avgPrice)
-        else
-          _buildListView(marketsState, productPrices, avgPrice),
-
-        // HEADER COMPLETEMENT REFAIT (PROPRE, FOND BLANC)
-        Positioned(
-          top: 0,
-          left: 0,
-          right: 0,
-          child: Container(
-            padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 12, bottom: 16, left: 16, right: 16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 15, offset: const Offset(0, 5))],
-              borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(24), bottomRight: Radius.circular(24)),
-            ),
-            child: Column(
-              children: [
-                // Ligne 1 : Recherche et toggle
-                Row(
-                  children: [
-                    Expanded(
-                      child: Container(
-                        height: 48,
-                        decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(12)),
-                        child: TextField(
-                          decoration: InputDecoration(
-                            hintText: "Rechercher un marché...",
-                            hintStyle: TextStyle(color: Colors.grey.shade500, fontSize: 14),
-                            prefixIcon: const Icon(Icons.search, color: Colors.grey),
-                            border: InputBorder.none,
-                            contentPadding: const EdgeInsets.symmetric(vertical: 14),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    // Toggle Carte/Liste
-                    Container(
-                      height: 48,
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(12)),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          _buildSwitchButton(true, Icons.map_rounded),
-                          _buildSwitchButton(false, Icons.list_rounded),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                // Ligne 2 : Filtres
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      // Dropdown Produit
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary,
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: [BoxShadow(color: AppColors.primary.withValues(alpha: 0.3), blurRadius: 6, offset: const Offset(0, 3))],
-                        ),
-                        child: DropdownButtonHideUnderline(
-                          child: DropdownButton<String>(
-                            value: _selectedProduct,
-                            icon: const Icon(Icons.keyboard_arrow_down, color: Colors.white),
-                            dropdownColor: AppColors.primary,
-                            isDense: true,
-                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
-                            onChanged: (String? newValue) {
-                              if (newValue != null) setState(() => _selectedProduct = newValue);
-                            },
-                            items: _availableProducts.map<DropdownMenuItem<String>>((String value) {
-                              return DropdownMenuItem<String>(
-                                value: value,
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(Icons.eco_rounded, size: 16, color: Colors.white),
-                                    const SizedBox(width: 8),
-                                    Text(value),
-                                  ],
-                                ),
-                              );
-                            }).toList(),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      _buildFilterChip('Tous'),
-                      _buildFilterChip('Prix', icon: Icons.payments_outlined),
-                      _buildFilterChip('Opportunités', icon: Icons.auto_awesome_rounded),
-                      const SizedBox(width: 8),
-                      // Filtre "Autour de moi"
-                      GestureDetector(
-                        onTap: () => setState(() {
-                          _nearbyFilterActive = !_nearbyFilterActive;
-                          _showRadiusSlider = _nearbyFilterActive;
-                          if (!_nearbyFilterActive) _showRadiusSlider = false;
-                        }),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 250),
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: _nearbyFilterActive ? Colors.blue.shade700 : Colors.white,
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: _nearbyFilterActive ? Colors.blue.shade700 : Colors.grey.shade300,
-                            ),
-                            boxShadow: _nearbyFilterActive
-                                ? [BoxShadow(color: Colors.blue.withValues(alpha: 0.3), blurRadius: 6, offset: const Offset(0, 3))]
-                                : [],
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.near_me_rounded,
-                                size: 14,
-                                color: _nearbyFilterActive ? Colors.white : Colors.grey.shade600,
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                _nearbyFilterActive
-                                    ? '≤ ${_nearbyRadiusKm.toInt()} km'
-                                    : 'Autour de moi',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 13,
-                                  color: _nearbyFilterActive ? Colors.white : Colors.black87,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                // Slider de rayon GPS (animé)
-                AnimatedCrossFade(
-                  duration: const Duration(milliseconds: 300),
-                  crossFadeState: _showRadiusSlider
-                      ? CrossFadeState.showSecond
-                      : CrossFadeState.showFirst,
-                  firstChild: const SizedBox.shrink(),
-                  secondChild: Padding(
-                    padding: const EdgeInsets.only(top: 12),
-                    child: Row(
-                      children: [
-                        Icon(Icons.radio_button_checked, size: 16, color: Colors.blue.shade700),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Rayon : ${_nearbyRadiusKm.toInt()} km',
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                        ),
-                        Expanded(
-                          child: SliderTheme(
-                            data: SliderThemeData(
-                              trackHeight: 4,
-                              thumbColor: Colors.blue.shade700,
-                              activeTrackColor: Colors.blue.shade700,
-                              inactiveTrackColor: Colors.blue.shade100,
-                              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
-                              overlayShape: const RoundSliderOverlayShape(overlayRadius: 16),
-                            ),
-                            child: Slider(
-                              min: 5,
-                              max: 100,
-                              divisions: 19,
-                              value: _nearbyRadiusKm,
-                              onChanged: (val) => setState(() => _nearbyRadiusKm = val),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildFilterChip(String label, {IconData? icon}) {
-    final isSelected = _activeFilter == label;
-    return GestureDetector(
-      onTap: () => setState(() => _activeFilter = label),
-      child: Container(
-        margin: const EdgeInsets.only(right: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? Colors.black87 : Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: isSelected ? Colors.black87 : Colors.grey.shade300),
-          boxShadow: isSelected ? [BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 4, offset: const Offset(0, 2))] : [],
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (icon != null) ...[
-              Icon(icon, size: 14, color: isSelected ? Colors.white : Colors.black87),
-              const SizedBox(width: 6),
-            ],
-            Text(label, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: isSelected ? Colors.white : Colors.black87)),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSwitchButton(bool isMapBtn, IconData icon) {
-    final isSelected = _isMapView == isMapBtn;
-    return GestureDetector(
-      onTap: () {
-        if (_isMapView != isMapBtn) setState(() => _isMapView = isMapBtn);
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? Colors.white : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
-          boxShadow: isSelected ? [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4)] : [],
-        ),
-        child: Icon(icon, size: 20, color: isSelected ? AppColors.primary : Colors.grey.shade500),
-      ),
-    );
-  }
-
-  Widget _buildMapView(List<Market> markets, List<Price> productPrices, double avgPrice) {
-    return Stack(
-      children: [
-        FlutterMap(
-          mapController: _mapController,
-          options: MapOptions(
-            initialCenter: _userLocation,
-            initialZoom: 12.5,
-          ),
-          children: [
-            TileLayer(
-              urlTemplate: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',
-              userAgentPackageName: 'com.nataalagro.app',
-            ),
-            // Position utilisateur avec animation Pulse
-            MarkerLayer(
-              markers: [
-                Marker(
-                  point: _userLocation,
-                  width: 60,
-                  height: 60,
-                  child: AnimatedBuilder(
-                    animation: _pulseAnimation,
-                    builder: (context, child) {
-                      return Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          Container(
-                            width: 20 + (_pulseAnimation.value * 40),
-                            height: 20 + (_pulseAnimation.value * 40),
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.blue.withValues(alpha: (1 - _pulseAnimation.value) * 0.5),
-                            ),
-                          ),
-                          Container(
-                            width: 16,
-                            height: 16,
-                            decoration: BoxDecoration(
-                              color: Colors.blue,
-                              shape: BoxShape.circle,
-                              border: Border.all(color: Colors.white, width: 3),
-                              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 4)],
-                            ),
-                          ),
-                        ],
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
-            // Marqueurs marchés
-            MarkerLayer(
-              markers: markets.where((m) => m.latLng != null).map((m) {
-                final marketPriceObj = productPrices.where((p) => p.marketId == m.id).firstOrNull;
-                final priceVal = marketPriceObj?.priceValue ?? 0;
-                
-                final isOpportunity = priceVal > avgPrice + 10;
-                
-                if (_activeFilter == 'Opportunités' && !isOpportunity) {
-                  return Marker(point: m.latLng!, width: 0, height: 0, child: const SizedBox());
-                }
-
-                // Filtre "Autour de moi" sur la carte
-                if (_nearbyFilterActive) {
-                  final dist = _calculateDistance(_userLocation, m.latLng!);
-                  if (dist > _nearbyRadiusKm) {
-                    return Marker(point: m.latLng!, width: 0, height: 0, child: const SizedBox());
-                  }
-                }
-
-                return Marker(
-                  point: m.latLng!,
-                  width: 160,
-                  height: 80,
-                  alignment: Alignment.topCenter,
-                  child: AnimatedMarketPin(
-                    market: m,
-                    marketPriceObj: marketPriceObj,
-                    avgPrice: avgPrice,
-                    activeFilter: _activeFilter,
-                    onTap: () => _showIntelligentBottomSheet(m, marketPriceObj, avgPrice),
-                  ),
-                );
-              }).toList(),
-            ),
-          ],
-        ),
-
-        // Contrôles Google Maps flottants
-        Positioned(
-          right: 16,
-          bottom: 120,
-          child: Column(
-            children: [
-              FloatingActionButton(
-                heroTag: 'myLoc',
-                mini: true,
-                backgroundColor: Colors.white,
-                onPressed: _centerOnUser,
-                child: const Icon(Icons.my_location_rounded, color: Colors.black87),
-              ),
-              const SizedBox(height: 12),
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(8),
-                  boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 8)],
-                ),
-                child: Column(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.add, color: Colors.black87),
-                      onPressed: _zoomIn,
-                    ),
-                    Container(height: 1, width: 30, color: Colors.grey.shade200),
-                    IconButton(
-                      icon: const Icon(Icons.remove, color: Colors.black87),
-                      onPressed: _zoomOut,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-
-        // Légende (déplacée en bas au centre)
-        if (_activeFilter != 'Tous')
-          Positioned(
-            bottom: 110,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.95),
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 10)],
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _buildLegendItem(Colors.green, "Opportunité"),
-                    const SizedBox(width: 12),
-                    _buildLegendItem(Colors.orange, "Moyen"),
-                    const SizedBox(width: 12),
-                    _buildLegendItem(Colors.red, "Faible"),
-                  ],
-                ),
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-
-  Widget _buildLegendItem(Color color, String label) {
-    return Row(
-      children: [
-        Container(width: 10, height: 10, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
-        const SizedBox(width: 6),
-        Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-      ],
-    );
-  }
-
-  Widget _buildListView(PaginatedState<Market> marketsState, List<Price> productPrices, double avgPrice) {
-    // Calculer la distance et la renta pour trier la liste
-    List<Market> sortedMarkets = List<Market>.from(marketsState.items);
-    
-    // Appliquer le filtre "Autour de moi" si actif
-    if (_nearbyFilterActive) {
-      sortedMarkets = sortedMarkets.where((m) {
-        if (m.latLng == null) return false;
-        return _calculateDistance(_userLocation, m.latLng!) <= _nearbyRadiusKm;
-      }).toList();
-    }
-
-    sortedMarkets.sort((a, b) {
-      if (a.latLng == null || b.latLng == null) return 0;
-      final priceA = productPrices.where((p) => p.marketId == a.id).firstOrNull?.priceValue ?? 0;
-      final priceB = productPrices.where((p) => p.marketId == b.id).firstOrNull?.priceValue ?? 0;
-      // On trie par prix décroissant
-      return priceB.compareTo(priceA);
-    });
-
-    final hasFooter = marketsState.hasMore || marketsState.isLoadingMore;
-    final totalCount = sortedMarkets.length + (hasFooter ? 1 : 0);
-
-    return Container(
-      color: AppColors.background,
-      child: RefreshIndicator(
-        onRefresh: () async {
-          await ref.read(marketsPaginationNotifierProvider.notifier).refresh();
-          ref.invalidate(pricesListProvider);
-        },
-        color: AppColors.primary,
+      body: SafeArea(
+        bottom: false,
         child: Column(
           children: [
-            SizedBox(height: MediaQuery.of(context).padding.top + 130), // Espace pour le header
+            _buildTopBar(products, latest.length, avg),
             Expanded(
-              child: sortedMarkets.isEmpty
-                  ? Center(
-                      child: SingleChildScrollView(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(24),
-                              decoration: BoxDecoration(
-                                color: Colors.orange.withValues(alpha: 0.1),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(Icons.storefront_outlined, size: 64, color: Colors.orange),
-                            ),
-                            const SizedBox(height: 24),
-                            Text(
-                              'Aucun marché trouvé',
-                              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: AppColors.textPrimary,
-                                  ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Modifiez votre recherche ou élargissez le rayon GPS.',
-                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: AppColors.textSecondary,
-                                  ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    )
-                  : ListView.builder(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      itemCount: totalCount,
-                      itemBuilder: (context, index) {
-                        if (index == sortedMarkets.length) {
-                          if (marketsState.isLoadingMore) {
-                            return const Padding(
-                              padding: EdgeInsets.symmetric(vertical: 20),
-                              child: Center(
-                                child: CircularProgressIndicator(color: AppColors.primary),
-                              ),
-                            );
-                          }
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            child: Center(
-                              child: OutlinedButton.icon(
-                                icon: const Icon(Icons.arrow_downward, color: AppColors.primary),
-                                label: const Text(
-                                  'Charger plus de marchés',
-                                  style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
-                                ),
-                                style: OutlinedButton.styleFrom(
-                                  side: const BorderSide(color: AppColors.primary),
-                                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                ),
-                                onPressed: () => ref.read(marketsPaginationNotifierProvider.notifier).loadMore(),
-                              ),
-                            ),
-                          );
-                        }
-
-                        final m = sortedMarkets[index];
-                        if (m.latLng == null) return const SizedBox.shrink();
-
-                        final marketPriceObj = productPrices.where((p) => p.marketId == m.id).firstOrNull;
-                        final priceVal = marketPriceObj?.priceValue ?? 0;
-                        
-                        Color trendColor = Colors.orange;
-                        String trendText = "Stagnant";
-                        IconData trendIcon = Icons.trending_flat;
-
-                        if (priceVal > 0) {
-                          if (priceVal > avgPrice + 10) {
-                            trendColor = Colors.green;
-                            trendText = "Favorable";
-                            trendIcon = Icons.trending_up;
-                          } else if (priceVal < avgPrice - 10) {
-                            trendColor = Colors.red;
-                            trendText = "Défavorable";
-                            trendIcon = Icons.trending_down;
-                          }
-                        }
-
-                        double distanceKm = _calculateDistance(_userLocation, m.latLng!);
-
-                        return Card(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                          elevation: 2,
-                          shadowColor: Colors.black.withValues(alpha: 0.05),
-                          child: InkWell(
-                            onTap: () => _showIntelligentBottomSheet(m, marketPriceObj, avgPrice),
-                            borderRadius: BorderRadius.circular(16),
-                            child: Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(12),
-                                    decoration: BoxDecoration(
-                                      color: trendColor.withValues(alpha: 0.1),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Icon(Icons.storefront, color: trendColor),
-                                  ),
-                                  const SizedBox(width: 16),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(m.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                                        const SizedBox(height: 4),
-                                        Row(
-                                          children: [
-                                            Icon(Icons.location_on, size: 14, color: Colors.grey.shade500),
-                                            const SizedBox(width: 4),
-                                            Text('${distanceKm.toStringAsFixed(1)} km', style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  Column(
-                                    crossAxisAlignment: CrossAxisAlignment.end,
-                                    children: [
-                                      Text(
-                                        priceVal > 0 ? '${priceVal.toInt()} F' : '-',
-                                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: trendColor),
-                                      ),
-                                      const SizedBox(height: 6),
-                                      // Barre dégradé visuel de tendance (vert/rouge)
-                                      if (priceVal > 0)
-                                        Container(
-                                          width: 80,
-                                          height: 5,
-                                          decoration: BoxDecoration(
-                                            borderRadius: BorderRadius.circular(4),
-                                            gradient: LinearGradient(
-                                              colors: trendColor == Colors.green
-                                                  ? [Colors.green.shade200, Colors.green.shade600]
-                                                  : trendColor == Colors.red
-                                                      ? [Colors.red.shade600, Colors.red.shade200]
-                                                      : [Colors.orange.shade300, Colors.orange.shade500],
-                                              begin: Alignment.centerLeft,
-                                              end: Alignment.centerRight,
-                                            ),
-                                          ),
-                                        ),
-                                      const SizedBox(height: 4),
-                                      Row(
-                                        children: [
-                                          Text(trendText, style: TextStyle(color: trendColor, fontSize: 12, fontWeight: FontWeight.bold)),
-                                          const SizedBox(width: 4),
-                                          Icon(trendIcon, size: 14, color: trendColor),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
+              child: _isMapView
+                  ? _buildMap(visible, latest, avg)
+                  : _buildList(visible, latest, avg),
             ),
           ],
         ),
@@ -764,289 +177,268 @@ class _MarketsScreenState extends ConsumerState<MarketsScreen> with TickerProvid
     );
   }
 
-  void _showIntelligentBottomSheet(Market market, Price? currentPrice, double avgPrice) {
-    if (_isMapView) {
-      _mapController.move(market.latLng!, 13.0);
+  // ---------- Barre du haut ----------
+
+  Widget _buildTopBar(List<String> products, int pricedCount, double avg) {
+    return Material(
+      color: Colors.white,
+      elevation: 1,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: SizedBox(
+                    height: 44,
+                    child: TextField(
+                      controller: _searchController,
+                      onChanged: (v) => setState(() => _query = v),
+                      textInputAction: TextInputAction.search,
+                      decoration: InputDecoration(
+                        hintText: 'Rechercher un marché ou une région',
+                        hintStyle: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
+                        prefixIcon: const Icon(Icons.search, size: 20),
+                        suffixIcon: _query.isEmpty
+                            ? null
+                            : IconButton(
+                                icon: const Icon(Icons.close, size: 18),
+                                onPressed: () => setState(() {
+                                  _searchController.clear();
+                                  _query = '';
+                                }),
+                              ),
+                        filled: true,
+                        fillColor: AppColors.background,
+                        contentPadding: EdgeInsets.zero,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                SegmentedButton<bool>(
+                  showSelectedIcon: false,
+                  style: SegmentedButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    selectedBackgroundColor: AppColors.primary,
+                    selectedForegroundColor: Colors.white,
+                  ),
+                  segments: const [
+                    ButtonSegment(value: true, icon: Icon(Icons.map_outlined, size: 18)),
+                    ButtonSegment(value: false, icon: Icon(Icons.view_list_outlined, size: 18)),
+                  ],
+                  selected: {_isMapView},
+                  onSelectionChanged: (s) => setState(() => _isMapView = s.first),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  _chip(
+                    icon: Icons.eco_outlined,
+                    label: _selectedProduct ?? 'Produit',
+                    selected: true,
+                    trailing: Icons.expand_more,
+                    onTap: () => _pickProduct(products),
+                  ),
+                  _chip(
+                    label: 'Tous',
+                    selected: _priceFilter == _PriceFilter.all,
+                    onTap: () => setState(() => _priceFilter = _PriceFilter.all),
+                  ),
+                  _chip(
+                    label: 'Prix élevés',
+                    dot: _levelColors[_Level.high],
+                    selected: _priceFilter == _PriceFilter.high,
+                    onTap: () => setState(() => _priceFilter = _PriceFilter.high),
+                  ),
+                  _chip(
+                    label: 'Prix bas',
+                    dot: _levelColors[_Level.low],
+                    selected: _priceFilter == _PriceFilter.low,
+                    onTap: () => setState(() => _priceFilter = _PriceFilter.low),
+                  ),
+                  _chip(
+                    icon: Icons.near_me_outlined,
+                    label: _nearbyActive ? 'Rayon ${_radiusKm.round()} km' : 'Autour de moi',
+                    selected: _nearbyActive,
+                    onTap: _toggleNearby,
+                  ),
+                ],
+              ),
+            ),
+            if (_selectedProduct != null && pricedCount > 0) ...[
+              const SizedBox(height: 8),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  '$_selectedProduct · moyenne ${avg.round()} FCFA/kg sur $pricedCount marchés',
+                  style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _chip({
+    IconData? icon,
+    required String label,
+    required bool selected,
+    required VoidCallback onTap,
+    Color? dot,
+    IconData? trailing,
+  }) {
+    final fg = selected ? Colors.white : AppColors.textPrimary;
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: Material(
+        color: selected ? AppColors.primary : Colors.white,
+        shape: StadiumBorder(side: BorderSide(color: selected ? AppColors.primary : const Color(0xFFD0D5DA))),
+        child: InkWell(
+          customBorder: const StadiumBorder(),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (dot != null) ...[
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(color: selected ? Colors.white : dot, shape: BoxShape.circle),
+                  ),
+                  const SizedBox(width: 6),
+                ],
+                if (icon != null) ...[Icon(icon, size: 16, color: fg), const SizedBox(width: 6)],
+                Text(label, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: fg)),
+                if (trailing != null) ...[const SizedBox(width: 2), Icon(trailing, size: 18, color: fg)],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _toggleNearby() {
+    if (_nearbyActive) {
+      setState(() => _nearbyActive = false);
+      return;
     }
-    
-    double distanceKm = _calculateDistance(_userLocation, market.latLng!);
-    int timeMin = (distanceKm * 2.5).round();
-    int transportCost = (distanceKm * 500).round();
+    setState(() => _nearbyActive = true);
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheet) => Padding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Rayon de recherche : ${_radiusKm.round()} km',
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+              Slider(
+                min: 5,
+                max: 500,
+                divisions: 99,
+                value: _radiusKm,
+                label: '${_radiusKm.round()} km',
+                onChanged: (v) {
+                  setSheet(() => _radiusKm = v);
+                  setState(() => _radiusKm = v);
+                },
+              ),
+              Row(
+                children: [
+                  TextButton(
+                    onPressed: () {
+                      setState(() => _nearbyActive = false);
+                      Navigator.pop(ctx);
+                    },
+                    child: const Text('Désactiver'),
+                  ),
+                  const Spacer(),
+                  FilledButton(onPressed: () => Navigator.pop(ctx), child: const Text('Appliquer')),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
-    final bool isOpportunity = currentPrice != null && currentPrice.priceValue > avgPrice + 10;
-    final int priceDiff = currentPrice != null ? (currentPrice.priceValue - avgPrice).toInt() : 0;
-
+  /// Sélecteur de produit : tous les produits de l'application, avec recherche.
+  void _pickProduct(List<String> products) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        return DraggableScrollableSheet(
-          initialChildSize: 0.75,
-          minChildSize: 0.5,
-          maxChildSize: 0.9,
-          builder: (_, scrollController) {
-            return Container(
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-              ),
-              child: ListView(
-                controller: scrollController,
-                padding: const EdgeInsets.all(24),
-                children: [
-                  // Drag indicator
-                  Center(
-                    child: Container(
-                      width: 40, height: 5,
-                      decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(10)),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  
-                  // Header
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(market.name, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black87)),
-                            const SizedBox(height: 4),
-                            Row(
-                              children: [
-                                const Icon(Icons.location_on, color: AppColors.primary, size: 16),
-                                const SizedBox(width: 4),
-                                Text(market.region, style: TextStyle(color: Colors.grey.shade600)),
-                                const SizedBox(width: 12),
-                                const Icon(Icons.star_rounded, color: Colors.amber, size: 16),
-                                const SizedBox(width: 4),
-                                Text('${market.rating ?? 4.5}', style: const TextStyle(fontWeight: FontWeight.bold)),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 24),
-                  
-                  // Nouveaux indicateurs de fraîcheur et fiabilité
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                        decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(8)),
-                        child: Row(
-                          children: [
-                            Icon(Icons.update, size: 14, color: Colors.grey.shade600),
-                            const SizedBox(width: 4),
-                            Text("Mis à jour il y a 25 min", style: TextStyle(fontSize: 12, color: Colors.grey.shade700)),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                        decoration: BoxDecoration(color: Colors.green.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
-                        child: const Row(
-                          children: [
-                            Icon(Icons.verified, size: 14, color: Colors.green),
-                            SizedBox(width: 4),
-                            Text("Fiabilité Élevée", style: TextStyle(fontSize: 12, color: Colors.green, fontWeight: FontWeight.bold)),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // Prix Actuel 
-                  if (currentPrice != null) ...[
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+      builder: (ctx) {
+        var filter = '';
+        return StatefulBuilder(
+          builder: (ctx, setSheet) {
+            final shown = products.where((p) => p.toLowerCase().contains(filter.toLowerCase())).toList();
+            return SizedBox(
+              height: MediaQuery.of(ctx).size.height * 0.75,
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(16, 16, 16, MediaQuery.of(ctx).viewInsets.bottom),
+                child: Column(
+                  children: [
                     Row(
-                      crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(_selectedProduct, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                            const SizedBox(height: 4),
-                            // Tendance textuelle pure
-                            Row(
-                              children: [
-                                Icon(
-                                  priceDiff > 0 ? Icons.arrow_upward : (priceDiff < 0 ? Icons.arrow_downward : Icons.arrow_forward), 
-                                  size: 16, 
-                                  color: priceDiff > 0 ? Colors.green : (priceDiff < 0 ? Colors.red : Colors.orange),
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  '${priceDiff > 0 ? "+" : ""}${((priceDiff/avgPrice)*100).toStringAsFixed(1)} % cette semaine',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: priceDiff > 0 ? Colors.green : (priceDiff < 0 ? Colors.red : Colors.orange),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
+                        const Expanded(
+                          child: Text('Choisir un produit', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
                         ),
-                        const Spacer(),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text(
-                              '${currentPrice.priceValue.toInt()} FCFA/kg',
-                              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: isOpportunity ? Colors.green : Colors.black87),
-                            ),
-                            Text(
-                              'Moyenne régionale : ${avgPrice.toInt()} FCFA',
-                              style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
-                            ),
-                          ],
-                        ),
+                        Text('${products.length} produits', style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
                       ],
                     ),
-                    const SizedBox(height: 16),
-                  ],
-
-                  // Opportunité détectée
-                  if (isOpportunity)
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(colors: [Colors.green.shade50, Colors.white]),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.green.shade200),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              const Icon(Icons.auto_awesome, color: Colors.green),
-                              const SizedBox(width: 8),
-                              const Text('Opportunité détectée', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 16)),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            'Ce marché affiche un prix supérieur de +$priceDiff FCFA/kg à la moyenne actuelle.',
-                            style: const TextStyle(color: Colors.black87),
-                          ),
-                          const SizedBox(height: 12),
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                const Text('Pour 500 kg :', style: TextStyle(fontWeight: FontWeight.w500)),
-                                Text('≈ +${priceDiff * 500} FCFA', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green, fontSize: 16)),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  else if (currentPrice != null && priceDiff < 0)
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.red.shade50,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(Icons.warning_amber_rounded, color: Colors.red.shade400),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              'Prix inférieur à la moyenne ($priceDiff FCFA). La vente n\'est pas recommandée ici.',
-                              style: TextStyle(color: Colors.red.shade800, fontSize: 13),
-                            ),
-                          ),
-                        ],
+                    const SizedBox(height: 10),
+                    TextField(
+                      autofocus: false,
+                      onChanged: (v) => setSheet(() => filter = v),
+                      decoration: InputDecoration(
+                        hintText: 'Rechercher un produit',
+                        prefixIcon: const Icon(Icons.search, size: 20),
+                        filled: true,
+                        fillColor: AppColors.background,
+                        isDense: true,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
                       ),
                     ),
-
-                  const SizedBox(height: 24),
-
-                  // Logistique & Transport
-                  const Text('Logistique', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(child: _buildLogisticsCard(Icons.route, 'Distance', '${distanceKm.toStringAsFixed(1)} km')),
-                      const SizedBox(width: 12),
-                      Expanded(child: _buildLogisticsCard(Icons.timer, 'Temps', '≈ $timeMin min')),
-                      const SizedBox(width: 12),
-                      Expanded(child: _buildLogisticsCard(Icons.local_shipping, 'Transport', '≈ $transportCost F')),
-                    ],
-                  ),
-
-                  const SizedBox(height: 32),
-
-                  // Boutons d'action
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () {
-                            Navigator.pop(context);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Itinéraire vers ${market.name} (${distanceKm.toStringAsFixed(1)} km - $timeMin min) calculé.'),
-                                backgroundColor: AppColors.primary,
-                                behavior: SnackBarBehavior.floating,
-                              ),
-                            );
-                          },
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                            side: BorderSide(color: Colors.grey.shade300),
-                          ),
-                          child: const Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.directions_car, color: Colors.black87, size: 20),
-                              SizedBox(width: 8),
-                              Text('Itinéraire', style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold)),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        flex: 1,
-                        child: ElevatedButton(
-                          onPressed: () {
-                            Navigator.pop(context);
-                            Navigator.push(context, MaterialPageRoute(builder: (_) => MarketDetailScreen(market: market)));
-                          },
-                          style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            backgroundColor: AppColors.primary,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                            elevation: 0,
-                          ),
-                          child: const Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.read_more_rounded, color: Colors.white, size: 20),
-                              SizedBox(width: 8),
-                              Text('Voir le marché', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+                    const SizedBox(height: 6),
+                    Expanded(
+                      child: shown.isEmpty
+                          ? const Center(child: Text('Aucun produit trouvé', style: TextStyle(color: AppColors.textSecondary)))
+                          : ListView.separated(
+                              itemCount: shown.length,
+                              separatorBuilder: (_, __) => const Divider(height: 1),
+                              itemBuilder: (_, i) {
+                                final name = shown[i];
+                                final selected = name == _selectedProduct;
+                                return ListTile(
+                                  dense: true,
+                                  title: Text(name, style: TextStyle(fontWeight: selected ? FontWeight.w700 : FontWeight.w500)),
+                                  trailing: selected ? const Icon(Icons.check, color: AppColors.primary) : null,
+                                  onTap: () {
+                                    setState(() => _selectedProduct = name);
+                                    Navigator.pop(ctx);
+                                  },
+                                );
+                              },
+                            ),
+                    ),
+                  ],
+                ),
               ),
             );
           },
@@ -1055,179 +447,363 @@ class _MarketsScreenState extends ConsumerState<MarketsScreen> with TickerProvid
     );
   }
 
-  Widget _buildLogisticsCard(IconData icon, String title, String value) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
+  // ---------- Carte ----------
+
+  Widget _buildMap(List<Market> visible, Map<String, Price> latest, double avg) {
+    return Stack(
+      children: [
+        FlutterMap(
+          mapController: _mapController,
+          options: MapOptions(
+            initialCenter: _userLocation,
+            initialZoom: 7.5,
+            minZoom: 5,
+            maxZoom: 18,
+            onPositionChanged: (camera, _) {
+              if ((camera.zoom - _zoom).abs() > 0.05) setState(() => _zoom = camera.zoom);
+            },
+          ),
+          children: [
+            TileLayer(
+              urlTemplate: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',
+              userAgentPackageName: 'com.nataalagro.app',
+            ),
+            MarkerLayer(
+              markers: [
+                Marker(
+                  point: _userLocation,
+                  width: 22,
+                  height: 22,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1565C0),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 3),
+                      boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4)],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            MarkerLayer(
+              markers: _declutter(visible, latest, avg).map((g) {
+                final m = g.market;
+                final price = latest[m.id];
+                final level = _level(price, avg);
+                return Marker(
+                  point: m.latLng!,
+                  width: 96,
+                  height: 58,
+                  alignment: Alignment.topCenter,
+                  child: _MarketPin(
+                    color: _levelColors[level]!,
+                    label: price != null ? '${price.priceValue.round()} F' : null,
+                    extra: g.hidden,
+                    onTap: () => g.hidden > 0
+                        ? _mapController.move(m.latLng!, min(_zoom + 2, 18))
+                        : _showMarketSheet(m, price, avg),
+                  ),
+                );
+              }).toList(),
+            ),
+          ],
+        ),
+        Positioned(
+          right: 12,
+          bottom: 16,
+          child: Column(
+            children: [
+              _mapButton(Icons.my_location, () => _mapController.move(_userLocation, 11)),
+              const SizedBox(height: 8),
+              _mapButton(Icons.add, () => _mapController.move(_mapController.camera.center, _mapController.camera.zoom + 1)),
+              const SizedBox(height: 8),
+              _mapButton(Icons.remove, () => _mapController.move(_mapController.camera.center, _mapController.camera.zoom - 1)),
+            ],
+          ),
+        ),
+        Positioned(left: 12, bottom: 16, child: _buildLegend(visible.length)),
+        if (visible.isEmpty)
+          const Center(
+            child: Card(
+              child: Padding(
+                padding: EdgeInsets.all(16),
+                child: Text('Aucun marché ne correspond à ces filtres'),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  /// Évite les superpositions : à un zoom donné, un marché trop proche d'un marché
+  /// déjà affiché est regroupé avec lui (badge +N). Les marchés avec prix passent en premier.
+  List<({Market market, int hidden})> _declutter(List<Market> markets, Map<String, Price> latest, double avg) {
+    final pxPerDeg = 256 * pow(2, _zoom) / 360;
+    final sorted = [...markets]..sort((a, b) => (latest[b.id]?.priceValue ?? 0).compareTo(latest[a.id]?.priceValue ?? 0));
+    final kept = <({Market market, int hidden})>[];
+    final hiddenCount = <String, int>{};
+    for (final m in sorted) {
+      final p = m.latLng!;
+      Market? near;
+      for (final k in kept) {
+        final q = k.market.latLng!;
+        final dx = (p.longitude - q.longitude) * pxPerDeg;
+        final dy = (p.latitude - q.latitude) * pxPerDeg * 1.1;
+        if (dx.abs() < 60 && dy.abs() < 50) {
+          near = k.market;
+          break;
+        }
+      }
+      if (near != null) {
+        hiddenCount[near.id] = (hiddenCount[near.id] ?? 0) + 1;
+      } else {
+        kept.add((market: m, hidden: 0));
+      }
+    }
+    return kept.map((k) => (market: k.market, hidden: hiddenCount[k.market.id] ?? 0)).toList();
+  }
+
+  Widget _mapButton(IconData icon, VoidCallback onTap) {
+    return Material(
+      color: Colors.white,
+      elevation: 2,
+      borderRadius: BorderRadius.circular(8),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8),
+        onTap: onTap,
+        child: SizedBox(width: 40, height: 40, child: Icon(icon, size: 20, color: AppColors.textPrimary)),
       ),
-      child: Column(
-        children: [
-          Icon(icon, color: Colors.grey.shade600, size: 20),
-          const SizedBox(height: 8),
-          Text(title, style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
-          const SizedBox(height: 4),
-          Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-        ],
+    );
+  }
+
+  Widget _buildLegend(int count) {
+    Widget row(Color c, String t) => Padding(
+          padding: const EdgeInsets.symmetric(vertical: 2),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(width: 10, height: 10, decoration: BoxDecoration(color: c, shape: BoxShape.circle)),
+              const SizedBox(width: 8),
+              Text(t, style: const TextStyle(fontSize: 12)),
+            ],
+          ),
+        );
+    return Material(
+      color: Colors.white,
+      elevation: 2,
+      borderRadius: BorderRadius.circular(10),
+      child: Padding(
+        padding: const EdgeInsets.all(10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('$count marché${count > 1 ? 's' : ''}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 4),
+            row(_levelColors[_Level.high]!, 'Au-dessus de la moyenne'),
+            row(_levelColors[_Level.mid]!, 'Proche de la moyenne'),
+            row(_levelColors[_Level.low]!, 'Sous la moyenne'),
+            row(_levelColors[_Level.none]!, 'Pas de prix'),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ---------- Liste ----------
+
+  Widget _buildList(List<Market> visible, Map<String, Price> latest, double avg) {
+    final items = [...visible]..sort((a, b) {
+        final pa = latest[a.id]?.priceValue ?? -1;
+        final pb = latest[b.id]?.priceValue ?? -1;
+        return pb.compareTo(pa);
+      });
+
+    return RefreshIndicator(
+      color: AppColors.primary,
+      onRefresh: () async {
+        ref.invalidate(marketsListProvider);
+        ref.invalidate(pricesListProvider);
+        ref.invalidate(allProductsProvider);
+      },
+      child: items.isEmpty
+          ? ListView(
+              children: const [
+                SizedBox(height: 120),
+                Center(child: Text('Aucun marché ne correspond à ces filtres', style: TextStyle(color: AppColors.textSecondary))),
+              ],
+            )
+          : ListView.separated(
+              padding: const EdgeInsets.all(16),
+              itemCount: items.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 8),
+              itemBuilder: (_, i) {
+                final m = items[i];
+                final price = latest[m.id];
+                final level = _level(price, avg);
+                final color = _levelColors[level]!;
+                final km = _distanceKm(_userLocation, m.latLng!);
+                return Material(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(10),
+                    onTap: () => _showMarketSheet(m, price, avg),
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Row(
+                        children: [
+                          Container(width: 4, height: 40, decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(2))),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(m.name, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                                const SizedBox(height: 2),
+                                Text('${m.region} · ${km.toStringAsFixed(0)} km',
+                                    style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                              ],
+                            ),
+                          ),
+                          Text(
+                            price != null ? '${price.priceValue.round()} F/kg' : '—',
+                            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: color),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+    );
+  }
+
+  // ---------- Détail ----------
+
+  void _showMarketSheet(Market market, Price? price, double avg) {
+    final km = _distanceKm(_userLocation, market.latLng!);
+    final level = _level(price, avg);
+    final color = _levelColors[level]!;
+    final diff = price != null && avg > 0 ? (price.priceValue - avg) / avg * 100 : null;
+    final verdict = switch (level) {
+      _Level.high => 'Prix supérieur à la moyenne : bon marché pour vendre.',
+      _Level.low => 'Prix inférieur à la moyenne : vente peu avantageuse.',
+      _Level.mid => 'Prix proche de la moyenne du marché.',
+      _Level.none => 'Aucun prix relevé pour ce produit sur ce marché.',
+    };
+
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(market.name, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 2),
+            Text('${market.region} · ${km.toStringAsFixed(0)} km de vous',
+                style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: color.withValues(alpha: 0.35)),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(_selectedProduct ?? 'Produit', style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                        Text(
+                          price != null ? '${price.priceValue.round()} FCFA/kg' : 'Non disponible',
+                          style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: color),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (diff != null)
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text('${diff >= 0 ? '+' : ''}${diff.toStringAsFixed(1)} %',
+                            style: TextStyle(fontWeight: FontWeight.w700, color: color)),
+                        Text('moy. ${avg.round()} F', style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                      ],
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(verdict, style: const TextStyle(fontSize: 13)),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                style: FilledButton.styleFrom(backgroundColor: AppColors.primary, padding: const EdgeInsets.symmetric(vertical: 14)),
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => MarketDetailScreen(market: market)));
+                },
+                child: const Text('Voir le marché'),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
-class TrianglePainter extends CustomPainter {
+/// Repère de marché : pastille colorée + étiquette de prix.
+class _MarketPin extends StatelessWidget {
   final Color color;
-  TrianglePainter({required this.color});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    var paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.fill;
-    
-    var path = Path();
-    path.moveTo(0, 0); // Haut gauche
-    path.lineTo(size.width, 0); // Haut droite
-    path.lineTo(size.width / 2, size.height); // Bas centre
-    path.close();
-    
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-class AnimatedMarketPin extends StatefulWidget {
-  final Market market;
-  final Price? marketPriceObj;
-  final double avgPrice;
-  final String activeFilter;
+  final String? label;
+  final int extra;
   final VoidCallback onTap;
 
-  const AnimatedMarketPin({
-    super.key,
-    required this.market,
-    required this.marketPriceObj,
-    required this.avgPrice,
-    required this.activeFilter,
-    required this.onTap,
-  });
-
-  @override
-  State<AnimatedMarketPin> createState() => _AnimatedMarketPinState();
-}
-
-class _AnimatedMarketPinState extends State<AnimatedMarketPin> {
-  bool _isHovered = false;
+  const _MarketPin({required this.color, required this.label, required this.onTap, this.extra = 0});
 
   @override
   Widget build(BuildContext context) {
-    final m = widget.market;
-    final priceVal = widget.marketPriceObj?.priceValue ?? 0;
-    
-    final isOpportunity = priceVal > widget.avgPrice + 10;
-    final isBad = priceVal < widget.avgPrice - 10;
-    
-    bool showPrice = (widget.activeFilter == 'Prix' || widget.activeFilter == 'Opportunités') && priceVal > 0;
-    
-    Color markerBgColor = Colors.grey.shade900;
-    Color textColor = Colors.white;
-    
-    if (showPrice) {
-      if (isOpportunity) {
-        markerBgColor = Colors.green.shade600;
-      } else if (isBad) {
-        markerBgColor = Colors.red.shade500;
-      } else {
-        markerBgColor = Colors.orange.shade500;
-      }
-    }
-
-    String displayMarketName = m.name.replaceAll('Marché ', '').replaceAll('de ', '');
-    if (displayMarketName.length > 8) {
-      displayMarketName = '${displayMarketName.substring(0, 7)}.';
-    }
-
-    return MouseRegion(
-      onEnter: (_) => setState(() => _isHovered = true),
-      onExit: (_) => setState(() => _isHovered = false),
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        onTap: widget.onTap,
-        child: AnimatedScale(
-          scale: _isHovered ? 1.15 : 1.0,
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeOutBack,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: EdgeInsets.symmetric(
-                  horizontal: _isHovered ? 14 : 10, 
-                  vertical: _isHovered ? 8 : 6
-                ),
-                decoration: BoxDecoration(
-                  color: markerBgColor,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: markerBgColor.withValues(alpha: _isHovered ? 0.6 : 0.4), 
-                      blurRadius: _isHovered ? 12 : 8, 
-                      offset: Offset(0, _isHovered ? 6 : 4)
-                    )
-                  ],
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      showPrice ? (isOpportunity ? Icons.trending_up : (isBad ? Icons.trending_down : Icons.trending_flat)) : Icons.storefront,
-                      color: textColor,
-                      size: _isHovered ? 16 : 14,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      showPrice ? '${priceVal.toInt()} F' : displayMarketName,
-                      style: TextStyle(
-                        fontWeight: FontWeight.w900,
-                        fontSize: _isHovered ? 15 : 14,
-                        color: textColor,
-                        letterSpacing: -0.3,
-                      ),
-                    ),
-                    if (showPrice) ...[
-                      const SizedBox(width: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                        decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(4)),
-                        child: Text(
-                          displayMarketName,
-                          style: TextStyle(fontSize: 10, color: textColor, fontWeight: FontWeight.bold),
-                        ),
-                      )
-                    ]
-                  ],
-                ),
-              ),
-              CustomPaint(
-                size: const Size(12, 6),
-                painter: TrianglePainter(color: markerBgColor),
-              ),
-              Container(
-                width: 6,
-                height: 6,
-                decoration: BoxDecoration(
-                  color: Colors.black87,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 1.5),
-                  boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.3), blurRadius: 2)],
-                ),
-              ),
-            ],
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 28,
+            height: 28,
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white, width: 2.5),
+              boxShadow: const [BoxShadow(color: Colors.black38, blurRadius: 4, offset: Offset(0, 2))],
+            ),
+            child: extra > 0
+                ? Center(child: Text('+$extra', style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w800)))
+                : const Icon(Icons.storefront, size: 14, color: Colors.white),
           ),
-        ),
+          if (label != null)
+            Container(
+              margin: const EdgeInsets.only(top: 3),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(6),
+                boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 3)],
+              ),
+              child: Text(label!, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: color)),
+            ),
+        ],
       ),
     );
   }

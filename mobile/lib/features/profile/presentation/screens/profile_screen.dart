@@ -977,7 +977,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             ),
             const SizedBox(height: 16),
             ListTile(
-              leading: const Text('🇸🇳', style: TextStyle(fontSize: 24)),
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.language_rounded, color: AppColors.primary, size: 20),
+              ),
               title: const Text('Français (Sénégal)', style: TextStyle(fontWeight: FontWeight.bold)),
               trailing: profile.language.toUpperCase() != 'WO' ? const Icon(Icons.check_circle, color: AppColors.primary) : null,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -994,7 +1001,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             ),
             const SizedBox(height: 8),
             ListTile(
-              leading: const Text('🇸🇳', style: TextStyle(fontSize: 24)),
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.amber.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.record_voice_over_rounded, color: Colors.amber, size: 20),
+              ),
               title: const Text('Wolof (Senegaal)', style: TextStyle(fontWeight: FontWeight.bold)),
               trailing: profile.language.toUpperCase() == 'WO' ? const Icon(Icons.check_circle, color: AppColors.primary) : null,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),

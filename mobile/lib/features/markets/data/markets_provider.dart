@@ -188,3 +188,9 @@ final filteredProductsProvider = FutureProvider.autoDispose<List<Product>>((ref)
     search: filter.search.isEmpty ? null : filter.search,
   );
 });
+
+// Tous les produits de l'application (sans filtre) pour le sélecteur de la carte
+final allProductsProvider = FutureProvider.autoDispose<List<Product>>((ref) async {
+  final repository = ref.watch(marketsRepositoryProvider);
+  return repository.getProducts();
+});

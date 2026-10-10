@@ -19,6 +19,18 @@ class Command(BaseCommand):
             {"name": "Marché Saint-Louis", "region": "Saint-Louis", "gps": "16.0326,-16.4818"},
             {"name": "Marché Touba", "region": "Diourbel", "gps": "14.8620,-15.8820"},
             {"name": "Marché Ziguinchor", "region": "Ziguinchor", "gps": "12.5833,-16.2719"},
+            {"name": "Marché Tilène", "region": "Dakar", "gps": "14.6853,-17.4521"},
+            {"name": "Marché HLM", "region": "Dakar", "gps": "14.7110,-17.4540"},
+            {"name": "Marché Kermel", "region": "Dakar", "gps": "14.6700,-17.4310"},
+            {"name": "Marché Pikine", "region": "Dakar", "gps": "14.7550,-17.3900"},
+            {"name": "Marché Rufisque", "region": "Dakar", "gps": "14.7160,-17.2730"},
+            {"name": "Marché Keur Massar", "region": "Dakar", "gps": "14.7840,-17.3190"},
+            {"name": "Marché Mbour", "region": "Thiès", "gps": "14.4198,-16.9640"},
+            {"name": "Marché Kaolack", "region": "Kaolack", "gps": "14.1510,-16.0730"},
+            {"name": "Marché Louga", "region": "Louga", "gps": "15.6144,-16.2287"},
+            {"name": "Marché Tambacounda", "region": "Tambacounda", "gps": "13.7707,-13.6673"},
+            {"name": "Marché Kolda", "region": "Kolda", "gps": "12.8939,-14.9410"},
+            {"name": "Marché Richard-Toll", "region": "Saint-Louis", "gps": "16.4625,-15.7006"},
         ]
 
         markets = []

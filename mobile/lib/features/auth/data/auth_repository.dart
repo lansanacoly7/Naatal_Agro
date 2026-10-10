@@ -4,6 +4,42 @@ import '../../../../core/constants/app_constants.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/cache/local_cache.dart';
 
+/// Traduit la réponse d'erreur (400) de l'inscription en un message clair pour l'utilisateur.
+/// Le serveur renvoie ses erreurs par champ (numéro, mot de passe, e-mail, date…) : on affiche le vrai motif
+/// au lieu d'un message générique.
+String registrationErrorMessage(dynamic data) {
+  const labels = {
+    'phone_number': '',
+    'password': '',
+    'full_name': 'Nom : ',
+    'email': 'E-mail : ',
+    'date_of_birth': 'Date de naissance : ',
+    'privacy_accepted': '',
+    'location': 'Région : ',
+  };
+  String? firstMessage(dynamic value) {
+    if (value is List && value.isNotEmpty) return value.map((e) => e.toString()).take(2).join(' ');
+    if (value != null && value.toString().trim().isNotEmpty) return value.toString();
+    return null;
+  }
+
+  if (data is Map) {
+    for (final entry in labels.entries) {
+      final message = firstMessage(data[entry.key]);
+      if (message != null) return '${entry.value}$message';
+    }
+    for (final key in ['non_field_errors', 'detail', 'error']) {
+      final message = firstMessage(data[key]);
+      if (message != null) return message;
+    }
+    for (final entry in data.entries) {
+      final message = firstMessage(entry.value);
+      if (message != null) return message;
+    }
+  }
+  return 'Inscription impossible : vérifiez les informations saisies.';
+}
+
 class AuthRepository {
   final ApiClient _apiClient;
 
@@ -84,21 +120,7 @@ class AuthRepository {
       }
     } on DioException catch (e) {
       if (e.response?.statusCode == 400) {
-        final data = e.response?.data;
-        if (data is Map) {
-          if (data.containsKey('phone_number')) {
-            final err = data['phone_number'];
-            throw Exception(err is List ? err.first : err.toString());
-          }
-          if (data.containsKey('non_field_errors')) {
-            final err = data['non_field_errors'];
-            throw Exception(err is List ? err.first : err.toString());
-          }
-          if (data.containsKey('detail')) {
-            throw Exception(data['detail'].toString());
-          }
-        }
-        throw Exception('Ce numéro est déjà utilisé ou les données sont invalides.');
+        throw Exception(registrationErrorMessage(e.response?.data));
       }
       throw Exception('Impossible de se connecter au serveur. Vérifiez votre connexion.');
     }

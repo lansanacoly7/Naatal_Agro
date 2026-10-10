@@ -48,7 +48,8 @@
   .big{font-size:1.1rem;background:var(--green-soft);border-radius:10px;padding:12px 14px}
   .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin-top:10px}
   .box{background:var(--green-soft);border-radius:10px;padding:12px 14px}
-  .box b{display:block;margin-bottom:2px}
+    .ico{display:inline-block;vertical-align:-0.18em;width:1.2em;height:1.2em;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;fill:none;margin-right:6px;flex-shrink:0}
+  .box b{display:flex;align-items:center;margin-bottom:4px;color:var(--green)}
   .flow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:12px 0}
   .flow span{background:var(--accent-soft);border:1px solid var(--accent);border-radius:10px;padding:6px 12px;font-size:.95rem}
   .flow i{font-style:normal;color:var(--muted)}
@@ -72,7 +73,7 @@
 
 <header>
   <button id="theme-toggle" type="button" aria-label="Changer de thème"></button>
-  <h1>🌾 Naatal Agro</h1>
+  <h1><svg class="ico" viewBox="0 0 24 24"><path d="M11 20A7 7 0 0 1 4 13C4 8.5 8 4 13 4c2.5 0 7 .5 7 7 0 5-4.5 9-9 9Z"/><path d="M11 20v-9"/></svg> Naatal Agro</h1>
   <p>Une application qui aide les agriculteurs du Sénégal à mieux décider : quand semer, quand vendre, comment soigner leurs cultures.</p>
   <div class="team">Lansana Coly · Pathe Fall · El hadji Ibrahima Kâ · El hadji Sanor Mangane</div>
 </header>
@@ -105,15 +106,15 @@
 <section id="fait">
   <h2>2. Ce que l'application permet de faire</h2>
   <div class="grid">
-    <div class="box"><b>🔐 Se connecter</b>Avec son numéro de téléphone sénégalais (+221) et un mot de passe.</div>
-    <div class="box"><b>🏠 Tableau de bord</b>Une page d'accueil avec l'essentiel : cultures, météo, prix.</div>
-    <div class="box"><b>🌱 Suivre ses cultures</b>Ce qui est planté, à quel stade (semis, croissance, récolte), les problèmes de maladies.</div>
-    <div class="box"><b>💰 Voir les prix des marchés</b>Comparer les prix entre marchés (Castors, Tilène, Kaolack, Touba, Saint-Louis…).</div>
-    <div class="box"><b>⛅ Météo</b>Prévisions et alertes pour la zone de l'agriculteur.</div>
-    <div class="box"><b>🗺️ Carte</b>Voir les marchés sur une carte.</div>
-    <div class="box"><b>🤖 Assistant intelligent</b>Poser une question, ou envoyer une photo d'une plante malade.</div>
-    <div class="box"><b>📦 Stock et finances</b>Noter ce qu'on a en stock, ses ventes, ses dépenses, et voir son solde.</div>
-    <div class="box"><b>🔔 Notifications</b>Recevoir des alertes sur le téléphone.</div>
+    <div class="box"><b><svg class="ico" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Se connecter</b>Avec son numéro de téléphone sénégalais (+221) et un mot de passe.</div>
+    <div class="box"><b><svg class="ico" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg> Tableau de bord</b>Une page d'accueil avec l'essentiel : cultures, météo, prix.</div>
+    <div class="box"><b><svg class="ico" viewBox="0 0 24 24"><path d="M7 20h10"/><path d="M10 20c0-7 1-10 8-10M4 14c7 0 8-3 8-10"/></svg> Suivre ses cultures</b>Ce qui est planté, à quel stade (semis, croissance, récolte), les problèmes de maladies.</div>
+    <div class="box"><b><svg class="ico" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg> Voir les prix des marchés</b>Comparer les prix entre marchés (Castors, Tilène, Kaolack, Touba, Saint-Louis…).</div>
+    <div class="box"><b><svg class="ico" viewBox="0 0 24 24"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg> Météo</b>Prévisions et alertes pour la zone de l'agriculteur.</div>
+    <div class="box"><b><svg class="ico" viewBox="0 0 24 24"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg> Carte</b>Voir les marchés sur une carte.</div>
+    <div class="box"><b><svg class="ico" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" y1="16" x2="8.01" y2="16"/><line x1="16" y1="16" x2="16.01" y2="16"/></svg> Assistant intelligent</b>Poser une question, ou envoyer une photo d'une plante malade.</div>
+    <div class="box"><b><svg class="ico" viewBox="0 0 24 24"><path d="m16.5 9.4-9-5.19M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg> Stock et finances</b>Noter ce qu'on a en stock, ses ventes, ses dépenses, et voir son solde.</div>
+    <div class="box"><b><svg class="ico" viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg> Notifications</b>Recevoir des alertes sur le téléphone.</div>
   </div>
 </section>
 
@@ -121,18 +122,18 @@
   <h2>3. Comment ça marche (sans jargon)</h2>
   <p>Pense à un restaurant :</p>
   <div class="flow">
-    <span>📱 Le téléphone = la salle et le menu</span><i>→</i>
-    <span>⚙️ Le serveur = la cuisine</span><i>→</i>
-    <span>🗄️ La base de données = le garde-manger</span>
+    <span><svg class="ico" viewBox="0 0 24 24"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><line x1="12" x2="12.01" y1="18" y2="18"/></svg> Le téléphone = la salle et le menu</span><i>→</i>
+    <span><svg class="ico" viewBox="0 0 24 24"><rect width="20" height="8" x="2" y="2" rx="2" ry="2"/><rect width="20" height="8" x="2" y="14" rx="2" ry="2"/><line x1="6" x2="6.01" y1="6" y2="6"/><line x1="6" x2="6.01" y1="18" y2="18"/></svg> Le serveur = la cuisine</span><i>→</i>
+    <span><svg class="ico" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/><path d="M3 12A9 3 0 0 0 21 12"/></svg> La base de données = le garde-manger</span>
   </div>
   <table>
     <tr><th>Morceau</th><th>Son rôle</th><th>Outil utilisé</th></tr>
-    <tr><td>📱 <b>L'application mobile</b></td><td>Ce que l'agriculteur voit et touche.</td><td>Flutter</td></tr>
-    <tr><td>⚙️ <b>Le serveur</b></td><td>Il reçoit les demandes, vérifie qui est qui, applique les règles, répond.</td><td>Django (Python)</td></tr>
-    <tr><td>🗄️ <b>La base de données</b></td><td>Là où tout est rangé : comptes, cultures, prix, historique.</td><td>SQLite pendant le développement, PostgreSQL à la mise en ligne</td></tr>
-    <tr><td>🤖 <b>Les assistants IA</b></td><td>Réfléchissent à la question posée.</td><td>Gemini et Groq</td></tr>
-    <tr><td>🔔 <b>Les alertes</b></td><td>Envoient les messages sur le téléphone.</td><td>Firebase</td></tr>
-    <tr><td>💻 <b>Le site web</b></td><td>Version à venir pour ordinateur (pour l'instant très simple).</td><td>React</td></tr>
+    <tr><td><svg class="ico" viewBox="0 0 24 24"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><line x1="12" x2="12.01" y1="18" y2="18"/></svg> <b>L'application mobile</b></td><td>Ce que l'agriculteur voit et touche.</td><td>Flutter</td></tr>
+    <tr><td><svg class="ico" viewBox="0 0 24 24"><rect width="20" height="8" x="2" y="2" rx="2" ry="2"/><rect width="20" height="8" x="2" y="14" rx="2" ry="2"/><line x1="6" x2="6.01" y1="6" y2="6"/><line x1="6" x2="6.01" y1="18" y2="18"/></svg> <b>Le serveur</b></td><td>Il reçoit les demandes, vérifie qui est qui, applique les règles, répond.</td><td>Django (Python)</td></tr>
+    <tr><td><svg class="ico" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/><path d="M3 12A9 3 0 0 0 21 12"/></svg> <b>La base de données</b></td><td>Là où tout est rangé : comptes, cultures, prix, historique.</td><td>SQLite pendant le développement, PostgreSQL à la mise en ligne</td></tr>
+    <tr><td><svg class="ico" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" y1="16" x2="8.01" y2="16"/><line x1="16" y1="16" x2="16.01" y2="16"/></svg> <b>Les assistants IA</b></td><td>Réfléchissent à la question posée.</td><td>Gemini et Groq</td></tr>
+    <tr><td><svg class="ico" viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg> <b>Les alertes</b></td><td>Envoient les messages sur le téléphone.</td><td>Firebase</td></tr>
+    <tr><td><svg class="ico" viewBox="0 0 24 24"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></svg> <b>Le site web</b></td><td>Version à venir pour ordinateur (pour l'instant très simple).</td><td>React</td></tr>
   </table>
   <p><b>Exemple :</b> l'agriculteur ouvre l'app → elle demande les prix au serveur → le serveur va les chercher dans la base de données → il les renvoie → l'écran s'affiche.</p>
   <p><b>Important :</b> chaque partie est rangée dans son propre « tiroir » (cultures, marchés, météo, IA…). Si on modifie l'une, on ne casse pas les autres. C'est ce qu'on appelle une application <i>modulaire</i>.</p>
@@ -167,7 +168,7 @@
 <section id="etat">
   <h2>6. Où on en est, honnêtement</h2>
   <p>Mieux vaut le dire nous-mêmes que de se faire surprendre par le prof.</p>
-  <h3>✅ Ce qui est solide</h3>
+  <h3><svg class="ico" style="color:var(--green)" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Ce qui est solide</h3>
   <ul>
     <li>Le serveur fonctionne et est <b>testé : 175 tests automatiques passent</b> (ils vérifient que tout marche comme prévu).</li>
     <li>L'application mobile passe le contrôle de qualité du code sans aucune erreur.</li>
@@ -175,7 +176,7 @@
     <li>Une chaîne automatique (CI) relance les tests à chaque modification.</li>
   </ul>
   <div class="warn">
-    <h3 style="margin-top:0">⚠️ Ce qui n'est pas encore fini</h3>
+    <h3 style="margin-top:0"><svg class="ico" style="color:var(--red)" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Ce qui n'est pas encore fini</h3>
     <ul>
       <li><b>Certains écrans affichent des données d'exemple</b> (fiche produit, comparaison de marchés, calendrier des cultures) et pas encore les vraies données du serveur.</li>
       <li><b>La vérification du code reçu par SMS est simulée</b> à l'inscription : l'écran existe mais ne vérifie pas vraiment.</li>
@@ -236,7 +237,7 @@
   var root=document.documentElement, btn=document.getElementById('theme-toggle');
   var mq=window.matchMedia('(prefers-color-scheme: dark)');
   function current(){return root.getAttribute('data-theme')||(mq.matches?'dark':'light');}
-  function paint(){btn.textContent=current()==='dark'?'☀️ Mode clair':'🌙 Mode sombre';}
+  function paint(){btn.innerHTML=current()==='dark'?'<span style="vertical-align:middle;margin-right:6px">☼</span> Mode clair':'<span style="vertical-align:middle;margin-right:6px">☾</span> Mode sombre';}
   try{var saved=localStorage.getItem('naatal-theme');if(saved==='dark'||saved==='light')root.setAttribute('data-theme',saved);}catch(e){}
   btn.addEventListener('click',function(){
     var next=current()==='dark'?'light':'dark';

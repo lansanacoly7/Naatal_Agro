@@ -58,7 +58,10 @@ class ApiClient {
             
             final method = error.requestOptions.method.toUpperCase();
             // Les requêtes rejouées par SyncService ne doivent pas être remises en file ici
-            final isReplay = error.requestOptions.extra['replay'] == true;
+            // Les requêtes « en direct » (assistant IA) ne sont jamais mises en file : une question
+            // rejouée plus tard sans que l'utilisateur le sache serait incohérente (et coûteuse).
+            final isReplay = error.requestOptions.extra['replay'] == true ||
+                error.requestOptions.extra['noQueue'] == true;
             if (!isReplay && ['POST', 'PUT', 'PATCH', 'DELETE'].contains(method)) {
               await SyncService.enqueueRequest(
                 method: method,
@@ -155,8 +158,17 @@ class ApiClient {
     return _dio.get(path, queryParameters: queryParams);
   }
 
-  Future<Response> post(String path, {dynamic data}) {
-    return _dio.post(path, data: data);
+  /// [receiveTimeout] allonge l'attente de la réponse pour les appels lents (analyse d'une photo par l'IA) ;
+  /// [queueWhenOffline] à `false` empêche la mise en file hors ligne (réponse attendue à l'écran).
+  Future<Response> post(String path, {dynamic data, Duration? receiveTimeout, bool queueWhenOffline = true}) {
+    return _dio.post(
+      path,
+      data: data,
+      options: Options(
+        receiveTimeout: receiveTimeout,
+        extra: queueWhenOffline ? null : {'noQueue': true},
+      ),
+    );
   }
 
   Future<Response> put(String path, {dynamic data}) {
