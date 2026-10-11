@@ -33,9 +33,16 @@ class AppConstants {
   static const String registerEndpoint = '/users/auth/register/';
   static const String refreshTokenEndpoint = '/users/auth/refresh/';
   static const String logoutEndpoint = '/users/auth/logout/';
+  static const String changePasswordEndpoint = '/users/auth/password/change/';
+
+  // Endpoints Confidentialité & RGPD / CDP
+  static const String deleteAccountEndpoint = '/privacy/delete-account/';
+  static const String exportDataEndpoint = '/privacy/export/';
+  static const String privacyPolicyEndpoint = '/privacy/policy/';
 
   // Endpoints Agriculture
   static const String cropsEndpoint = '/agriculture/crops/';
+  static const String agronomicGuidesEndpoint = '/agriculture/guides/';
 
   // Endpoints Markets
   static const String marketsEndpoint = '/markets/';
