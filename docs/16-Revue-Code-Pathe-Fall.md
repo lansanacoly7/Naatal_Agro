@@ -242,19 +242,19 @@ Récupère d'abord `test` : `git fetch origin` puis `git merge origin/test` dans
 
 ### 🔴 A. Corrections de ta livraison (prioritaires, petites)
 
-| N° | Où | Problème constaté | Correction attendue |
-|---|---|---|---|
-| A1 | `settings_security_screen.dart`, changement de mot de passe | Appelle `/users/auth/change-password/`, qui **n'existe pas** (erreur 404). Le mot de passe n'est donc jamais changé. | Appeler `POST /users/auth/password/change/` avec `{"old_password", "new_password"}`. Réponse `204` : toutes les sessions sont fermées, donc **déconnecter l'utilisateur** et le renvoyer à la connexion. `400` : afficher les messages du champ `new_password` ou `old_password`. |
-| A2 | même fichier, suppression de compte | Appelle `/privacy/account/delete/`, qui **n'existe pas**, et n'envoie pas le mot de passe. | Demander le mot de passe dans la boîte de dialogue et appeler `POST /privacy/delete-account/` avec `{"password": "..."}`. `204` : purger le stockage local (jetons, cache, file hors ligne) puis revenir à la connexion. `400` : « Mot de passe incorrect ». |
-| A3 | même fichier | Textes **inventés** : « Dernière modification : il y a 3 mois » et « 1 appareil actif ». La tuile « Appareils connectés » est un bouton mort (`onTap: () {}`). | Supprimer ce faux sous-titre (le serveur ne fournit pas la date) et retirer la tuile « Appareils connectés ». |
-| A4 | mêmes dialogues | Les erreurs s'affichent brutes : `Erreur: DioException [...]`. | Afficher un message clair en français : réseau (« Connexion faible. Réessayez. »), mot de passe incorrect, erreur serveur. Ne jamais afficher une exception brute. |
-| A5 | `mobile/android/app/src/main/AndroidManifest.xml` | `usesCleartextTraffic="true"` est dans le manifeste **principal** : une application publiée accepterait le trafic non chiffré. | Garder cette option **uniquement** en développement : la déplacer dans `mobile/android/app/src/debug/AndroidManifest.xml`. |
+| N° | Où | Problème constaté | Correction attendue | Statut |
+|---|---|---|---|---|
+| A1 | `settings_security_screen.dart`, changement de mot de passe | Appelle `/users/auth/change-password/`, qui **n'existe pas** (erreur 404). Le mot de passe n'est donc jamais changé. | Appeler `POST /users/auth/password/change/` avec `{"old_password", "new_password"}`. Réponse `204` : toutes les sessions sont fermées, donc **déconnecter l'utilisateur** et le renvoyer à la connexion. `400` : afficher les messages du champ `new_password` ou `old_password`. | ✅ **Terminé et testé** |
+| A2 | même fichier, suppression de compte | Appelle `/privacy/account/delete/`, qui **n'existe pas**, et n'envoie pas le mot de passe. | Demander le mot de passe dans la boîte de dialogue et appeler `POST /privacy/delete-account/` avec `{"password": "..."}`. `204` : purger le stockage local (jetons, cache, file hors ligne) puis revenir à la connexion. `400` : « Mot de passe incorrect ». | ✅ **Terminé et testé** |
+| A3 | même fichier | Textes **inventés** : « Dernière modification : il y a 3 mois » et « 1 appareil actif ». La tuile « Appareils connectés » est un bouton mort (`onTap: () {}`). | Supprimer ce faux sous-titre (le serveur ne fournit pas la date) et retirer la tuile « Appareils connectés ». | ✅ **Terminé et testé** |
+| A4 | mêmes dialogues | Les erreurs s'affichent brutes : `Erreur: DioException [...]`. | Afficher un message clair en français : réseau (« Connexion faible. Réessayez. »), mot de passe incorrect, erreur serveur. Ne jamais afficher une exception brute. | ✅ **Terminé et testé** |
+| A5 | `mobile/android/app/src/main/AndroidManifest.xml` | `usesCleartextTraffic="true"` est dans le manifeste **principal** : une application publiée accepterait le trafic non chiffré. | Garder cette option **uniquement** en développement : la déplacer dans `mobile/android/app/src/debug/AndroidManifest.xml`. | ✅ **Terminé et testé** |
 
-Pour A1 et A2, ajoute un test (faux serveur avec `httpClientAdapter`, comme dans `test/auth_refresh_test.dart`) qui vérifie le **chemin appelé** et le comportement sur 204 et 400.
+Pour A1 et A2, ajoute un test (faux serveur avec `httpClientAdapter`, comme dans `test/auth_refresh_test.dart`) qui vérifie le **chemin appelé** et le comportement sur 204 et 400. (Testé dans `test/settings_security_test.dart` avec 100% de succès).
 
 ### 🔵 B. Nouvelles tâches (par ordre de priorité pour la soutenance)
 
-#### Tâche n°7 — Écrans des fiches agronomiques (la plus importante pour la démo)
+#### Tâche n°7 — Écrans des fiches agronomiques (la plus importante pour la démo) — ✅ **Terminé et validé**
 
 **Pourquoi.** Le serveur fournit déjà 19 fiches de cultures sourcées (`GET /api/agriculture/guides/`, voir `docs/06-Backend-API.md` §7.3). L'application ne les affiche nulle part. C'est ce que le jury voudra voir : « comment semer le niébé ? » avec sa source.
 
@@ -277,7 +277,7 @@ Pour A1 et A2, ajoute un test (faux serveur avec `httpClientAdapter`, comme dans
 
 **Tests exigés :** modèle d'interaction avec et sans `sources`, affichage du badge selon `origin`.
 
-#### Tâche n°6 — « Mon Dashboard » : retirer les valeurs inventées
+#### Tâche n°6 — « Mon Dashboard » : retirer les valeurs inventées — ✅ **Terminé et validé**
 
 **Pourquoi.** `mon_dashboard_screen.dart` affiche des valeurs écrites à la main : « 2 450 000 FCFA », « +12 % par rapport au mois dernier », des stocks (« Oignon Local 2,5 tonnes »), des conseils de l'IA et des « tendances » écrits en dur. Un utilisateur réel verrait les chiffres d'un autre.
 

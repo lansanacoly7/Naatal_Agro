@@ -19,6 +19,8 @@ import '../../features/dashboard/presentation/screens/price_analysis_screen.dart
 import '../../features/dashboard/presentation/screens/calendar_screen.dart';
 import '../../features/agriculture/presentation/screens/crops_list_screen.dart';
 import '../../features/agriculture/presentation/screens/add_crop_screen.dart';
+import '../../features/agriculture/presentation/screens/guides_list_screen.dart';
+import '../../features/agriculture/presentation/screens/guide_detail_screen.dart';
 
 import '../../features/agriculture/data/models/crop.dart';
 import '../../features/agriculture/presentation/screens/crop_detail_screen.dart';
@@ -360,6 +362,20 @@ final routerProvider = Provider<GoRouter>((ref) {
         parentNavigatorKey: _rootNavigatorKey,
         path: '/settings-support',
         builder: (context, state) => const SettingsSupportScreen(),
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: '/agriculture/guides',
+        builder: (context, state) => const GuidesListScreen(),
+        routes: [
+          GoRoute(
+            parentNavigatorKey: _rootNavigatorKey,
+            path: ':slug',
+            builder: (context, state) => GuideDetailScreen(
+              slug: state.pathParameters['slug'] ?? '',
+            ),
+          ),
+        ],
       ),
     ],
   );

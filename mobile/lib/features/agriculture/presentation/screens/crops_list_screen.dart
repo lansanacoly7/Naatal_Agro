@@ -63,6 +63,11 @@ class _CropsListScreenState extends ConsumerState<CropsListScreen> with SingleTi
         elevation: 0,
         actions: [
           IconButton(
+            tooltip: 'Fiches agronomiques officielles',
+            icon: const Icon(Icons.menu_book_rounded, color: AppColors.primary),
+            onPressed: () => context.push('/agriculture/guides'),
+          ),
+          IconButton(
             icon: const Icon(Icons.notifications_outlined, color: Colors.black87),
             onPressed: () => showNotificationsSheet(context, ref),
           ),
@@ -526,11 +531,67 @@ class _CropsListScreenState extends ConsumerState<CropsListScreen> with SingleTi
       child: CustomScrollView(
         slivers: [
           SliverToBoxAdapter(child: _buildSearchBar()),
+          SliverToBoxAdapter(child: _buildGuidesBanner()),
           SliverToBoxAdapter(child: _buildCategoryTabs()),
           SliverToBoxAdapter(child: _buildTrendingSection()),
           _buildAllProductsHeader(),
           _buildAllProductsGrid(),
         ],
+      ),
+    );
+  }
+
+  Widget _buildGuidesBanner() {
+    return GestureDetector(
+      onTap: () => context.push('/agriculture/guides'),
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+        padding: const EdgeInsets.all(16.0),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFF1B5E20), Color(0xFF2E7D32)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.green.withValues(alpha: 0.2),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.15),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.menu_book_rounded, color: Colors.white, size: 24),
+            ),
+            const SizedBox(width: 14),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '19 Fiches Techniques Officielles',
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                  ),
+                  SizedBox(height: 3),
+                  Text(
+                    'Guides de semis, eau, ravageurs & rendements (ISRA, FAO, CIRAD)',
+                    style: TextStyle(color: Colors.white70, fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white, size: 14),
+          ],
+        ),
       ),
     );
   }
