@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/network/api_client.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../data/auth_provider.dart';
 
@@ -132,6 +133,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       email: _emailController.text.trim(),
       dateOfBirth: formattedDob,
       mainCrops: _selectedCrops,
+      privacyAccepted: _acceptTerms,
     );
 
     final authState = ref.read(authStateProvider);
@@ -282,15 +284,17 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     );
   }
 
-  Widget _buildButton(String text, VoidCallback onPressed, {bool showIcon = true, bool isVerifying = false}) {
+  Widget _buildButton(String text, VoidCallback onPressed, {bool showIcon = true, bool isVerifying = false, bool enabled = true}) {
     return SizedBox(
       width: double.infinity,
       height: 56,
       child: ElevatedButton(
-        onPressed: isVerifying ? null : onPressed,
+        onPressed: (enabled && !isVerifying) ? onPressed : null,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
           foregroundColor: Colors.white,
+          disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.5),
+          disabledForegroundColor: Colors.white70,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
           elevation: 0,
         ),
@@ -395,27 +399,168 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       ),
                     ),
                     const SizedBox(width: 12),
-                    const Expanded(
+                    Expanded(
                       child: Text.rich(
                         TextSpan(
                           text: 'J\'accepte les ',
-                          style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
                           children: [
-                            TextSpan(text: 'conditions d\'utilisation', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
-                            TextSpan(text: ' et la '),
-                            TextSpan(text: 'politique de confidentialité.', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
-                          ]
-                        )
+                            const TextSpan(text: 'conditions d\'utilisation', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
+                            const TextSpan(text: ' et la '),
+                            WidgetSpan(
+                              alignment: PlaceholderAlignment.middle,
+                              child: GestureDetector(
+                                onTap: _showPrivacyPolicyModal,
+                                child: const Text(
+                                  'politique de confidentialité.',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: AppColors.primary,
+                                    fontWeight: FontWeight.bold,
+                                    decoration: TextDecoration.underline,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 32),
-                _buildButton('Suivant', _nextStep),
+                _buildButton('Suivant', _nextStep, enabled: _acceptTerms),
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showPrivacyPolicyModal() async {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => DraggableScrollableSheet(
+        initialChildSize: 0.85,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        builder: (context, scrollController) => Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            children: [
+              Container(
+                margin: const EdgeInsets.symmetric(vertical: 12),
+                height: 4,
+                width: 40,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                child: Row(
+                  children: [
+                    const Icon(Icons.privacy_tip_outlined, color: AppColors.primary),
+                    const SizedBox(width: 8),
+                    const Expanded(
+                      child: Text(
+                        'Politique de Confidentialité',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              Expanded(
+                child: FutureBuilder(
+                  future: ApiClient().get('/privacy/policy/'),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    if (snapshot.hasError || !snapshot.hasData) {
+                      return Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.error_outline, color: Colors.red, size: 40),
+                              const SizedBox(height: 12),
+                              const Text(
+                                'Impossible de charger la politique de confidentialité en ligne.',
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                '${snapshot.error ?? "Erreur réseau"}',
+                                style: const TextStyle(fontSize: 12, color: Colors.grey),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }
+                    final res = snapshot.data;
+                    final data = res?.data;
+                    final content = (data is Map && data['content'] != null)
+                        ? data['content'].toString()
+                        : 'Politique de confidentialité Naatal Agro.';
+                    final version = (data is Map && data['version'] != null)
+                        ? 'Version ${data['version']}'
+                        : '';
+
+                    return ListView(
+                      controller: scrollController,
+                      padding: const EdgeInsets.all(20),
+                      children: [
+                        if (version.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: Text(
+                              version,
+                              style: const TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        Text(
+                          content,
+                          style: const TextStyle(fontSize: 14, height: 1.5),
+                        ),
+                        const SizedBox(height: 24),
+                        ElevatedButton(
+                          onPressed: () {
+                            setState(() => _acceptTerms = true);
+                            Navigator.pop(context);
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                          ),
+                          child: const Text('J\'accepte la politique de confidentialité'),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

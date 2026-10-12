@@ -94,6 +94,7 @@ class AuthRepository {
     String? email,
     String? dateOfBirth,
     List<String> mainCrops = const [],
+    bool privacyAccepted = true,
   }) async {
     try {
       final formattedPhone = _formatPhone(phone);
@@ -106,6 +107,7 @@ class AuthRepository {
           'language': language,
           'location': location,
           'role': role,
+          'privacy_accepted': privacyAccepted,
           if (email != null && email.isNotEmpty) 'email': email,
           if (dateOfBirth != null && dateOfBirth.isNotEmpty) 'date_of_birth': dateOfBirth,
           if (mainCrops.isNotEmpty) 'main_crops': mainCrops,

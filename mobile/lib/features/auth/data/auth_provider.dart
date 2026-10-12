@@ -59,6 +59,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<bool>> {
     String? email,
     String? dateOfBirth,
     List<String> mainCrops = const [],
+    bool privacyAccepted = true,
   }) async {
     state = const AsyncValue.loading();
     try {
@@ -72,6 +73,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<bool>> {
         email: email,
         dateOfBirth: dateOfBirth,
         mainCrops: mainCrops,
+        privacyAccepted: privacyAccepted,
       );
       state = const AsyncValue.data(true);
     } catch (e, st) {
