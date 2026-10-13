@@ -20,6 +20,37 @@ class AppColors {
   static const Color error = Color(0xFFFF3B30);
   static const Color warning = Color(0xFFFF9500);
 
+  // Accents Sahéliens & Terroir (Niayes, Diamniadio, Bassin Arachidier)
+  static const Color accentGold = Color(0xFFD97706); // Ocre / Or des récoltes
+  static const Color accentGoldLight = Color(0xFFFEF3C7);
+  static const Color accentEmerald = Color(0xFF059669); // Émeraude vivace
+  static const Color accentSky = Color(0xFF0284C7); // Azur météorologique
+
+  // Gradients Signature Naatal Agro
+  static const LinearGradient primaryGradient = LinearGradient(
+    colors: [Color(0xFF0B3B1D), Color(0xFF1B5E20), Color(0xFF15803D)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  static const LinearGradient weatherGradient = LinearGradient(
+    colors: [Color(0xFF0B3B1D), Color(0xFF1B5E20), Color(0xFF16A34A)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  static const LinearGradient goldGradient = LinearGradient(
+    colors: [Color(0xFFD97706), Color(0xFFF59E0B)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  static const LinearGradient aiGradient = LinearGradient(
+    colors: [Color(0xFF0A3D1E), Color(0xFF059669)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
   // Texte
   static const Color textPrimary = Color(0xFF1C1C1E); // Noir doux
   static const Color textSecondary = Color(0xFF8E8E93); // Gris doux

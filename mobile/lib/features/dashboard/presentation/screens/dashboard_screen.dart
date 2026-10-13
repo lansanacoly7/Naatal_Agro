@@ -259,12 +259,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: AppColors.primary,
+        gradient: AppColors.weatherGradient,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.3),
-            blurRadius: 20,
+            color: const Color(0xFF0E4D25).withValues(alpha: 0.35),
+            blurRadius: 22,
             offset: const Offset(0, 10),
           ),
         ],
@@ -272,13 +272,40 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            weather.location,
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.8),
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.location_on_rounded, color: Colors.white70, size: 14),
+                  const SizedBox(width: 4),
+                  Text(
+                    weather.location,
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.9),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.satellite_alt_rounded, color: Colors.white, size: 11),
+                    SizedBox(width: 4),
+                    Text('ANACIM LIVE', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 0.5)),
+                  ],
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 12),
           Row(
@@ -425,40 +452,40 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: [
-        _buildActionItem(Icons.insights, 'Dashboard', () => context.push('/mon_dashboard')), 
-        _buildActionItem(Icons.calendar_month_outlined, 'Calendrier', () => context.push('/calendar')), 
-        _buildActionItem(Icons.notifications_active_outlined, 'Alertes', () => context.push('/price-alerts')),
-        _buildActionItem(Icons.auto_awesome, 'Naatal IA', () => context.go('/ai')),
+        _buildActionItem(Icons.insights_rounded, 'Dashboard', () => context.push('/mon_dashboard'), gradient: AppColors.primaryGradient), 
+        _buildActionItem(Icons.calendar_month_rounded, 'Calendrier', () => context.push('/calendar'), gradient: const LinearGradient(colors: [Color(0xFF0284C7), Color(0xFF0369A1)])), 
+        _buildActionItem(Icons.notifications_active_rounded, 'Alertes', () => context.push('/price-alerts'), gradient: AppColors.goldGradient),
+        _buildActionItem(Icons.auto_awesome_rounded, 'Naatal IA', () => context.go('/ai'), gradient: AppColors.aiGradient),
       ],
     );
   }
 
-  Widget _buildActionItem(IconData icon, String label, VoidCallback onTap) {
+  Widget _buildActionItem(IconData icon, String label, VoidCallback onTap, {LinearGradient? gradient}) {
     return GestureDetector(
       onTap: onTap,
       child: Column(
         children: [
           Container(
-            width: 60,
-            height: 60,
+            width: 58,
+            height: 58,
             decoration: BoxDecoration(
-              color: AppColors.primary,
-              shape: BoxShape.circle,
+              gradient: gradient ?? AppColors.primaryGradient,
+              borderRadius: BorderRadius.circular(18),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.2),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
+                  color: (gradient?.colors.first ?? AppColors.primary).withValues(alpha: 0.25),
+                  blurRadius: 12,
+                  offset: const Offset(0, 5),
                 ),
               ],
             ),
-            child: Icon(icon, color: Colors.white, size: 28),
+            child: Icon(icon, color: Colors.white, size: 26),
           ),
           const SizedBox(height: 8),
           Text(
             label,
             style: const TextStyle(
-              fontSize: 13,
+              fontSize: 12.5,
               fontWeight: FontWeight.w600,
               color: AppColors.textPrimary,
             ),
