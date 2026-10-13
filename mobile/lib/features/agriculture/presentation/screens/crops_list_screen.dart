@@ -980,7 +980,8 @@ class _CropsListScreenState extends ConsumerState<CropsListScreen> with SingleTi
               ],
             ),
           ),
-          Expanded(
+        ),
+        Expanded(
             flex: 4,
             child: Padding(
               padding: const EdgeInsets.all(12.0),
@@ -1050,8 +1051,9 @@ class _CropsListScreenState extends ConsumerState<CropsListScreen> with SingleTi
           ),
         ],
       ),
-    ));
-  }
+    ),
+  );
+}
 
   void _showEditCropDialog(BuildContext context, WidgetRef ref, Crop crop) {
     final nameController = TextEditingController(text: crop.name);
