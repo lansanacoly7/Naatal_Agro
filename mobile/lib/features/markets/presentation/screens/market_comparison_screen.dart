@@ -68,16 +68,9 @@ class _MarketComparisonScreenState extends ConsumerState<MarketComparisonScreen>
                 if (marketPrices.isNotEmpty) {
                   marketPrices.sort((a, b) => a.date.compareTo(b.date));
                   realMarketPrices[market.name] = marketPrices.last.priceValue;
-                } else if (markets.length <= 5 && fallbackPrice > 0) {
-                  // Si pas de relevé spécifique mais marché actif, utiliser le cours moyen
+                } else if (fallbackPrice > 0 && markets.length <= 5) {
+                  // Si pas de relevé spécifique mais marché actif, utiliser le cours fourni
                   realMarketPrices[market.name] = fallbackPrice;
-                }
-              }
-
-              // Si aucun marché n'avait de prix exact, utiliser au moins les 3 premiers marchés
-              if (realMarketPrices.isEmpty && markets.isNotEmpty) {
-                for (final m in markets.take(4)) {
-                  realMarketPrices[m.name] = fallbackPrice > 0 ? fallbackPrice : 450.0;
                 }
               }
 
@@ -93,7 +86,7 @@ class _MarketComparisonScreenState extends ConsumerState<MarketComparisonScreen>
                 final values = realMarketPrices.values.toList();
                 avgPrice = values.reduce((a, b) => a + b) / values.length;
               } else {
-                avgPrice = fallbackPrice > 0 ? fallbackPrice : 450.0;
+                avgPrice = fallbackPrice > 0 ? fallbackPrice : 0.0;
               }
 
               return CustomScrollView(
@@ -116,7 +109,18 @@ class _MarketComparisonScreenState extends ConsumerState<MarketComparisonScreen>
                           const SizedBox(height: 12),
                           _buildMarketChips(realMarketPrices.keys.toList()),
                           const SizedBox(height: 24),
-                          if (_selectedMarkets.isNotEmpty) ...[
+                          if (realMarketPrices.isEmpty) ...[
+                            const Center(
+                              child: Padding(
+                                padding: EdgeInsets.all(32.0),
+                                child: Text(
+                                  "Aucun relevé disponible pour ce produit sur les marchés répertoriés.",
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(color: AppColors.textSecondary),
+                                ),
+                              ),
+                            ),
+                          ] else if (_selectedMarkets.isNotEmpty) ...[
                             _buildBestMarketAdvice(realMarketPrices, avgPrice),
                             const SizedBox(height: 24),
                             const Text('Détails des cotations par marché', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
@@ -188,7 +192,7 @@ class _MarketComparisonScreenState extends ConsumerState<MarketComparisonScreen>
                       color: Colors.white.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: const Text('Cotations Officielles Sénégal', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+                    child: const Text('Relevés indicatifs de marché', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
                   ),
                   const SizedBox(height: 8),
                   Row(
@@ -206,7 +210,7 @@ class _MarketComparisonScreenState extends ConsumerState<MarketComparisonScreen>
                         children: [
                           const Text('Prix moyen relevé', style: TextStyle(color: Colors.white70, fontSize: 11)),
                           Text(
-                            '${avgPrice.toInt()} FCFA/kg',
+                            avgPrice > 0 ? '${avgPrice.toInt()} FCFA/kg' : 'Prix non renseigné',
                             style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
                           ),
                         ],

@@ -52,7 +52,7 @@ class _MarketPricesSectionState extends ConsumerState<MarketPricesSection> {
     return _referenceBasePrices.keys.toList();
   }
 
-  double _getProductCurrentPrice(String product, List<Price>? history) {
+  double? _getProductCurrentPrice(String product, List<Price>? history) {
     if (history != null && history.isNotEmpty) {
       return history.last.priceValue;
     }
@@ -63,7 +63,7 @@ class _MarketPricesSectionState extends ConsumerState<MarketPricesSection> {
     if (match != null && match.price > 0) {
       return match.price;
     }
-    return _referenceBasePrices[product] ?? 350.0;
+    return _referenceBasePrices[product];
   }
 
   String _getImageForProduct(String productName) {
@@ -142,7 +142,9 @@ class _MarketPricesSectionState extends ConsumerState<MarketPricesSection> {
             (m) => m?.productName.toLowerCase() == product.toLowerCase(),
             orElse: () => null,
           );
-          final currentPrice = match?.price ?? _referenceBasePrices[product] ?? 350.0;
+          final double? currentPrice = (match != null && match.price > 0)
+              ? match.price
+              : _referenceBasePrices[product];
           final isUp = match != null ? (match.trend == 'up') : true;
           final trendColor = isUp ? Colors.green : Colors.red;
           final trendIcon = isUp ? Icons.trending_up : Icons.trending_down;
@@ -220,16 +222,22 @@ class _MarketPricesSectionState extends ConsumerState<MarketPricesSection> {
                         Row(
                           children: [
                             Text(
-                              '${currentPrice.toInt()} F',
-                              style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 13),
+                              currentPrice != null ? '${currentPrice.toInt()} F' : 'Non renseigné',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w900,
+                                fontSize: currentPrice != null ? 13 : 11,
+                                color: currentPrice != null ? AppColors.textPrimary : AppColors.textSecondary,
+                              ),
                             ),
                             const Spacer(),
-                            Icon(trendIcon, size: 12, color: trendColor),
-                            const SizedBox(width: 2),
-                            Text(
-                              trendLabel,
-                              style: TextStyle(color: trendColor, fontSize: 10, fontWeight: FontWeight.bold),
-                            ),
+                            if (currentPrice != null) ...[
+                              Icon(trendIcon, size: 12, color: trendColor),
+                              const SizedBox(width: 2),
+                              Text(
+                                trendLabel,
+                                style: TextStyle(color: trendColor, fontSize: 10, fontWeight: FontWeight.bold),
+                              ),
+                            ],
                           ],
                         ),
                       ],
@@ -262,6 +270,31 @@ class _MarketPricesSectionState extends ConsumerState<MarketPricesSection> {
 
   Widget _buildCurrentPriceHeader(List<Price>? history) {
     final currentPrice = _getProductCurrentPrice(_selectedProduct, history);
+    if (currentPrice == null) {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Prix moyen actuel',
+                style: TextStyle(color: Colors.grey.shade500, fontSize: 13),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'Prix non renseigné',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ],
+          ),
+        ],
+      );
+    }
     double previousPrice = currentPrice;
     if (history != null && history.length > 1) {
       previousPrice = history[history.length - 2].priceValue;
@@ -529,6 +562,21 @@ class _MarketPricesSectionState extends ConsumerState<MarketPricesSection> {
 
   Widget _buildFallbackChart() {
     final currentPrice = _getProductCurrentPrice(_selectedProduct, null);
+    if (currentPrice == null) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.show_chart_rounded, size: 40, color: Colors.grey),
+            SizedBox(height: 8),
+            Text(
+              'Aucun relevé disponible pour ce produit',
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+            ),
+          ],
+        ),
+      );
+    }
     final spots = [
       FlSpot(0, currentPrice),
       FlSpot(1, currentPrice),

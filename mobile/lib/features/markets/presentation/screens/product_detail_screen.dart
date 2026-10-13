@@ -79,9 +79,9 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
           final sortedPrices = List<Price>.from(prices)
             ..sort((a, b) => a.date.compareTo(b.date));
 
-          final currentPrice = sortedPrices.isNotEmpty
+          final double? currentPrice = sortedPrices.isNotEmpty
               ? sortedPrices.last.priceValue
-              : (fallbackPrice > 0 ? fallbackPrice : 450.0);
+              : (fallbackPrice > 0 ? fallbackPrice : null);
 
           double trendPercentage = 0.0;
           if (sortedPrices.length >= 2) {
@@ -158,7 +158,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     BuildContext context,
     String name,
     String imageAsset,
-    double currentPrice,
+    double? currentPrice,
     double trendPercentage,
     String category,
   ) {
@@ -231,7 +231,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                       const SizedBox(width: 8),
                       _buildGlassChip(category, null, Colors.white),
                       const SizedBox(width: 8),
-                      _buildGlassChip('Marché certifié', Icons.verified, Colors.amber),
+                      _buildGlassChip('Relevés indicatifs de marché', Icons.storefront_outlined, Colors.amber),
                     ],
                   ),
                   const SizedBox(height: 12),
@@ -255,8 +255,8 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                         children: [
                           const Text('Cours actuel', style: TextStyle(color: Colors.white70, fontSize: 11)),
                           Text(
-                            '${currentPrice.toInt()} FCFA/kg',
-                            style: const TextStyle(color: Colors.white, fontSize: 19, fontWeight: FontWeight.bold),
+                            currentPrice != null ? '${currentPrice.toInt()} FCFA/kg' : 'Prix non renseigné',
+                            style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
                           ),
                         ],
                       ),
@@ -302,15 +302,24 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
   }
 
   // --- Quick Actions ---
-  Widget _buildQuickActions(double currentPrice) {
+  Widget _buildQuickActions(double? currentPrice) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         _buildActionButton(Icons.insights, 'Analyse', const Color(0xFF673AB7), () {
-          context.push('/price-analysis', extra: {
-            'product': widget.productName,
-            'price': currentPrice,
-          });
+          if (currentPrice != null) {
+            context.push('/price-analysis', extra: {
+              'product': widget.productName,
+              'price': currentPrice,
+            });
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Aucun relevé disponible à analyser.'),
+                backgroundColor: AppColors.primary,
+              ),
+            );
+          }
         }),
         _buildActionButton(Icons.notifications_active, 'Alerte', Colors.amber.shade700, () => context.push('/price-alerts')),
         _buildActionButton(Icons.inventory_2, 'Stock', Colors.brown.shade400, () => context.push('/inventory')),
@@ -413,7 +422,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
   Widget _buildDescriptionCard(AgronomicGuide? guide) {
     final text = (guide != null && guide.summary.isNotEmpty)
         ? guide.summary
-        : "Produit agricole suivi sur le réseau des marchés sénégalais. Les cours sont enregistrés en temps réel au kilogramme ou au sac sur les principaux foirails régionaux.";
+        : "Produit agricole suivi sur le réseau des marchés sénégalais. Les cours sont relevés au kilogramme ou au sac sur les principaux foirails régionaux.";
 
     return Container(
       width: double.infinity,
@@ -464,11 +473,44 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     );
   }
 
-  // --- Price Trend Chart Réel ---
-  Widget _buildPriceTrendChart(List<Price> prices, double currentPrice) {
+  Widget _buildPriceTrendChart(List<Price> prices, double? currentPrice) {
+    if (prices.isEmpty && currentPrice == null) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.02),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: const Column(
+          children: [
+            Icon(Icons.show_chart_rounded, size: 40, color: Colors.grey),
+            SizedBox(height: 12),
+            Text(
+              'Aucun relevé de cotation disponible',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppColors.textPrimary),
+            ),
+            SizedBox(height: 6),
+            Text(
+              'Les cotations historiques seront affichées dès leur enregistrement.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+            ),
+          ],
+        ),
+      );
+    }
+    final safePrice = currentPrice ?? (prices.isNotEmpty ? prices.last.priceValue : 0.0);
     final List<FlSpot> spots = [];
-    double minY = currentPrice * 0.9;
-    double maxY = currentPrice * 1.1;
+    double minY = safePrice * 0.9;
+    double maxY = safePrice * 1.1;
 
     if (prices.isNotEmpty) {
       final values = prices.map((p) => p.priceValue).toList();
@@ -477,8 +519,8 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
       minY = (minVal * 0.9).floorToDouble();
       maxY = (maxVal * 1.1).ceilToDouble();
       if (minY == maxY) {
-        minY = currentPrice * 0.9;
-        maxY = currentPrice * 1.1;
+        minY = safePrice * 0.9;
+        maxY = safePrice * 1.1;
       }
 
       for (int i = 0; i < prices.length; i++) {
@@ -487,9 +529,9 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     } else {
       // Courbe de référence basée sur le cours actuel
       spots.addAll([
-        FlSpot(0, currentPrice),
-        FlSpot(1, currentPrice),
-        FlSpot(2, currentPrice),
+        FlSpot(0, safePrice),
+        FlSpot(1, safePrice),
+        FlSpot(2, safePrice),
       ]);
     }
 
@@ -631,7 +673,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
           const Divider(color: Color(0xFFF0F0F0), height: 24),
           _buildInfoRow(Icons.scale, 'Unité de vente', 'Kilogramme (Kg)'),
           const Divider(color: Color(0xFFF0F0F0), height: 24),
-          _buildInfoRow(Icons.verified_outlined, 'Source', 'SIM / CSA Sénégal'),
+          _buildInfoRow(Icons.storefront_outlined, 'Source', 'Relevés indicatifs de marché'),
         ],
       ),
     );
@@ -653,7 +695,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     );
   }
 
-  Widget _buildMarketComparison(double currentPrice, String imageAsset) {
+  Widget _buildMarketComparison(double? currentPrice, String imageAsset) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -685,7 +727,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                 context.push('/market_comparison', extra: {
                   'productName': widget.productName,
                   'imageAsset': imageAsset,
-                  'price': '${currentPrice.toInt()} FCFA/kg',
+                  'price': currentPrice != null ? '${currentPrice.toInt()} FCFA/kg' : '',
                 });
               },
               style: ElevatedButton.styleFrom(

@@ -65,36 +65,46 @@ class _MarketDetailScreenState extends ConsumerState<MarketDetailScreen> {
                       _buildCurrentPrices(marketPrices),
                       const SizedBox(height: 24),
                       _buildMarketEvolution(marketPrices),
+                      const SizedBox(height: 24),
+                      _buildMarketInfo(marketPrices),
                     ],
                   );
                 },
-                loading: () => const Center(child: Padding(
-                  padding: EdgeInsets.all(32.0),
-                  child: CircularProgressIndicator(color: AppColors.primary),
-                )),
-                error: (err, _) => Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24.0),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.error_outline, color: Colors.red, size: 36),
-                        const SizedBox(height: 8),
-                        Text("Erreur: $err", textAlign: TextAlign.center),
-                        const SizedBox(height: 12),
-                        ElevatedButton(
-                          onPressed: () => ref.invalidate(pricesListProvider),
-                          child: const Text('Réessayer'),
+                loading: () => Column(
+                  children: [
+                    const Center(child: Padding(
+                      padding: EdgeInsets.all(32.0),
+                      child: CircularProgressIndicator(color: AppColors.primary),
+                    )),
+                    const SizedBox(height: 24),
+                    _buildMarketInfo([]),
+                  ],
+                ),
+                error: (err, _) => Column(
+                  children: [
+                    Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24.0),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.error_outline, color: Colors.red, size: 36),
+                            const SizedBox(height: 8),
+                            Text("Erreur: $err", textAlign: TextAlign.center),
+                            const SizedBox(height: 12),
+                            ElevatedButton(
+                              onPressed: () => ref.invalidate(pricesListProvider),
+                              child: const Text('Réessayer'),
+                            ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
-                  ),
+                    const SizedBox(height: 24),
+                    _buildMarketInfo([]),
+                  ],
                 ),
               ),
-            const SizedBox(height: 24),
-
-            // 4. Fiche Marché (Détails, Activité)
-            _buildMarketInfo(),
             const SizedBox(height: 24),
 
             // 5. Actions (Itinéraire, Alerte)
@@ -259,11 +269,33 @@ class _MarketDetailScreenState extends ConsumerState<MarketDetailScreen> {
   }
 
   Widget _buildMarketEvolution(List<Price> marketPrices) {
-    final featuredPrice = marketPrices.isNotEmpty ? marketPrices.first : null;
-    final isUp = featuredPrice?.trend == 'up';
-    final isDown = featuredPrice?.trend == 'down';
+    if (marketPrices.isEmpty) {
+      return Container(
+        margin: const EdgeInsets.symmetric(horizontal: 24),
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 15, offset: const Offset(0, 5))],
+        ),
+        child: const Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Évolution du marché', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            SizedBox(height: 12),
+            Text(
+              'Aucune cotation enregistrée pour ce marché.',
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final featuredPrice = marketPrices.first;
+    final isUp = featuredPrice.trend == 'up';
+    final isDown = featuredPrice.trend == 'down';
     final trendLabel = isUp ? 'Haussière' : (isDown ? 'Baissière' : 'Stable');
-    final trendPct = isUp ? '+8.4%' : (isDown ? '-5.2%' : '0.0%');
     final trendColor = isUp ? Colors.green : (isDown ? Colors.red : Colors.orange);
 
     return Container(
@@ -282,33 +314,41 @@ class _MarketDetailScreenState extends ConsumerState<MarketDetailScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    featuredPrice?.productName ?? 'Denrées du Marché',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    featuredPrice != null ? '${featuredPrice.priceValue.toInt()} FCFA/kg' : 'Cotation en cours',
-                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Icon(isUp ? Icons.arrow_upward : (isDown ? Icons.arrow_downward : Icons.arrow_forward), size: 14, color: trendColor),
-                      Text(' $trendPct ', style: TextStyle(color: trendColor, fontWeight: FontWeight.bold)),
-                      Text('7 derniers jours', style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
-                    ],
-                  ),
-                ],
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      featuredPrice.productName,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${featuredPrice.priceValue.toInt()} FCFA/kg',
+                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Relevé indicatif du ${featuredPrice.date}',
+                      style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                    ),
+                  ],
+                ),
               ),
-              SizedBox(
-                width: 100,
-                height: 40,
-                child: CustomPaint(
-                  painter: SparklinePainter(isUp: !isDown),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: trendColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: trendColor.withValues(alpha: 0.2)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(isUp ? Icons.trending_up : (isDown ? Icons.trending_down : Icons.trending_flat), color: trendColor, size: 18),
+                    const SizedBox(width: 6),
+                    Text(trendLabel, style: TextStyle(color: trendColor, fontWeight: FontWeight.bold, fontSize: 13)),
+                  ],
                 ),
               ),
             ],
@@ -316,14 +356,13 @@ class _MarketDetailScreenState extends ConsumerState<MarketDetailScreen> {
           const Divider(height: 32),
           Row(
             children: [
-              Icon(Icons.insights, size: 18, color: AppColors.primary),
+              const Icon(Icons.info_outline, size: 18, color: AppColors.primary),
               const SizedBox(width: 8),
-              const Text('Tendance générale :', style: TextStyle(color: Colors.black87)),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(color: trendColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
-                child: Text(trendLabel, style: TextStyle(color: trendColor, fontWeight: FontWeight.bold, fontSize: 12)),
+              Expanded(
+                child: Text(
+                  'Tendance observée sur ${market.name} selon les derniers relevés.',
+                  style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                ),
               ),
             ],
           ),
@@ -332,7 +371,14 @@ class _MarketDetailScreenState extends ConsumerState<MarketDetailScreen> {
     );
   }
 
-  Widget _buildMarketInfo() {
+  Widget _buildMarketInfo(List<Price> marketPrices) {
+    final productsStr = marketPrices.isNotEmpty
+        ? marketPrices.map((p) => p.productName).toSet().take(4).join(', ')
+        : 'Céréales, légumes et vivriers';
+    final latestUpdate = marketPrices.isNotEmpty
+        ? marketPrices.first.date
+        : 'Relevé indicatif périodique';
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Column(
@@ -340,10 +386,13 @@ class _MarketDetailScreenState extends ConsumerState<MarketDetailScreen> {
         children: [
           const Text('Fiche marché', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
           const SizedBox(height: 16),
-          _buildInfoRow('Produits principaux', 'Oignon, Tomate, Pomme de terre'),
-          _buildInfoRow('Prix mis à jour', 'Aujourd\'hui • 08:30'),
-          _buildInfoRow('Niveau d\'activité', 'Élevé'),
-          _buildInfoRow('Accessibilité', 'Bonne (Routes goudronnées)'),
+          _buildInfoRow('Produits répertoriés', productsStr),
+          _buildInfoRow('Dernier relevé', latestUpdate),
+          _buildInfoRow('Localisation', market.region),
+          _buildInfoRow(
+            'Horaires',
+            '${market.openingTime?.substring(0, 5) ?? "08:00"} - ${market.closingTime?.substring(0, 5) ?? "18:00"}',
+          ),
         ],
       ),
     );
@@ -414,31 +463,31 @@ class _MarketDetailScreenState extends ConsumerState<MarketDetailScreen> {
                         Container(
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(color: Colors.grey.shade50, borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.grey.shade200)),
-                          child: const Column(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Text('Distance estimée', style: TextStyle(color: Colors.grey)),
-                                  Text('≈ 18 km', style: TextStyle(fontWeight: FontWeight.bold)),
+                                  Icon(Icons.location_off_outlined, color: Colors.grey.shade600, size: 20),
+                                  const SizedBox(width: 8),
+                                  const Expanded(
+                                    child: Text(
+                                      "Calcul d'itinéraire non disponible (nécessite la géolocalisation active)",
+                                      style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                                    ),
+                                  ),
                                 ],
                               ),
-                              SizedBox(height: 8),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text('Temps de route moyen', style: TextStyle(color: Colors.grey)),
-                                  Text('≈ 25 min', style: TextStyle(fontWeight: FontWeight.bold)),
-                                ],
-                              ),
-                              SizedBox(height: 8),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text('Coût estimé (Transport local)', style: TextStyle(color: Colors.grey)),
-                                  Text('≈ 3 500 FCFA / sac', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary)),
-                                ],
-                              ),
+                              if (market.locationGps != null && market.locationGps!.isNotEmpty) ...[
+                                const SizedBox(height: 12),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    const Text('Coordonnées GPS', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                                    Text(market.locationGps!, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                                  ],
+                                ),
+                              ],
                             ],
                           ),
                         ),
@@ -448,7 +497,7 @@ class _MarketDetailScreenState extends ConsumerState<MarketDetailScreen> {
                             Navigator.pop(ctx);
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('Guidage vers ${market.name} activé.'),
+                                content: Text('Position de ${market.name} : ${market.locationGps ?? market.region}'),
                                 backgroundColor: AppColors.primary,
                                 behavior: SnackBarBehavior.floating,
                               ),
@@ -459,7 +508,7 @@ class _MarketDetailScreenState extends ConsumerState<MarketDetailScreen> {
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                           ),
-                          child: const Text('Démarrer l\'itinéraire GPS'),
+                          child: const Text('Localisation du marché'),
                         ),
                       ],
                     ),
