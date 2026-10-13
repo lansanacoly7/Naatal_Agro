@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
@@ -13,6 +14,7 @@ class ApiClient {
   late final Dio _dio;
   final FlutterSecureStorage _secureStorage;
   final HttpClientAdapter? _httpClientAdapter;
+  Completer<bool>? _refreshCompleter;
 
   /// [httpClientAdapter] permet d'injecter un faux serveur dans les tests.
   ApiClient({FlutterSecureStorage? secureStorage, HttpClientAdapter? httpClientAdapter})
@@ -99,10 +101,25 @@ class ApiClient {
     );
   }
 
-  /// Tente de rafraîchir le JWT de manière sécurisée.
-  /// Le backend fait tourner les jetons de rafraîchissement : l'ancien est invalidé
-  /// à chaque renouvellement, le nouveau doit donc être conservé.
+  /// Tente de rafraîchir le JWT de manière sécurisée avec verrouillage anti-concurrence.
   Future<bool> _refreshToken() async {
+    if (_refreshCompleter != null) {
+      return _refreshCompleter!.future;
+    }
+    _refreshCompleter = Completer<bool>();
+    try {
+      final success = await _performTokenRefresh();
+      _refreshCompleter!.complete(success);
+      return success;
+    } catch (e) {
+      _refreshCompleter!.complete(false);
+      return false;
+    } finally {
+      _refreshCompleter = null;
+    }
+  }
+
+  Future<bool> _performTokenRefresh() async {
     try {
       final refreshToken = await _secureStorage.read(key: AppConstants.refreshTokenKey);
       if (refreshToken == null || refreshToken.isEmpty) return false;
