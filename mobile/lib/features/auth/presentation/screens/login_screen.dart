@@ -111,8 +111,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 Navigator.pop(ctx);
                 if (phone.isNotEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Instructions SMS envoyées au $phone.'),
+                    const SnackBar(
+                      content: Text(
+                        "La réinitialisation automatique par SMS est en attente d'intégration de la passerelle opérateur. Veuillez contacter le support ou votre administrateur pour réinitialiser votre accès.",
+                      ),
                       backgroundColor: AppColors.primary,
                       behavior: SnackBarBehavior.floating,
                     ),
