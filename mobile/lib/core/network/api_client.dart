@@ -224,6 +224,8 @@ class ApiClient {
     for (final key in prefs.getKeys().where((k) => k.startsWith('cached_user_profile')).toList()) {
       await prefs.remove(key);
     }
+    // Purger également la file d'attente hors ligne
+    await SyncService.clearQueue();
   }
 
   /// Vérifier si l'utilisateur possède un jeton d'accès sécurisé

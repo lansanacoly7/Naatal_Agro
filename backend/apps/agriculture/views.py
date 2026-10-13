@@ -1,7 +1,12 @@
 from django.db.models import Q
-from rest_framework import viewsets, permissions
-from .models import AgronomicGuide, Crop, Activity, PestReport
-from .serializers import AgronomicGuideSerializer, CropSerializer, ActivitySerializer, PestReportSerializer
+from rest_framework import viewsets, permissions, status
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from .models import AgronomicGuide, Crop, Activity, PestReport, Harvest
+from .serializers import (
+    AgronomicGuideSerializer, CropSerializer, ActivitySerializer,
+    PestReportSerializer, HarvestSerializer, HarvestCreateSerializer
+)
 from apps.users.permissions import IsOwnerOrReadOnly
 
 class CropViewSet(viewsets.ModelViewSet):
@@ -9,12 +14,23 @@ class CropViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        # Restreint strictement aux cultures de l'utilisateur authentifié ; les activités imbriquées
-        # sont chargées en une seule requête (sinon une requête supplémentaire par culture)
-        return Crop.objects.filter(user=self.request.user).prefetch_related('activities')
+        # Restreint strictement aux cultures de l'utilisateur authentifié ; les activités et récoltes imbriquées
+        # sont chargées en une seule requête
+        return Crop.objects.filter(user=self.request.user).prefetch_related('activities', 'harvests').select_related('guide')
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+
+    @action(detail=True, methods=['post'], url_path='harvest')
+    def record_harvest(self, request, pk=None):
+        crop = self.get_object()
+        serializer = HarvestCreateSerializer(
+            data=request.data,
+            context={'request': request, 'crop': crop}
+        )
+        serializer.is_valid(raise_exception=True)
+        harvest = serializer.save()
+        return Response(HarvestSerializer(harvest).data, status=status.HTTP_201_CREATED)
 
 class ActivityViewSet(viewsets.ModelViewSet):
     serializer_class = ActivitySerializer

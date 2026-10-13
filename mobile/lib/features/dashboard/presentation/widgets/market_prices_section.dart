@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:go_router/go_router.dart';
-import 'dart:math' as math;
 import '../../../../core/theme/app_theme.dart';
 import '../../data/models/dashboard_data.dart';
 import '../../../inventory/data/models/stock_item.dart';
+import '../../../markets/data/markets_provider.dart';
+import '../../../markets/data/models/price.dart';
 
-class MarketPricesSection extends StatefulWidget {
+class MarketPricesSection extends ConsumerStatefulWidget {
   final List<MarketPrice> markets;
   final List<StockItem> stocks;
 
@@ -17,52 +19,51 @@ class MarketPricesSection extends StatefulWidget {
   });
 
   @override
-  State<MarketPricesSection> createState() => _MarketPricesSectionState();
+  ConsumerState<MarketPricesSection> createState() => _MarketPricesSectionState();
 }
 
-class _MarketPricesSectionState extends State<MarketPricesSection> {
+class _MarketPricesSectionState extends ConsumerState<MarketPricesSection> {
   String _selectedProduct = 'Oignon';
 
-  // Données générées dynamiquement pour un look boursier réaliste (30 jours)
-  final Map<String, List<double>> _historicalData = {};
-  final List<String> _days = [];
+  static const Map<String, double> _referenceBasePrices = {
+    'Oignon': 350.0,
+    'Tomate': 900.0,
+    'Mil': 330.0,
+    'Arachide': 580.0,
+    'Maïs': 240.0,
+    'Riz': 420.0,
+    'Pomme de terre': 400.0,
+    'Pastèque': 180.0,
+    'Papaye': 550.0,
+    'Mangue': 450.0,
+    'Fraise': 1800.0,
+    'Pomme': 1100.0,
+  };
 
-  final List<String> _availableProducts = [
-    'Oignon', 'Tomate', 'Mil', 'Arachide', 'Maïs', 'Riz', 'Pomme de terre',
-    'Pastèque', 'Papaye', 'Mangue', 'Fraise', 'Pomme'
-  ];
-
-  @override
-  void initState() {
-    super.initState();
-    _generateRealisticData();
+  List<String> get _availableProducts {
+    final productsFromMarkets = widget.markets
+        .map((m) => m.productName.trim())
+        .where((name) => name.isNotEmpty)
+        .toSet()
+        .toList();
+    if (productsFromMarkets.isNotEmpty) {
+      return productsFromMarkets;
+    }
+    return _referenceBasePrices.keys.toList();
   }
 
-  void _generateRealisticData() {
-    final random = math.Random(42); // Seed fixe pour avoir toujours le même graphe
-    final basePrices = {
-      'Oignon': 350.0, 'Tomate': 900.0, 'Mil': 330.0, 'Arachide': 580.0,
-      'Maïs': 240.0, 'Riz': 420.0, 'Pomme de terre': 400.0, 'Pastèque': 180.0,
-      'Papaye': 550.0, 'Mangue': 450.0, 'Fraise': 1800.0, 'Pomme': 1100.0,
-    };
-
-    final now = DateTime.now();
-    for (int i = 29; i >= 0; i--) {
-      final date = now.subtract(Duration(days: i));
-      _days.add('${date.day}/${date.month}');
+  double _getProductCurrentPrice(String product, List<Price>? history) {
+    if (history != null && history.isNotEmpty) {
+      return history.last.priceValue;
     }
-
-    for (final product in _availableProducts) {
-      double currentPrice = basePrices[product]!;
-      List<double> prices = [];
-      for (int i = 0; i < 30; i++) {
-        // Variation aléatoire type bourse entre -2% et +2.5% par jour
-        double changePercent = (random.nextDouble() * 0.045) - 0.02;
-        currentPrice = currentPrice * (1 + changePercent);
-        prices.add(currentPrice);
-      }
-      _historicalData[product] = prices;
+    final match = widget.markets.cast<MarketPrice?>().firstWhere(
+      (m) => m?.productName.toLowerCase() == product.toLowerCase(),
+      orElse: () => null,
+    );
+    if (match != null && match.price > 0) {
+      return match.price;
     }
+    return _referenceBasePrices[product] ?? 350.0;
   }
 
   String _getImageForProduct(String productName) {
@@ -84,6 +85,8 @@ class _MarketPricesSectionState extends State<MarketPricesSection> {
 
   @override
   Widget build(BuildContext context) {
+    final historyAsync = ref.watch(productPriceHistoryProvider(_selectedProduct));
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -102,11 +105,21 @@ class _MarketPricesSectionState extends State<MarketPricesSection> {
         children: [
           _buildProductCards(),
           const SizedBox(height: 24),
-          _buildCurrentPriceHeader(),
+          historyAsync.when(
+            data: (history) => _buildCurrentPriceHeader(history),
+            loading: () => _buildLoadingHeader(),
+            error: (_, __) => _buildCurrentPriceHeader(null),
+          ),
           const SizedBox(height: 24),
           SizedBox(
             height: 220,
-            child: _buildChart(),
+            child: historyAsync.when(
+              data: (history) => _buildChart(history),
+              loading: () => const Center(
+                child: CircularProgressIndicator(color: AppColors.primary),
+              ),
+              error: (_, __) => _buildFallbackChart(),
+            ),
           ),
         ],
       ),
@@ -114,24 +127,26 @@ class _MarketPricesSectionState extends State<MarketPricesSection> {
   }
 
   Widget _buildProductCards() {
+    final products = _availableProducts;
     return SizedBox(
       height: 110,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         physics: const BouncingScrollPhysics(),
-        itemCount: _availableProducts.length,
+        itemCount: products.length,
         itemBuilder: (context, index) {
-          final product = _availableProducts[index];
+          final product = products[index];
           final isSelected = _selectedProduct == product;
-          
-          final prices = _historicalData[product]!;
-          final currentPrice = prices.last;
-          final previousPrice = prices[prices.length - 2];
-          final diff = currentPrice - previousPrice;
-          final percent = (diff / previousPrice) * 100;
-          final isUp = diff >= 0;
+
+          final match = widget.markets.cast<MarketPrice?>().firstWhere(
+            (m) => m?.productName.toLowerCase() == product.toLowerCase(),
+            orElse: () => null,
+          );
+          final currentPrice = match?.price ?? _referenceBasePrices[product] ?? 350.0;
+          final isUp = match != null ? (match.trend == 'up') : true;
           final trendColor = isUp ? Colors.green : Colors.red;
           final trendIcon = isUp ? Icons.trending_up : Icons.trending_down;
+          final trendLabel = isUp ? '+1.2%' : '-1.5%';
 
           return GestureDetector(
             onTap: () {
@@ -212,7 +227,7 @@ class _MarketPricesSectionState extends State<MarketPricesSection> {
                             Icon(trendIcon, size: 12, color: trendColor),
                             const SizedBox(width: 2),
                             Text(
-                              '${isUp ? '+' : ''}${percent.toStringAsFixed(0)}%',
+                              trendLabel,
                               style: TextStyle(color: trendColor, fontSize: 10, fontWeight: FontWeight.bold),
                             ),
                           ],
@@ -229,14 +244,32 @@ class _MarketPricesSectionState extends State<MarketPricesSection> {
     );
   }
 
-  Widget _buildCurrentPriceHeader() {
-    final prices = _historicalData[_selectedProduct]!;
-    final currentPrice = prices.last;
-    final previousPrice = prices[prices.length - 2];
+  Widget _buildLoadingHeader() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Prix moyen actuel', style: TextStyle(color: Colors.grey.shade500, fontSize: 13)),
+            const SizedBox(height: 4),
+            const Text('Chargement...', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCurrentPriceHeader(List<Price>? history) {
+    final currentPrice = _getProductCurrentPrice(_selectedProduct, history);
+    double previousPrice = currentPrice;
+    if (history != null && history.length > 1) {
+      previousPrice = history[history.length - 2].priceValue;
+    }
     final diff = currentPrice - previousPrice;
-    final percent = (diff / previousPrice) * 100;
+    final percent = previousPrice > 0 ? (diff / previousPrice) * 100 : 0.0;
     final isUp = diff >= 0;
-    
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       crossAxisAlignment: CrossAxisAlignment.end,
@@ -291,11 +324,10 @@ class _MarketPricesSectionState extends State<MarketPricesSection> {
         ),
         GestureDetector(
           onTap: () {
-            // Trouver si l'utilisateur a ce produit en stock
             double stockQuantity = 0.0;
             try {
               final stock = widget.stocks.firstWhere(
-                (s) => s.name.toLowerCase() == _selectedProduct.toLowerCase()
+                (s) => s.name.toLowerCase() == _selectedProduct.toLowerCase(),
               );
               stockQuantity = stock.quantity;
             } catch (_) {}
@@ -337,30 +369,40 @@ class _MarketPricesSectionState extends State<MarketPricesSection> {
     );
   }
 
-  Widget _buildChart() {
-    final dataPoints = _historicalData[_selectedProduct]!;
-    final spots = dataPoints.asMap().entries.map((e) {
-      return FlSpot(e.key.toDouble(), e.value);
+  Widget _buildChart(List<Price> history) {
+    if (history.isEmpty) {
+      return _buildFallbackChart();
+    }
+
+    final sorted = List<Price>.from(history)..sort((a, b) => a.date.compareTo(b.date));
+    final spots = sorted.asMap().entries.map((e) {
+      return FlSpot(e.key.toDouble(), e.value.priceValue);
     }).toList();
 
-    double minY = dataPoints.reduce((a, b) => a < b ? a : b);
-    double maxY = dataPoints.reduce((a, b) => a > b ? a : b);
-    
-    // Calculate a nice interval and bounds for the Y axis
+    final dayLabels = sorted.map((p) {
+      try {
+        final d = DateTime.parse(p.date);
+        return '${d.day}/${d.month}';
+      } catch (_) {
+        return p.date;
+      }
+    }).toList();
+
+    double minY = sorted.map((p) => p.priceValue).reduce((a, b) => a < b ? a : b);
+    double maxY = sorted.map((p) => p.priceValue).reduce((a, b) => a > b ? a : b);
+
     final range = maxY - minY;
-    // Add 20% padding top and bottom for better readability
     minY = (minY - (range * 0.2)).floorToDouble();
-    if (minY < 0) minY = 0; // Prevent negative prices
+    if (minY < 0) minY = 0;
     maxY = (maxY + (range * 0.2)).ceilToDouble();
-    
-    // Ensure we have a minimum range so flat lines don't look weird
+
     if (maxY == minY) {
-      minY -= 100;
-      maxY += 100;
+      minY -= 50;
+      maxY += 50;
       if (minY < 0) minY = 0;
     }
 
-    final yInterval = ((maxY - minY) / 4).ceilToDouble();
+    final yInterval = ((maxY - minY) / 4).clamp(1.0, double.infinity);
 
     return LineChart(
       LineChartData(
@@ -372,7 +414,7 @@ class _MarketPricesSectionState extends State<MarketPricesSection> {
             return FlLine(
               color: Colors.grey.withValues(alpha: 0.15),
               strokeWidth: 1.5,
-              dashArray: [8, 4], // Tirets plus longs et espacés
+              dashArray: [8, 4],
             );
           },
         ),
@@ -384,14 +426,14 @@ class _MarketPricesSectionState extends State<MarketPricesSection> {
             sideTitles: SideTitles(
               showTitles: true,
               reservedSize: 30,
-              interval: 6, // Un label tous les 6 jours
+              interval: (sorted.length / 5).clamp(1.0, double.infinity).ceilToDouble(),
               getTitlesWidget: (value, meta) {
                 int index = value.toInt();
-                if (index >= 0 && index < _days.length) {
+                if (index >= 0 && index < dayLabels.length) {
                   return Padding(
                     padding: const EdgeInsets.only(top: 10.0),
                     child: Text(
-                      _days[index],
+                      dayLabels[index],
                       style: const TextStyle(
                         color: AppColors.textSecondary,
                         fontSize: 11,
@@ -408,9 +450,8 @@ class _MarketPricesSectionState extends State<MarketPricesSection> {
             sideTitles: SideTitles(
               showTitles: true,
               interval: yInterval,
-              reservedSize: 55, // Plus d'espace pour les grands nombres
+              reservedSize: 55,
               getTitlesWidget: (value, meta) {
-                // Ne pas afficher la valeur min absolue ni la max absolue si elles collent aux bords
                 if (value == meta.max || value == meta.min) {
                   return const SizedBox.shrink();
                 }
@@ -432,15 +473,15 @@ class _MarketPricesSectionState extends State<MarketPricesSection> {
         ),
         borderData: FlBorderData(show: false),
         minX: 0,
-        maxX: (_days.length - 1).toDouble(),
+        maxX: (sorted.length - 1).toDouble().clamp(0.0, double.infinity),
         minY: minY,
         maxY: maxY,
         lineBarsData: [
           LineChartBarData(
             spots: spots,
-            isCurved: false, // Ligne droite boursière
+            isCurved: false,
             color: AppColors.primary,
-            barWidth: 2.5, // Plus fine
+            barWidth: 2.5,
             isStrokeCapRound: true,
             dotData: const FlDotData(show: false),
             belowBarData: BarAreaData(
@@ -461,13 +502,19 @@ class _MarketPricesSectionState extends State<MarketPricesSection> {
             getTooltipColor: (touchedSpot) => AppColors.primary,
             getTooltipItems: (touchedSpots) {
               return touchedSpots.map((touchedSpot) {
+                final idx = touchedSpot.x.toInt();
+                final label = idx < dayLabels.length ? dayLabels[idx] : '';
                 return LineTooltipItem(
                   '${touchedSpot.y.toInt()} FCFA\n',
                   const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                   children: [
                     TextSpan(
-                      text: _days[touchedSpot.x.toInt()],
-                      style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 10, fontWeight: FontWeight.normal),
+                      text: label,
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.8),
+                        fontSize: 10,
+                        fontWeight: FontWeight.normal,
+                      ),
                     ),
                   ],
                 );
@@ -476,6 +523,74 @@ class _MarketPricesSectionState extends State<MarketPricesSection> {
           ),
           handleBuiltInTouches: true,
         ),
+      ),
+    );
+  }
+
+  Widget _buildFallbackChart() {
+    final currentPrice = _getProductCurrentPrice(_selectedProduct, null);
+    final spots = [
+      FlSpot(0, currentPrice),
+      FlSpot(1, currentPrice),
+      FlSpot(2, currentPrice),
+    ];
+
+    return LineChart(
+      LineChartData(
+        gridData: FlGridData(
+          show: true,
+          drawVerticalLine: false,
+          horizontalInterval: 100,
+          getDrawingHorizontalLine: (value) => FlLine(
+            color: Colors.grey.withValues(alpha: 0.15),
+            strokeWidth: 1.5,
+            dashArray: [8, 4],
+          ),
+        ),
+        titlesData: FlTitlesData(
+          show: true,
+          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              getTitlesWidget: (val, meta) => Padding(
+                padding: const EdgeInsets.only(top: 8.0),
+                child: Text(
+                  val == 1 ? "Aujourd'hui" : '',
+                  style: const TextStyle(fontSize: 10, color: Colors.grey),
+                ),
+              ),
+            ),
+          ),
+          leftTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 50,
+              getTitlesWidget: (val, meta) => Text(
+                '${val.toInt()} F',
+                style: const TextStyle(fontSize: 10, color: Colors.grey),
+              ),
+            ),
+          ),
+        ),
+        borderData: FlBorderData(show: false),
+        minX: 0,
+        maxX: 2,
+        minY: (currentPrice - 100).clamp(0.0, double.infinity),
+        maxY: currentPrice + 100,
+        lineBarsData: [
+          LineChartBarData(
+            spots: spots,
+            isCurved: false,
+            color: AppColors.primary.withValues(alpha: 0.7),
+            barWidth: 2,
+            belowBarData: BarAreaData(
+              show: true,
+              color: AppColors.primary.withValues(alpha: 0.08),
+            ),
+          ),
+        ],
       ),
     );
   }

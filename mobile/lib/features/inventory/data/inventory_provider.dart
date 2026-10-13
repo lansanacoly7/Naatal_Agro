@@ -48,6 +48,34 @@ class InventoryNotifier extends StateNotifier<AsyncValue<List<StockItem>>> {
       rethrow;
     }
   }
+
+  Future<void> recordSale({
+    required String productName,
+    required double quantity,
+    required double unitPrice,
+    String? saleDate,
+    String? buyer,
+  }) async {
+    final formattedDate = saleDate ?? DateTime.now().toIso8601String().substring(0, 10);
+    final response = await _apiClient.post(
+      '/finances/sales/',
+      data: {
+        'product_name': productName,
+        'quantity': quantity,
+        'quantity_sold': quantity,
+        'unit_price': unitPrice,
+        'price_per_unit': unitPrice,
+        'date': formattedDate,
+        'sale_date': formattedDate,
+        if (buyer != null && buyer.isNotEmpty) 'buyer': buyer,
+      },
+    );
+    if (response.statusCode == 200 || response.statusCode == 201 || response.statusCode == 202) {
+      await fetchInventory();
+    } else {
+      throw Exception('Erreur lors de l\'enregistrement de la vente');
+    }
+  }
 }
 
 final inventoryNotifierProvider = StateNotifierProvider<InventoryNotifier, AsyncValue<List<StockItem>>>((ref) {

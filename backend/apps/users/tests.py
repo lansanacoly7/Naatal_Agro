@@ -100,6 +100,18 @@ class UserAuthAndProfileTests(TestCase):
         self.assertEqual(self.farmer_user.location, 'Mbour, Sénégal')
         self.assertEqual(len(self.farmer_user.main_crops), 3)
 
+    def test_patch_me_profile_with_full_name(self):
+        """Vérifie que l'envoi de full_name par le mobile met bien à jour first_name et last_name."""
+        self.client.force_authenticate(user=self.farmer_user)
+        url = reverse('users:user_me')
+        response = self.client.patch(url, {'full_name': 'Amath Diop', 'language': 'WO'}, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.farmer_user.refresh_from_db()
+        self.assertEqual(self.farmer_user.first_name, 'Amath')
+        self.assertEqual(self.farmer_user.last_name, 'Diop')
+        self.assertEqual(self.farmer_user.language, 'wo')
+        self.assertEqual(response.data['full_name'], 'Amath Diop')
+
     def test_update_fcm_token(self):
         """Vérifie la mise à jour du token Firebase FCM."""
         self.client.force_authenticate(user=self.farmer_user)

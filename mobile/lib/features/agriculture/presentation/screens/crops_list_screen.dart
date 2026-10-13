@@ -365,26 +365,7 @@ class _CropsListScreenState extends ConsumerState<CropsListScreen> with SingleTi
                           } else if (value == 'edit') {
                             _showEditCropDialog(context, ref, crop);
                           } else if (value == 'harvest') {
-                            try {
-                              await ref.read(agricultureRepositoryProvider).updateCrop(crop.id, {'status': 'harvested'});
-                              ref.read(cropsPaginationNotifierProvider.notifier).refresh();
-                              ref.invalidate(cropsProvider);
-                                refreshAfterDataChange(ref);
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('Culture "${crop.name}" marquée comme récoltée avec succès'),
-                                    backgroundColor: Colors.green,
-                                  ),
-                                );
-                              }
-                            } catch (e) {
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('Erreur: ${e.toString()}'), backgroundColor: Colors.red),
-                                );
-                              }
-                            }
+                            _showHarvestCropDialog(context, ref, crop);
                           } else if (value == 'details') {
                             context.push('/crop_detail', extra: crop);
                           }
@@ -1185,4 +1166,177 @@ class _CropsListScreenState extends ConsumerState<CropsListScreen> with SingleTi
       ),
     );
   }
+
+  void _showHarvestCropDialog(BuildContext context, WidgetRef ref, Crop crop) {
+    final quantityController = TextEditingController();
+    final notesController = TextEditingController();
+    String selectedUnit = 'kg';
+    final harvestDate = DateTime.now();
+    bool isSubmitting = false;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setModalState) => Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Enregistrer la récolte : ${crop.name}',
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded),
+                      onPressed: () => Navigator.pop(ctx),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Cette action clôture la culture et transfère automatiquement la quantité récoltée dans votre stock.',
+                  style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                ),
+                const SizedBox(height: 18),
+                Row(
+                  children: [
+                    Expanded(
+                      flex: 2,
+                      child: TextField(
+                        controller: quantityController,
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        decoration: InputDecoration(
+                          labelText: 'Quantité récoltée',
+                          hintText: 'ex : 500',
+                          prefixIcon: const Icon(Icons.scale_rounded, color: AppColors.primary),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      flex: 1,
+                      child: DropdownButtonFormField<String>(
+                        initialValue: selectedUnit,
+                        decoration: InputDecoration(
+                          labelText: 'Unité',
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                        ),
+                        items: const [
+                          DropdownMenuItem(value: 'kg', child: Text('kg')),
+                          DropdownMenuItem(value: 'sacs', child: Text('sacs')),
+                          DropdownMenuItem(value: 'tonnes', child: Text('tonnes')),
+                          DropdownMenuItem(value: 'paniers', child: Text('paniers')),
+                        ],
+                        onChanged: (val) {
+                          if (val != null) {
+                            setModalState(() => selectedUnit = val);
+                          }
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: notesController,
+                  maxLines: 2,
+                  decoration: InputDecoration(
+                    labelText: 'Observations / Notes (facultatif)',
+                    hintText: 'Qualité du calibre, météo lors de la récolte...',
+                    prefixIcon: const Icon(Icons.notes_rounded, color: AppColors.primary),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: ElevatedButton(
+                    onPressed: isSubmitting
+                        ? null
+                        : () async {
+                            final rawQty = quantityController.text.trim();
+                            final qty = double.tryParse(rawQty);
+                            if (qty == null || qty <= 0) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Veuillez entrer une quantité valide supérieure à 0')),
+                              );
+                              return;
+                            }
+
+                            setModalState(() => isSubmitting = true);
+                            try {
+                              final formattedDate =
+                                  '${harvestDate.year}-${harvestDate.month.toString().padLeft(2, '0')}-${harvestDate.day.toString().padLeft(2, '0')}';
+                              await ref.read(agricultureRepositoryProvider).harvestCrop(
+                                    crop.id,
+                                    quantity: qty,
+                                    unit: selectedUnit,
+                                    date: formattedDate,
+                                    notes: notesController.text.trim(),
+                                  );
+
+                              ref.read(cropsPaginationNotifierProvider.notifier).refresh();
+                              ref.invalidate(cropsProvider);
+                              refreshAfterDataChange(ref);
+
+                              if (ctx.mounted) Navigator.pop(ctx);
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      'Récolte réussie : $qty $selectedUnit de "${crop.name}" ajoutés à votre stock !',
+                                    ),
+                                    backgroundColor: Colors.green,
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
+                              }
+                            } catch (e) {
+                              setModalState(() => isSubmitting = false);
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Erreur: $e'),
+                                    backgroundColor: Colors.redAccent,
+                                  ),
+                                );
+                              }
+                            }
+                          },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green.shade700,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    ),
+                    child: isSubmitting
+                        ? const CircularProgressIndicator(color: Colors.white)
+                        : const Text(
+                            'Valider la récolte & Mettre en stock',
+                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                          ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
+

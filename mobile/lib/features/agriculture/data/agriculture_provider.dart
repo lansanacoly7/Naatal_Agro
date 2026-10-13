@@ -80,7 +80,7 @@ class AgricultureRepository {
       data: cropData,
     );
     
-    if (response.statusCode != 201) {
+    if (response.statusCode != 201 && response.statusCode != 200 && response.statusCode != 202) {
       throw Exception('Erreur lors de l\'ajout de la culture');
     }
   }
@@ -91,7 +91,7 @@ class AgricultureRepository {
       data: cropData,
     );
     
-    if (response.statusCode != 200) {
+    if (response.statusCode != 200 && response.statusCode != 204 && response.statusCode != 202) {
       throw Exception('Erreur lors de la mise à jour de la culture');
     }
   }
@@ -101,9 +101,35 @@ class AgricultureRepository {
       '${AppConstants.cropsEndpoint}$cropId/',
     );
     
-    if (response.statusCode != 204) {
+    if (response.statusCode != 204 && response.statusCode != 200 && response.statusCode != 202) {
       throw Exception('Erreur lors de la suppression de la culture');
     }
+  }
+
+  Future<Map<String, dynamic>> harvestCrop(
+    String cropId, {
+    required double quantity,
+    String unit = 'kg',
+    String? date,
+    String? notes,
+  }) async {
+    final response = await _apiClient.post(
+      '${AppConstants.cropsEndpoint}$cropId/harvest/',
+      data: {
+        'quantity': quantity,
+        'unit': unit,
+        if (date != null) 'date': date,
+        if (notes != null && notes.isNotEmpty) 'notes': notes,
+      },
+    );
+
+    if (response.statusCode != 200 && response.statusCode != 201 && response.statusCode != 202) {
+      throw Exception('Erreur lors de l\'enregistrement de la récolte (${response.statusCode})');
+    }
+
+    return response.data is Map<String, dynamic>
+        ? response.data as Map<String, dynamic>
+        : {};
   }
 }
 

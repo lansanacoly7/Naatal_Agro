@@ -77,3 +77,91 @@ class FinancesTests(TestCase):
         }, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.json()['total_revenue'], 500)
+
+    def test_sale_decrements_stock_item_and_prevents_overselling(self):
+        """Vérifie que la vente déstocke l'inventaire et bloque si stock insuffisant."""
+        from apps.inventory.models import StockItem
+        crop = make_crop(self.ali, name='Arachide')
+        stock = StockItem.objects.create(user=self.ali, name='Arachide', quantity=100.0, unit='kg')
+
+        # Vente autorisée de 40 kg
+        res1 = self.client.post('/api/finances/sales/', {
+            'crop': str(crop.id), 'quantity_sold': 40, 'price_per_unit': '600.00', 'date': '2026-10-01',
+        }, format='json')
+        self.assertEqual(res1.status_code, status.HTTP_201_CREATED)
+        stock.refresh_from_db()
+        self.assertEqual(stock.quantity, 60.0)
+
+        # Tentative de vente de 70 kg alors qu'il n'en reste que 60 kg => 400 Bad Request
+        res2 = self.client.post('/api/finances/sales/', {
+            'crop': str(crop.id), 'quantity_sold': 70, 'price_per_unit': '600.00', 'date': '2026-10-01',
+        }, format='json')
+        self.assertEqual(res2.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('Stock insuffisant', str(res2.json()))
+        stock.refresh_from_db()
+        self.assertEqual(stock.quantity, 60.0)
+
+    def test_sale_with_mobile_payload_no_phantom_crop_and_creates_transaction(self):
+        """Vérifie le payload exact du mobile : aucune erreur 500, pas de culture fantôme, transaction créée."""
+        from apps.inventory.models import StockItem
+        initial_crops_count = Crop.objects.filter(user=self.ali).count()
+        stock = StockItem.objects.create(user=self.ali, name='Mangue', quantity=50.0, unit='kg')
+
+        mobile_payload = {
+            'product_name': 'Mangue',
+            'quantity': 10,
+            'quantity_sold': 10,
+            'unit_price': '500.00',
+            'price_per_unit': '500.00',
+            'date': '2026-10-13',
+            'sale_date': '2026-10-13',
+            'buyer': 'Marché Sandaga'
+        }
+
+        response = self.client.post('/api/finances/sales/', mobile_payload, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.json()['total_revenue'], 5000.0)
+
+        # Aucune culture fantôme créée
+        self.assertEqual(Crop.objects.filter(user=self.ali).count(), initial_crops_count)
+
+        # Stock décrémenté
+        stock.refresh_from_db()
+        self.assertEqual(stock.quantity, 40.0)
+
+        # Transaction créée automatiquement et liée à la vente
+        sale = Sale.objects.get(id=response.json()['id'])
+        self.assertIsNotNone(sale.transaction)
+        self.assertEqual(sale.transaction.transaction_type, 'income')
+        self.assertEqual(float(sale.transaction.amount), 5000.0)
+        self.assertEqual(sale.transaction.user, self.ali)
+
+        # Résumé financier cohérent sans double comptage
+        summary = self.client.get('/api/finances/summary/').json()
+        self.assertEqual(summary['total_revenue'], 5000.0)
+
+    def test_delete_sale_restores_stock_and_removes_transaction(self):
+        """Vérifie que la suppression d'une vente restitue le stock et supprime la transaction."""
+        from apps.inventory.models import StockItem
+        stock = StockItem.objects.create(user=self.ali, name='Papaye', quantity=20.0, unit='kg')
+
+        res = self.client.post('/api/finances/sales/', {
+            'product_name': 'Papaye',
+            'quantity': 5,
+            'unit_price': '400.00',
+        }, format='json')
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        stock.refresh_from_db()
+        self.assertEqual(stock.quantity, 15.0)
+
+        sale_id = res.json()['id']
+        del_res = self.client.delete(f'/api/finances/sales/{sale_id}/')
+        self.assertEqual(del_res.status_code, status.HTTP_204_NO_CONTENT)
+
+        # Stock restitué
+        stock.refresh_from_db()
+        self.assertEqual(stock.quantity, 20.0)
+
+        # Transaction supprimée
+        self.assertEqual(Transaction.objects.filter(sale__isnull=False).count(), 0)
+

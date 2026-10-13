@@ -5,7 +5,7 @@ from .serializers import MarketSerializer, PriceSerializer, ProductSerializer
 class ProductViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -27,12 +27,12 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
 class MarketViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Market.objects.all()
     serializer_class = MarketSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
 
 class PriceViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Price.objects.all()
     serializer_class = PriceSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
     
     def get_queryset(self):
         queryset = super().get_queryset()

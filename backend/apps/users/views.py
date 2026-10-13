@@ -131,7 +131,7 @@ class UpdateFCMTokenView(views.APIView):
         return Response({"status": "Token mis à jour avec succès."})
 
 class UserProfileSerializer(serializers.ModelSerializer):
-    full_name = serializers.SerializerMethodField()
+    full_name = serializers.CharField(required=False, allow_blank=True)
     crops_count = serializers.SerializerMethodField()
 
     class Meta:
@@ -155,9 +155,11 @@ class UserProfileSerializer(serializers.ModelSerializer):
         # Le téléphone est l'identifiant de connexion : il ne se modifie pas par le profil
         read_only_fields = ('id', 'username', 'phone', 'role', 'date_joined', 'crops_count')
 
-    def get_full_name(self, obj):
-        name = f"{obj.first_name} {obj.last_name}".strip()
-        return name if name else obj.first_name or obj.username
+    def to_representation(self, instance):
+        ret = super().to_representation(instance)
+        name = f"{instance.first_name} {instance.last_name}".strip()
+        ret['full_name'] = name if name else instance.first_name or instance.username
+        return ret
 
     def get_crops_count(self, obj):
         if hasattr(obj, 'crops'):
@@ -168,6 +170,20 @@ class UserProfileSerializer(serializers.ModelSerializer):
         if not isinstance(value, list):
             raise serializers.ValidationError("Le champ 'main_crops' doit être une liste de cultures.")
         return [str(c).strip() for c in value if str(c).strip()]
+
+    def update(self, instance, validated_data):
+        if 'full_name' in validated_data:
+            full_name = validated_data.pop('full_name').strip()
+            if full_name:
+                parts = full_name.split(' ', 1)
+                instance.first_name = parts[0]
+                instance.last_name = parts[1] if len(parts) > 1 else ''
+            else:
+                instance.first_name = ''
+                instance.last_name = ''
+        if 'language' in validated_data and validated_data['language']:
+            validated_data['language'] = validated_data['language'].lower()
+        return super().update(instance, validated_data)
 
 class MeView(views.APIView):
     """

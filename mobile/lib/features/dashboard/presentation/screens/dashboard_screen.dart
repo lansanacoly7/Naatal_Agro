@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -20,8 +19,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
-  late PageController _aiTipsController;
-  Timer? _aiTipsTimer;
 
   @override
   void initState() {
@@ -32,24 +29,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     );
     _fadeAnimation = CurvedAnimation(parent: _fadeController, curve: Curves.easeOutCubic);
     _fadeController.forward();
-
-    _aiTipsController = PageController(viewportFraction: 1.0);
-    _aiTipsTimer = Timer.periodic(const Duration(seconds: 4), (timer) {
-      if (_aiTipsController.hasClients) {
-        int nextPage = _aiTipsController.page!.round() + 1;
-        if (nextPage >= 4) { // length of tips
-          _aiTipsController.animateToPage(0, duration: const Duration(milliseconds: 800), curve: Curves.fastOutSlowIn);
-        } else {
-          _aiTipsController.nextPage(duration: const Duration(milliseconds: 800), curve: Curves.fastOutSlowIn);
-        }
-      }
-    });
   }
 
   @override
   void dispose() {
-    _aiTipsTimer?.cancel();
-    _aiTipsController.dispose();
     _fadeController.dispose();
     super.dispose();
   }
@@ -96,7 +79,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildHeader(location),
+                  _buildHeader(location, data.alerts.length),
                   const SizedBox(height: 24),
                   Text(
                     firstName.isEmpty ? 'Bonjour' : 'Bonjour, $firstName',
@@ -115,11 +98,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                   const SizedBox(height: 32),
                   _buildSectionTitle('Aujourd\'hui'),
                   const SizedBox(height: 16),
-                  _buildTodayTasks(),
+                  _buildTodayTasks(data.calendarEvents),
                   const SizedBox(height: 32),
-                  _buildSectionTitle('Conseils Naatal IA', badgeText: 'NOUVEAU'),
+                  _buildSectionTitle('Conseil Naatal IA', badgeText: 'INTELLIGENT'),
                   const SizedBox(height: 16),
-                  _buildAiTipsScroll(),
+                  _buildAiTipsSection(context, data.alerts, data.weather),
                   const SizedBox(height: 32),
                   _buildSectionTitle(
                     'Prix du Marché', 
@@ -143,7 +126,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                   const SizedBox(height: 32),
                   _buildSectionTitle('Mon Dashboard'),
                   const SizedBox(height: 16),
-                  _buildInventoryAndAlerts(data.stockItems),
+                  _buildInventoryAndAlerts(data.stockItems, data.weather, data.agriculture),
                   const SizedBox(height: 120), // Bottom navigation padding
                 ],
               ),
@@ -158,7 +141,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
   // ─────────────────────────────────────────────
   // HEADER
   // ─────────────────────────────────────────────
-  Widget _buildHeader(String location) {
+  Widget _buildHeader(String location, int unreadAlertsCount) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -239,19 +222,27 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                     ),
                     child: const Icon(Icons.notifications_outlined, color: AppColors.textPrimary, size: 20),
                   ),
-                  Positioned(
-                    top: -2,
-                    right: -2,
-                    child: Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: AppColors.error,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 2),
+                  if (unreadAlertsCount > 0)
+                    Positioned(
+                      top: -2,
+                      right: -2,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: AppColors.error,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: Colors.white, width: 2),
+                        ),
+                        child: Text(
+                          unreadAlertsCount > 9 ? '9+' : '$unreadAlertsCount',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
-                      child: const Text('2', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
                     ),
-                  ),
                 ],
               ),
             ),
@@ -807,7 +798,29 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
   // ─────────────────────────────────────────────
   // INVENTORY & ALERTS (Mon Dashboard)
   // ─────────────────────────────────────────────
-  Widget _buildInventoryAndAlerts(List<StockItem> stockItems) {
+  Widget _buildInventoryAndAlerts(List<StockItem> stockItems, WeatherSummary weather, AgricultureSummary agriculture) {
+    // Calcul de l'avis météo adapté au contexte sénégalais
+    final String weatherAlertTitle;
+    final String weatherAlertDesc;
+    final Color weatherAlertColor;
+    final Color weatherAlertBg;
+    if (weather.rainfall > 0) {
+      weatherAlertTitle = 'VIGILANCE PLUIE';
+      weatherAlertDesc = 'Précipitations en cours (${weather.rainfall.toStringAsFixed(1)} mm) : veillez à abriter les récoltes.';
+      weatherAlertColor = Colors.orange.shade900;
+      weatherAlertBg = Colors.orange.shade50;
+    } else if (weather.temp >= 33) {
+      weatherAlertTitle = 'FORTE CHALEUR';
+      weatherAlertDesc = '${weather.temp.toInt()}°C à ${weather.location} : maintenez les zones de stockage bien ventilées.';
+      weatherAlertColor = Colors.amber.shade900;
+      weatherAlertBg = Colors.amber.shade50;
+    } else {
+      weatherAlertTitle = 'CLIMAT FAVORABLE';
+      weatherAlertDesc = 'Conditions stables (${weather.temp.toInt()}°C) : climat idéal pour la conservation.';
+      weatherAlertColor = AppColors.primary;
+      weatherAlertBg = AppColors.primary.withValues(alpha: 0.08);
+    }
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -840,49 +853,82 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
             ],
           ),
           const SizedBox(height: 20),
-          Row(
-            children: stockItems.map((item) {
-              final double fillPercentage = (item.quantity / 1000).clamp(0.1, 1.0); // Dummy logic
-              return Expanded(
-                child: Container(
-                  margin: const EdgeInsets.only(right: 12),
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.grey.withValues(alpha: 0.15)),
-                    boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 5, offset: const Offset(0, 2))],
+          if (stockItems.isEmpty)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.grey.shade200),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.inventory_2_outlined, color: Colors.grey.shade400, size: 24),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Aucun produit en stock actuellement.',
+                      style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                    ),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Icon(Icons.grass, color: AppColors.primary.withValues(alpha: 0.7), size: 18),
-                          Text('${(fillPercentage * 100).toInt()}%', style: TextStyle(color: AppColors.primary, fontSize: 10, fontWeight: FontWeight.bold)),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Text(item.name, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12, fontWeight: FontWeight.w600)),
-                      const SizedBox(height: 4),
-                      Text('${item.quantity} ${item.unit}', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: AppColors.textPrimary)),
-                      const SizedBox(height: 12),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(4),
-                        child: LinearProgressIndicator(
-                          value: fillPercentage,
-                          backgroundColor: Colors.grey.shade100,
-                          valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
-                          minHeight: 4,
+                  TextButton(
+                    onPressed: () => context.push('/inventory'),
+                    child: const Text('Ajouter'),
+                  ),
+                ],
+              ),
+            )
+          else
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              child: Row(
+                children: stockItems.map((item) {
+                  final double fillPercentage = (item.quantity / 500).clamp(0.05, 1.0);
+                  return Container(
+                    width: 160,
+                    margin: const EdgeInsets.only(right: 12),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.grey.withValues(alpha: 0.15)),
+                      boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 5, offset: const Offset(0, 2))],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Icon(Icons.grass, color: AppColors.primary.withValues(alpha: 0.7), size: 18),
+                            Text('${item.quantity} ${item.unit}', style: const TextStyle(color: AppColors.primary, fontSize: 11, fontWeight: FontWeight.bold)),
+                          ],
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
+                        const SizedBox(height: 10),
+                        Text(
+                          item.name,
+                          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: AppColors.textPrimary),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 10),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: LinearProgressIndicator(
+                            value: fillPercentage,
+                            backgroundColor: Colors.grey.shade100,
+                            valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
+                            minHeight: 4,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
           const SizedBox(height: 24),
           Row(
             children: [
@@ -890,9 +936,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                 child: Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.red.shade50,
+                    color: weatherAlertBg,
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.red.shade100),
+                    border: Border.all(color: weatherAlertColor.withValues(alpha: 0.2)),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -901,15 +947,20 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                         children: [
                           Container(
                             padding: const EdgeInsets.all(4),
-                            decoration: BoxDecoration(color: Colors.red.shade100, shape: BoxShape.circle),
-                            child: const Icon(Icons.warning_rounded, color: AppColors.error, size: 14),
+                            decoration: BoxDecoration(color: weatherAlertColor.withValues(alpha: 0.15), shape: BoxShape.circle),
+                            child: Icon(Icons.wb_sunny_outlined, color: weatherAlertColor, size: 14),
                           ),
                           const SizedBox(width: 8),
-                          const Text('ALERTE MÉTÉO', style: TextStyle(color: AppColors.error, fontWeight: FontWeight.w900, fontSize: 10, letterSpacing: 0.5)),
+                          Text(weatherAlertTitle, style: TextStyle(color: weatherAlertColor, fontWeight: FontWeight.w900, fontSize: 10, letterSpacing: 0.5)),
                         ],
                       ),
-                      const SizedBox(height: 12),
-                      Text('Risque de gel cette nuit sur la parcelle Nord.', style: TextStyle(color: Colors.red.shade900, fontSize: 13, fontWeight: FontWeight.w600, height: 1.3)),
+                      const SizedBox(height: 10),
+                      Text(
+                        weatherAlertDesc,
+                        style: TextStyle(color: weatherAlertColor, fontSize: 12, fontWeight: FontWeight.w600, height: 1.3),
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ],
                   ),
                 ),
@@ -917,7 +968,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
               const SizedBox(width: 16),
               Expanded(
                 child: GestureDetector(
-                  onTap: () => context.push('/performances'),
+                  onTap: () => context.push('/agriculture'),
                   child: Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
@@ -934,19 +985,27 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                             Container(
                               padding: const EdgeInsets.all(4),
                               decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), shape: BoxShape.circle),
-                              child: const Icon(Icons.trending_up, color: Colors.white, size: 14),
+                              child: const Icon(Icons.eco_rounded, color: Colors.white, size: 14),
                             ),
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                               decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8)),
-                              child: const Text('+15%', style: TextStyle(color: AppColors.primary, fontSize: 10, fontWeight: FontWeight.w900)),
+                              child: Text(
+                                '${agriculture.activeCropsCount}',
+                                style: const TextStyle(color: AppColors.primary, fontSize: 11, fontWeight: FontWeight.w900),
+                              ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 12),
-                        const Text('RENDEMENT', style: TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+                        const SizedBox(height: 10),
+                        const Text('EXPLOITATION', style: TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
                         const SizedBox(height: 4),
-                        const Text('Très bon ce mois', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w800)),
+                        Text(
+                          agriculture.activeCropsCount > 0 
+                            ? '${agriculture.activeCropsCount} ${agriculture.activeCropsCount > 1 ? 'parcelles' : 'parcelle'}'
+                            : 'Aucune parcelle',
+                          style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w800),
+                        ),
                       ],
                     ),
                   ),
@@ -1015,36 +1074,104 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
   // ─────────────────────────────────────────────
   // AUJOURD'HUI (Tâches du jour)
   // ─────────────────────────────────────────────
-  Widget _buildTodayTasks() {
+  Widget _buildTodayTasks(List<CalendarEvent> events) {
+    if (events.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.grey.withValues(alpha: 0.15)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.02),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.event_available, color: AppColors.primary, size: 28),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'Aucune tâche urgente aujourd\'hui',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppColors.textPrimary),
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              'Vos interventions culturales planifiées apparaîtront ici automatiquement.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.4),
+            ),
+            const SizedBox(height: 14),
+            OutlinedButton.icon(
+              onPressed: () => context.push('/calendar'),
+              icon: const Icon(Icons.calendar_month, size: 16),
+              label: const Text('Consulter le calendrier agricole'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.primary,
+                side: const BorderSide(color: AppColors.primary),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final displayEvents = events.take(3).toList();
     return Column(
       children: [
-        _buildPremiumTaskItem(
-          title: 'Irrigation champ Tomates',
-          time: '08:00 - 09:30',
-          location: 'Parcelle Nord',
-          icon: Icons.water_drop,
-          color: Colors.blueAccent,
-          isCompleted: true,
-        ),
-        const SizedBox(height: 16),
-        _buildPremiumTaskItem(
-          title: 'Vérification humidité stock',
-          time: '14:00',
-          location: 'Entrepôt A',
-          icon: Icons.inventory_2,
-          color: Colors.orange,
-          isCompleted: false,
-        ),
-        const SizedBox(height: 16),
-        _buildPremiumTaskItem(
-          title: 'Semis Arachide',
-          time: '16:00 - 18:00',
-          location: 'Parcelle B',
-          icon: Icons.grass,
-          color: AppColors.primary,
-          isCompleted: false,
-        ),
+        for (int i = 0; i < displayEvents.length; i++) ...[
+          if (i > 0) const SizedBox(height: 12),
+          _buildTaskItemFromEvent(displayEvents[i]),
+        ],
       ],
+    );
+  }
+
+  Widget _buildTaskItemFromEvent(CalendarEvent event) {
+    final lowerTitle = event.title.toLowerCase();
+    final IconData icon;
+    final Color color;
+
+    if (lowerTitle.contains('irrig') || lowerTitle.contains('arros')) {
+      icon = Icons.water_drop;
+      color = Colors.blueAccent;
+    } else if (lowerTitle.contains('semis') || lowerTitle.contains('plant')) {
+      icon = Icons.grass;
+      color = AppColors.primary;
+    } else if (lowerTitle.contains('récolte') || lowerTitle.contains('recolte')) {
+      icon = Icons.agriculture;
+      color = Colors.amber.shade800;
+    } else if (lowerTitle.contains('trait') || lowerTitle.contains('fert') || lowerTitle.contains('engrais')) {
+      icon = Icons.science;
+      color = Colors.purple;
+    } else {
+      icon = Icons.eco;
+      color = AppColors.primary;
+    }
+
+    final dateDisplay = event.date.replaceAll('\n', ' ').trim();
+    final timeOrDate = dateDisplay.isNotEmpty ? dateDisplay : 'Planifiée';
+    final location = event.phase.isNotEmpty ? event.phase : 'Parcelle';
+
+    return _buildPremiumTaskItem(
+      title: event.title,
+      time: timeOrDate,
+      location: location,
+      icon: icon,
+      color: color,
+      isCompleted: event.isCompleted,
     );
   }
 
@@ -1161,122 +1288,121 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
   }
 
   // ─────────────────────────────────────────────
-  // CONSEILS NAATAL IA (Défilant)
+  // CONSEILS NAATAL IA (Dynamique et Contextuel)
   // ─────────────────────────────────────────────
-  Widget _buildAiTipsScroll() {
-    final tips = [
-      {
-        'category': 'Stock',
-        'title': 'Risque d\'humidité',
-        'desc': 'Bâchez votre récolte d\'oignons, la météo prévoit de légères pluies ce soir.',
-        'icon': Icons.inventory,
-        'color': Colors.orange,
-      },
-      {
-        'category': 'Opportunité',
-        'title': 'Prix de la Tomate en hausse',
-        'desc': 'La demande explose à Dakar. C\'est le bon moment pour planifier une récolte anticipée.',
-        'icon': Icons.trending_up,
-        'color': Colors.green,
-      },
-      {
-        'category': 'Semis',
-        'title': 'Période idéale',
-        'desc': 'Les sols de votre région sont parfaitement hydratés pour commencer le semis de l\'arachide.',
-        'icon': Icons.eco_outlined,
-        'color': AppColors.primary,
-      },
-      {
-        'category': 'Nouvelle culture',
-        'title': 'Diversification',
-        'desc': 'Le gombo présente une forte rentabilité sur les marchés voisins de Thiès ce mois-ci.',
-        'icon': Icons.lightbulb_outline,
-        'color': Colors.purple,
-      },
-    ];
+  Widget _buildAiTipsSection(BuildContext context, List<String> alerts, WeatherSummary weather) {
+    final String tipCategory;
+    final String tipTitle;
+    final String tipDesc;
+    final IconData tipIcon;
+    final Color tipColor;
 
-    return SizedBox(
-      height: 180,
-      child: PageView.builder(
-        controller: _aiTipsController,
-        physics: const BouncingScrollPhysics(),
-        itemCount: tips.length,
-        itemBuilder: (context, index) {
-          final tip = tips[index];
-          final color = tip['color'] as Color;
-          return Container(
-            margin: const EdgeInsets.symmetric(horizontal: 4), // Marges pour l'espacement
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: Colors.grey.withValues(alpha: 0.1)),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.03),
-                  blurRadius: 15,
-                  offset: const Offset(0, 5),
+    if (alerts.isNotEmpty) {
+      tipCategory = 'ALERTE ACTIVE';
+      tipTitle = 'Avis agronomique prioritaire';
+      tipDesc = alerts.first;
+      tipIcon = Icons.warning_amber_rounded;
+      tipColor = Colors.orange.shade800;
+    } else if (weather.rainfall > 5) {
+      tipCategory = 'MÉTÉO & DRAINAGE';
+      tipTitle = 'Précipitations détectées (${weather.rainfall.toStringAsFixed(1)} mm)';
+      tipDesc = 'Évitez les apports d\'engrais solubles pour prévenir le lessivage. Surveillez le drainage.';
+      tipIcon = Icons.cloud_outlined;
+      tipColor = Colors.indigo;
+    } else if (weather.temp >= 33) {
+      tipCategory = 'IRRIGATION';
+      tipTitle = 'Pic de chaleur (${weather.temp.toInt()}°C)';
+      tipDesc = 'Favorisez une irrigation en début de matinée ou après 18h pour préserver la réserve utile du sol.';
+      tipIcon = Icons.water_drop_outlined;
+      tipColor = Colors.teal;
+    } else {
+      tipCategory = 'CONSEIL DU JOUR';
+      tipTitle = 'Conditions optimales à ${weather.location}';
+      tipDesc = 'Température favorable (${weather.temp.toInt()}°C). Moment idéal pour inspecter vos parcelles et le désherbage.';
+      tipIcon = Icons.auto_awesome;
+      tipColor = AppColors.primary;
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.grey.withValues(alpha: 0.1)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: tipColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
                 ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: color.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(tip['icon'] as IconData, color: color, size: 14),
-                          const SizedBox(width: 6),
-                          Text(
-                            (tip['category'] as String).toUpperCase(),
-                            style: TextStyle(
-                              color: color,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 1.2,
-                            ),
-                          ),
-                        ],
+                    Icon(tipIcon, color: tipColor, size: 14),
+                    const SizedBox(width: 6),
+                    Text(
+                      tipCategory,
+                      style: TextStyle(
+                        color: tipColor,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1.1,
                       ),
                     ),
-                    const Icon(Icons.auto_awesome, color: Colors.grey, size: 20),
                   ],
                 ),
-                const SizedBox(height: 16),
-                Text(
-                  tip['title'] as String,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Expanded(
-                  child: Text(
-                    tip['desc'] as String,
-                    style: const TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 14,
-                      height: 1.5,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
+              ),
+              const Icon(Icons.auto_awesome, color: AppColors.primary, size: 20),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Text(
+            tipTitle,
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+              color: AppColors.textPrimary,
             ),
-          );
-        },
+          ),
+          const SizedBox(height: 8),
+          Text(
+            tipDesc,
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 14,
+              height: 1.45,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton.icon(
+              onPressed: () => context.go('/ai'),
+              icon: const Icon(Icons.chat_bubble_outline, size: 16, color: AppColors.primary),
+              label: const Text('Poser une question à Naatal IA', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                backgroundColor: AppColors.primary.withValues(alpha: 0.08),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

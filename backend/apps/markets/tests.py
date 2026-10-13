@@ -119,8 +119,9 @@ class MarketsAppTests(TestCase):
         self.assertEqual(response_prod.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response_prod.data), 2)
 
-    def test_unauthenticated_access_rejected(self):
-        """Vérifie que l'accès aux endpoints de marché requiert une authentification."""
+    def test_unauthenticated_read_is_allowed(self):
+        """Vérifie que les observatoires de prix et marchés sont consultables publiquement en lecture seule."""
         url = reverse('markets:market-list')
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        response = APIClient().get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 2)

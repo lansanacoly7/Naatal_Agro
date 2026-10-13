@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../data/models/crop.dart';
+import '../../data/agriculture_provider.dart';
+import '../../../../shared/utils/data_refresh.dart';
 
 class CropDetailScreen extends ConsumerStatefulWidget {
   final Crop crop;
@@ -15,7 +17,14 @@ class CropDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
-  final Set<String> _completedTasks = {'Irrigation approfondie'};
+  final Set<String> _completedTasks = {};
+  late String _currentStatus;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentStatus = widget.crop.status;
+  }
 
   // --- Helpers for Growth Calculation ---
   double _calculateGrowthProgress() {
@@ -52,6 +61,27 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
 
     return Scaffold(
       backgroundColor: Colors.white,
+      bottomNavigationBar: _currentStatus == 'active'
+          ? SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                child: ElevatedButton.icon(
+                  onPressed: () => _showHarvestDialog(context),
+                  icon: const Icon(Icons.agriculture_rounded, color: Colors.white),
+                  label: const Text(
+                    'Enregistrer la récolte (Ajouter au stock)',
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    elevation: 4,
+                  ),
+                ),
+              ),
+            )
+          : null,
       body: CustomScrollView(
         slivers: [
           _buildSliverAppBar(),
@@ -174,9 +204,9 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
                   Row(
                     children: [
                       _buildGlassChip(
-                        widget.crop.status == 'active' ? 'EN CROISSANCE' : 'RÉCOLTÉ',
+                        _currentStatus == 'active' ? 'EN CROISSANCE' : 'RÉCOLTÉ',
                         Icons.eco,
-                        widget.crop.status == 'active' ? Colors.greenAccent : Colors.orangeAccent,
+                        _currentStatus == 'active' ? Colors.greenAccent : Colors.orangeAccent,
                       ),
                       const SizedBox(width: 8),
                       _buildGlassChip('${widget.crop.areaSize} ha', Icons.square_foot, Colors.white),
@@ -298,14 +328,38 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
   }
 
   Widget _buildTasksSection() {
+    final activities = widget.crop.activities;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text("Ce qu'il faut faire (Plan d'action)", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+        const Text("Activités & Travaux de parcelle", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
         const SizedBox(height: 16),
-        _buildTaskTile('Irrigation approfondie', 'Aujourd\'hui'),
-        _buildTaskTile('Apport d\'engrais NPK', 'Demain'),
-        _buildTaskTile('Sarclage', 'Dans 3 jours'),
+        if (activities.isNotEmpty)
+          ...activities.map((act) => _buildTaskTile(
+                act.description.isNotEmpty ? act.description : act.activityType,
+                act.date,
+              ))
+        else
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey.shade200),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.assignment_outlined, color: Colors.grey.shade500, size: 24),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    "Aucune intervention enregistrée pour cette culture. Consultez le guide agronomique pour le calendrier recommandé.",
+                    style: TextStyle(color: Colors.grey.shade600, fontSize: 13, height: 1.4),
+                  ),
+                ),
+              ],
+            ),
+          ),
       ],
     );
   }
@@ -360,33 +414,44 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
   }
 
   Widget _buildRisksSection() {
+    final hasGuide = widget.crop.guideSlug != null && widget.crop.guideSlug!.isNotEmpty;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text("Prévention & Risques", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.redAccent)),
+        const Text("Santé & Suivi phytosanitaire", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
         const SizedBox(height: 16),
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.red.withValues(alpha: 0.05),
+            color: Colors.green.withValues(alpha: 0.05),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.red.withValues(alpha: 0.2)),
+            border: Border.all(color: Colors.green.withValues(alpha: 0.2)),
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(Icons.warning_amber_rounded, color: Colors.red, size: 28),
+              const Icon(Icons.verified_user_outlined, color: Colors.green, size: 28),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
-                    Text('Risque de Mildiou élevé', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.red)),
-                    SizedBox(height: 4),
+                  children: [
+                    const Text('Aucune alerte sanitaire déclarée', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.green)),
+                    const SizedBox(height: 4),
                     Text(
-                      'L\'humidité récente augmente fortement le risque d\'apparition de maladies fongiques. Il est impératif d\'appliquer un traitement préventif dans les 48h.',
-                      style: TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.4),
+                      'Aucun foyer parasitaire ou maladie n\'a été signalé pour cette culture dans votre zone de ${widget.crop.location.isNotEmpty ? widget.crop.location : "production"}.',
+                      style: const TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.4),
                     ),
+                    if (hasGuide) ...[
+                      const SizedBox(height: 8),
+                      GestureDetector(
+                        onTap: () => context.push('/agriculture/guides/${widget.crop.guideSlug}'),
+                        child: const Text(
+                          'Voir les bonnes pratiques de prévention dans le guide >',
+                          style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 13),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -398,6 +463,8 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
   }
 
   Widget _buildSalesSection() {
+    final isHarvested = _currentStatus == 'harvested';
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -408,10 +475,10 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
             OutlinedButton.icon(
               onPressed: () => _showCreatePriceAlertDialog(context),
               icon: const Icon(Icons.notifications_active, size: 16, color: AppColors.primary),
-              label: const Text('Créer une alerte', style: TextStyle(color: AppColors.primary, fontSize: 12)),
+              label: const Text('Alerte prix', style: TextStyle(color: AppColors.primary, fontSize: 12)),
               style: OutlinedButton.styleFrom(
                 side: const BorderSide(color: AppColors.primary),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               ),
             ),
@@ -421,44 +488,93 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: AppColors.primary.withValues(alpha: 0.05),
+            color: isHarvested ? Colors.green.withValues(alpha: 0.05) : AppColors.primary.withValues(alpha: 0.05),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+            border: Border.all(color: isHarvested ? Colors.green.withValues(alpha: 0.3) : AppColors.primary.withValues(alpha: 0.2)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Row(
+              Row(
                 children: [
-                  Icon(Icons.inventory_2, color: AppColors.primaryDark),
-                  SizedBox(width: 8),
-                  Text('Préparation à la vente', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppColors.primaryDark)),
+                  Icon(
+                    isHarvested ? Icons.check_circle_rounded : Icons.inventory_2,
+                    color: isHarvested ? Colors.green : AppColors.primaryDark,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    isHarvested ? 'Récolte effectuée — En Stock' : 'Cycle de Récolte & Commercialisation',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                      color: isHarvested ? Colors.green.shade800 : AppColors.primaryDark,
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 8),
-              const Text(
-                'Anticipez votre récolte. Surveillez les tendances des marchés locaux pour décider si vous devez stocker votre production ou vendre immédiatement après la récolte.',
-                style: TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.4),
+              Text(
+                isHarvested
+                    ? 'La récolte a été enregistrée avec succès. La production a été ajoutée à vos stocks et est prête à être commercialisée ou conservée.'
+                    : 'Dès que la récolte est prête, enregistrez-la pour transférer automatiquement le volume dans vos stocks et suivre vos revenus.',
+                style: const TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.4),
               ),
               const SizedBox(height: 16),
+              if (!isHarvested) ...[
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () => _showHarvestDialog(context),
+                    icon: const Icon(Icons.agriculture_rounded, color: Colors.white),
+                    label: const Text(
+                      'Enregistrer la récolte (Transférer au Stock)',
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green.shade700,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+              ] else ...[
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () => context.push('/inventory'),
+                    icon: const Icon(Icons.inventory_2_rounded, color: Colors.white),
+                    label: const Text(
+                      'Voir les stocks & Enregistrer une vente',
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green.shade700,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+              ],
               SizedBox(
                 width: double.infinity,
-                child: ElevatedButton(
+                child: OutlinedButton(
                   onPressed: () {
-                    // Navigate to market comparison using the crop's raw type
                     context.push('/market_comparison', extra: {
                       'productName': widget.crop.cropType,
                       'imageAsset': widget.crop.imageAsset,
-                      'price': '', // Dynamic fetch based on cropType
+                      'price': '',
                     });
                   },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    elevation: 0,
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: AppColors.primary),
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
-                  child: const Text('Analyser les prix du marché', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  child: const Text('Analyser les prix du marché', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
                 ),
               ),
             ],
@@ -546,6 +662,144 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                     ),
                     child: const Text('Activer l\'alerte', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showHarvestDialog(BuildContext context) {
+    final quantityController = TextEditingController();
+    final notesController = TextEditingController();
+    String unit = 'kg';
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheetState) => Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Récolter : ${widget.crop.name}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    IconButton(icon: const Icon(Icons.close_rounded), onPressed: () => Navigator.pop(ctx)),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Cette récolte basculera le statut de la culture à "Récolté" et incrémentera automatiquement votre inventaire de stock.',
+                  style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      flex: 2,
+                      child: TextField(
+                        controller: quantityController,
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        decoration: InputDecoration(
+                          labelText: 'Quantité récoltée',
+                          prefixIcon: const Icon(Icons.scale_rounded),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      flex: 1,
+                      child: DropdownButtonFormField<String>(
+                        initialValue: unit,
+                        decoration: InputDecoration(
+                          labelText: 'Unité',
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                        ),
+                        items: const [
+                          DropdownMenuItem(value: 'kg', child: Text('kg')),
+                          DropdownMenuItem(value: 'tonnes', child: Text('tonnes')),
+                          DropdownMenuItem(value: 'sacs', child: Text('sacs')),
+                        ],
+                        onChanged: (val) {
+                          if (val != null) setSheetState(() => unit = val);
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: notesController,
+                  maxLines: 2,
+                  decoration: InputDecoration(
+                    labelText: 'Notes ou observations (optionnel)',
+                    prefixIcon: const Icon(Icons.notes_rounded),
+                    hintText: 'Ex: Qualité exceptionnelle, parcelle Est...',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      final qty = double.tryParse(quantityController.text.trim()) ?? 0.0;
+                      if (qty <= 0) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Veuillez saisir une quantité valide')),
+                        );
+                        return;
+                      }
+
+                      final messenger = ScaffoldMessenger.of(context);
+                      final nav = Navigator.of(ctx);
+
+                      try {
+                        await ref.read(agricultureRepositoryProvider).harvestCrop(
+                          widget.crop.id,
+                          quantity: qty,
+                          unit: unit,
+                          notes: notesController.text.trim(),
+                        );
+                        setState(() {
+                          _currentStatus = 'harvested';
+                        });
+                        refreshAfterDataChange(ref);
+                        nav.pop();
+                        messenger.showSnackBar(
+                          SnackBar(
+                            content: Text('Récolte de $qty $unit enregistrée ! Le stock et les alertes sont à jour.'),
+                            backgroundColor: AppColors.primary,
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      } catch (e) {
+                        messenger.showSnackBar(
+                          SnackBar(content: Text('Erreur: $e')),
+                        );
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    ),
+                    child: const Text('Confirmer la Récolte', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
                   ),
                 ),
               ],

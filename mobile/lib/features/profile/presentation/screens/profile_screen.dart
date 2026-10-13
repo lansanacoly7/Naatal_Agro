@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/notifications_sheet.dart';
 import '../../../auth/data/auth_provider.dart';
+import '../../data/notifications_provider.dart';
 import '../../data/profile_provider.dart';
 import '../../domain/profile_model.dart';
 
@@ -14,9 +16,6 @@ class ProfileScreen extends ConsumerStatefulWidget {
 }
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
-  bool _onionAlert = true;
-  bool _peanutAlert = true;
-  bool _tomatoAlert = false;
 
   @override
   void initState() {
@@ -96,8 +95,21 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       _buildSectionTitle('Mes Cultures Enregistrées'),
                       _buildTrackedProducts(context, profile),
                       const SizedBox(height: 32),
-                      _buildSectionTitle('Mes Alertes Actives', badgeCount: 2),
-                      _buildAlertsCard(context),
+                      Consumer(
+                        builder: (context, ref, child) {
+                          final notifState = ref.watch(notificationsProvider);
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildSectionTitle(
+                                'Mes Alertes & Notifications',
+                                badgeCount: notifState.unreadCount > 0 ? notifState.unreadCount : null,
+                              ),
+                              _buildAlertsCard(context, notifState),
+                            ],
+                          );
+                        },
+                      ),
                       const SizedBox(height: 32),
                       _buildSectionTitle('Paramètres du Compte'),
                       _buildSettingsSection(profile),
@@ -553,7 +565,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
   }
 
-  Widget _buildAlertsCard(BuildContext context) {
+  Widget _buildAlertsCard(BuildContext context, NotificationsState notifState) {
+    final recentNotif = notifState.items.isNotEmpty ? notifState.items.first : null;
+
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -564,93 +578,70 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       ),
       child: Column(
         children: [
-          _buildAlertRow(
-            'Oignon Local',
-            'Prix > 450 FCFA/kg',
-            _onionAlert,
-            icon: Icons.trending_up_rounded,
-            color: Colors.green,
-            onChanged: (val) {
-              setState(() => _onionAlert = val);
-              _showAlertFeedback('Oignon Local', val);
-            },
-          ),
-          Divider(height: 1, color: Colors.grey.shade100, indent: 20, endIndent: 20),
-          _buildAlertRow(
-            'Arachide décortiquée',
-            'Prix < 550 FCFA/kg',
-            _peanutAlert,
-            icon: Icons.trending_down_rounded,
-            color: Colors.red,
-            onChanged: (val) {
-              setState(() => _peanutAlert = val);
-              _showAlertFeedback('Arachide décortiquée', val);
-            },
-          ),
-          Divider(height: 1, color: Colors.grey.shade100, indent: 20, endIndent: 20),
-          _buildAlertRow(
-            'Tomate industrielle',
-            'Prix > 700 FCFA/kg',
-            _tomatoAlert,
-            icon: Icons.trending_up_rounded,
-            color: Colors.grey,
-            onChanged: (val) {
-              setState(() => _tomatoAlert = val);
-              _showAlertFeedback('Tomate industrielle', val);
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showAlertFeedback(String title, bool active) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(active ? 'Alerte activée pour $title' : 'Alerte désactivée pour $title'),
-        duration: const Duration(seconds: 2),
-        backgroundColor: active ? AppColors.primary : Colors.grey.shade800,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
-
-  Widget _buildAlertRow(
-    String title,
-    String subtitle,
-    bool isActive, {
-    required IconData icon,
-    required Color color,
-    required ValueChanged<bool> onChanged,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 14.0),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
+          ListTile(
+            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+            leading: Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.orange.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.add_alert_rounded, color: Colors.orange, size: 22),
             ),
-            child: Icon(icon, color: color, size: 22),
+            title: const Text(
+              'Alertes de Prix des Marchés',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+            ),
+            subtitle: const Text(
+              'Gérer vos seuils de prix min / max pour vos cultures',
+              style: TextStyle(color: Colors.grey, fontSize: 13),
+            ),
+            trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16, color: Colors.grey),
+            onTap: () => context.push('/price-alerts'),
           ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          Divider(height: 1, color: Colors.grey.shade100, indent: 20, endIndent: 20),
+          ListTile(
+            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+            leading: Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.notifications_active_rounded, color: AppColors.primary, size: 22),
+            ),
+            title: Row(
               children: [
-                Text(title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: isActive ? Colors.black87 : Colors.grey)),
-                const SizedBox(height: 3),
-                Text(subtitle, style: TextStyle(color: Colors.grey.shade500, fontSize: 13)),
+                const Text(
+                  'Centre de Notifications',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                ),
+                if (notifState.unreadCount > 0) ...[
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.redAccent,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      '${notifState.unreadCount} non lue${notifState.unreadCount > 1 ? 's' : ''}',
+                      style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
               ],
             ),
-          ),
-          Switch(
-            value: isActive,
-            onChanged: onChanged,
-            activeThumbColor: Colors.white,
-            activeTrackColor: AppColors.primary,
+            subtitle: Text(
+              recentNotif != null
+                  ? 'Dernier message : ${recentNotif.message}'
+                  : 'Aucune alerte en attente. Vous êtes à jour.',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+            ),
+            trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16, color: Colors.grey),
+            onTap: () => context.push('/notifications'),
           ),
         ],
       ),

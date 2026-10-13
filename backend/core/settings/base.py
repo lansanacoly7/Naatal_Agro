@@ -32,7 +32,6 @@ TRUSTED_WEB_DOMAINS = [
 ]
 
 # Inscription : exiger l'acceptation de la politique de confidentialité (privacy_accepted=true).
-# Passer à True dès que l'application mobile envoie ce champ (voir docs/06-Backend-API.md §5.1).
 PRIVACY_CONSENT_REQUIRED = os.getenv('PRIVACY_CONSENT_REQUIRED', 'False').lower() in ('true', '1', 't')
 FIREBASE_CREDENTIALS_PATH = os.getenv('FIREBASE_CREDENTIALS_PATH')
 
