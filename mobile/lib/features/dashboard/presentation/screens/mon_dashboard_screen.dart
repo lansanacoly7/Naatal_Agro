@@ -514,7 +514,7 @@ class _MonDashboardScreenState extends ConsumerState<MonDashboardScreen> {
           ),
           const SizedBox(height: 12),
           const Text(
-            'Comparez les prix réels constatés dans les marchés sénégalais (Castors, Tilène, Kaolack, Touba, Saint-Louis) pour valoriser vos récoltes au meilleur prix.',
+            'Comparez les prix réels constatés dans les marchés sénégalais (MIN de Diamniadio, Castors, Tilène, Kaolack) pour valoriser vos récoltes au meilleur prix.',
             style: TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.4),
           ),
           const SizedBox(height: 16),

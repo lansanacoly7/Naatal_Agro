@@ -30,7 +30,7 @@ class MarketsScreen extends ConsumerStatefulWidget {
 }
 
 class _MarketsScreenState extends ConsumerState<MarketsScreen> {
-  static const LatLng _userLocation = LatLng(14.6928, -17.4467); // Dakar
+  static const LatLng _userLocation = LatLng(14.7214, -17.1852); // Diamniadio (Pôle Urbain & MIN)
 
   final MapController _mapController = MapController();
   final TextEditingController _searchController = TextEditingController();

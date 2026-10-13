@@ -12,6 +12,7 @@ class Command(BaseCommand):
 
         # 1. Définition des marchés réels/réalistes
         markets_data = [
+            {"name": "Marché d'Intérêt National (MIN) de Diamniadio", "region": "Diamniadio", "gps": "14.7214,-17.1852"},
             {"name": "Marché Castors", "region": "Dakar", "gps": "14.7077,-17.4526"},
             {"name": "Marché Sandaga", "region": "Dakar", "gps": "14.6710,-17.4380"},
             {"name": "Marché Thiaroye", "region": "Dakar", "gps": "14.7570,-17.3820"},
@@ -59,6 +60,8 @@ class Command(BaseCommand):
                 # Appliquer une variation régionale
                 if market.region == "Dakar":
                     base_price *= 1.15 # Plus cher à Dakar
+                elif market.region == "Diamniadio":
+                    base_price *= 1.05 # MIN Diamniadio (Marché de gros national de référence)
                 elif market.region == "Ziguinchor" and product.category == "FRUIT":
                     base_price *= 0.80 # Moins cher dans le sud
                 elif market.region == "Thiès":
