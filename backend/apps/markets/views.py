@@ -29,9 +29,17 @@ class MarketViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = MarketSerializer
     permission_classes = [permissions.AllowAny]
 
+from rest_framework.pagination import PageNumberPagination
+
+class StandardPricePagination(PageNumberPagination):
+    page_size = 20
+    page_size_query_param = 'page_size'
+    max_page_size = 100
+
 class PriceViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = Price.objects.all()
+    queryset = Price.objects.all().select_related('market')
     serializer_class = PriceSerializer
+    pagination_class = StandardPricePagination
     permission_classes = [permissions.AllowAny]
     
     def get_queryset(self):
@@ -45,3 +53,4 @@ class PriceViewSet(viewsets.ReadOnlyModelViewSet):
             queryset = queryset.filter(product_name__icontains=product_name)
         
         return queryset
+

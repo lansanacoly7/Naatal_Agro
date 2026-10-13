@@ -106,18 +106,30 @@ class MarketsAppTests(TestCase):
         # Tous les prix
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 2)
+        results = response.data['results'] if isinstance(response.data, dict) else response.data
+        self.assertEqual(len(results), 2)
 
         # Filtrer par marché
         response_market = self.client.get(url, {'market': str(self.market_castors.id)})
         self.assertEqual(response_market.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response_market.data), 1)
-        self.assertEqual(float(response_market.data[0]['price']), 600.0)
+        results_market = response_market.data['results'] if isinstance(response_market.data, dict) else response_market.data
+        self.assertEqual(len(results_market), 1)
+        self.assertEqual(float(results_market[0]['price']), 600.0)
 
         # Filtrer par nom de produit
         response_prod = self.client.get(url, {'product': 'Oignon'})
         self.assertEqual(response_prod.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response_prod.data), 2)
+        results_prod = response_prod.data['results'] if isinstance(response_prod.data, dict) else response_prod.data
+        self.assertEqual(len(results_prod), 2)
+
+    def test_prices_pagination_structure(self):
+        """Vérifie la pagination par défaut de PriceViewSet."""
+        url = reverse('markets:price-list')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn('count', response.data)
+        self.assertIn('results', response.data)
+        self.assertEqual(response.data['count'], 2)
 
     def test_unauthenticated_read_is_allowed(self):
         """Vérifie que les observatoires de prix et marchés sont consultables publiquement en lecture seule."""

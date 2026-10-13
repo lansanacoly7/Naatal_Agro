@@ -14,7 +14,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt /install/
-RUN pip install --no-cache-dir --prefix=/install/deps -r requirements.txt gunicorn>=22.0.0
+RUN pip install --no-cache-dir --prefix=/install/deps -r requirements.txt "gunicorn>=22.0.0"
 
 # Runner stage
 FROM python:3.12-slim
@@ -38,7 +38,7 @@ RUN useradd -m -u 1000 appuser
 
 # Copy application code
 COPY . /app/
-RUN chown -R appuser:appuser /app
+RUN mkdir -p /app/staticfiles && chown -R appuser:appuser /app
 
 USER appuser
 
