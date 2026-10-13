@@ -38,12 +38,14 @@ def get_farmer_context(user):
         "crops": [],
         "recent_activities": [],
         "market_prices": [],
-        "local_pest_alerts": []
+        "local_pest_alerts": [],
+        "weather": None,
     }
 
     try:
         from apps.agriculture.models import Crop, Activity, PestReport
         from apps.markets.models import Product, Price
+        from apps.weather.models import WeatherData
 
         # 1. Cultures personnelles exclusives de l'utilisateur connecté
         user_crops = Crop.objects.filter(user=user)[:10]
@@ -90,6 +92,23 @@ def get_farmer_context(user):
                     "zone": alert.location,
                     "date": alert.date_reported.strftime("%Y-%m-%d")
                 })
+
+        # 5. Météo géolocalisée selon la région de l'utilisateur ou données nationales récentes
+        user_region = user.location.split(',')[0].strip() if user.location else ''
+        latest_weather = None
+        if user_region:
+            latest_weather = WeatherData.objects.filter(location__icontains=user_region).order_by('-forecast_date').first()
+        if not latest_weather:
+            latest_weather = WeatherData.objects.order_by('-forecast_date').first()
+
+        if latest_weather:
+            context["weather"] = {
+                "zone": latest_weather.location,
+                "temperature_c": latest_weather.temperature,
+                "humidite_pct": latest_weather.humidity,
+                "pluviometrie_mm": latest_weather.rainfall,
+                "date": str(latest_weather.forecast_date),
+            }
     except Exception as e:
         logger.error(f"[AI Context Extraction] Erreur d'extraction : {e}")
 

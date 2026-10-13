@@ -26,7 +26,7 @@ def run_seed():
         'phone': phone_number,
         'first_name': 'Lassana',
         'last_name': 'Coly',
-        'location': 'Thiès, Sénégal',
+        'location': 'Diamniadio, Dakar, Sénégal',
         'role': 'farmer',
         'language': 'fr',
         'main_crops': ['Tomate', 'Oignon', 'Arachide']
@@ -35,7 +35,7 @@ def run_seed():
     user.set_password('password123')
     user.first_name = 'Lassana'
     user.last_name = 'Coly'
-    user.location = 'Thiès, Sénégal'
+    user.location = 'Diamniadio, Dakar, Sénégal'
     user.role = 'farmer'
     user.language = 'fr'
     user.main_crops = ['Tomate', 'Oignon', 'Arachide']
@@ -51,16 +51,17 @@ def run_seed():
     # 2. Création de données Météo
     today = timezone.now().date()
     WeatherData.objects.create(
-        location="Thiès, Sénégal",
-        temperature=32.5,
-        humidity=45.0,
+        location="Diamniadio",
+        temperature=29.5,
+        humidity=65.0,
         rainfall=0.0,
         forecast_date=today
     )
-    print("Meteo ajoutee")
+    print("Meteo Diamniadio ajoutee")
 
     # 3. Création des Marchés
     markets_data = [
+        {"name": "Marché d'Intérêt National (MIN) de Diamniadio", "region": "Diamniadio", "lat": "14.7214", "lng": "-17.1852", "rating": 4.8},
         {"name": "Marché Castors", "region": "Dakar", "lat": "14.7077", "lng": "-17.4526", "rating": 4.5},
         {"name": "Marché Sandaga", "region": "Dakar", "lat": "14.6698", "lng": "-17.4357", "rating": 4.2},
         {"name": "Marché Tilène", "region": "Dakar", "lat": "14.6853", "lng": "-17.4521", "rating": 4.0},
@@ -77,6 +78,7 @@ def run_seed():
     # Ajout de prix (Oignon, Tomate, Riz, Arachide)
     prices_data = [
         # Oignon
+        {"market": "Marché d'Intérêt National (MIN) de Diamniadio", "product": "Oignon", "price": 480.00, "trend": "up"},
         {"market": "Marché Castors", "product": "Oignon", "price": 470.00, "trend": "up"},
         {"market": "Marché Sandaga", "product": "Oignon", "price": 450.00, "trend": "stable"},
         {"market": "Marché Tilène", "product": "Oignon", "price": 435.00, "trend": "down"},
@@ -84,6 +86,7 @@ def run_seed():
         {"market": "Marché Central", "product": "Oignon", "price": 400.00, "trend": "stable"},
 
         # Tomate
+        {"market": "Marché d'Intérêt National (MIN) de Diamniadio", "product": "Tomate", "price": 520.00, "trend": "up"},
         {"market": "Marché Castors", "product": "Tomate", "price": 500.00, "trend": "up"},
         {"market": "Marché Sandaga", "product": "Tomate", "price": 550.00, "trend": "up"},
         {"market": "Marché Tilène", "product": "Tomate", "price": 480.00, "trend": "down"},
@@ -91,6 +94,7 @@ def run_seed():
         {"market": "Marché Central", "product": "Tomate", "price": 400.00, "trend": "stable"},
 
         # Arachide
+        {"market": "Marché d'Intérêt National (MIN) de Diamniadio", "product": "Arachide", "price": 910.00, "trend": "up"},
         {"market": "Marché Castors", "product": "Arachide", "price": 890.00, "trend": "stable"},
         {"market": "Marché Sandaga", "product": "Arachide", "price": 950.00, "trend": "up"},
         {"market": "Marché Tilène", "product": "Arachide", "price": 860.00, "trend": "down"},
@@ -98,6 +102,7 @@ def run_seed():
         {"market": "Marché Central", "product": "Arachide", "price": 750.00, "trend": "stable"},
 
         # Riz
+        {"market": "Marché d'Intérêt National (MIN) de Diamniadio", "product": "Riz", "price": 430.00, "trend": "up"},
         {"market": "Marché Castors", "product": "Riz", "price": 420.00, "trend": "up"},
         {"market": "Marché Sandaga", "product": "Riz", "price": 450.00, "trend": "up"},
         {"market": "Marché Tilène", "product": "Riz", "price": 400.00, "trend": "stable"},
@@ -114,31 +119,31 @@ def run_seed():
             date=today
         )
 
-    print("Marchés et Prix ajoutes")
+    print("Marchés et Prix ajoutes (avec MIN de Diamniadio)")
 
     # 4. Création des Cultures
     tomato_crop = Crop.objects.create(
         user=user,
-        name="Champ de Tomates",
+        name="Maraîchage Tomates",
         crop_type="Tomate",
         planting_date=today - datetime.timedelta(days=30),
         expected_harvest_date=today + datetime.timedelta(days=60),
         status="active",
         area_size=1.5,
-        location="Thiès Nord"
+        location="Diamniadio (Sébikotane)"
     )
 
-    rice_crop = Crop.objects.create(
+    onion_crop = Crop.objects.create(
         user=user,
-        name="Riziculture",
-        crop_type="Riz",
-        planting_date=today - datetime.timedelta(days=10),
-        expected_harvest_date=today + datetime.timedelta(days=120),
-        status="attention",
-        area_size=3.0,
-        location="Vallée du Fleuve"
+        name="Oignon Local (Niayes)",
+        crop_type="Oignon",
+        planting_date=today - datetime.timedelta(days=40),
+        expected_harvest_date=today + datetime.timedelta(days=50),
+        status="active",
+        area_size=2.0,
+        location="Diamniadio (Pôle Agro-Urbain)"
     )
-    print("Cultures ajoutees")
+    print("Cultures ajoutees a Diamniadio")
 
     # 5. Création d'activités
     Activity.objects.create(
@@ -182,13 +187,13 @@ def run_seed():
     Notification.objects.create(
         user=user,
         type="market",
-        message="Le cours de l'oignon local est en hausse de +5% sur le Marché Castors. Opportunité de vente favorable.",
+        message="Cotation MIN Diamniadio : Le cours de l'oignon local est en hausse (+6%) au Marché d'Intérêt National.",
         is_read=False
     )
     Notification.objects.create(
         user=user,
         type="weather",
-        message="Alerte Météo : Fortes chaleurs prévues à Thiès (35°C). Pensez à irriguer tôt le matin.",
+        message="Bulletin Météo Diamniadio : Ciel dégagé (29°C), climat propice aux travaux de sarclage et d'irrigation.",
         is_read=False
     )
     print("Notifications ajoutees")

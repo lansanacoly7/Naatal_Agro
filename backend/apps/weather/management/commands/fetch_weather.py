@@ -20,7 +20,7 @@ class Command(BaseCommand):
             today = date.today()
             locations = list(set(Crop.objects.values_list('location', flat=True)))
             if not locations:
-                locations = ["Thiès, Sénégal", "Dakar, Sénégal", "Saint-Louis, Sénégal"]
+                locations = ["Diamniadio, Sénégal", "Dakar, Sénégal", "Thiès, Sénégal"]
                 
             for loc in locations:
                 if loc:
@@ -39,7 +39,7 @@ class Command(BaseCommand):
         # Vraie récupération depuis l'API
         locations = list(set(Crop.objects.values_list('location', flat=True)))
         if not locations:
-            locations = ["Thiès, Sénégal", "Dakar, Sénégal"]
+            locations = ["Diamniadio, Sénégal", "Dakar, Sénégal"]
 
         success_count = 0
         for loc in locations:

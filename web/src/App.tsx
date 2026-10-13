@@ -373,6 +373,7 @@ export function App() {
             </p>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
               {[
+                { name: "Marché d'Intérêt National (MIN)", region: 'Diamniadio', type: 'Gros & Hub Logistique National' },
                 { name: 'Marché Tilène', region: 'Dakar', type: 'Détail & Demi-gros' },
                 { name: 'Marché Castors', region: 'Dakar', type: 'Gros & Légumes' },
                 { name: 'Marché Central Kaolack', region: 'Kaolack', type: 'Carrefour Arachidier' },
@@ -436,7 +437,8 @@ export function App() {
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '20px', marginTop: '20px' }}>
               {[
-                { zone: 'Zone des Niayes (Dakar / Thiès / Saint-Louis)', temp: '26°C', humidity: '78%', rain: '0 mm', advice: 'Idéal pour le maraîchage. Risque fongique modéré le matin.' },
+                { zone: 'Pôle Urbain Diamniadio & Niayes-Sud', temp: '29°C', humidity: '65%', rain: '0 mm', advice: 'Idéal pour le maraîchage périurbain et la logistique vers le MIN.' },
+                { zone: 'Zone des Niayes Nord (Thiès / Saint-Louis)', temp: '26°C', humidity: '78%', rain: '0 mm', advice: 'Forte humidité matinale. Risque fongique modéré sur oignon.' },
                 { zone: 'Bassin Arachidier (Kaolack / Fatick / Diourbel)', temp: '32°C', humidity: '52%', rain: '0 mm', advice: 'Bonne maturité des cultures sèches. Stockage à l’abri préconisé.' },
                 { zone: 'Vallée du Fleuve Sénégal (Podor / Matam)', temp: '35°C', humidity: '40%', rain: '0 mm', advice: 'Évaporation élevée. Renforcer les tours d’arrosage sur le riz.' },
                 { zone: 'Casamance (Ziguinchor / Kolda)', temp: '29°C', humidity: '72%', rain: '0 mm', advice: 'Conditions favorables au verger et aux cultures de diversification.' },

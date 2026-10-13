@@ -64,6 +64,23 @@ class AIAssistantSecurityTests(TestCase):
         self.assertEqual(context_ali['name'], 'Ali')
         self.assertEqual(context_ali['location'], 'Podor, Sénégal')
 
+    def test_farmer_context_includes_localized_weather(self):
+        """Vérifie que la météo locale est automatiquement injectée dans le contexte IA de l'exploitant."""
+        from datetime import date
+        from apps.weather.models import WeatherData
+        WeatherData.objects.create(
+            location='Podor',
+            temperature=36.5,
+            humidity=35.0,
+            rainfall=2.5,
+            forecast_date=date.today()
+        )
+        context_ali = get_farmer_context(self.user_ali)
+        self.assertIsNotNone(context_ali['weather'])
+        self.assertEqual(context_ali['weather']['zone'], 'Podor')
+        self.assertEqual(context_ali['weather']['temperature_c'], 36.5)
+        self.assertEqual(context_ali['weather']['pluviometrie_mm'], 2.5)
+
     def test_unauthenticated_context_has_no_crops(self):
         """Vérifie qu'un visiteur non authentifié n'a accès à aucune exploitation."""
         context_anonymous = get_farmer_context(None)
