@@ -80,7 +80,7 @@ class AgricultureRepository {
       data: cropData,
     );
     
-    if (response.statusCode != 201) {
+    if (response.statusCode != 201 && response.statusCode != 200 && response.statusCode != 202) {
       throw Exception('Erreur lors de l\'ajout de la culture');
     }
   }
@@ -91,7 +91,7 @@ class AgricultureRepository {
       data: cropData,
     );
     
-    if (response.statusCode != 200) {
+    if (response.statusCode != 200 && response.statusCode != 204 && response.statusCode != 202) {
       throw Exception('Erreur lors de la mise à jour de la culture');
     }
   }
@@ -101,7 +101,7 @@ class AgricultureRepository {
       '${AppConstants.cropsEndpoint}$cropId/',
     );
     
-    if (response.statusCode != 204) {
+    if (response.statusCode != 204 && response.statusCode != 200 && response.statusCode != 202) {
       throw Exception('Erreur lors de la suppression de la culture');
     }
   }
@@ -123,7 +123,7 @@ class AgricultureRepository {
       },
     );
 
-    if (response.statusCode != 200 && response.statusCode != 201) {
+    if (response.statusCode != 200 && response.statusCode != 201 && response.statusCode != 202) {
       throw Exception('Erreur lors de l\'enregistrement de la récolte (${response.statusCode})');
     }
 

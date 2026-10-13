@@ -17,7 +17,7 @@ class CropDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
-  final Set<String> _completedTasks = {'Irrigation approfondie'};
+  final Set<String> _completedTasks = {};
   late String _currentStatus;
 
   @override
@@ -328,14 +328,38 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
   }
 
   Widget _buildTasksSection() {
+    final activities = widget.crop.activities;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text("Ce qu'il faut faire (Plan d'action)", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+        const Text("Activités & Travaux de parcelle", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
         const SizedBox(height: 16),
-        _buildTaskTile('Irrigation approfondie', 'Aujourd\'hui'),
-        _buildTaskTile('Apport d\'engrais NPK', 'Demain'),
-        _buildTaskTile('Sarclage', 'Dans 3 jours'),
+        if (activities.isNotEmpty)
+          ...activities.map((act) => _buildTaskTile(
+                act.description.isNotEmpty ? act.description : act.activityType,
+                act.date,
+              ))
+        else
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey.shade200),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.assignment_outlined, color: Colors.grey.shade500, size: 24),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    "Aucune intervention enregistrée pour cette culture. Consultez le guide agronomique pour le calendrier recommandé.",
+                    style: TextStyle(color: Colors.grey.shade600, fontSize: 13, height: 1.4),
+                  ),
+                ),
+              ],
+            ),
+          ),
       ],
     );
   }
@@ -390,33 +414,44 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
   }
 
   Widget _buildRisksSection() {
+    final hasGuide = widget.crop.guideSlug != null && widget.crop.guideSlug!.isNotEmpty;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text("Prévention & Risques", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.redAccent)),
+        const Text("Santé & Suivi phytosanitaire", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
         const SizedBox(height: 16),
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.red.withValues(alpha: 0.05),
+            color: Colors.green.withValues(alpha: 0.05),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.red.withValues(alpha: 0.2)),
+            border: Border.all(color: Colors.green.withValues(alpha: 0.2)),
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(Icons.warning_amber_rounded, color: Colors.red, size: 28),
+              const Icon(Icons.verified_user_outlined, color: Colors.green, size: 28),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
-                    Text('Risque de Mildiou élevé', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.red)),
-                    SizedBox(height: 4),
+                  children: [
+                    const Text('Aucune alerte sanitaire déclarée', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.green)),
+                    const SizedBox(height: 4),
                     Text(
-                      'L\'humidité récente augmente fortement le risque d\'apparition de maladies fongiques. Il est impératif d\'appliquer un traitement préventif dans les 48h.',
-                      style: TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.4),
+                      'Aucun foyer parasitaire ou maladie n\'a été signalé pour cette culture dans votre zone de ${widget.crop.location.isNotEmpty ? widget.crop.location : "production"}.',
+                      style: const TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.4),
                     ),
+                    if (hasGuide) ...[
+                      const SizedBox(height: 8),
+                      GestureDetector(
+                        onTap: () => context.push('/agriculture/guides/${widget.crop.guideSlug}'),
+                        child: const Text(
+                          'Voir les bonnes pratiques de prévention dans le guide >',
+                          style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 13),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),

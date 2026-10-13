@@ -70,7 +70,7 @@ class InventoryNotifier extends StateNotifier<AsyncValue<List<StockItem>>> {
         if (buyer != null && buyer.isNotEmpty) 'buyer': buyer,
       },
     );
-    if (response.statusCode == 200 || response.statusCode == 201) {
+    if (response.statusCode == 200 || response.statusCode == 201 || response.statusCode == 202) {
       await fetchInventory();
     } else {
       throw Exception('Erreur lors de l\'enregistrement de la vente');

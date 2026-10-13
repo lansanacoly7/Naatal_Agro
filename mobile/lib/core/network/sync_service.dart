@@ -29,6 +29,13 @@ class SyncService {
     debugPrint('[SyncService] Requête mise en file d\'attente (offline): $method $path');
   }
 
+  /// Vide complètement la file d'attente (appelé à la déconnexion pour éviter toute fuite entre comptes)
+  static Future<void> clearQueue() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_queueKey);
+    debugPrint('[SyncService] File d\'attente hors ligne purgée.');
+  }
+
   /// Tente de vider la file d'attente si le réseau est de retour
   static Future<void> syncOfflineData(ApiClient apiClient) async {
     try {

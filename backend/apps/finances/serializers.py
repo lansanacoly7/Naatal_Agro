@@ -6,7 +6,7 @@ from apps.agriculture.models import Crop
 class SaleSerializer(serializers.ModelSerializer):
     crop_name = serializers.CharField(source='crop.name', read_only=True)
     total_revenue = serializers.FloatField(read_only=True)
-    product_name = serializers.CharField(write_only=True, required=False)
+    product_name = serializers.CharField(required=False, allow_blank=True)
     quantity = serializers.FloatField(write_only=True, required=False)
     unit_price = serializers.DecimalField(max_digits=10, decimal_places=2, write_only=True, required=False)
     sale_date = serializers.DateField(write_only=True, required=False)
@@ -14,16 +14,23 @@ class SaleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Sale
         fields = [
-            'id', 'crop', 'crop_name', 'quantity_sold', 'price_per_unit', 'date',
+            'id', 'crop', 'crop_name', 'product_name', 'quantity_sold', 'price_per_unit', 'date',
             'buyer', 'total_revenue', 'created_at',
-            'product_name', 'quantity', 'unit_price', 'sale_date'
+            'quantity', 'unit_price', 'sale_date'
         ]
         extra_kwargs = {
-            'crop': {'required': False},
+            'crop': {'required': False, 'allow_null': True},
             'quantity_sold': {'required': False},
             'price_per_unit': {'required': False},
             'date': {'required': False},
+            'product_name': {'required': False},
         }
+
+    def to_representation(self, instance):
+        ret = super().to_representation(instance)
+        if not ret.get('crop_name'):
+            ret['crop_name'] = instance.product_name or ''
+        return ret
 
     def to_internal_value(self, data):
         data = data.copy() if hasattr(data, 'copy') else dict(data)
@@ -43,24 +50,15 @@ class SaleSerializer(serializers.ModelSerializer):
                 crop = Crop.objects.filter(user=request.user, name__iexact=product_name).first()
                 if not crop:
                     crop = Crop.objects.filter(user=request.user, crop_type__iexact=product_name).first()
-                if not crop:
-                    crop = Crop.objects.create(
-                        user=request.user,
-                        name=product_name,
-                        crop_type=product_name,
-                        area_size=1.0,
-                        location='Exploitation',
-                        planting_date=datetime.date.today(),
-                        expected_harvest_date=datetime.date.today(),
-                        status='harvested',
-                    )
-                data['crop'] = str(crop.id)
+                if crop:
+                    data['crop'] = str(crop.id)
+                # Aucune création de culture fantôme : product_name est conservé directement
 
         return super().to_internal_value(data)
 
     def validate_crop(self, value):
         request = self.context.get('request')
-        if request and request.user and request.user.is_authenticated:
+        if value and request and request.user and request.user.is_authenticated:
             if value.user != request.user:
                 raise serializers.ValidationError("Violation de sécurité : Vous ne pouvez enregistrer de vente que pour vos propres récoltes.")
         return value
@@ -69,6 +67,7 @@ class SaleSerializer(serializers.ModelSerializer):
         crop = attrs.get('crop')
         quantity_sold = attrs.get('quantity_sold')
         price_per_unit = attrs.get('price_per_unit')
+        product_name = attrs.get('product_name')
         request = self.context.get('request')
 
         if quantity_sold is None or quantity_sold <= 0:
@@ -76,14 +75,30 @@ class SaleSerializer(serializers.ModelSerializer):
         if price_per_unit is None or price_per_unit <= 0:
             raise serializers.ValidationError({'price_per_unit': "Le prix unitaire doit être supérieur à zéro."})
 
-        if request and request.user and crop and quantity_sold is not None:
+        effective_name = crop.name if crop else (product_name or '')
+        if request and request.user and effective_name and quantity_sold is not None:
             from apps.inventory.models import StockItem
-            stock_item = StockItem.objects.filter(user=request.user, name__iexact=crop.name).first()
+            stock_item = StockItem.objects.filter(user=request.user, name__iexact=effective_name).first()
             if stock_item and stock_item.quantity < float(quantity_sold):
                 raise serializers.ValidationError({
-                    'quantity_sold': f"Stock insuffisant : vous disposez actuellement de {stock_item.quantity} {stock_item.unit} pour {crop.name}."
+                    'quantity_sold': f"Stock insuffisant : vous disposez actuellement de {stock_item.quantity} {stock_item.unit} pour {effective_name}."
                 })
         return attrs
+
+    def create(self, validated_data):
+        validated_data.pop('quantity', None)
+        validated_data.pop('unit_price', None)
+        validated_data.pop('sale_date', None)
+
+        request = self.context.get('request')
+        if request and request.user and request.user.is_authenticated:
+            validated_data['user'] = request.user
+
+        crop = validated_data.get('crop')
+        if crop and not validated_data.get('product_name'):
+            validated_data['product_name'] = crop.name
+
+        return super().create(validated_data)
 
 class TransactionSerializer(serializers.ModelSerializer):
     class Meta:

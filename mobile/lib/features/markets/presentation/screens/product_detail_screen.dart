@@ -452,7 +452,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
           if (guide != null) ...[
             const SizedBox(height: 12),
             GestureDetector(
-              onTap: () => context.push('/guides/detail', extra: guide.slug),
+              onTap: () => context.push('/agriculture/guides/${guide.slug}'),
               child: const Text(
                 'Consulter le guide agronomique complet >',
                 style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 13),

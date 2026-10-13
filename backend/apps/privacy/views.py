@@ -1,5 +1,6 @@
 import logging
 
+from django.db.models import Q
 from django.utils import timezone
 from rest_framework import permissions, status, views
 from rest_framework.response import Response
@@ -47,7 +48,7 @@ class ExportDataView(views.APIView):
             'crops': CropSerializer(crops, many=True).data,
             'activities': ActivitySerializer(Activity.objects.filter(crop__user=user), many=True).data,
             'pest_reports': PestReportSerializer(PestReport.objects.filter(user=user), many=True).data,
-            'sales': SaleSerializer(Sale.objects.filter(crop__user=user).select_related('crop'), many=True).data,
+            'sales': SaleSerializer(Sale.objects.filter(Q(user=user) | Q(crop__user=user)).select_related('crop').distinct(), many=True).data,
             'transactions': TransactionSerializer(Transaction.objects.filter(user=user), many=True).data,
             'stock_items': StockItemSerializer(StockItem.objects.filter(user=user), many=True).data,
             'notifications': NotificationSerializer(Notification.objects.filter(user=user), many=True).data,

@@ -1,31 +1,65 @@
+from django.db import transaction as db_transaction
+from django.db.models import ExpressionWrapper, F, FloatField, Sum, Q
 from rest_framework import viewsets, permissions, views
 from rest_framework.response import Response
 from .models import Sale, Transaction
 from .serializers import SaleSerializer, TransactionSerializer
-from django.db.models import ExpressionWrapper, F, FloatField, Sum
-from datetime import datetime, timedelta
 
 class SaleViewSet(viewsets.ModelViewSet):
     serializer_class = SaleSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        # select_related : le serializer affiche le nom de la culture (sinon une requête par vente)
-        return Sale.objects.filter(crop__user=self.request.user).select_related('crop')
+        return Sale.objects.filter(
+            Q(user=self.request.user) | Q(crop__user=self.request.user)
+        ).select_related('crop').distinct()
 
     def perform_create(self, serializer):
-        sale = serializer.save()
-        # Décrémenter automatiquement le stock dans apps.inventory si l'article existe
-        try:
-            from apps.inventory.models import StockItem
-            stock_item = StockItem.objects.filter(user=self.request.user, name__iexact=sale.crop.name).first()
-            if stock_item:
-                stock_item.quantity = max(0.0, round(stock_item.quantity - float(sale.quantity_sold), 2))
-                if stock_item.quantity <= 5:
-                    stock_item.alert_status = True
-                stock_item.save(update_fields=['quantity', 'alert_status', 'updated_at'])
-        except Exception:
-            pass
+        with db_transaction.atomic():
+            sale = serializer.save(user=self.request.user)
+            product_name = sale.crop.name if sale.crop else sale.product_name
+
+            # 1. Décrémenter automatiquement le stock dans apps.inventory si l'article existe
+            if product_name:
+                try:
+                    from apps.inventory.models import StockItem
+                    stock_item = StockItem.objects.filter(user=self.request.user, name__iexact=product_name).first()
+                    if stock_item:
+                        stock_item.quantity = max(0.0, round(stock_item.quantity - float(sale.quantity_sold), 2))
+                        if stock_item.quantity <= 5:
+                            stock_item.alert_status = True
+                        stock_item.save(update_fields=['quantity', 'alert_status', 'updated_at'])
+                except Exception:
+                    pass
+
+            # 2. Créer automatiquement la Transaction de revenu liée à la vente
+            Transaction.objects.update_or_create(
+                sale=sale,
+                defaults={
+                    'user': self.request.user,
+                    'transaction_type': 'income',
+                    'amount': sale.total_revenue,
+                    'date': sale.date,
+                    'description': f"Vente de {product_name or 'produit'} ({sale.quantity_sold})"
+                }
+            )
+
+    def perform_destroy(self, instance):
+        with db_transaction.atomic():
+            # Restituer la quantité dans le stock avant suppression
+            product_name = instance.crop.name if instance.crop else instance.product_name
+            if product_name:
+                try:
+                    from apps.inventory.models import StockItem
+                    stock_item = StockItem.objects.filter(user=self.request.user, name__iexact=product_name).first()
+                    if stock_item:
+                        stock_item.quantity = round(stock_item.quantity + float(instance.quantity_sold), 2)
+                        if stock_item.quantity > 5:
+                            stock_item.alert_status = False
+                        stock_item.save(update_fields=['quantity', 'alert_status', 'updated_at'])
+                except Exception:
+                    pass
+            super().perform_destroy(instance)
 
 class TransactionViewSet(viewsets.ModelViewSet):
     serializer_class = TransactionSerializer
@@ -43,8 +77,10 @@ class FinancialSummaryView(views.APIView):
     def get(self, request, *args, **kwargs):
         user = request.user
         
-        # Recettes des ventes : calculées par la base (une requête), sans charger chaque vente en mémoire
-        sales_revenue = Sale.objects.filter(crop__user=user).aggregate(
+        # Recettes des ventes de l'utilisateur
+        sales_revenue = Sale.objects.filter(
+            Q(user=user) | Q(crop__user=user)
+        ).aggregate(
             total=Sum(ExpressionWrapper(F('quantity_sold') * F('price_per_unit'), output_field=FloatField()))
         )['total'] or 0
 

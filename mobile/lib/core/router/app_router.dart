@@ -307,7 +307,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         parentNavigatorKey: _rootNavigatorKey,
         path: '/crop_detail',
         builder: (context, state) {
-          final crop = state.extra as Crop;
+          final crop = state.extra as Crop?;
+          if (crop == null) {
+            return const CropsListScreen();
+          }
           return CropDetailScreen(crop: crop);
         },
       ),
