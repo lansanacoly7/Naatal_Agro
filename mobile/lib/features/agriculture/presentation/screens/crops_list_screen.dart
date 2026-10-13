@@ -224,7 +224,9 @@ class _CropsListScreenState extends ConsumerState<CropsListScreen> with SingleTi
   }
 
   Widget _buildCropCard(BuildContext context, Crop crop) {
-    Color statusColor = crop.status == 'active' ? Colors.green : Colors.orange;
+    Color statusColor = crop.status == 'active'
+        ? Colors.green
+        : (crop.status == 'attention' ? Colors.amber : Colors.orange);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
@@ -751,48 +753,58 @@ class _CropsListScreenState extends ConsumerState<CropsListScreen> with SingleTi
         children: [
           Expanded(
             flex: 3,
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.grey.shade50,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                image: DecorationImage(
-                  image: AssetImage(product.imageAsset),
-                  fit: BoxFit.cover,
-                ),
-              ),
-              alignment: Alignment.topRight,
-              child: Container(
-                margin: const EdgeInsets.all(8),
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.1),
-                      blurRadius: 4,
-                    )
-                  ],
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      isPositive ? Icons.trending_up : Icons.trending_down,
-                      color: isPositive ? Colors.green : Colors.red,
-                      size: 14,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${isPositive ? '+' : ''}${product.trendPercentage}%',
-                      style: TextStyle(
-                        color: isPositive ? Colors.green : Colors.red,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
+            child: ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Container(
+                    color: Colors.grey.shade50,
+                    child: Image.asset(
+                      product.imageAsset,
+                      fit: BoxFit.cover,
+                      errorBuilder: (ctx, err, stack) => const Center(
+                        child: Icon(Icons.eco, color: AppColors.primary, size: 36),
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.1),
+                            blurRadius: 4,
+                          )
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            isPositive ? Icons.trending_up : Icons.trending_down,
+                            color: isPositive ? Colors.green : Colors.red,
+                            size: 14,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${isPositive ? '+' : ''}${product.trendPercentage}%',
+                            style: TextStyle(
+                              color: isPositive ? Colors.green : Colors.red,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -931,18 +943,21 @@ class _CropsListScreenState extends ConsumerState<CropsListScreen> with SingleTi
         children: [
           Expanded(
             flex: 5,
-            child: Stack(
-              children: [
-                Container(
-                  decoration: BoxDecoration(
+            child: ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Container(
                     color: Colors.grey.shade100,
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                    image: DecorationImage(
-                      image: AssetImage(product.imageAsset),
+                    child: Image.asset(
+                      product.imageAsset,
                       fit: BoxFit.cover,
+                      errorBuilder: (ctx, err, stack) => const Center(
+                        child: Icon(Icons.eco, color: AppColors.primary, size: 36),
+                      ),
                     ),
                   ),
-                ),
                 Positioned(
                   top: 8,
                   left: 8,
@@ -1042,7 +1057,8 @@ class _CropsListScreenState extends ConsumerState<CropsListScreen> with SingleTi
     final nameController = TextEditingController(text: crop.name);
     final areaController = TextEditingController(text: crop.areaSize.toString());
     final locationController = TextEditingController(text: crop.location);
-    String currentStatus = crop.status;
+    final validStatuses = ['active', 'harvested', 'paused', 'attention'];
+    String currentStatus = validStatuses.contains(crop.status) ? crop.status : 'active';
 
     showModalBottomSheet(
       context: context,
@@ -1109,6 +1125,7 @@ class _CropsListScreenState extends ConsumerState<CropsListScreen> with SingleTi
                   ),
                   items: const [
                     DropdownMenuItem(value: 'active', child: Text('En croissance (Active)')),
+                    DropdownMenuItem(value: 'attention', child: Text('Surveillance requise')),
                     DropdownMenuItem(value: 'harvested', child: Text('Récoltée')),
                     DropdownMenuItem(value: 'paused', child: Text('En pause')),
                   ],

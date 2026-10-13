@@ -61,7 +61,7 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      bottomNavigationBar: _currentStatus == 'active'
+      bottomNavigationBar: (_currentStatus == 'active' || _currentStatus == 'attention')
           ? SafeArea(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
@@ -204,9 +204,13 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
                   Row(
                     children: [
                       _buildGlassChip(
-                        _currentStatus == 'active' ? 'EN CROISSANCE' : 'RÉCOLTÉ',
+                        _currentStatus == 'active'
+                            ? 'EN CROISSANCE'
+                            : (_currentStatus == 'attention' ? 'SURVEILLANCE' : 'RÉCOLTÉ'),
                         Icons.eco,
-                        _currentStatus == 'active' ? Colors.greenAccent : Colors.orangeAccent,
+                        _currentStatus == 'active'
+                            ? Colors.greenAccent
+                            : (_currentStatus == 'attention' ? Colors.amberAccent : Colors.orangeAccent),
                       ),
                       const SizedBox(width: 8),
                       _buildGlassChip('${widget.crop.areaSize} ha', Icons.square_foot, Colors.white),
