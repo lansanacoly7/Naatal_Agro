@@ -1,7 +1,7 @@
 from django.contrib import admin, messages
 
 from .knowledge_review import ProposalError, approve_proposal, is_trusted_url, reject_proposal
-from .models import Activity, AgronomicGuide, Crop, KnowledgeProposal, PestReport
+from .models import Activity, AgronomicGuide, Crop, Harvest, KnowledgeProposal, PestReport
 
 
 class ActivityInline(admin.TabularInline):
@@ -18,6 +18,15 @@ class CropAdmin(admin.ModelAdmin):
     date_hierarchy = 'planting_date'
     list_select_related = ('user',)
     inlines = [ActivityInline]
+
+
+@admin.register(Harvest)
+class HarvestAdmin(admin.ModelAdmin):
+    list_display = ('crop', 'user', 'quantity', 'unit', 'date', 'created_at')
+    list_filter = ('unit', 'date')
+    search_fields = ('crop__name', 'user__username', 'notes')
+    date_hierarchy = 'date'
+    list_select_related = ('crop', 'user')
 
 
 @admin.register(Activity)

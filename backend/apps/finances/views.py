@@ -13,6 +13,20 @@ class SaleViewSet(viewsets.ModelViewSet):
         # select_related : le serializer affiche le nom de la culture (sinon une requête par vente)
         return Sale.objects.filter(crop__user=self.request.user).select_related('crop')
 
+    def perform_create(self, serializer):
+        sale = serializer.save()
+        # Décrémenter automatiquement le stock dans apps.inventory si l'article existe
+        try:
+            from apps.inventory.models import StockItem
+            stock_item = StockItem.objects.filter(user=self.request.user, name__iexact=sale.crop.name).first()
+            if stock_item:
+                stock_item.quantity = max(0.0, round(stock_item.quantity - float(sale.quantity_sold), 2))
+                if stock_item.quantity <= 5:
+                    stock_item.alert_status = True
+                stock_item.save(update_fields=['quantity', 'alert_status', 'updated_at'])
+        except Exception:
+            pass
+
 class TransactionViewSet(viewsets.ModelViewSet):
     serializer_class = TransactionSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -34,8 +48,8 @@ class FinancialSummaryView(views.APIView):
             total=Sum(ExpressionWrapper(F('quantity_sold') * F('price_per_unit'), output_field=FloatField()))
         )['total'] or 0
 
-        # Calculate from Transactions
-        incomes = Transaction.objects.filter(user=user, transaction_type='income').aggregate(Sum('amount'))['amount__sum'] or 0
+        # Calculate from Transactions (on exclut les transactions automatiques issues de Sale pour éviter le double comptage)
+        incomes = Transaction.objects.filter(user=user, transaction_type='income', sale__isnull=True).aggregate(Sum('amount'))['amount__sum'] or 0
         expenses = Transaction.objects.filter(user=user, transaction_type='expense').aggregate(Sum('amount'))['amount__sum'] or 0
 
         total_revenue = float(sales_revenue) + float(incomes)

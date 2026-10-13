@@ -36,6 +36,8 @@ class Transaction(models.Model):
     amount = models.DecimalField(max_digits=12, decimal_places=2)
     date = models.DateField()
     description = models.CharField(max_length=255)
+    activity = models.OneToOneField('agriculture.Activity', null=True, blank=True, on_delete=models.CASCADE, related_name='transaction')
+    sale = models.OneToOneField('finances.Sale', null=True, blank=True, on_delete=models.CASCADE, related_name='transaction')
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

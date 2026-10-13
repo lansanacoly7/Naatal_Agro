@@ -5,6 +5,14 @@ from django.conf import settings
 class Crop(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='crops')
+    guide = models.ForeignKey(
+        'AgronomicGuide',
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='crops',
+        help_text="Fiche technique de référence issue de la recherche (ISRA/ANCAR)"
+    )
     name = models.CharField(max_length=255)
     crop_type = models.CharField(max_length=255)
     planting_date = models.DateField()
@@ -23,6 +31,26 @@ class Crop(models.Model):
     def __str__(self):
         return f"{self.name} - {self.user.username}"
 
+class Harvest(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    crop = models.ForeignKey(Crop, on_delete=models.CASCADE, related_name='harvests')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='harvests')
+    date = models.DateField()
+    quantity = models.FloatField(help_text="Quantité récoltée")
+    unit = models.CharField(max_length=50, default='kg')
+    notes = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-date', '-created_at']
+        indexes = [
+            models.Index(fields=['crop', 'date']),
+            models.Index(fields=['user', '-date']),
+        ]
+
+    def __str__(self):
+        return f"Récolte de {self.crop.name} : {self.quantity} {self.unit} ({self.date})"
+
 class Activity(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     crop = models.ForeignKey(Crop, on_delete=models.CASCADE, related_name='activities')
@@ -40,6 +68,30 @@ class Activity(models.Model):
 
     def __str__(self):
         return f"{self.activity_type} on {self.crop.name}"
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        self.sync_transaction()
+
+    def sync_transaction(self):
+        try:
+            from apps.finances.models import Transaction
+            if self.cost and self.cost > 0:
+                Transaction.objects.update_or_create(
+                    activity=self,
+                    defaults={
+                        'user': self.crop.user,
+                        'transaction_type': 'expense',
+                        'amount': self.cost,
+                        'date': self.date,
+                        'description': f"Activité culture {self.crop.name} : {self.activity_type}",
+                    }
+                )
+            else:
+                from apps.finances.models import Transaction
+                Transaction.objects.filter(activity=self).delete()
+        except Exception:
+            pass
 
 class PestReport(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

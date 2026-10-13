@@ -1,31 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../data/notifications_provider.dart';
 
-class NotificationsScreen extends StatelessWidget {
+class NotificationsScreen extends ConsumerWidget {
   const NotificationsScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    // Liste statique pour l'UI, à remplacer plus tard par des données de l'API
-    final List<Map<String, dynamic>> notifications = [
-      {
-        'title': 'Alerte Prix Atteinte',
-        'message': 'Le prix de l\'Oignon Local a dépassé 450 FCFA/kg.',
-        'time': 'Il y a 10 min',
-        'icon': Icons.trending_up_rounded,
-        'color': Colors.green,
-        'isRead': false,
-      },
-      {
-        'title': 'Conseil Météo',
-        'message': 'Risque de pluie forte demain, protégez vos cultures.',
-        'time': 'Il y a 2 heures',
-        'icon': Icons.water_drop_rounded,
-        'color': Colors.blue,
-        'isRead': false,
-      },
-
-    ];
+  Widget build(BuildContext context, WidgetRef ref) {
+    final notifState = ref.watch(notificationsProvider);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -46,136 +29,198 @@ class NotificationsScreen extends StatelessWidget {
           ),
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.done_all_rounded, color: AppColors.primary),
-            tooltip: 'Tout marquer comme lu',
-            onPressed: () {
-              // Action pour tout marquer comme lu
-            },
-          ),
-        ],
-      ),
-      body: notifications.isEmpty
-          ? _buildEmptyState()
-          : ListView.separated(
-              padding: const EdgeInsets.all(20),
-              itemCount: notifications.length,
-              separatorBuilder: (context, index) => const SizedBox(height: 16),
-              itemBuilder: (context, index) {
-                final notif = notifications[index];
-                return _buildNotificationCard(notif);
+          if (notifState.items.any((n) => !n.isRead))
+            IconButton(
+              icon: const Icon(Icons.done_all_rounded, color: AppColors.primary),
+              tooltip: 'Tout marquer comme lu',
+              onPressed: () {
+                ref.read(notificationsProvider.notifier).markAllAsRead();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Toutes les notifications sont marquées comme lues'),
+                    duration: Duration(seconds: 2),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
               },
             ),
-    );
-  }
-
-  Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.notifications_off_outlined, size: 80, color: Colors.grey.shade300),
-          const SizedBox(height: 20),
-          Text(
-            'Aucune notification',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey.shade700),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            'Vous êtes à jour !',
-            style: TextStyle(color: Colors.grey.shade500),
-          ),
         ],
+      ),
+      body: RefreshIndicator(
+        color: AppColors.primary,
+        onRefresh: () => ref.read(notificationsProvider.notifier).fetchNotifications(),
+        child: notifState.isLoading && notifState.items.isEmpty
+            ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+            : notifState.items.isEmpty
+                ? _buildEmptyState(context, ref)
+                : ListView.separated(
+                    padding: const EdgeInsets.all(20),
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    itemCount: notifState.items.length,
+                    separatorBuilder: (context, index) => const SizedBox(height: 12),
+                    itemBuilder: (context, index) {
+                      final notif = notifState.items[index];
+                      return _buildNotificationCard(context, ref, notif);
+                    },
+                  ),
       ),
     );
   }
 
-  Widget _buildNotificationCard(Map<String, dynamic> notif) {
-    final bool isRead = notif['isRead'];
-    final Color iconColor = notif['color'];
-    final IconData icon = notif['icon'];
-
-    return Container(
-      decoration: BoxDecoration(
-        color: isRead ? Colors.white : iconColor.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(20),
-        border: isRead ? Border.all(color: Colors.grey.shade200) : Border.all(color: iconColor.withValues(alpha: 0.3)),
-        boxShadow: isRead ? [] : [
-          BoxShadow(
-            color: iconColor.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: iconColor.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: iconColor, size: 24),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          notif['title'],
-                          style: TextStyle(
-                            fontWeight: isRead ? FontWeight.w600 : FontWeight.w800,
-                            fontSize: 16,
-                            color: Colors.black87,
-                          ),
-                        ),
-                      ),
-                      Text(
-                        notif['time'],
-                        style: TextStyle(
-                          color: Colors.grey.shade500,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    notif['message'],
-                    style: TextStyle(
-                      color: Colors.grey.shade700,
-                      fontSize: 14,
-                      height: 1.4,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (!isRead) ...[
-              const SizedBox(width: 12),
+  Widget _buildEmptyState(BuildContext context, WidgetRef ref) {
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      children: [
+        SizedBox(height: MediaQuery.of(context).size.height * 0.25),
+        Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
               Container(
-                width: 10,
-                height: 10,
-                margin: const EdgeInsets.only(top: 6),
-                decoration: const BoxDecoration(
-                  color: AppColors.primary,
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
                   shape: BoxShape.circle,
                 ),
+                child: Icon(Icons.notifications_none_rounded, size: 64, color: Colors.grey.shade400),
               ),
-            ]
-          ],
+              const SizedBox(height: 20),
+              Text(
+                'Aucune notification pour le moment',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.grey.shade700),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Vous recevrez ici les alertes météo, de prix et de cultures.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.grey.shade500, fontSize: 13),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildNotificationCard(BuildContext context, WidgetRef ref, AppNotificationItem notif) {
+    final isRead = notif.isRead;
+    final meta = _resolveTypeMetadata(notif.type);
+
+    return InkWell(
+      onTap: () {
+        if (!isRead) {
+          ref.read(notificationsProvider.notifier).markAsRead(notif.id);
+        }
+      },
+      borderRadius: BorderRadius.circular(16),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        decoration: BoxDecoration(
+          color: isRead ? Colors.white : meta.color.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isRead ? Colors.grey.shade200 : meta.color.withValues(alpha: 0.3),
+            width: isRead ? 1 : 1.5,
+          ),
+          boxShadow: isRead
+              ? [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 4, offset: const Offset(0, 2))]
+              : [BoxShadow(color: meta.color.withValues(alpha: 0.08), blurRadius: 10, offset: const Offset(0, 4))],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: meta.color.withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(meta.icon, color: meta.color, size: 22),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            meta.title,
+                            style: TextStyle(
+                              fontWeight: isRead ? FontWeight.w600 : FontWeight.w800,
+                              fontSize: 15,
+                              color: Colors.black87,
+                            ),
+                          ),
+                        ),
+                        Text(
+                          notif.timeAgo,
+                          style: TextStyle(
+                            color: Colors.grey.shade500,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      notif.message,
+                      style: TextStyle(
+                        color: Colors.grey.shade700,
+                        fontSize: 13.5,
+                        height: 1.35,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (!isRead) ...[
+                const SizedBox(width: 10),
+                Container(
+                  width: 8,
+                  height: 8,
+                  margin: const EdgeInsets.only(top: 6),
+                  decoration: BoxDecoration(
+                    color: meta.color,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ]
+            ],
+          ),
         ),
       ),
     );
   }
+
+  _TypeMeta _resolveTypeMetadata(String type) {
+    switch (type.toLowerCase()) {
+      case 'weather':
+      case 'meteo':
+        return _TypeMeta('Alerte Météo', Icons.water_drop_rounded, Colors.blue);
+      case 'market':
+      case 'price':
+      case 'prix':
+        return _TypeMeta('Alerte Marché', Icons.trending_up_rounded, Colors.orange.shade800);
+      case 'crop':
+      case 'culture':
+      case 'harvest':
+        return _TypeMeta('Conseil Agricole', Icons.eco_rounded, AppColors.primary);
+      default:
+        return _TypeMeta('Information', Icons.notifications_active_rounded, Colors.amber.shade800);
+    }
+  }
+}
+
+class _TypeMeta {
+  final String title;
+  final IconData icon;
+  final Color color;
+
+  const _TypeMeta(this.title, this.icon, this.color);
 }

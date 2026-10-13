@@ -132,6 +132,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       email: _emailController.text.trim(),
       dateOfBirth: formattedDob,
       mainCrops: _selectedCrops,
+      privacyAccepted: _acceptTerms,
     );
 
     final authState = ref.read(authStateProvider);

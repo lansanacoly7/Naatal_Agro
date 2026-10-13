@@ -57,6 +57,11 @@ class AppConstants {
   // Endpoints Notifications
   static const String notificationsEndpoint = '/notifications/';
 
+  // Endpoints Finances & Inventory
+  static const String salesEndpoint = '/finances/sales/';
+  static const String financialSummaryEndpoint = '/finances/summary/';
+  static const String inventoryEndpoint = '/inventory/';
+
   // Endpoints Dashboard
   static const String dashboardEndpoint = '/dashboard/';
 

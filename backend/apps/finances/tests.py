@@ -77,3 +77,27 @@ class FinancesTests(TestCase):
         }, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.json()['total_revenue'], 500)
+
+    def test_sale_decrements_stock_item_and_prevents_overselling(self):
+        """Vérifie que la vente déstocke l'inventaire et bloque si stock insuffisant."""
+        from apps.inventory.models import StockItem
+        crop = make_crop(self.ali, name='Arachide')
+        stock = StockItem.objects.create(user=self.ali, name='Arachide', quantity=100.0, unit='kg')
+
+        # Vente autorisée de 40 kg
+        res1 = self.client.post('/api/finances/sales/', {
+            'crop': str(crop.id), 'quantity_sold': 40, 'price_per_unit': '600.00', 'date': '2026-10-01',
+        }, format='json')
+        self.assertEqual(res1.status_code, status.HTTP_201_CREATED)
+        stock.refresh_from_db()
+        self.assertEqual(stock.quantity, 60.0)
+
+        # Tentative de vente de 70 kg alors qu'il n'en reste que 60 kg => 400 Bad Request
+        res2 = self.client.post('/api/finances/sales/', {
+            'crop': str(crop.id), 'quantity_sold': 70, 'price_per_unit': '600.00', 'date': '2026-10-01',
+        }, format='json')
+        self.assertEqual(res2.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('Stock insuffisant', str(res2.json()))
+        stock.refresh_from_db()
+        self.assertEqual(stock.quantity, 60.0)
+

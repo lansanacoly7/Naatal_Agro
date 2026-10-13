@@ -38,7 +38,7 @@ class ExportDataView(views.APIView):
 
     def get(self, request, *args, **kwargs):
         user = request.user
-        crops = Crop.objects.filter(user=user).prefetch_related('activities')
+        crops = Crop.objects.filter(user=user).prefetch_related('activities', 'harvests').select_related('guide')
         payload = {
             'exported_at': timezone.now().isoformat(),
             'policy_version_accepted': user.privacy_policy_version,

@@ -32,6 +32,7 @@ class _FakeAuthRepository implements AuthRepository {
     String? email,
     String? dateOfBirth,
     List<String> mainCrops = const [],
+    bool privacyAccepted = true,
   }) async {
     authenticated = true;
   }

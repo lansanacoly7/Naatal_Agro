@@ -75,7 +75,28 @@ class MarketsRepository {
       throw Exception('Erreur lors du chargement des prix (${response.statusCode})');
     }
   }
+
+  Future<List<Price>> getPricesForProduct(String productName) async {
+    final response = await _apiClient.get(
+      AppConstants.pricesEndpoint,
+      queryParams: {'product': productName},
+    );
+    if (response.statusCode == 200) {
+      return PaginatedResponse<Price>.fromData(
+        response.data,
+        (json) => Price.fromJson(json),
+      ).results;
+    } else {
+      throw Exception('Erreur lors du chargement des prix pour $productName (${response.statusCode})');
+    }
+  }
 }
+
+// Provider pour l'historique des prix réels d'un produit
+final productPriceHistoryProvider = FutureProvider.autoDispose.family<List<Price>, String>((ref, productName) async {
+  final repository = ref.watch(marketsRepositoryProvider);
+  return repository.getPricesForProduct(productName);
+});
 
 // Provider pour le repository
 final marketsRepositoryProvider = Provider<MarketsRepository>((ref) {

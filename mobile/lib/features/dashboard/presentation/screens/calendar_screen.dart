@@ -1,144 +1,73 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../core/theme/app_theme.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../agriculture/data/models/crop.dart';
+import '../../../agriculture/data/agriculture_provider.dart';
 
-enum TaskStatus { pending, completed }
-
-class CropTask {
-  final String id;
-  final String title;
-  final String description;
-  final DateTime date;
-  final TaskStatus status;
-  final String phase; // ex: 'Irrigation', 'Semis'
-
-  CropTask({
-    required this.id,
-    required this.title,
-    required this.description,
-    required this.date,
-    this.status = TaskStatus.pending,
-    required this.phase,
-  });
-}
-
-class SmartAdjustment {
-  final String taskId;
-  final String message;
-  final DateTime proposedDate;
-  final String reason;
-
-  SmartAdjustment({
-    required this.taskId,
-    required this.message,
-    required this.proposedDate,
-    required this.reason,
-  });
-}
-// --- Modèles Locaux pour la Démo ---
-class CropLifecycle {
-  final String name;
-  final String variety;
-  final String imagePath;
-  final String plot;
-  final String currentPhase;
-  final double progress;
-  final List<int> sowingMonths;
-  final List<int> harvestMonths;
-  final List<int> favorableSowingDays; // ex: 1, 2, 15, 16
-  final List<int> favorableHarvestDays;
-  final List<CropTask> tasks;
-  final SmartAdjustment? pendingAdjustment;
-
-  CropLifecycle({
-    required this.name,
-    required this.variety,
-    required this.imagePath,
-    required this.plot,
-    required this.currentPhase,
-    required this.progress,
-    required this.sowingMonths,
-    required this.harvestMonths,
-    this.favorableSowingDays = const [],
-    this.favorableHarvestDays = const [],
-    this.tasks = const [],
-    this.pendingAdjustment,
-  });
-}
-
-final List<CropLifecycle> _mockCrops = [
-  CropLifecycle(
-    name: 'Tomates',
-    variety: 'Mongal F1',
-    imagePath: 'assets/images/tomates_recolte.jpg',
-    plot: 'Parcelle Nord',
-    currentPhase: 'Croissance',
-    progress: 0.45,
-    sowingMonths: [5, 6], // Mai, Juin
-    harvestMonths: [8, 9], // Août, Septembre
-    favorableSowingDays: [12, 14, 15, 20],
-    favorableHarvestDays: [5, 10, 25, 28],
-    tasks: [
-      CropTask(id: 't1', title: 'Irrigation', description: 'Irrigation goutte à goutte recommandée (4h)', date: DateTime(DateTime.now().year, DateTime.now().month, 18), phase: 'Irrigation'),
-      CropTask(id: 't2', title: 'Sarclage', description: 'Retirer les mauvaises herbes', date: DateTime(DateTime.now().year, DateTime.now().month, 22), phase: 'Entretien'),
-      CropTask(id: 't3', title: 'Application NPK', description: 'Fertilisation de surface', date: DateTime(DateTime.now().year, DateTime.now().month, 10), phase: 'Nutrition', status: TaskStatus.completed),
-    ],
-    pendingAdjustment: SmartAdjustment(
-      taskId: 't1',
-      message: 'Modification recommandée',
-      proposedDate: DateTime(DateTime.now().year, DateTime.now().month, 19),
-      reason: 'Une pluie importante est prévue le 18 juin.',
-    ),
-  ),
-  CropLifecycle(
-    name: 'Mil',
-    variety: 'Souna 3',
-    imagePath: 'assets/images/mil_recolte.jpg',
-    plot: 'Champ Principal',
-    currentPhase: 'Préparation',
-    progress: 0.10,
-    sowingMonths: [6, 7], // Juin, Juillet
-    harvestMonths: [10, 11], // Octobre, Novembre
-    favorableSowingDays: [2, 5, 8],
-    favorableHarvestDays: [12, 15, 20],
-  ),
-  CropLifecycle(
-    name: 'Arachide',
-    variety: 'Fleur 11',
-    imagePath: 'assets/images/arachide_recolte.jpg',
-    plot: 'Parcelle Est',
-    currentPhase: 'Floraison',
-    progress: 0.60,
-    sowingMonths: [6, 7], // Juin, Juillet
-    harvestMonths: [9, 10], // Septembre, Octobre
-    favorableSowingDays: [1, 3, 10],
-    favorableHarvestDays: [5, 12, 18],
-  ),
-];
-
-class CalendarScreen extends StatelessWidget {
+class CalendarScreen extends ConsumerWidget {
   const CalendarScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final cropsAsync = ref.watch(cropsProvider);
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: Column(
           children: [
-            _buildHeader(context),
-            const SizedBox(height: 20),
+            _buildHeader(context, ref),
+            const SizedBox(height: 12),
             Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                physics: const BouncingScrollPhysics(),
-                itemCount: _mockCrops.length,
-                itemBuilder: (context, index) {
-                  final crop = _mockCrops[index];
-                  return _buildCropCard(context, crop);
+              child: cropsAsync.when(
+                data: (crops) {
+                  if (crops.isEmpty) {
+                    return _buildEmptyState(context);
+                  }
+                  return RefreshIndicator(
+                    onRefresh: () async {
+                      ref.invalidate(cropsProvider);
+                    },
+                    color: AppColors.primary,
+                    child: ListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                      physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+                      itemCount: crops.length,
+                      itemBuilder: (context, index) {
+                        final crop = crops[index];
+                        return _buildCropCard(context, crop);
+                      },
+                    ),
+                  );
                 },
+                loading: () => const Center(
+                  child: CircularProgressIndicator(color: AppColors.primary),
+                ),
+                error: (error, stack) => Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.error_outline, color: AppColors.error, size: 48),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Impossible de charger les cultures : $error',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(color: AppColors.textSecondary),
+                        ),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: () => ref.invalidate(cropsProvider),
+                          child: const Text('Réessayer'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ),
             ),
           ],
@@ -147,7 +76,7 @@ class CalendarScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
+  Widget _buildHeader(BuildContext context, WidgetRef ref) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
       child: Row(
@@ -171,7 +100,7 @@ class CalendarScreen extends StatelessWidget {
               ),
               const SizedBox(width: 16),
               const Text(
-                'Mes Cultures',
+                'Calendrier Cultural',
                 style: TextStyle(
                   fontWeight: FontWeight.w900,
                   fontSize: 22,
@@ -180,23 +109,73 @@ class CalendarScreen extends StatelessWidget {
               ),
             ],
           ),
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4)),
-              ],
+          GestureDetector(
+            onTap: () => ref.invalidate(cropsProvider),
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4)),
+                ],
+              ),
+              child: const Icon(Icons.refresh, color: AppColors.primary),
             ),
-            child: const Icon(Icons.eco, color: AppColors.primary),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildCropCard(BuildContext context, CropLifecycle crop) {
+  Widget _buildEmptyState(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.calendar_month_outlined, size: 48, color: AppColors.primary),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'Aucune culture enregistrée',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Ajoutez une culture sur vos parcelles pour générer automatiquement son calendrier de semis et de récolte.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 14, height: 1.4),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: () => context.go('/agriculture'),
+              icon: const Icon(Icons.add),
+              label: const Text('Gérer mes parcelles'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCropCard(BuildContext context, Crop crop) {
+    final progress = crop.calculatedProgress;
+    final phase = crop.calculatedPhase;
+
     return GestureDetector(
       onTap: () {
         Navigator.of(context).push(
@@ -221,18 +200,25 @@ class CalendarScreen extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // Petite photo à gauche
             ClipRRect(
               borderRadius: BorderRadius.circular(16),
               child: Image.asset(
-                crop.imagePath,
-                width: 90,
-                height: 90,
+                crop.imageAsset,
+                width: 80,
+                height: 80,
                 fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: const Icon(Icons.grass, color: AppColors.primary, size: 36),
+                ),
               ),
             ),
             const SizedBox(width: 16),
-            // Détails à droite
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -244,7 +230,7 @@ class CalendarScreen extends StatelessWidget {
                       Expanded(
                         child: Text(
                           crop.name,
-                          style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: AppColors.textPrimary),
+                          style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 17, color: AppColors.textPrimary),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -256,34 +242,29 @@ class CalendarScreen extends StatelessWidget {
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
-                          '${(crop.progress * 100).toInt()}%',
-                          style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 12),
+                          '${(progress * 100).toInt()}%',
+                          style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 11),
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${crop.variety} • ${crop.plot}',
-                    style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                    '${crop.cropType} • ${crop.location.isNotEmpty ? crop.location : 'Parcelle'} • ${crop.areaSize} ha',
+                    style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text('Phase : ${crop.currentPhase}', style: const TextStyle(color: AppColors.textSecondary, fontSize: 12, fontWeight: FontWeight.w600)),
-                    ],
-                  ),
+                  const SizedBox(height: 10),
+                  Text('Phase : $phase', style: const TextStyle(color: AppColors.textSecondary, fontSize: 11, fontWeight: FontWeight.w600)),
                   const SizedBox(height: 6),
                   ClipRRect(
                     borderRadius: BorderRadius.circular(4),
                     child: LinearProgressIndicator(
-                      value: crop.progress,
+                      value: progress,
                       backgroundColor: Colors.grey.shade200,
                       valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
-                      minHeight: 6,
+                      minHeight: 5,
                     ),
                   ),
                 ],
@@ -300,7 +281,7 @@ class CalendarScreen extends StatelessWidget {
 // VUE DETAIL : CALENDRIER INTERACTIF DE LA CULTURE
 // ---------------------------------------------------------
 class CropCalendarDetailScreen extends StatefulWidget {
-  final CropLifecycle crop;
+  final Crop crop;
 
   const CropCalendarDetailScreen({super.key, required this.crop});
 
@@ -310,77 +291,15 @@ class CropCalendarDetailScreen extends StatefulWidget {
 
 class _CropCalendarDetailScreenState extends State<CropCalendarDetailScreen> {
   late DateTime _focusedMonth;
-  late CropLifecycle _currentCrop;
 
   @override
   void initState() {
     super.initState();
-    _currentCrop = widget.crop;
     initializeDateFormatting('fr_FR', null);
-    // On se place sur le premier mois de semis par défaut s'il existe
-    int initialMonth = DateTime.now().month;
-    if (_currentCrop.sowingMonths.isNotEmpty) {
-      initialMonth = _currentCrop.sowingMonths.first;
-    }
-    _focusedMonth = DateTime(DateTime.now().year, initialMonth, 1);
-  }
-
-  void _acceptAdjustment() {
-    if (_currentCrop.pendingAdjustment == null) return;
-    
-    final adjustment = _currentCrop.pendingAdjustment!;
-    final updatedTasks = _currentCrop.tasks.map((task) {
-      if (task.id == adjustment.taskId) {
-        return CropTask(
-          id: task.id,
-          title: task.title,
-          description: task.description,
-          date: adjustment.proposedDate,
-          phase: task.phase,
-          status: task.status,
-        );
-      }
-      return task;
-    }).toList();
-
-    // Sort tasks by date
-    updatedTasks.sort((a, b) => a.date.compareTo(b.date));
-
-    setState(() {
-      _currentCrop = CropLifecycle(
-        name: _currentCrop.name,
-        variety: _currentCrop.variety,
-        imagePath: _currentCrop.imagePath,
-        plot: _currentCrop.plot,
-        currentPhase: _currentCrop.currentPhase,
-        progress: _currentCrop.progress,
-        sowingMonths: _currentCrop.sowingMonths,
-        harvestMonths: _currentCrop.harvestMonths,
-        favorableSowingDays: _currentCrop.favorableSowingDays,
-        favorableHarvestDays: _currentCrop.favorableHarvestDays,
-        tasks: updatedTasks,
-        pendingAdjustment: null, // clear adjustment
-      );
-    });
-  }
-
-  void _dismissAdjustment() {
-    setState(() {
-      _currentCrop = CropLifecycle(
-        name: _currentCrop.name,
-        variety: _currentCrop.variety,
-        imagePath: _currentCrop.imagePath,
-        plot: _currentCrop.plot,
-        currentPhase: _currentCrop.currentPhase,
-        progress: _currentCrop.progress,
-        sowingMonths: _currentCrop.sowingMonths,
-        harvestMonths: _currentCrop.harvestMonths,
-        favorableSowingDays: _currentCrop.favorableSowingDays,
-        favorableHarvestDays: _currentCrop.favorableHarvestDays,
-        tasks: _currentCrop.tasks,
-        pendingAdjustment: null, // clear adjustment
-      );
-    });
+    final plantingDate = widget.crop.parsedPlantingDate;
+    final initialMonth = plantingDate != null ? plantingDate.month : DateTime.now().month;
+    final initialYear = plantingDate != null ? plantingDate.year : DateTime.now().year;
+    _focusedMonth = DateTime(initialYear, initialMonth, 1);
   }
 
   void _previousMonth() {
@@ -403,9 +322,9 @@ class _CropCalendarDetailScreenState extends State<CropCalendarDetailScreen> {
         child: Column(
           children: [
             _buildHeader(context),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
             _buildLegend(),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
             Expanded(
               child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
@@ -414,14 +333,11 @@ class _CropCalendarDetailScreenState extends State<CropCalendarDetailScreen> {
                   child: Column(
                     children: [
                       _buildMonthNavigator(),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 16),
                       _buildCalendarGrid(),
-                      const SizedBox(height: 40),
-                      if (_currentCrop.pendingAdjustment != null) ...[
-                        _buildSmartAdjustmentCard(_currentCrop.pendingAdjustment!),
-                        const SizedBox(height: 32),
-                      ],
+                      const SizedBox(height: 32),
                       _buildTaskTimeline(),
+                      const SizedBox(height: 40),
                     ],
                   ),
                 ),
@@ -453,12 +369,21 @@ class _CropCalendarDetailScreenState extends State<CropCalendarDetailScreen> {
             ),
           ),
           const SizedBox(width: 16),
-          Text(
-            'Calendrier : ${widget.crop.name}',
-            style: const TextStyle(
-              fontWeight: FontWeight.w900,
-              fontSize: 20,
-              color: AppColors.textPrimary,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  widget.crop.name,
+                  style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: AppColors.textPrimary),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                  widget.crop.cropType,
+                  style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                ),
+              ],
             ),
           ),
         ],
@@ -472,9 +397,11 @@ class _CropCalendarDetailScreenState extends State<CropCalendarDetailScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          _buildLegendItem(Colors.green.shade500, 'Semis Propice'),
-          const SizedBox(width: 24),
-          _buildLegendItem(Colors.orange.shade500, 'Récolte Propice'),
+          _buildLegendItem(Colors.green.shade600, 'Semis réalisé'),
+          const SizedBox(width: 20),
+          _buildLegendItem(Colors.orange.shade600, 'Récolte prévue'),
+          const SizedBox(width: 20),
+          _buildLegendItem(Colors.blue.shade600, 'Intervention'),
         ],
       ),
     );
@@ -484,37 +411,37 @@ class _CropCalendarDetailScreenState extends State<CropCalendarDetailScreen> {
     return Row(
       children: [
         Container(
-          width: 12,
-          height: 12,
+          width: 10,
+          height: 10,
           decoration: BoxDecoration(
             color: color,
             shape: BoxShape.circle,
-            boxShadow: [BoxShadow(color: color.withValues(alpha: 0.4), blurRadius: 6)],
+            boxShadow: [BoxShadow(color: color.withValues(alpha: 0.4), blurRadius: 4)],
           ),
         ),
-        const SizedBox(width: 8),
-        Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.textSecondary)),
+        const SizedBox(width: 6),
+        Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textSecondary)),
       ],
     );
   }
 
   Widget _buildMonthNavigator() {
     final monthName = DateFormat.yMMMM('fr_FR').format(_focusedMonth).toUpperCase();
-    
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         IconButton(
           onPressed: _previousMonth,
-          icon: const Icon(Icons.chevron_left, color: AppColors.primary, size: 30),
+          icon: const Icon(Icons.chevron_left, color: AppColors.primary, size: 28),
         ),
         Text(
           monthName,
-          style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: AppColors.textPrimary, letterSpacing: 1.2),
+          style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: AppColors.textPrimary, letterSpacing: 1.1),
         ),
         IconButton(
           onPressed: _nextMonth,
-          icon: const Icon(Icons.chevron_right, color: AppColors.primary, size: 30),
+          icon: const Icon(Icons.chevron_right, color: AppColors.primary, size: 28),
         ),
       ],
     );
@@ -522,10 +449,19 @@ class _CropCalendarDetailScreenState extends State<CropCalendarDetailScreen> {
 
   Widget _buildCalendarGrid() {
     final daysInMonth = DateUtils.getDaysInMonth(_focusedMonth.year, _focusedMonth.month);
-    final firstDayOffset = DateTime(_focusedMonth.year, _focusedMonth.month, 1).weekday - 1; // 0 for Monday
-    
-    final isSowingMonth = widget.crop.sowingMonths.contains(_focusedMonth.month);
-    final isHarvestMonth = widget.crop.harvestMonths.contains(_focusedMonth.month);
+    final firstDayOffset = DateTime(_focusedMonth.year, _focusedMonth.month, 1).weekday - 1;
+
+    final planting = widget.crop.parsedPlantingDate;
+    final harvest = widget.crop.parsedHarvestDate;
+
+    final isPlantingMonth = planting != null && planting.year == _focusedMonth.year && planting.month == _focusedMonth.month;
+    final isHarvestMonth = harvest != null && harvest.year == _focusedMonth.year && harvest.month == _focusedMonth.month;
+
+    // Activités de ce mois
+    final activitiesThisMonth = widget.crop.activities.where((act) {
+      final d = act.parsedDate;
+      return d != null && d.year == _focusedMonth.year && d.month == _focusedMonth.month;
+    }).toList();
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -538,40 +474,39 @@ class _CropCalendarDetailScreenState extends State<CropCalendarDetailScreen> {
       ),
       child: Column(
         children: [
-          // Jours de la semaine
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: ['LUN', 'MAR', 'MER', 'JEU', 'VEN', 'SAM', 'DIM'].map((day) => 
+            children: ['LUN', 'MAR', 'MER', 'JEU', 'VEN', 'SAM', 'DIM'].map((day) =>
               SizedBox(
                 width: 35,
-                child: Text(day, textAlign: TextAlign.center, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey)),
+                child: Text(day, textAlign: TextAlign.center, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey)),
               )
             ).toList(),
           ),
-          const SizedBox(height: 16),
-          // Grille des jours
+          const SizedBox(height: 14),
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: daysInMonth + firstDayOffset,
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 7,
-              mainAxisSpacing: 12,
-              crossAxisSpacing: 12,
+              mainAxisSpacing: 10,
+              crossAxisSpacing: 10,
               childAspectRatio: 1,
             ),
             itemBuilder: (context, index) {
               if (index < firstDayOffset) return const SizedBox();
-              
+
               final day = index - firstDayOffset + 1;
-              final isFavorableSowing = isSowingMonth && widget.crop.favorableSowingDays.contains(day);
-              final isFavorableHarvest = isHarvestMonth && widget.crop.favorableHarvestDays.contains(day);
-              
+              final isPlantingDay = isPlantingMonth && planting.day == day;
+              final isHarvestDay = isHarvestMonth && harvest.day == day;
+              final hasActivity = activitiesThisMonth.any((act) => act.parsedDate?.day == day);
+
               BoxDecoration decoration;
               Color textColor = AppColors.textPrimary;
               FontWeight fontWeight = FontWeight.w600;
 
-              if (isFavorableSowing) {
+              if (isPlantingDay) {
                 decoration = BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: const LinearGradient(
@@ -579,11 +514,11 @@ class _CropCalendarDetailScreenState extends State<CropCalendarDetailScreen> {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
-                  boxShadow: [BoxShadow(color: Colors.green.withValues(alpha: 0.4), blurRadius: 8, offset: const Offset(0, 3))],
+                  boxShadow: [BoxShadow(color: Colors.green.withValues(alpha: 0.4), blurRadius: 6, offset: const Offset(0, 2))],
                 );
                 textColor = Colors.white;
                 fontWeight = FontWeight.bold;
-              } else if (isFavorableHarvest) {
+              } else if (isHarvestDay) {
                 decoration = BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: const LinearGradient(
@@ -591,29 +526,12 @@ class _CropCalendarDetailScreenState extends State<CropCalendarDetailScreen> {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
-                  boxShadow: [BoxShadow(color: Colors.orange.withValues(alpha: 0.4), blurRadius: 8, offset: const Offset(0, 3))],
+                  boxShadow: [BoxShadow(color: Colors.orange.withValues(alpha: 0.4), blurRadius: 6, offset: const Offset(0, 2))],
                 );
                 textColor = Colors.white;
                 fontWeight = FontWeight.bold;
-              } else if (isSowingMonth || isHarvestMonth) {
-                // Mois propice, mais pas un "jour idéal" = couleur très légère
-                decoration = BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: isSowingMonth ? Colors.green.shade50 : Colors.orange.shade50,
-                );
               } else {
                 decoration = const BoxDecoration(shape: BoxShape.circle, color: Colors.transparent);
-              }
-
-              // Météo (Mock)
-              IconData? weatherIcon;
-              Color weatherColor = Colors.transparent;
-              if (day == 18 && _focusedMonth.month == DateTime.now().month) {
-                weatherIcon = Icons.water_drop; // Pluie importante
-                weatherColor = Colors.blue.shade300;
-              } else if (day == 19 && _focusedMonth.month == DateTime.now().month) {
-                weatherIcon = Icons.wb_sunny; // Soleil
-                weatherColor = Colors.orange.shade300;
               }
 
               return Stack(
@@ -624,17 +542,19 @@ class _CropCalendarDetailScreenState extends State<CropCalendarDetailScreen> {
                     alignment: Alignment.center,
                     child: Text(
                       '$day',
-                      style: TextStyle(color: textColor, fontWeight: fontWeight, fontSize: 14),
+                      style: TextStyle(color: textColor, fontWeight: fontWeight, fontSize: 13),
                     ),
                   ),
-                  if (weatherIcon != null)
+                  if (hasActivity && !isPlantingDay && !isHarvestDay)
                     Positioned(
-                      bottom: -2,
-                      right: -2,
+                      bottom: 2,
                       child: Container(
-                        padding: const EdgeInsets.all(2),
-                        decoration: BoxDecoration(color: Colors.white, shape: BoxShape.circle, boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 2)]),
-                        child: Icon(weatherIcon, size: 10, color: weatherColor),
+                        width: 5,
+                        height: 5,
+                        decoration: const BoxDecoration(
+                          color: Colors.blueAccent,
+                          shape: BoxShape.circle,
+                        ),
                       ),
                     ),
                 ],
@@ -646,167 +566,118 @@ class _CropCalendarDetailScreenState extends State<CropCalendarDetailScreen> {
     );
   }
 
-  Widget _buildSmartAdjustmentCard(SmartAdjustment adjustment) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.orange.shade50,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.orange.shade200),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.warning_amber_rounded, color: Colors.orange.shade700),
-              const SizedBox(width: 8),
-              Text(adjustment.message, style: TextStyle(fontWeight: FontWeight.bold, color: Colors.orange.shade800, fontSize: 16)),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(adjustment.reason, style: TextStyle(color: Colors.orange.shade900, fontSize: 14)),
-          const SizedBox(height: 8),
-          Text(
-            'Action proposée : Déplacer au ${DateFormat('dd MMMM', 'fr_FR').format(adjustment.proposedDate)} ?', 
-            style: TextStyle(color: Colors.orange.shade900, fontSize: 14, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 20),
-          Row(
-            children: [
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: _acceptAdjustment,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green.shade600,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                  child: const Text('Accepter', style: TextStyle(fontWeight: FontWeight.bold)),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: _dismissAdjustment,
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.orange.shade800,
-                    side: BorderSide(color: Colors.orange.shade300),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                  child: const Text('Garder la date', style: TextStyle(fontWeight: FontWeight.bold)),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildTaskTimeline() {
+    final activities = widget.crop.activities;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Itinéraire Technique', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: AppColors.textPrimary)),
-        const SizedBox(height: 20),
-        ..._currentCrop.tasks.map((task) {
-          final isCompleted = task.status == TaskStatus.completed;
-          final isToday = task.date.day == DateTime.now().day && task.date.month == DateTime.now().month;
-          
-          return Container(
-            margin: const EdgeInsets.only(bottom: 16),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text('Itinéraire Technique Réel', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900, color: AppColors.textPrimary)),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
+              child: Text('${activities.length} ${activities.length > 1 ? 'actes' : 'acte'}', style: const TextStyle(color: AppColors.primary, fontSize: 11, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        if (activities.isEmpty)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.grey.withValues(alpha: 0.15)),
+            ),
+            child: Column(
               children: [
-                Column(
-                  children: [
-                    Container(
-                      width: 16,
-                      height: 16,
-                      decoration: BoxDecoration(
-                        color: isCompleted ? Colors.green : (isToday ? AppColors.primary : Colors.grey.shade300),
-                        shape: BoxShape.circle,
-                        border: isToday ? Border.all(color: AppColors.primary.withValues(alpha: 0.3), width: 4) : null,
-                      ),
-                    ),
-                    Container(
-                      width: 2,
-                      height: 80,
-                      color: Colors.grey.shade200,
-                    ),
-                  ],
+                Icon(Icons.checklist_rtl_rounded, color: Colors.grey.shade400, size: 36),
+                const SizedBox(height: 8),
+                const Text(
+                  'Aucune intervention renseignée',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.textPrimary),
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: isCompleted ? Colors.grey.shade50 : Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: isCompleted ? Colors.transparent : Colors.grey.withValues(alpha: 0.1)),
-                      boxShadow: isCompleted ? [] : [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 10, offset: const Offset(0, 4))],
-                    ),
+                const SizedBox(height: 4),
+                const Text(
+                  'Les travaux de fertilisation, arrosage ou traitement ajoutés à cette parcelle apparaîtront ici.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                ),
+              ],
+            ),
+          )
+        else
+          ...activities.map((act) {
+            final parsed = act.parsedDate;
+            final dateStr = parsed != null ? DateFormat('dd MMM yyyy', 'fr_FR').format(parsed) : act.date;
+            final isPast = parsed != null && parsed.isBefore(DateTime.now());
+
+            final lowerType = act.activityType.toLowerCase();
+            final IconData icon;
+            final Color color;
+            if (lowerType.contains('irrig') || lowerType.contains('arros')) {
+              icon = Icons.water_drop;
+              color = Colors.blueAccent;
+            } else if (lowerType.contains('semis') || lowerType.contains('plant')) {
+              icon = Icons.grass;
+              color = AppColors.primary;
+            } else if (lowerType.contains('fert') || lowerType.contains('engrais') || lowerType.contains('trait')) {
+              icon = Icons.science;
+              color = Colors.purple;
+            } else if (lowerType.contains('recolt') || lowerType.contains('récolt')) {
+              icon = Icons.agriculture;
+              color = Colors.amber.shade800;
+            } else {
+              icon = Icons.eco;
+              color = AppColors.primary;
+            }
+
+            return Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.grey.withValues(alpha: 0.1)),
+                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 8, offset: const Offset(0, 2))],
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
+                    child: Icon(icon, color: color, size: 20),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
-                              DateFormat('dd MMM yyyy', 'fr_FR').format(task.date),
-                              style: TextStyle(
-                                color: isCompleted ? Colors.grey : AppColors.primary,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 12,
-                              ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: isCompleted ? Colors.grey.shade200 : AppColors.primary.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Text(
-                                task.phase,
-                                style: TextStyle(
-                                  color: isCompleted ? Colors.grey.shade600 : AppColors.primary,
-                                  fontWeight: FontWeight.w900,
-                                  fontSize: 10,
-                                ),
-                              ),
-                            ),
+                            Text(dateStr, style: TextStyle(color: isPast ? Colors.grey : AppColors.primary, fontWeight: FontWeight.bold, fontSize: 12)),
+                            if (act.cost != null && act.cost! > 0)
+                              Text('${act.cost!.round()} FCFA', style: const TextStyle(color: AppColors.secondary, fontWeight: FontWeight.bold, fontSize: 11)),
                           ],
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          task.title,
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                            color: isCompleted ? Colors.grey : AppColors.textPrimary,
-                            decoration: isCompleted ? TextDecoration.lineThrough : null,
-                          ),
-                        ),
                         const SizedBox(height: 4),
-                        Text(
-                          task.description,
-                          style: TextStyle(
-                            color: isCompleted ? Colors.grey : AppColors.textSecondary,
-                            fontSize: 13,
-                          ),
-                        ),
+                        Text(act.activityType, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.textPrimary)),
+                        if (act.description.isNotEmpty) ...[
+                          const SizedBox(height: 2),
+                          Text(act.description, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                        ],
                       ],
                     ),
                   ),
-                ),
-              ],
-            ),
-          );
-        }),
+                ],
+              ),
+            );
+          }),
       ],
     );
   }

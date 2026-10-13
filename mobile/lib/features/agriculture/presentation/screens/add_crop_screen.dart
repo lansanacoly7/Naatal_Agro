@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../data/agriculture_provider.dart';
+import '../../data/guides_provider.dart';
+import '../../data/models/agronomic_guide.dart';
 import '../../../../shared/utils/data_refresh.dart';
 
 class AddCropScreen extends ConsumerStatefulWidget {
@@ -14,26 +16,39 @@ class AddCropScreen extends ConsumerStatefulWidget {
 }
 
 class _AddCropScreenState extends ConsumerState<AddCropScreen> {
-  static const _suggestedCrops = ['Mil', 'Maïs', 'Arachide', 'Riz', 'Tomate', 'Oignon', 'Manioc', 'Niébé'];
-
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _cropTypeController = TextEditingController();
   final _areaSizeController = TextEditingController();
   final _locationController = TextEditingController();
 
+  AgronomicGuide? _selectedGuide;
   DateTime? _plantingDate;
   DateTime? _harvestDate;
   bool _isLoading = false;
 
   final _dateFormatter = DateFormat('yyyy-MM-dd');
 
+  void _onGuideSelected(AgronomicGuide guide) {
+    setState(() {
+      _selectedGuide = guide;
+      _cropTypeController.text = guide.name;
+      if (_nameController.text.trim().isEmpty) {
+        _nameController.text = 'Parcelle ${guide.name}';
+      }
+      if (_plantingDate != null) {
+        final days = guide.cycleDaysMax ?? guide.cycleDaysMin ?? 90;
+        _harvestDate = _plantingDate!.add(Duration(days: days));
+      }
+    });
+  }
+
   Future<void> _selectDate(BuildContext context, bool isPlanting) async {
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: DateTime.now(),
+      initialDate: isPlanting ? (_plantingDate ?? DateTime.now()) : (_harvestDate ?? DateTime.now()),
       firstDate: DateTime(2020),
-      lastDate: DateTime(2030),
+      lastDate: DateTime(2035),
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
@@ -50,6 +65,10 @@ class _AddCropScreenState extends ConsumerState<AddCropScreen> {
       setState(() {
         if (isPlanting) {
           _plantingDate = picked;
+          if (_selectedGuide != null) {
+            final days = _selectedGuide!.cycleDaysMax ?? _selectedGuide!.cycleDaysMin ?? 90;
+            _harvestDate = picked.add(Duration(days: days));
+          }
         } else {
           _harvestDate = picked;
         }
@@ -61,7 +80,7 @@ class _AddCropScreenState extends ConsumerState<AddCropScreen> {
     if (!_formKey.currentState!.validate()) return;
     if (_plantingDate == null || _harvestDate == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Veuillez sélectionner les deux dates.')),
+        const SnackBar(content: Text('Veuillez sélectionner les deux dates (semis et récolte).')),
       );
       return;
     }
@@ -69,7 +88,7 @@ class _AddCropScreenState extends ConsumerState<AddCropScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final cropData = {
+      final cropData = <String, dynamic>{
         'name': _nameController.text.trim(),
         'crop_type': _cropTypeController.text.trim(),
         'area_size': double.parse(_areaSizeController.text.trim()),
@@ -79,21 +98,33 @@ class _AddCropScreenState extends ConsumerState<AddCropScreen> {
         'status': 'active',
       };
 
+      if (_selectedGuide != null) {
+        cropData['guide'] = _selectedGuide!.id;
+      }
+
       await ref.read(agricultureRepositoryProvider).addCrop(cropData);
 
-      // Invalidate providers so Dashboard and Crops List refresh
+      // Invalider les providers pour rafraîchir le Dashboard et la liste
       refreshAfterDataChange(ref);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Culture ajoutée avec succès !'), backgroundColor: Colors.green),
+          const SnackBar(
+            content: Text('Culture enregistrée avec succès !'),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+          ),
         );
-        context.pop(); // Go back to crops list
+        context.pop();
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur: $e'), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text('Erreur: $e'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
     } finally {
@@ -112,15 +143,17 @@ class _AddCropScreenState extends ConsumerState<AddCropScreen> {
     super.dispose();
   }
 
-  bool _isSelectedCrop(String crop) => _cropTypeController.text.trim().toLowerCase() == crop.toLowerCase();
-
   @override
   Widget build(BuildContext context) {
+    final guidesState = ref.watch(guidesNotifierProvider);
+    final guides = guidesState.guides;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text('Nouvelle culture', style: TextStyle(fontWeight: FontWeight.w700)),
         backgroundColor: AppColors.background,
+        elevation: 0,
       ),
       body: Form(
         key: _formKey,
@@ -130,19 +163,19 @@ class _AddCropScreenState extends ConsumerState<AddCropScreen> {
             _buildHeader(),
             const SizedBox(height: 20),
             _buildSection(
-              title: 'Parcelle',
+              title: 'Parcelle & Emplacement',
               icon: Icons.landscape_rounded,
               children: [
                 _buildTextField(
                   controller: _nameController,
                   label: 'Nom de la parcelle',
-                  hint: 'ex : Champ Nord',
+                  hint: 'ex : Champ Nord, Parcelle Ndiol',
                   icon: Icons.label_outline_rounded,
                 ),
                 const SizedBox(height: 14),
                 _buildTextField(
                   controller: _areaSizeController,
-                  label: 'Surface',
+                  label: 'Surface emblavée',
                   hint: 'ex : 1.5',
                   icon: Icons.straighten_rounded,
                   isNumber: true,
@@ -151,48 +184,97 @@ class _AddCropScreenState extends ConsumerState<AddCropScreen> {
                 const SizedBox(height: 14),
                 _buildTextField(
                   controller: _locationController,
-                  label: 'Localisation',
-                  hint: 'Région, ville',
+                  label: 'Localisation de l\'exploitation',
+                  hint: 'ex : Thiès, Notto, Saint-Louis',
                   icon: Icons.location_on_outlined,
                 ),
               ],
             ),
             const SizedBox(height: 16),
             _buildSection(
-              title: 'Culture',
+              title: 'Culture & Référence ISRA/ANCAR',
               icon: Icons.eco_rounded,
               children: [
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    for (final crop in _suggestedCrops)
-                      ChoiceChip(
-                        label: Text(crop),
-                        selected: _isSelectedCrop(crop),
-                        showCheckmark: false,
-                        selectedColor: AppColors.primary,
-                        labelStyle: TextStyle(
-                          color: _isSelectedCrop(crop) ? Colors.white : AppColors.textPrimary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        onSelected: (_) => setState(() => _cropTypeController.text = crop),
-                      ),
-                  ],
+                const Text(
+                  'Sélectionnez une culture certifiée (cycle & conseils agronomiques intégrés) :',
+                  style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
                 ),
+                const SizedBox(height: 10),
+                if (guidesState.isLoading && guides.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 8.0),
+                    child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
+                  )
+                else
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      for (final guide in guides)
+                        ChoiceChip(
+                          label: Text(guide.name),
+                          selected: _selectedGuide?.id == guide.id ||
+                              _cropTypeController.text.trim().toLowerCase() == guide.name.toLowerCase(),
+                          showCheckmark: false,
+                          selectedColor: AppColors.primary,
+                          labelStyle: TextStyle(
+                            color: (_selectedGuide?.id == guide.id ||
+                                    _cropTypeController.text.trim().toLowerCase() == guide.name.toLowerCase())
+                                ? Colors.white
+                                : AppColors.textPrimary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          onSelected: (_) => _onGuideSelected(guide),
+                        ),
+                    ],
+                  ),
                 const SizedBox(height: 14),
                 _buildTextField(
                   controller: _cropTypeController,
                   label: 'Type de culture',
-                  hint: 'Choisissez ci-dessus ou saisissez',
+                  hint: 'Choisissez ci-dessus ou saisissez librement',
                   icon: Icons.grass_rounded,
-                  onChanged: (_) => setState(() {}),
+                  onChanged: (val) {
+                    setState(() {
+                      if (_selectedGuide != null &&
+                          _selectedGuide!.name.toLowerCase() != val.toLowerCase()) {
+                        _selectedGuide = null;
+                      }
+                    });
+                  },
                 ),
+                if (_selectedGuide != null) ...[
+                  const SizedBox(height: 10),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.verified_rounded, color: AppColors.primary, size: 20),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Cycle officiel ISRA : ${_selectedGuide!.cycleDaysMin ?? 90} à ${_selectedGuide!.cycleDaysMax ?? 120} jours (${_selectedGuide!.categoryLabel})',
+                            style: const TextStyle(
+                              color: AppColors.primaryDark,
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ],
             ),
             const SizedBox(height: 16),
             _buildSection(
-              title: 'Calendrier',
+              title: 'Calendrier Cultural',
               icon: Icons.event_rounded,
               children: [
                 Row(
@@ -207,13 +289,20 @@ class _AddCropScreenState extends ConsumerState<AddCropScreen> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: _buildDateSelector(
-                        label: 'Récolte estimée',
+                        label: 'Récolte prévue',
                         date: _harvestDate,
                         onTap: () => _selectDate(context, false),
                       ),
                     ),
                   ],
                 ),
+                if (_selectedGuide != null && _harvestDate != null && _plantingDate != null) ...[
+                  const SizedBox(height: 10),
+                  Text(
+                    'Date de récolte calculée automatiquement (+${_harvestDate!.difference(_plantingDate!).inDays} jours). Vous pouvez cliquer pour la modifier.',
+                    style: TextStyle(color: Colors.grey.shade600, fontSize: 12, fontStyle: FontStyle.italic),
+                  ),
+                ],
               ],
             ),
           ],
@@ -231,7 +320,7 @@ class _AddCropScreenState extends ConsumerState<AddCropScreen> {
                     child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
                   )
                 : const Icon(Icons.check_rounded),
-            label: Text(_isLoading ? 'Ajout en cours…' : 'Ajouter la culture'),
+            label: Text(_isLoading ? 'Enregistrement en cours…' : 'Enregistrer la culture'),
           ),
         ),
       ),
@@ -270,7 +359,7 @@ class _AddCropScreenState extends ConsumerState<AddCropScreen> {
                 ),
                 SizedBox(height: 4),
                 Text(
-                  'Suivez-la de la semence à la récolte.',
+                  'Suivez votre culture du semis à la récolte et au stock.',
                   style: TextStyle(color: Colors.white70, fontSize: 13.5),
                 ),
               ],

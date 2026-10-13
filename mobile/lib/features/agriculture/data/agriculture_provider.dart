@@ -105,6 +105,32 @@ class AgricultureRepository {
       throw Exception('Erreur lors de la suppression de la culture');
     }
   }
+
+  Future<Map<String, dynamic>> harvestCrop(
+    String cropId, {
+    required double quantity,
+    String unit = 'kg',
+    String? date,
+    String? notes,
+  }) async {
+    final response = await _apiClient.post(
+      '${AppConstants.cropsEndpoint}$cropId/harvest/',
+      data: {
+        'quantity': quantity,
+        'unit': unit,
+        if (date != null) 'date': date,
+        if (notes != null && notes.isNotEmpty) 'notes': notes,
+      },
+    );
+
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      throw Exception('Erreur lors de l\'enregistrement de la récolte (${response.statusCode})');
+    }
+
+    return response.data is Map<String, dynamic>
+        ? response.data as Map<String, dynamic>
+        : {};
+  }
 }
 
 // Fournit l'instance de AgricultureRepository

@@ -169,3 +169,105 @@ class AgricultureAppTests(TestCase):
         self.assertEqual(delete_response.status_code, status.HTTP_403_FORBIDDEN)
         self.assertTrue(PestReport.objects.filter(id=report_user1.id).exists())
 
+    def test_crop_creation_with_agronomic_guide_autocalculates_harvest_date(self):
+        """Vérifie que lier un guide agronomique calcule automatiquement la date prévisionnelle de récolte."""
+        from apps.agriculture.models import AgronomicGuide
+        guide = AgronomicGuide.objects.filter(cycle_days_max__isnull=False).first()
+        self.assertIsNotNone(guide, "Un guide avec cycle_days_max doit être présent")
+
+        self.client.force_authenticate(user=self.user1)
+        url = reverse('agriculture:crop-list')
+        crop_data = {
+            'name': guide.name,
+            'crop_type': guide.name,
+            'planting_date': '2026-06-01',
+            'guide': str(guide.id),
+            'area_size': 1.5,
+            'location': 'Thiès, Sénégal'
+        }
+        response = self.client.post(url, crop_data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        data = response.json()
+        self.assertEqual(data['guide_slug'], guide.slug)
+        self.assertEqual(data['guide_name'], guide.name)
+        # La date attendue doit être 2026-06-01 + cycle_days_max
+        expected = datetime.date(2026, 6, 1) + datetime.timedelta(days=guide.cycle_days_max)
+        self.assertEqual(data['expected_harvest_date'], expected.isoformat())
+
+    def test_record_harvest_updates_crop_and_increments_stock_and_notification(self):
+        """Vérifie que l'enregistrement d'une récolte passe la culture en 'harvested' et incrémente le stock."""
+        from apps.inventory.models import StockItem
+        from apps.agriculture.models import Harvest
+
+        crop = Crop.objects.create(
+            user=self.user1,
+            name='Oignon Violet',
+            crop_type='Oignon',
+            planting_date='2026-01-01',
+            expected_harvest_date='2026-04-01',
+            area_size=2.0,
+            location='Thiès'
+        )
+
+        self.client.force_authenticate(user=self.user1)
+        url = reverse('agriculture:crop-record-harvest', kwargs={'pk': str(crop.id)})
+        
+        # Première récolte de 200 kg
+        res1 = self.client.post(url, {'quantity': 200, 'unit': 'kg', 'notes': 'Première coupe'}, format='json')
+        self.assertEqual(res1.status_code, status.HTTP_201_CREATED)
+        
+        crop.refresh_from_db()
+        self.assertEqual(crop.status, 'harvested')
+        self.assertEqual(Harvest.objects.filter(crop=crop).count(), 1)
+
+        stock = StockItem.objects.get(user=self.user1, name='Oignon Violet')
+        self.assertEqual(stock.quantity, 200.0)
+        self.assertEqual(stock.unit, 'kg')
+
+        # Seconde récolte supplémentaire de 150 kg
+        res2 = self.client.post(url, {'quantity': 150, 'unit': 'kg'}, format='json')
+        self.assertEqual(res2.status_code, status.HTTP_201_CREATED)
+        
+        stock.refresh_from_db()
+        self.assertEqual(stock.quantity, 350.0)
+        self.assertTrue(Notification.objects.filter(user=self.user1, message__icontains='Oignon Violet').exists())
+
+    def test_activity_with_cost_syncs_financial_transaction(self):
+        """Vérifie qu'une activité avec un coût > 0 crée et synchronise automatiquement une transaction financière."""
+        from apps.finances.models import Transaction
+
+        crop = Crop.objects.create(
+            user=self.user1,
+            name='Manioc',
+            crop_type='Manioc',
+            planting_date='2026-01-01',
+            expected_harvest_date='2026-09-01',
+            area_size=1.0,
+            location='Kolda'
+        )
+        self.client.force_authenticate(user=self.user1)
+        url = reverse('agriculture:activity-list')
+
+        # Création d'une activité avec un coût de 12 500 CFA
+        res = self.client.post(url, {
+            'crop': str(crop.id),
+            'activity_type': 'Fertilisation NPK',
+            'description': 'Achat et application 2 sacs engrais',
+            'date': '2026-02-15',
+            'cost': '12500.00'
+        }, format='json')
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+
+        activity_id = res.json()['id']
+        t = Transaction.objects.filter(activity_id=activity_id).first()
+        self.assertIsNotNone(t)
+        self.assertEqual(float(t.amount), 12500.0)
+        self.assertEqual(t.transaction_type, 'expense')
+        self.assertEqual(t.user, self.user1)
+
+        # Suppression de l'activité => la transaction financière liée disparaît
+        del_res = self.client.delete(reverse('agriculture:activity-detail', kwargs={'pk': activity_id}))
+        self.assertEqual(del_res.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(Transaction.objects.filter(activity_id=activity_id).exists())
+
+

@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../ai/data/ai_provider.dart';
+import '../../../markets/data/markets_provider.dart';
+import '../../../markets/data/models/price.dart';
 import 'dart:math' as math;
 
 class PriceAnalysisScreen extends ConsumerStatefulWidget {
@@ -45,33 +47,45 @@ class _PriceAnalysisScreenState extends ConsumerState<PriceAnalysisScreen> {
     super.dispose();
   }
 
-  // Calcul déterministe pour avoir des baisses et hausses réalistes selon le produit
-  double get _predictedPrice {
-    final seed = widget.productName.codeUnits.reduce((a, b) => a + b) + _selectedDays;
-    final random = math.Random(seed);
-    
-    // Entre -15% et +20%
-    double changePercent = (random.nextDouble() * 0.35) - 0.15;
-    
-    return widget.currentPrice * (1 + changePercent);
+  double _calculatePredictedPrice(List<Price> prices) {
+    if (prices.length >= 2) {
+      final sorted = List<Price>.from(prices)..sort((a, b) => a.date.compareTo(b.date));
+      final firstPrice = sorted.first.priceValue;
+      final lastPrice = sorted.last.priceValue;
+      final firstDate = DateTime.tryParse(sorted.first.date) ?? DateTime.now().subtract(const Duration(days: 30));
+      final lastDate = DateTime.tryParse(sorted.last.date) ?? DateTime.now();
+      final daysElapsed = math.max(1, lastDate.difference(firstDate).inDays);
+      final dailySlope = (lastPrice - firstPrice) / daysElapsed;
+      // Projection linéaire basée sur la pente historique réelle, bornée à +/- 25% max
+      final projectedChange = dailySlope * _selectedDays;
+      final rawPredicted = widget.currentPrice + projectedChange;
+      final minBound = widget.currentPrice * 0.75;
+      final maxBound = widget.currentPrice * 1.25;
+      return rawPredicted.clamp(minBound, maxBound);
+    }
+    // Si historique trop court ou prix stable
+    return widget.currentPrice;
   }
 
-  double get _estimatedRevenue {
+  double _calculateRevenue(double predictedPrice) {
     final stockText = _stockController.text.trim();
     if (stockText.isEmpty) return 0;
     final stock = double.tryParse(stockText) ?? 0;
-    return stock * _predictedPrice;
+    return stock * predictedPrice;
   }
 
-  String get _aiAdvice {
-    final diff = _predictedPrice - widget.currentPrice;
-    final percent = (diff / widget.currentPrice).abs() * 100;
+  String _generateAiAdvice(double predictedPrice, double basePrice, int days) {
+    final diff = predictedPrice - basePrice;
+    if (diff.abs() < 1) {
+      return "Le cours de ${widget.productName} est stable sur les marchés. Vous pouvez planifier vos ventes selon vos besoins de trésorerie.";
+    }
+    final percent = (diff / basePrice).abs() * 100;
     final percentStr = percent.toStringAsFixed(1);
     
     if (diff > 0) {
-      return "Le prix de ${widget.productName} sera $percentStr% plus élevé dans $_selectedDays jours. Si vous le pouvez, conservez votre stock pour le vendre au meilleur prix.";
+      return "Selon la tendance observée sur les marchés, le prix de ${widget.productName} devrait progresser d'environ $percentStr% dans $days jours. Conserver votre stock permet d'espérer une meilleure marge.";
     } else {
-      return "Le prix de ${widget.productName} risque de baisser de $percentStr% dans $_selectedDays jours. Il est conseillé d'écouler votre stock rapidement avant la dépréciation.";
+      return "Le prix de ${widget.productName} montre une tendance baissière (-$percentStr%) sur les derniers relevés. Il est conseillé d'écouler les stocks disponibles pour sécuriser vos gains.";
     }
   }
 
@@ -128,10 +142,14 @@ class _PriceAnalysisScreenState extends ConsumerState<PriceAnalysisScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final predicted = _predictedPrice;
+    final pricesAsync = ref.watch(productPriceHistoryProvider(widget.productName));
+    final prices = pricesAsync.valueOrNull ?? [];
+    final predicted = _calculatePredictedPrice(prices);
     final diff = predicted - widget.currentPrice;
-    final percent = (diff / widget.currentPrice).abs() * 100;
+    final percent = widget.currentPrice > 0 ? (diff / widget.currentPrice).abs() * 100 : 0.0;
     final isUp = diff >= 0;
+    final advice = _generateAiAdvice(predicted, widget.currentPrice, _selectedDays);
+    final estimatedRevenue = _calculateRevenue(predicted);
 
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
@@ -326,7 +344,7 @@ class _PriceAnalysisScreenState extends ConsumerState<PriceAnalysisScreen> {
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Text(
-                                  _aiAdvice,
+                                  advice,
                                   style: TextStyle(color: isUp ? Colors.green.shade900 : Colors.red.shade900, fontSize: 13, height: 1.5),
                                 ),
                               ),
@@ -411,7 +429,7 @@ class _PriceAnalysisScreenState extends ConsumerState<PriceAnalysisScreen> {
                                     const Text('Revenu potentiel', style: TextStyle(color: Colors.green, fontSize: 12, fontWeight: FontWeight.bold)),
                                     const SizedBox(height: 4),
                                     Text(
-                                      '${_estimatedRevenue.toInt()} FCFA',
+                                      '${estimatedRevenue.toInt()} FCFA',
                                       style: const TextStyle(color: Colors.green, fontWeight: FontWeight.w900, fontSize: 20),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
