@@ -16,6 +16,7 @@ from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, Ou
 from apps.privacy.policy import POLICY_VERSION
 
 from .phone import clean_phone, normalize_phone
+from .models import OTPToken
 
 User = get_user_model()
 
@@ -55,10 +56,11 @@ class RegisterSerializer(serializers.ModelSerializer):
     date_of_birth = serializers.DateField(write_only=True, required=False, allow_null=True)
     main_crops = serializers.JSONField(write_only=True, required=False, default=list)
     privacy_accepted = serializers.BooleanField(write_only=True, required=False, default=False)
+    otp_code = serializers.CharField(write_only=True, required=False, allow_blank=True, default='')
 
     class Meta:
         model = User
-        fields = ('phone_number', 'full_name', 'password', 'language', 'location', 'role', 'email', 'date_of_birth', 'main_crops', 'privacy_accepted')
+        fields = ('phone_number', 'full_name', 'password', 'language', 'location', 'role', 'email', 'date_of_birth', 'main_crops', 'privacy_accepted', 'otp_code')
 
     def validate_phone_number(self, value):
         try:
@@ -83,6 +85,12 @@ class RegisterSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({'password': list(exc.messages)})
         if settings.PRIVACY_CONSENT_REQUIRED and not attrs.get('privacy_accepted'):
             raise serializers.ValidationError({'privacy_accepted': ["L'acceptation de la politique de confidentialité est obligatoire."]})
+        attrs['otp_token'] = None
+        if attrs.get('otp_code') or settings.OTP_REQUIRED_FOR_REGISTER:
+            token = OTPToken.verify_code(attrs['phone_number'], 'register', attrs.get('otp_code', ''))
+            if token is None:
+                raise serializers.ValidationError({'otp_code': ['Code de vérification invalide ou expiré.']})
+            attrs['otp_token'] = token
         return attrs
 
     def validate_main_crops(self, value):
@@ -92,6 +100,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         phone_num = validated_data['phone_number']
+        otp_token = validated_data.get('otp_token')
         user = User.objects.create_user(
             username=phone_num,
             phone=phone_num,
@@ -108,6 +117,9 @@ class RegisterSerializer(serializers.ModelSerializer):
             user.privacy_accepted_at = timezone.now()
             user.privacy_policy_version = POLICY_VERSION
             user.save(update_fields=['privacy_accepted_at', 'privacy_policy_version'])
+        if otp_token is not None:
+            otp_token.is_used = True
+            otp_token.save(update_fields=['is_used'])
         return user
 
 class RegisterView(generics.CreateAPIView):
@@ -282,3 +294,144 @@ class ChangePasswordView(views.APIView):
         for outstanding in OutstandingToken.objects.filter(user=user):
             BlacklistedToken.objects.get_or_create(token=outstanding)
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class SendOTPSerializer(serializers.Serializer):
+    phone_number = serializers.CharField()
+    purpose = serializers.ChoiceField(choices=['register', 'password_reset'], default='register')
+
+    def validate_phone_number(self, value):
+        try:
+            return normalize_phone(value)
+        except ValueError as exc:
+            raise serializers.ValidationError(str(exc))
+
+
+class SendOTPView(views.APIView):
+    permission_classes = [permissions.AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'auth'
+
+    def post(self, request, *args, **kwargs):
+        serializer = SendOTPSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        phone = serializer.validated_data['phone_number']
+        purpose = serializer.validated_data['purpose']
+
+        if purpose == 'password_reset':
+            if not User.objects.filter(username=phone).exists() and not User.objects.filter(phone=phone).exists():
+                return Response(
+                    {"error": "Aucun compte n'est associé à ce numéro de téléphone."},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+
+        token = OTPToken.generate_code(phone=phone, purpose=purpose)
+        
+        if settings.OTP_DEMO_MODE:
+            import logging
+            logging.getLogger(__name__).info("[OTP DEMO] Code pour %s (%s) : %s", phone, purpose, token.code)
+
+        res_data = {
+            "message": "Code de vérification envoyé avec succès par SMS.",
+            "phone_number": phone,
+            "expires_in_minutes": 15
+        }
+        if settings.OTP_DEMO_MODE:
+            res_data["code"] = token.code
+            res_data["demo"] = True
+
+        return Response(res_data, status=status.HTTP_200_OK)
+
+
+class VerifyOTPSerializer(serializers.Serializer):
+    phone_number = serializers.CharField()
+    code = serializers.CharField(max_length=6)
+    purpose = serializers.ChoiceField(choices=['register', 'password_reset'], default='register')
+
+    def validate_phone_number(self, value):
+        try:
+            return normalize_phone(value)
+        except ValueError as exc:
+            raise serializers.ValidationError(str(exc))
+
+
+class VerifyOTPView(views.APIView):
+    permission_classes = [permissions.AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'auth'
+
+    def post(self, request, *args, **kwargs):
+        serializer = VerifyOTPSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        phone = serializer.validated_data['phone_number']
+        code = serializer.validated_data['code'].strip()
+        purpose = serializer.validated_data['purpose']
+
+        token = OTPToken.verify_code(phone, purpose, code)
+
+        if not token:
+            return Response(
+                {"error": "Code OTP invalide ou expiré."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        return Response({"valid": True, "message": "Code OTP vérifié avec succès."}, status=status.HTTP_200_OK)
+
+
+class ResetPasswordSerializer(serializers.Serializer):
+    phone_number = serializers.CharField()
+    otp_code = serializers.CharField(max_length=6)
+    new_password = serializers.CharField(write_only=True)
+
+    def validate_phone_number(self, value):
+        try:
+            return normalize_phone(value)
+        except ValueError as exc:
+            raise serializers.ValidationError(str(exc))
+
+    def validate(self, attrs):
+        phone = attrs['phone_number']
+        user = User.objects.filter(username=phone).first() or User.objects.filter(phone=phone).first()
+        if not user:
+            raise serializers.ValidationError({"phone_number": "Aucun compte associé à ce numéro."})
+        
+        token = OTPToken.verify_code(phone, 'password_reset', attrs['otp_code'])
+        if not token:
+            raise serializers.ValidationError({"otp_code": "Code de vérification invalide ou expiré."})
+
+        try:
+            validate_password(attrs['new_password'], user=user)
+        except DjangoValidationError as exc:
+            raise serializers.ValidationError({'new_password': list(exc.messages)})
+
+        attrs['user'] = user
+        attrs['token'] = token
+        return attrs
+
+
+class ResetPasswordView(views.APIView):
+    """
+    Réinitialisation de mot de passe par SMS/OTP.
+    Valide le code OTP envoyé par SMS, applique le nouveau mot de passe et révoque les sessions existantes.
+    """
+    permission_classes = [permissions.AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'auth'
+
+    def post(self, request, *args, **kwargs):
+        serializer = ResetPasswordSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.validated_data['user']
+        token = serializer.validated_data['token']
+
+        user.set_password(serializer.validated_data['new_password'])
+        user.save(update_fields=['password'])
+
+        token.is_used = True
+        token.save(update_fields=['is_used'])
+
+        for outstanding in OutstandingToken.objects.filter(user=user):
+            BlacklistedToken.objects.get_or_create(token=outstanding)
+
+        return Response({"message": "Mot de passe réinitialisé avec succès."}, status=status.HTTP_200_OK)
+

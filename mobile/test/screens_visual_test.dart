@@ -20,6 +20,9 @@ import 'package:nataal_agro/screens/crops/add_crop_screen.dart';
 import 'package:nataal_agro/screens/crops/crop_detail_screen.dart';
 import 'package:nataal_agro/screens/crops/crops_screen.dart';
 import 'package:nataal_agro/screens/assistant/assistant_screen.dart';
+import 'package:nataal_agro/screens/auth/login_screen.dart';
+import 'package:nataal_agro/screens/auth/onboarding_screen.dart';
+import 'package:nataal_agro/screens/auth/register_screen.dart';
 import 'package:nataal_agro/screens/finances/finances_screen.dart';
 import 'package:nataal_agro/screens/guides/guides_screens.dart';
 import 'package:nataal_agro/screens/profile/profile_screen.dart';
@@ -204,6 +207,25 @@ void main() {
     testWidgets('Fiches techniques ($tag)', (tester) async {
       await VisualHarness.shoot(tester, 'guides_$tag', const GuidesListScreen(), dark: dark, overrides: _overrides());
       expect(find.text('Tomate industrielle'), findsOneWidget);
+    });
+
+    testWidgets('Connexion ($tag)', (tester) async {
+      await VisualHarness.shoot(tester, 'login_$tag', const LoginScreen(), dark: dark, overrides: _overrides(), size: const Size(390, 900));
+      expect(find.text('Se connecter'), findsOneWidget);
+      expect(find.text('Mot de passe oublié ?'), findsOneWidget);
+    });
+
+    testWidgets('Inscription ($tag)', (tester) async {
+      await VisualHarness.shoot(tester, 'register_$tag', const RegisterScreen(), dark: dark, overrides: _overrides(), size: const Size(390, 900));
+      expect(find.text('Créer votre compte'), findsOneWidget);
+      await tester.tap(find.text('Continuer'));
+      await tester.pump();
+      expect(find.text('Saisissez votre nom complet.'), findsOneWidget);
+    });
+
+    testWidgets('Présentation ($tag)', (tester) async {
+      await VisualHarness.shoot(tester, 'onboarding_$tag', const OnboardingScreen(), dark: dark, overrides: _overrides(), size: const Size(390, 800));
+      expect(find.text('Suivez vos cultures'), findsOneWidget);
     });
   }
 }

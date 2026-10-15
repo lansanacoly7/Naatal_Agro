@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/notifications_sheet.dart';
+import '../../../../core/localization/locale_provider.dart';
 import '../../../auth/data/auth_provider.dart';
 import '../../data/notifications_provider.dart';
 import '../../data/profile_provider.dart';
@@ -982,7 +983,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               tileColor: profile.language.toUpperCase() != 'WO' ? AppColors.primary.withValues(alpha: 0.08) : null,
               onTap: () async {
                 Navigator.pop(ctx);
-                await ref.read(profileNotifierProvider.notifier).updateProfile(language: 'FR');
+                await ref.read(localeProvider.notifier).setLocale('fr');
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Langue configurée : Français'), backgroundColor: AppColors.primary),
@@ -1006,7 +1007,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               tileColor: profile.language.toUpperCase() == 'WO' ? AppColors.primary.withValues(alpha: 0.08) : null,
               onTap: () async {
                 Navigator.pop(ctx);
-                await ref.read(profileNotifierProvider.notifier).updateProfile(language: 'WO');
+                await ref.read(localeProvider.notifier).setLocale('wo');
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Làkk bi soppee na ci Wolof'), backgroundColor: AppColors.primary),

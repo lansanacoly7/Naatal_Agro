@@ -54,3 +54,11 @@ class WeatherViewTests(TestCase):
 
     def test_list_without_location(self):
         self.assertEqual(len(self.client.get('/api/weather/').json()), 1)
+
+    def test_forecast_endpoint(self):
+        res = self.client.get('/api/weather/forecast/', {'location': 'Thiès'})
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertIn('forecast', res.data)
+        self.assertIn('agricultural_advice', res.data)
+        self.assertEqual(len(res.data['forecast']), 5)
+

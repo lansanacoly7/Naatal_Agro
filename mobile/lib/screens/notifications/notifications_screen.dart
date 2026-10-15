@@ -25,7 +25,7 @@ class NotificationsScreen extends ConsumerWidget {
       onRefresh: notifier.fetchNotifications,
       actions: [
         if (state.unreadCount > 0)
-          PillButton(label: 'Tout lire', variant: PillVariant.secondary, compact: true, onPressed: notifier.markAllAsRead),
+          IntrinsicWidth(child: PillButton(label: 'Tout lire', variant: PillVariant.secondary, compact: true, onPressed: notifier.markAllAsRead)),
       ],
       slivers: [
         SliverToBoxAdapter(

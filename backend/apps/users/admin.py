@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 
-from .models import User
+from .models import OTPToken, User
 
 
 @admin.register(User)
@@ -22,3 +22,14 @@ class NaatalUserAdmin(UserAdmin):
     add_fieldsets = UserAdmin.add_fieldsets + (
         ('Profil Naatal Agro', {'fields': ('phone', 'role', 'location', 'language')}),
     )
+
+
+@admin.register(OTPToken)
+class OTPTokenAdmin(admin.ModelAdmin):
+    """Jetons de verification : le code n'est volontairement pas affiche."""
+
+    list_display = ('phone', 'purpose', 'is_used', 'attempts', 'created_at', 'expires_at')
+    list_filter = ('purpose', 'is_used', 'created_at')
+    search_fields = ('phone',)
+    exclude = ('code',)
+    readonly_fields = ('phone', 'purpose', 'is_used', 'attempts', 'created_at', 'expires_at')

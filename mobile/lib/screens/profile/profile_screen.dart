@@ -33,9 +33,15 @@ class ProfileScreen extends ConsumerWidget {
         SliverToBoxAdapter(
           child: profile.when(
             loading: () => const Padding(padding: EdgeInsets.all(Space.gutter), child: Skeleton(height: 140, radius: 28)),
-            error: (e, _) => ErrorState(
-              message: 'Votre profil n\'a pas pu être chargé.',
-              onRetry: () => ref.read(profileNotifierProvider.notifier).loadProfile(),
+            error: (e, _) => Column(
+              children: [
+                ErrorState(
+                  message: 'Votre profil n\'a pas pu être chargé.',
+                  onRetry: () => ref.read(profileNotifierProvider.notifier).loadProfile(),
+                ),
+                // Toujours pouvoir quitter le compte, même si le profil ne charge pas.
+                PillButton(label: 'Se déconnecter', variant: PillVariant.secondary, onPressed: () => ref.read(authStateProvider.notifier).logout()),
+              ],
             ),
             data: (p) => Column(
               crossAxisAlignment: CrossAxisAlignment.start,

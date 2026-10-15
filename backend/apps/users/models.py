@@ -21,3 +21,65 @@ class User(AbstractUser):
     
     def __str__(self):
         return f"{self.username} ({self.get_role_display()})"
+
+
+class OTPToken(models.Model):
+    PURPOSE_CHOICES = [
+        ('register', 'Inscription'),
+        ('password_reset', 'Réinitialisation mot de passe'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    phone = models.CharField(max_length=20)
+    code = models.CharField(max_length=6)
+    purpose = models.CharField(max_length=30, choices=PURPOSE_CHOICES, default='register')
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    is_used = models.BooleanField(default=False)
+    attempts = models.PositiveSmallIntegerField(default=0)
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['phone', 'purpose', 'is_used']),
+        ]
+
+    def __str__(self):
+        return f"OTP {self.code} for {self.phone} ({self.purpose})"
+
+    @classmethod
+    def generate_code(cls, phone, purpose='register', validity_minutes=15):
+        import secrets
+        from datetime import timedelta
+        from django.utils import timezone
+        # 4-digit code (1000 - 9999) pour correspondre au champ 4 chiffres de l'application mobile
+        code = str(secrets.randbelow(9000) + 1000)
+        expires_at = timezone.now() + timedelta(minutes=validity_minutes)
+        # Invalider les anciens codes non utilisés pour ce numéro et ce motif
+        cls.objects.filter(phone=phone, purpose=purpose, is_used=False).update(is_used=True)
+        return cls.objects.create(
+            phone=phone,
+            code=code,
+            purpose=purpose,
+            expires_at=expires_at,
+        )
+
+    @classmethod
+    def verify_code(cls, phone, purpose, code):
+        """Verifie un code sur le dernier jeton actif ; compte les echecs et bloque apres OTP_MAX_ATTEMPTS."""
+        from django.conf import settings
+        from django.utils import timezone
+        token = cls.objects.filter(phone=phone, purpose=purpose, is_used=False, expires_at__gte=timezone.now()).first()
+        if token is None:
+            return None
+        if token.code != (code or '').strip():
+            token.attempts += 1
+            if token.attempts >= getattr(settings, 'OTP_MAX_ATTEMPTS', 5):
+                token.is_used = True
+            token.save(update_fields=['attempts', 'is_used'])
+            return None
+        return token
+
+    def is_valid(self):
+        from django.utils import timezone
+        return not self.is_used and timezone.now() <= self.expires_at

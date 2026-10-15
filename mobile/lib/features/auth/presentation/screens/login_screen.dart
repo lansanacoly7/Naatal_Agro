@@ -106,24 +106,141 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             ),
             const SizedBox(height: 20),
             ElevatedButton(
-              onPressed: () {
+              onPressed: () async {
                 final phone = resetPhoneController.text.trim();
+                if (phone.isEmpty) return;
                 Navigator.pop(ctx);
-                if (phone.isNotEmpty) {
+                
+                try {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                        "La réinitialisation automatique par SMS est en attente d'intégration de la passerelle opérateur. Veuillez contacter le support ou votre administrateur pour réinitialiser votre accès.",
-                      ),
-                      backgroundColor: AppColors.primary,
-                      behavior: SnackBarBehavior.floating,
-                    ),
+                    const SnackBar(content: Text('Envoi du code SMS en cours...'), duration: Duration(seconds: 2)),
+                  );
+                  final res = await ref.read(authRepositoryProvider).sendOtp(phone, purpose: 'password_reset');
+                  final devCode = res['code'];
+                  if (!mounted) return;
+                  _showResetConfirmDialog(phone, devCode: devCode?.toString());
+                } catch (e) {
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Erreur : $e'), backgroundColor: Colors.red),
                   );
                 }
               },
-              child: const Text('Envoyer les instructions'),
+              child: const Text('Envoyer le code SMS'),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  void _showResetConfirmDialog(String phone, {String? devCode}) {
+    final otpController = TextEditingController(text: devCode ?? '');
+    final newPasswordController = TextEditingController();
+    bool isSubmitting = false;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setModalState) => Padding(
+          padding: EdgeInsets.only(
+            left: 24,
+            right: 24,
+            top: 24,
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.verified_user_rounded, color: AppColors.primary),
+                  ),
+                  const SizedBox(width: 12),
+                  const Text(
+                    'Code de vérification',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Saisissez le code SMS reçu sur $phone et votre nouveau mot de passe.',
+                style: TextStyle(color: Colors.grey.shade600, fontSize: 14, height: 1.4),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: otpController,
+                keyboardType: TextInputType.number,
+                maxLength: 6,
+                decoration: InputDecoration(
+                  hintText: 'Code à 4 chiffres (ex: 1234)',
+                  prefixIcon: const Icon(Icons.pin_rounded, color: AppColors.primary),
+                  filled: true,
+                  fillColor: AppColors.background,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                ),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: newPasswordController,
+                obscureText: true,
+                decoration: InputDecoration(
+                  hintText: 'Nouveau mot de passe sécurisé',
+                  prefixIcon: const Icon(Icons.lock_outline_rounded, color: AppColors.primary),
+                  filled: true,
+                  fillColor: AppColors.background,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                ),
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: isSubmitting
+                    ? null
+                    : () async {
+                        final code = otpController.text.trim();
+                        final newPass = newPasswordController.text;
+                        if (code.length < 4 || newPass.length < 6) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Veuillez saisir le code et un mot de passe d\'au moins 6 caractères.')),
+                          );
+                          return;
+                        }
+                        setModalState(() => isSubmitting = true);
+                        try {
+                          await ref.read(authRepositoryProvider).resetPassword(phone, code, newPass);
+                          if (ctx.mounted) Navigator.pop(ctx);
+                          if (!mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Mot de passe réinitialisé avec succès ! Connectez-vous.'),
+                              backgroundColor: Colors.green,
+                            ),
+                          );
+                        } catch (e) {
+                          setModalState(() => isSubmitting = false);
+                          if (!mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Erreur : $e'), backgroundColor: Colors.red),
+                          );
+                        }
+                      },
+                child: isSubmitting
+                    ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                    : const Text('Confirmer le mot de passe'),
+              ),
+            ],
+          ),
         ),
       ),
     );

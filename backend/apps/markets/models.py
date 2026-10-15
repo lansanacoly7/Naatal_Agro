@@ -25,6 +25,7 @@ class Price(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     market = models.ForeignKey(Market, on_delete=models.CASCADE, related_name='prices')
+    product = models.ForeignKey('Product', on_delete=models.SET_NULL, null=True, blank=True, related_name='market_prices')
     product_name = models.CharField(max_length=255)
     price = models.DecimalField(max_digits=10, decimal_places=2)
     trend = models.CharField(max_length=20, choices=TREND_CHOICES, default='stable')
@@ -35,10 +36,24 @@ class Price(models.Model):
         ordering = ['-date', 'product_name']
         indexes = [
             models.Index(fields=['market', 'product_name']),
+            models.Index(fields=['product', '-date']),
         ]
 
     def __str__(self):
         return f"{self.product_name} at {self.market.name} - {self.price}"
+
+    def save(self, *args, **kwargs):
+        if not self.product_id and self.product_name:
+            matching = Product.objects.filter(name__iexact=self.product_name.strip()).first()
+            if matching:
+                self.product = matching
+        super().save(*args, **kwargs)
+        if self.product:
+            try:
+                self.product.sync_live_price()
+            except Exception:
+                pass
+
 
 class Product(models.Model):
     CATEGORY_CHOICES = [
@@ -65,4 +80,27 @@ class Product(models.Model):
 
     def __str__(self):
         return self.name
+
+    def sync_live_price(self):
+        """Met à jour current_price et trend_percentage à partir des cotations réelles enregistrées."""
+        from django.db.models import Avg, Q
+        latest_prices = Price.objects.filter(
+            Q(product=self) | Q(product_name__iexact=self.name)
+        ).order_by('-date')
+        if not latest_prices.exists():
+            return
+        
+        latest_date = latest_prices.first().date
+        avg_latest = latest_prices.filter(date=latest_date).aggregate(Avg('price'))['price__avg']
+        if avg_latest is not None:
+            self.current_price = round(avg_latest, 2)
+            previous_prices = latest_prices.filter(date__lt=latest_date)
+            if previous_prices.exists():
+                prev_date = previous_prices.first().date
+                avg_prev = previous_prices.filter(date=prev_date).aggregate(Avg('price'))['price__avg']
+                if avg_prev and avg_prev > 0:
+                    diff_pct = ((float(avg_latest) - float(avg_prev)) / float(avg_prev)) * 100
+                    self.trend_percentage = round(diff_pct, 1)
+            self.save(update_fields=['current_price', 'trend_percentage'])
+
 

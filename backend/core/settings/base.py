@@ -38,6 +38,14 @@ FIREBASE_CREDENTIALS_PATH = os.getenv('FIREBASE_CREDENTIALS_PATH')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'False').lower() in ('true', '1', 't')
 
+# OTP : sans passerelle SMS, le code n'est renvoye dans la reponse API (mode demonstration) que si
+# OTP_DEMO_MODE est actif. Ne JAMAIS l'activer en production : le code permettrait de reinitialiser
+# n'importe quel mot de passe.
+OTP_DEMO_MODE = os.getenv('OTP_DEMO_MODE', str(DEBUG)).lower() in ('true', '1', 't')
+OTP_MAX_ATTEMPTS = int(os.getenv('OTP_MAX_ATTEMPTS', '5'))
+# Inscription : exiger un code OTP valide (sinon l'OTP n'est qu'un controle cote application).
+OTP_REQUIRED_FOR_REGISTER = os.getenv('OTP_REQUIRED_FOR_REGISTER', 'False').lower() in ('true', '1', 't')
+
 ALLOWED_HOSTS = [h.strip() for h in os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,10.0.2.2').split(',') if h.strip()]
 
 # Application definition

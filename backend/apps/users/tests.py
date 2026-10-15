@@ -1,7 +1,7 @@
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.contrib.auth import get_user_model
-from rest_framework.test import APIClient
+from rest_framework.test import APIClient, APITestCase
 from rest_framework import status
 
 User = get_user_model()
@@ -135,3 +135,118 @@ class UserAuthAndProfileTests(TestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn('phone_number', response.data)
 
+    @override_settings(OTP_DEMO_MODE=True)
+    def test_send_and_verify_otp(self):
+        """Teste la génération et la vérification réussie d'un code OTP."""
+        send_url = reverse('users:send_otp')
+        payload = {'phone_number': '+221773334455', 'purpose': 'register'}
+        send_res = self.client.post(send_url, payload, format='json')
+        self.assertEqual(send_res.status_code, status.HTTP_200_OK)
+        code = send_res.data.get('code')
+        self.assertIsNotNone(code)
+
+        verify_url = reverse('users:verify_otp')
+        verify_res = self.client.post(verify_url, {
+            'phone_number': '+221773334455',
+            'code': code,
+            'purpose': 'register'
+        }, format='json')
+        self.assertEqual(verify_res.status_code, status.HTTP_200_OK)
+        self.assertTrue(verify_res.data.get('valid'))
+
+    def test_verify_otp_invalid_code(self):
+        """Vérifie le rejet d'un mauvais code OTP."""
+        verify_url = reverse('users:verify_otp')
+        verify_res = self.client.post(verify_url, {
+            'phone_number': '+221773334455',
+            'code': '0000',
+            'purpose': 'register'
+        }, format='json')
+        self.assertEqual(verify_res.status_code, status.HTTP_400_BAD_REQUEST)
+
+    @override_settings(OTP_DEMO_MODE=True)
+    def test_reset_password_flow(self):
+        """Teste le flux complet de réinitialisation de mot de passe par SMS/OTP."""
+        send_url = reverse('users:send_otp')
+        send_res = self.client.post(send_url, {
+            'phone_number': '+221771234567',
+            'purpose': 'password_reset'
+        }, format='json')
+        self.assertEqual(send_res.status_code, status.HTTP_200_OK)
+        otp = send_res.data.get('code')
+
+        reset_url = reverse('users:reset_password')
+        reset_res = self.client.post(reset_url, {
+            'phone_number': '+221771234567',
+            'otp_code': otp,
+            'new_password': 'NewSecurePassword2026!'
+        }, format='json')
+        self.assertEqual(reset_res.status_code, status.HTTP_200_OK)
+
+        # Vérifie qu'on peut se connecter avec le nouveau mot de passe
+        login_url = reverse('users:token_obtain_pair')
+        login_res = self.client.post(login_url, {
+            'phone_number': '+221771234567',
+            'password': 'NewSecurePassword2026!'
+        }, format='json')
+        self.assertEqual(login_res.status_code, status.HTTP_200_OK)
+
+
+
+class OTPSecurityTests(APITestCase):
+    """Le code ne fuit qu'en mode demonstration et les essais sont limites."""
+
+    def setUp(self):
+        self.phone = '+221779998877'
+
+    @override_settings(OTP_DEMO_MODE=False)
+    def test_code_hidden_outside_demo_mode(self):
+        res = self.client.post(reverse('users:send_otp'), {'phone_number': self.phone, 'purpose': 'register'}, format='json')
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertNotIn('code', res.data)
+
+    @override_settings(OTP_DEMO_MODE=True)
+    def test_code_returned_in_demo_mode(self):
+        res = self.client.post(reverse('users:send_otp'), {'phone_number': self.phone, 'purpose': 'register'}, format='json')
+        self.assertIn('code', res.data)
+        self.assertTrue(res.data['demo'])
+
+    @override_settings(OTP_DEMO_MODE=True, OTP_MAX_ATTEMPTS=3)
+    def test_code_locked_after_too_many_wrong_attempts(self):
+        res = self.client.post(reverse('users:send_otp'), {'phone_number': self.phone, 'purpose': 'register'}, format='json')
+        good = res.data['code']
+        wrong = '0000' if good != '0000' else '1111'
+        for _ in range(3):
+            bad = self.client.post(reverse('users:verify_otp'), {'phone_number': self.phone, 'code': wrong, 'purpose': 'register'}, format='json')
+            self.assertEqual(bad.status_code, status.HTTP_400_BAD_REQUEST)
+        late = self.client.post(reverse('users:verify_otp'), {'phone_number': self.phone, 'code': good, 'purpose': 'register'}, format='json')
+        self.assertEqual(late.status_code, status.HTTP_400_BAD_REQUEST)
+
+    @override_settings(OTP_DEMO_MODE=True, OTP_REQUIRED_FOR_REGISTER=True)
+    def test_register_requires_valid_otp_when_enabled(self):
+        payload = {'phone_number': self.phone, 'full_name': 'Test Otp', 'password': 'Sup3r-Secret-2026!', 'language': 'fr'}
+        denied = self.client.post(reverse('users:register'), payload, format='json')
+        self.assertEqual(denied.status_code, status.HTTP_400_BAD_REQUEST)
+        code = self.client.post(reverse('users:send_otp'), {'phone_number': self.phone, 'purpose': 'register'}, format='json').data['code']
+        ok = self.client.post(reverse('users:register'), {**payload, 'otp_code': code}, format='json')
+        self.assertEqual(ok.status_code, status.HTTP_201_CREATED)
+
+
+class DemoUserCommandTests(TestCase):
+    def test_refuses_without_demo_mode(self):
+        from django.core.management import call_command
+        from django.core.management.base import CommandError
+        with override_settings(DEBUG=False, OTP_DEMO_MODE=False):
+            with self.assertRaises(CommandError):
+                call_command('setup_demo', stdout=open('NUL' if __import__('os').name == 'nt' else '/dev/null', 'w'))
+
+    @override_settings(OTP_DEMO_MODE=True)
+    def test_builds_a_linked_demo_account(self):
+        import io
+        from django.core.management import call_command
+        from apps.agriculture.models import Crop
+        from apps.finances.models import Transaction
+        call_command('setup_demo', stdout=io.StringIO())
+        user = get_user_model().objects.get(username='+221770000000')
+        self.assertEqual(Crop.objects.filter(user=user).count(), 3)
+        self.assertTrue(Transaction.objects.filter(user=user, sale__isnull=False).exists())

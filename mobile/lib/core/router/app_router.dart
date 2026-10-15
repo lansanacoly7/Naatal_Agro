@@ -4,10 +4,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../main.dart';
 import '../../features/auth/data/auth_provider.dart';
-import '../../features/auth/presentation/screens/login_screen.dart';
-import '../../features/auth/presentation/screens/register_screen.dart';
-import '../../features/auth/presentation/screens/onboarding_screen.dart';
-import '../../features/auth/presentation/screens/welcome_loading_screen.dart';
 
 import '../../features/agriculture/data/models/crop.dart';
 import '../../features/markets/presentation/screens/product_detail_screen.dart';
@@ -23,6 +19,11 @@ import '../../screens/crops/add_crop_screen.dart';
 import '../../screens/crops/crop_detail_screen.dart';
 import '../../screens/crops/crops_screen.dart';
 import '../../screens/assistant/assistant_screen.dart';
+import '../../screens/auth/login_screen.dart';
+import '../../screens/auth/onboarding_screen.dart';
+import '../../screens/auth/register_screen.dart';
+import '../../screens/auth/welcome_screen.dart';
+import '../../features/weather/presentation/screens/weather_screen.dart';
 import '../../screens/finances/finances_screen.dart';
 import '../../screens/guides/guides_screens.dart';
 import '../../screens/notifications/notifications_screen.dart';
@@ -235,6 +236,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           );
         },
       ),
+      GoRoute(parentNavigatorKey: _rootNavigatorKey, path: '/weather', builder: (context, state) => const WeatherScreen()),
       GoRoute(parentNavigatorKey: _rootNavigatorKey, path: '/profile', builder: (context, state) => const ProfileScreen()),
       GoRoute(parentNavigatorKey: _rootNavigatorKey, path: '/price-alerts', builder: (context, state) => const PriceAlertsScreen()),
       GoRoute(parentNavigatorKey: _rootNavigatorKey, path: '/notifications', builder: (context, state) => const NotificationsScreen()),

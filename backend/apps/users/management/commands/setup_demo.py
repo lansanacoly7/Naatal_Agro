@@ -1,5 +1,6 @@
 import datetime
-from django.core.management.base import BaseCommand
+from django.conf import settings
+from django.core.management.base import BaseCommand, CommandError
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 
@@ -18,7 +19,12 @@ DEMO_PASS = "DemoSenegal2026#"
 class Command(BaseCommand):
     help = "Initialise un compte exploitant de démonstration centré sur Diamniadio pour la soutenance."
 
+    def add_arguments(self, parser):
+        parser.add_argument('--force', action='store_true', help="Autorise l'execution hors mode debug (jamais sur une base de production).")
+
     def handle(self, *args, **options):
+        if not (settings.DEBUG or settings.OTP_DEMO_MODE or options['force']):
+            raise CommandError("Ce compte contient des donnees FICTIVES : refuse hors DEBUG/OTP_DEMO_MODE (utilisez --force sur une base de demonstration).")
         self.stdout.write(self.style.NOTICE("[DEMO] Initialisation de l'ecosysteme de demonstration - Zone Diamniadio..."))
 
         # 1. Nettoyage de l'ancien compte démo s'il existe
@@ -184,6 +190,19 @@ class Command(BaseCommand):
             defaults={"price": 910.00, "trend": "up"}
         )
         self.stdout.write(self.style.SUCCESS("  [OK] Marche d'Interet National (MIN) de Diamniadio synchronise avec cotations en direct."))
+
+        # Historique de 30 jours : le compte de demo montre les courbes de prix (valeurs fictives, deterministes).
+        demo_markets = [market_min] + list(Market.objects.exclude(pk=market_min.pk)[:2])
+        base_prices = {"Oignon": 480.0, "Tomate": 520.0, "Arachide": 910.0}
+        for m_index, market in enumerate(demo_markets):
+            for name, base in base_prices.items():
+                for back in range(30, 0, -1):
+                    wave = ((back * 7 + m_index * 3 + len(name)) % 11 - 5) * 0.012
+                    Price.objects.update_or_create(
+                        market=market, product_name=name, date=today - datetime.timedelta(days=back),
+                        defaults={"price": round(base * (1 + wave + m_index * 0.03), 2), "trend": "stable"},
+                    )
+        self.stdout.write(self.style.SUCCESS(f"  [OK] Historique de prix fictif sur 30 jours ({len(demo_markets)} marches)."))
 
         # 7. Ventes & Finances (Vente vers la Centrale d'Achat du MIN)
         # Vente de 400 kg d'arachide au MIN (sur les 1200 kg récoltés, reste 800 kg en stock)
