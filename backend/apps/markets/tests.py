@@ -137,3 +137,43 @@ class MarketsAppTests(TestCase):
         response = APIClient().get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 2)
+
+
+class PriceSummaryEndpointsTests(TestCase):
+    """Routes légères pour la carte : dernier prix par marché et historique journalier."""
+
+    def setUp(self):
+        self.client = APIClient()
+        self.today = timezone.now().date()
+        self.m1 = Market.objects.create(name='Marché A', region='Thiès', location_gps='14.79,-16.93')
+        self.m2 = Market.objects.create(name='Marché B', region='Dakar')
+        day = lambda n: self.today - timezone.timedelta(days=n)
+        Price.objects.create(market=self.m1, product_name='Oignon', price=400, date=day(2))
+        Price.objects.create(market=self.m1, product_name='Oignon', price=420, date=day(0))
+        Price.objects.create(market=self.m2, product_name='Oignon', price=380, date=day(1))
+        Price.objects.create(market=self.m1, product_name='Riz', price=999, date=day(0))
+
+    def test_latest_requires_product(self):
+        self.assertEqual(self.client.get('/api/markets/prices/latest/').status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_latest_returns_one_row_per_market_with_the_newest_price(self):
+        rows = self.client.get('/api/markets/prices/latest/?product=Oignon').json()
+        by_name = {r['market_name']: r for r in rows}
+        self.assertEqual(set(by_name), {'Marché A', 'Marché B'})
+        self.assertEqual(by_name['Marché A']['price'], 420.0)
+        self.assertEqual(by_name['Marché B']['price'], 380.0)
+        self.assertEqual(by_name['Marché A']['location_gps'], '14.79,-16.93')
+        self.assertNotIn('Riz', [r['product_name'] for r in rows])
+
+    def test_history_averages_all_markets_per_day(self):
+        series = self.client.get('/api/markets/prices/history/?product=Oignon&days=30').json()
+        self.assertEqual([p['price'] for p in series], [400.0, 380.0, 420.0])
+        self.assertEqual(series[-1]['markets'], 1)
+
+    def test_history_can_be_limited_to_one_market(self):
+        series = self.client.get(f'/api/markets/prices/history/?product=Oignon&market={self.m1.id}').json()
+        self.assertEqual([p['price'] for p in series], [400.0, 420.0])
+
+    def test_history_is_empty_without_data(self):
+        self.assertEqual(self.client.get('/api/markets/prices/history/?product=Inconnu').json(), [])
+

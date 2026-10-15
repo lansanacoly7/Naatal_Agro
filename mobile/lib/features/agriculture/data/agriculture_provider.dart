@@ -106,6 +106,30 @@ class AgricultureRepository {
     }
   }
 
+  /// Ajoute une activité (arrosage, engrais, traitement…) à une culture.
+  /// Si un coût est indiqué, le serveur crée la dépense correspondante dans les finances.
+  Future<void> addActivity({
+    required String cropId,
+    required String type,
+    required String date,
+    String description = '',
+    double? cost,
+  }) async {
+    final response = await _apiClient.post(
+      '/agriculture/activities/',
+      data: {
+        'crop': cropId,
+        'activity_type': type,
+        'description': description,
+        'date': date,
+        if (cost != null && cost > 0) 'cost': cost,
+      },
+    );
+    if (response.statusCode != 201 && response.statusCode != 200 && response.statusCode != 202) {
+      throw Exception('Activite non enregistree');
+    }
+  }
+
   Future<Map<String, dynamic>> harvestCrop(
     String cropId, {
     required double quantity,

@@ -32,6 +32,33 @@ class CropActivity {
   DateTime? get parsedDate => DateTime.tryParse(date);
 }
 
+/// Récolte enregistrée sur une culture.
+class CropHarvest {
+  final String id;
+  final double quantity;
+  final String unit;
+  final String date;
+  final String notes;
+
+  CropHarvest({
+    required this.id,
+    required this.quantity,
+    required this.unit,
+    required this.date,
+    this.notes = '',
+  });
+
+  factory CropHarvest.fromJson(Map<String, dynamic> json) => CropHarvest(
+        id: json['id']?.toString() ?? '',
+        quantity: double.tryParse(json['quantity']?.toString() ?? '0') ?? 0,
+        unit: json['unit']?.toString() ?? 'kg',
+        date: json['date']?.toString() ?? '',
+        notes: json['notes']?.toString() ?? '',
+      );
+
+  DateTime? get parsedDate => DateTime.tryParse(date);
+}
+
 class Crop {
   final String id;
   final String name;
@@ -45,6 +72,7 @@ class Crop {
   final String? guideSlug;
   final String? guideName;
   final List<CropActivity> activities;
+  final List<CropHarvest> harvests;
 
   Crop({
     required this.id,
@@ -59,6 +87,7 @@ class Crop {
     this.guideSlug,
     this.guideName,
     this.activities = const [],
+    this.harvests = const [],
   });
 
   factory Crop.fromJson(Map<String, dynamic> json) {
@@ -78,11 +107,35 @@ class Crop {
               ?.map((e) => CropActivity.fromJson(e as Map<String, dynamic>))
               .toList() ??
           const [],
+      harvests: (json['harvests'] as List?)
+              ?.whereType<Map>()
+              .map((e) => CropHarvest.fromJson(Map<String, dynamic>.from(e)))
+              .toList() ??
+          const [],
     );
   }
 
   DateTime? get parsedPlantingDate => DateTime.tryParse(plantingDate);
   DateTime? get parsedHarvestDate => DateTime.tryParse(expectedHarvestDate);
+
+  /// Avancement entre le semis et la récolte prévue, ou null si les dates sont inutilisables.
+  /// (Aucune valeur de remplacement : l'écran affiche « dates à renseigner ».)
+  double? get progressOrNull {
+    final start = parsedPlantingDate;
+    final end = parsedHarvestDate;
+    if (start == null || end == null) return null;
+    final totalDays = end.difference(start).inDays;
+    if (totalDays <= 0) return null;
+    return (DateTime.now().difference(start).inDays / totalDays).clamp(0.0, 1.0);
+  }
+
+  /// Jours restants avant la récolte prévue (négatif si dépassée), ou null.
+  int? get daysToHarvest {
+    final end = parsedHarvestDate;
+    if (end == null) return null;
+    final now = DateTime.now();
+    return DateTime(end.year, end.month, end.day).difference(DateTime(now.year, now.month, now.day)).inDays;
+  }
 
   double get calculatedProgress {
     final start = parsedPlantingDate;

@@ -49,7 +49,26 @@ class InventoryNotifier extends StateNotifier<AsyncValue<List<StockItem>>> {
     }
   }
 
-  Future<void> recordSale({
+  /// Corrige la quantité d'un produit du stock (inventaire, perte, ajustement).
+  Future<void> updateQuantity(String id, double quantity) async {
+    final response = await _apiClient.patch('/inventory/$id/', data: {'quantity': quantity});
+    if (response.statusCode != 200 && response.statusCode != 202) {
+      throw Exception('Modification du stock impossible');
+    }
+    await fetchInventory();
+  }
+
+  /// Retire un produit du stock.
+  Future<void> deleteStock(String id) async {
+    final response = await _apiClient.delete('/inventory/$id/');
+    if (response.statusCode != 204 && response.statusCode != 200 && response.statusCode != 202) {
+      throw Exception('Suppression du stock impossible');
+    }
+    await fetchInventory();
+  }
+
+  /// Enregistre une vente. Renvoie `true` si elle est en attente d'envoi (hors ligne).
+  Future<bool> recordSale({
     required String productName,
     required double quantity,
     required double unitPrice,
@@ -72,9 +91,9 @@ class InventoryNotifier extends StateNotifier<AsyncValue<List<StockItem>>> {
     );
     if (response.statusCode == 200 || response.statusCode == 201 || response.statusCode == 202) {
       await fetchInventory();
-    } else {
-      throw Exception('Erreur lors de l\'enregistrement de la vente');
+      return response.statusCode == 202;
     }
+    throw Exception('Enregistrement de la vente impossible');
   }
 }
 

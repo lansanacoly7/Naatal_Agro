@@ -66,5 +66,11 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Naatal Agro utilise votre position pour afficher les marchés les plus proches de vous.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>La caméra sert à photographier une plante malade pour que l'assistant vous aide à la diagnostiquer.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Vous pouvez choisir une photo de plante dans votre galerie pour la faire analyser par l'assistant.</string>
 </dict>
 </plist>

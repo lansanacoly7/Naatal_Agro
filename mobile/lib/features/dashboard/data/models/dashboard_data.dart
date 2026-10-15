@@ -145,19 +145,41 @@ class MarketPrice {
   final String trend;
   final String marketName;
 
+  /// Plus bas et plus haut prix relevés sur les marchés à la date du relevé.
+  final double? minPrice;
+  final double? maxPrice;
+  final int marketsCount;
+
+  /// Date du relevé le plus récent (null si le serveur ne la fournit pas).
+  final DateTime? date;
+
+  /// Évolution en % par rapport à un relevé d'au moins 7 jours avant (null si inconnue).
+  final double? changePercent;
+
   MarketPrice({
     required this.productName,
     required this.price,
     required this.trend,
     required this.marketName,
+    this.minPrice,
+    this.maxPrice,
+    this.marketsCount = 0,
+    this.date,
+    this.changePercent,
   });
 
   factory MarketPrice.fromJson(Map<String, dynamic> json) {
+    double? asDouble(dynamic v) => v == null ? null : double.tryParse(v.toString());
     return MarketPrice(
       productName: json['product_name'] ?? '',
       price: double.tryParse(json['price']?.toString() ?? '0') ?? 0.0,
       trend: json['trend'] ?? 'stable',
       marketName: json['market__name'] ?? '',
+      minPrice: asDouble(json['min_price']),
+      maxPrice: asDouble(json['max_price']),
+      marketsCount: (json['markets_count'] as num?)?.toInt() ?? 0,
+      date: json['date'] == null ? null : DateTime.tryParse(json['date'].toString()),
+      changePercent: asDouble(json['change_percent']),
     );
   }
 }
@@ -168,19 +190,30 @@ class WeatherSummary {
   final double humidity;
   final double rainfall;
 
+  /// Faux si le serveur n'a aucune météo pour la région de l'utilisateur.
+  final bool isAvailable;
+
+  /// Date du relevé météo.
+  final DateTime? date;
+
   WeatherSummary({
     required this.location,
     required this.temp,
     required this.humidity,
     required this.rainfall,
+    this.isAvailable = true,
+    this.date,
   });
 
   factory WeatherSummary.fromJson(Map<String, dynamic> json) {
+    final hasData = json['temp'] != null;
     return WeatherSummary(
       location: json['location'] ?? 'Inconnue',
       temp: (json['temp'] ?? 0.0).toDouble(),
       humidity: (json['humidity'] ?? 0.0).toDouble(),
       rainfall: (json['rainfall'] ?? 0.0).toDouble(),
+      isAvailable: hasData,
+      date: json['date'] == null ? null : DateTime.tryParse(json['date'].toString()),
     );
   }
 }

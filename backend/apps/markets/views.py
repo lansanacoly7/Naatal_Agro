@@ -1,4 +1,11 @@
+from datetime import timedelta
+
+from django.db.models import Avg, Count, F, Max, Window
+from django.db.models.functions import RowNumber
 from rest_framework import viewsets, permissions
+from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
+from rest_framework.response import Response
 from .models import Market, Price, Product
 from .serializers import MarketSerializer, PriceSerializer, ProductSerializer
 
@@ -53,4 +60,65 @@ class PriceViewSet(viewsets.ReadOnlyModelViewSet):
             queryset = queryset.filter(product_name__icontains=product_name)
         
         return queryset
+
+    @action(detail=False, methods=['get'], url_path='latest')
+    def latest(self, request):
+        """
+        Dernier relevé de prix de chaque marché pour un produit (``?product=Oignon``).
+        Une ligne par marché, sans pagination : sert à la carte et au classement des marchés.
+        """
+        product = (request.query_params.get('product') or '').strip()
+        if not product:
+            raise ValidationError({'product': "Le paramètre 'product' est requis."})
+        rows = (
+            Price.objects.filter(product_name__icontains=product)
+            .annotate(rn=Window(RowNumber(), partition_by=[F('market_id')], order_by=[F('date').desc(), F('created_at').desc()]))
+            .filter(rn=1)
+            .select_related('market')
+            .order_by('market__name')
+        )
+        return Response([
+            {
+                'market': str(r.market_id),
+                'market_name': r.market.name,
+                'region': r.market.region,
+                'location_gps': r.market.location_gps,
+                'product_name': r.product_name,
+                'price': float(r.price),
+                'trend': r.trend,
+                'date': r.date.isoformat(),
+            }
+            for r in rows
+        ])
+
+    @action(detail=False, methods=['get'], url_path='history')
+    def history(self, request):
+        """
+        Historique journalier d'un produit (``?product=Oignon``), au plus 120 jours.
+        Avec ``?market=<id>`` : prix de ce marché. Sans : moyenne de tous les marchés ce jour-là.
+        """
+        product = (request.query_params.get('product') or '').strip()
+        if not product:
+            raise ValidationError({'product': "Le paramètre 'product' est requis."})
+        try:
+            days = min(max(int(request.query_params.get('days', 30)), 1), 120)
+        except ValueError:
+            raise ValidationError({'days': 'Nombre de jours invalide.'})
+        qs = Price.objects.filter(product_name__icontains=product)
+        market = request.query_params.get('market')
+        if market:
+            qs = qs.filter(market_id=market)
+        newest = qs.aggregate(d=Max('date'))['d']
+        if newest is None:
+            return Response([])
+        series = (
+            qs.filter(date__gte=newest - timedelta(days=days - 1))
+            .values('date')
+            .annotate(price=Avg('price'), markets=Count('market', distinct=True))
+            .order_by('date')
+        )
+        return Response([
+            {'date': row['date'].isoformat(), 'price': round(float(row['price']), 2), 'markets': row['markets']}
+            for row in series
+        ])
 

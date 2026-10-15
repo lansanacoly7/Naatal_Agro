@@ -1,0 +1,378 @@
+<title>Planche de style Naatal</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap">
+<style>
+/* Concept : une planche d'atelier. Fond neutre vert-gris, téléphones posés côte à côte en clair et en sombre.
+   Couleurs : forêt (accent), argile (récolte, alertes), ardoise (information). Une seule police : Figtree. */
+:root{
+  --bg:#F3F5F0; --surf:#FFFFFF; --surf2:#E8EDE5; --text:#101C15; --text2:#3F4E44;
+  --accent:#1B5233; --onacc:#FFFFFF; --clay:#85331E; --slate:#32465A; --line:#C9D3C6;
+  --font:'Figtree',system-ui,-apple-system,'Segoe UI',sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0D1410; --surf:#16201A; --surf2:#1F2B24; --text:#EEF3EC; --text2:#B3C2B8;
+  --accent:#7FD39F; --onacc:#08140D; --clay:#F0A484; --slate:#A9C0D6; --line:#2C3A31; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0D1410; --surf:#16201A; --surf2:#1F2B24; --text:#EEF3EC; --text2:#B3C2B8;
+  --accent:#7FD39F; --onacc:#08140D; --clay:#F0A484; --slate:#A9C0D6; --line:#2C3A31; color-scheme:dark}
+/* Jeux de couleurs figés pour les maquettes de téléphone (clair et sombre visibles en même temps) */
+.t-light{--p-bg:#F3F5F0;--p-surf:#FFFFFF;--p-surf2:#E8EDE5;--p-text:#101C15;--p-text2:#3F4E44;--p-acc:#1B5233;--p-onacc:#FFFFFF;--p-clay:#85331E;--p-slate:#32465A;--p-line:#C9D3C6;--p-claybg:#F4E3DC;--p-accbg:#DCEBE1}
+.t-dark{--p-bg:#0D1410;--p-surf:#16201A;--p-surf2:#1F2B24;--p-text:#EEF3EC;--p-text2:#B3C2B8;--p-acc:#7FD39F;--p-onacc:#08140D;--p-clay:#F0A484;--p-slate:#A9C0D6;--p-line:#2C3A31;--p-claybg:#3A241B;--p-accbg:#1B3326}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:16px;line-height:1.5;margin:0;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:32px 64px}
+.wrap{max-width:1080px;margin:0 auto;display:flex;flex-direction:column;gap:56px}
+h1,h2,h3,p{margin:0}
+h1{font-size:clamp(30px,6vw,46px);line-height:1.05;font-weight:800;letter-spacing:-.02em;text-wrap:balance}
+h2{font-size:24px;font-weight:700;letter-spacing:-.01em;text-wrap:balance}
+.lead{color:var(--text2);max-width:62ch}
+.eyebrow{font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+section{display:flex;flex-direction:column;gap:20px}
+.note{font-size:13px;color:var(--text2);max-width:70ch}
+.row{display:flex;flex-wrap:wrap;gap:16px}
+.btn-replay{font:600 15px var(--font);min-height:48px;padding:0 20px;border-radius:14px;border:1.5px solid var(--accent);background:transparent;color:var(--accent);cursor:pointer;align-self:flex-start}
+.btn-replay:focus-visible,.pbtn:focus-visible,.demo-card:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+
+/* Principes */
+.rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.rule{background:var(--surf);border:1px solid var(--line);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.rule b{font-size:17px}.rule span{color:var(--text2);font-size:14px}
+
+/* Palette */
+.pal{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.pcol{border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.pcol.l{background:#FFFFFF;color:#101C15;border:1px solid #C9D3C6}
+.pcol.d{background:#0D1410;color:#EEF3EC;border:1px solid #2C3A31}
+.pcol h3{font-size:15px}
+.sw{display:grid;grid-template-columns:44px 1fr auto;gap:12px;align-items:center;font-size:13px}
+.sw i{width:44px;height:44px;border-radius:12px;display:block;border:1px solid rgba(128,128,128,.35)}
+.sw code{font:600 12px ui-monospace,Consolas,monospace;opacity:.85}
+.sw em{font-style:normal;font-weight:700;font-variant-numeric:tabular-nums}
+
+/* Typo */
+.type{background:var(--surf);border:1px solid var(--line);border-radius:20px;padding:20px;display:flex;flex-direction:column;gap:14px}
+.trow{display:flex;flex-wrap:wrap;gap:6px 20px;align-items:baseline;border-bottom:1px solid var(--line);padding-bottom:12px}
+.trow:last-child{border:0;padding:0}
+.trow small{width:150px;color:var(--text2);font-size:12px;flex:none}
+.trow span{min-width:0}
+
+/* Téléphones */
+.phones{display:flex;flex-wrap:wrap;gap:28px;justify-content:center}
+.pcell{display:flex;flex-direction:column;gap:10px;align-items:center}
+.pcell>small{font-size:13px;font-weight:600;color:var(--text2)}
+.phone{width:300px;height:620px;border-radius:38px;padding:8px;background:#1b1f1c;box-shadow:0 18px 40px rgba(0,0,0,.18);flex:none}
+.screen{position:relative;height:100%;border-radius:30px;overflow:hidden;background:var(--p-bg);color:var(--p-text);display:flex;flex-direction:column;font-size:14px}
+.sbar{display:flex;justify-content:space-between;font-size:12px;font-weight:700;padding:10px 22px 4px;font-variant-numeric:tabular-nums}
+.body{flex:1;min-height:0;overflow:hidden;padding:6px 14px 0;display:flex;flex-direction:column;gap:10px}
+.hello{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.hello h4{margin:0;font-size:22px;font-weight:800;letter-spacing:-.01em;line-height:1.15}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--p-text2);background:var(--p-surf2);border-radius:99px;padding:5px 10px}
+.avatar{width:36px;height:36px;border-radius:50%;background:var(--p-acc);color:var(--p-onacc);display:grid;place-items:center;font-weight:800;font-size:14px;flex:none}
+.bento{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.card{background:var(--p-surf);border-radius:20px;padding:14px;display:flex;flex-direction:column;gap:4px;min-width:0;border:1px solid var(--p-line)}
+.card.wide{grid-column:1/-1}
+.card .lab{font-size:12px;font-weight:700;color:var(--p-text2)}
+.card .big{font-size:30px;font-weight:800;letter-spacing:-.02em;line-height:1.05;font-variant-numeric:tabular-nums}
+.card .big small{font-size:14px;font-weight:700;color:var(--p-text2);margin-left:3px}
+.card .sub{font-size:12px;color:var(--p-text2)}
+.card.acc{background:var(--p-acc);color:var(--p-onacc);border-color:transparent}
+.card.acc .lab,.card.acc .sub{color:var(--p-onacc);opacity:.9}
+.up{color:var(--p-acc);font-weight:700}.down{color:var(--p-clay);font-weight:700}
+.ring{display:flex;align-items:center;gap:10px}
+.ring svg{width:58px;height:58px;flex:none;transform:rotate(-90deg)}
+.ring circle{fill:none;stroke-width:7;stroke-linecap:round}
+.ring .tr{stroke:var(--p-surf2)}.ring .fg{stroke:var(--p-acc);stroke-dasharray:163.4;stroke-dashoffset:62}
+.prices{display:flex;flex-direction:column}
+.prow{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-top:1px solid var(--p-line);font-size:13px;font-weight:600}
+.prow:first-child{border:0}.prow span:last-child{font-variant-numeric:tabular-nums}
+.nav{display:grid;grid-template-columns:repeat(4,1fr);background:var(--p-surf);border-top:1px solid var(--p-line);padding:8px 6px 14px}
+.nav div{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;font-weight:700;color:var(--p-text2);min-height:48px;justify-content:center}
+.nav div.on{color:var(--p-acc)}
+.nav i{width:22px;height:22px;border-radius:7px;background:currentColor;opacity:.9;display:block}
+.nav div.on i{border-radius:50%}
+.pbtn{font:700 16px var(--font);min-height:56px;border-radius:18px;border:0;background:var(--p-acc);color:var(--p-onacc);width:100%;cursor:pointer}
+.pbtn.sec{background:transparent;color:var(--p-acc);border:2px solid var(--p-acc)}
+.pbtn.dan{background:var(--p-claybg);color:var(--p-clay)}
+.field{background:var(--p-surf);border:1.5px solid var(--p-line);border-radius:16px;padding:8px 14px;display:flex;flex-direction:column;min-height:56px;justify-content:center}
+.field small{font-size:11px;font-weight:700;color:var(--p-text2)}.field b{font-size:18px;font-variant-numeric:tabular-nums}
+.map{position:absolute;inset:0;background:
+  radial-gradient(circle at 20% 30%,var(--p-accbg) 0 22%,transparent 23%),
+  radial-gradient(circle at 75% 55%,var(--p-accbg) 0 26%,transparent 27%),
+  linear-gradient(160deg,var(--p-surf2),var(--p-bg))}
+.map:before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(115deg,transparent 0 38px,var(--p-line) 38px 39px);opacity:.7}
+.pin{position:absolute;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;font-weight:800}
+.pin b{background:var(--p-surf);border:1px solid var(--p-line);border-radius:8px;padding:2px 6px;font-variant-numeric:tabular-nums}
+.pin i{width:26px;height:26px;border-radius:50%;border:3px solid var(--p-surf);background:var(--p-acc);display:block}
+.pin.mid i{background:#C98A1E}.pin.low i{background:var(--p-clay)}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:var(--p-surf);border-radius:26px 26px 0 0;padding:10px 16px 18px;display:flex;flex-direction:column;gap:10px;box-shadow:0 -10px 30px rgba(0,0,0,.14)}
+.grab{width:40px;height:5px;border-radius:9px;background:var(--p-line);align-self:center}
+.bub{max-width:88%;padding:10px 12px;border-radius:18px;font-size:14px;line-height:1.4}
+.bub.me{align-self:flex-end;background:var(--p-acc);color:var(--p-onacc);border-bottom-right-radius:6px}
+.bub.ia{align-self:flex-start;background:var(--p-surf);border:1px solid var(--p-line);border-bottom-left-radius:6px}
+.src{display:inline-flex;margin-top:6px;font-size:11px;font-weight:700;background:var(--p-accbg);color:var(--p-acc);border-radius:99px;padding:4px 9px}
+.sugg{display:flex;flex-wrap:wrap;gap:6px}.sugg span{font-size:12px;font-weight:700;border:1.5px solid var(--p-line);border-radius:99px;padding:8px 12px;color:var(--p-text)}
+.compose{display:flex;gap:8px;padding:8px 12px 14px;background:var(--p-bg)}
+.compose div{flex:1;background:var(--p-surf);border:1.5px solid var(--p-line);border-radius:99px;padding:14px 16px;color:var(--p-text2);font-size:14px}
+.compose i{width:52px;height:52px;border-radius:50%;background:var(--p-acc);display:block}
+.offline{background:var(--p-claybg);color:var(--p-clay);font-weight:700;font-size:12px;padding:8px 14px;display:flex;gap:8px;align-items:center}
+.empty{display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;padding:18px 10px}
+.empty .ico{width:64px;height:64px;border-radius:20px;background:var(--p-accbg);display:grid;place-items:center}
+.empty .ico i{width:26px;height:26px;border-radius:50%;border:4px solid var(--p-acc);display:block}
+.empty h5{margin:0;font-size:17px}.empty p{margin:0;color:var(--p-text2);font-size:13px}
+.sk{border-radius:12px;background:linear-gradient(90deg,var(--p-surf2) 0 40%,var(--p-line) 50%,var(--p-surf2) 60% 100%);background-size:250% 100%;animation:shimmer 1.4s linear infinite}
+@keyframes shimmer{from{background-position:100% 0}to{background-position:-100% 0}}
+
+/* Mouvement */
+.demos{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+.demo{background:var(--surf);border:1px solid var(--line);border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.demo h3{font-size:16px}.demo p{font-size:13px;color:var(--text2)}
+.stage{background:var(--bg);border-radius:14px;padding:14px;min-height:120px;display:flex;flex-direction:column;justify-content:center;gap:8px}
+.bignum{font-size:36px;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.dring{width:84px;height:84px;transform:rotate(-90deg)}
+.dring circle{fill:none;stroke-width:9;stroke-linecap:round}
+.dring .tr{stroke:var(--surf2)}.dring .fg{stroke:var(--accent);stroke-dasharray:226;stroke-dashoffset:86;transition:stroke-dashoffset .9s cubic-bezier(.2,.8,.2,1)}
+.dring.zero .fg{stroke-dashoffset:226;transition:none}
+.li{background:var(--surf);border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-weight:600;font-size:14px;transition:opacity .35s ease,transform .35s cubic-bezier(.2,.8,.2,1)}
+.li.hide{opacity:0;transform:translateY(10px);transition:none}
+.demo-card{border:1px solid var(--line);background:var(--surf);border-radius:16px;padding:12px;text-align:left;font:inherit;color:inherit;cursor:pointer;display:flex;flex-direction:column;gap:0;transition:transform .3s cubic-bezier(.2,.8,.2,1),box-shadow .3s}
+.demo-card.open{transform:scale(1.02);box-shadow:0 10px 26px rgba(0,0,0,.14)}
+.demo-card .more{display:grid;grid-template-rows:0fr;transition:grid-template-rows .35s cubic-bezier(.2,.8,.2,1)}
+.demo-card.open .more{grid-template-rows:1fr}
+.demo-card .more>div{overflow:hidden;color:var(--text2);font-size:13px}
+.demo-card .more>div>p{padding-top:8px}
+table{border-collapse:collapse;width:100%;font-size:14px;font-variant-numeric:tabular-nums}
+td,th{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left}
+.tw{overflow-x:auto;background:var(--surf);border:1px solid var(--line);border-radius:16px}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div class="wrap">
+<header style="display:flex;flex-direction:column;gap:14px">
+  <span class="eyebrow">Naatal Agro · Refonte mobile · Direction B</span>
+  <h1>Planche de style</h1>
+  <p class="lead">Terre, forêt et ardoise, avec de gros contrastes pour lire dehors, des cartes de données et des mouvements courts. Rien n'est encore codé dans l'application : cette page sert à valider le style.</p>
+  <p class="note">Les noms, chiffres et textes des maquettes sont des exemples pour montrer la mise en page. L'application n'affichera que des données réelles, ou un état vide clair.</p>
+</header>
+
+<section>
+  <span class="eyebrow">Principes</span>
+  <div class="rules">
+    <div class="rule"><b>Un écran, un objectif</b><span>Une action principale, toujours en bas, à portée du pouce.</span></div>
+    <div class="rule"><b>Lisible en plein soleil</b><span>Texte et boutons à 7:1 de contraste ou plus, en clair comme en sombre.</span></div>
+    <div class="rule"><b>Grandes zones tactiles</b><span>56 px pour les actions principales, 48 px minimum pour le reste.</span></div>
+    <div class="rule"><b>Mouvement utile</b><span>200 à 350 ms, jamais décoratif en boucle, réduit si l'utilisateur le demande.</span></div>
+    <div class="rule"><b>Vérité des données</b><span>Pas de valeur inventée : un état vide explique quoi faire.</span></div>
+  </div>
+</section>
+
+<section>
+  <span class="eyebrow">Palette</span>
+  <h2>Forêt, argile, ardoise</h2>
+  <div class="pal">
+    <div class="pcol l"><h3>Mode clair</h3>
+      <div class="sw"><i style="background:#F3F5F0"></i><span>Fond<br><code>#F3F5F0</code></span><em>—</em></div>
+      <div class="sw"><i style="background:#101C15"></i><span>Texte<br><code>#101C15</code></span><em>16,0:1</em></div>
+      <div class="sw"><i style="background:#3F4E44"></i><span>Texte secondaire<br><code>#3F4E44</code></span><em>8,0:1</em></div>
+      <div class="sw"><i style="background:#1B5233"></i><span>Forêt (accent)<br><code>#1B5233</code></span><em>8,3:1</em></div>
+      <div class="sw"><i style="background:#85331E"></i><span>Argile (récolte, alerte)<br><code>#85331E</code></span><em>7,7:1</em></div>
+      <div class="sw"><i style="background:#32465A"></i><span>Ardoise (information)<br><code>#32465A</code></span><em>9,7:1</em></div>
+    </div>
+    <div class="pcol d"><h3>Mode sombre</h3>
+      <div class="sw"><i style="background:#0D1410"></i><span>Fond<br><code>#0D1410</code></span><em>—</em></div>
+      <div class="sw"><i style="background:#EEF3EC"></i><span>Texte<br><code>#EEF3EC</code></span><em>16,6:1</em></div>
+      <div class="sw"><i style="background:#B3C2B8"></i><span>Texte secondaire<br><code>#B3C2B8</code></span><em>10,1:1</em></div>
+      <div class="sw"><i style="background:#7FD39F"></i><span>Forêt clair (accent)<br><code>#7FD39F</code></span><em>10,4:1</em></div>
+      <div class="sw"><i style="background:#F0A484"></i><span>Argile clair<br><code>#F0A484</code></span><em>9,2:1</em></div>
+      <div class="sw"><i style="background:#A9C0D6"></i><span>Ardoise clair<br><code>#A9C0D6</code></span><em>8,9:1</em></div>
+    </div>
+  </div>
+  <p class="note">Rapports calculés sur le fond de l'écran (WCAG). Le niveau AAA est à 7:1. Les couleurs ne portent jamais seules une information : une icône ou un mot l'accompagne.</p>
+</section>
+
+<section>
+  <span class="eyebrow">Typographie</span>
+  <h2>Figtree, une seule famille</h2>
+  <div class="type">
+    <div class="trow"><small>Titre d'écran · 34 / 800</small><span style="font-size:34px;font-weight:800;letter-spacing:-.02em;line-height:1.1">Bonjour, Awa</span></div>
+    <div class="trow"><small>Section · 22 / 700</small><span style="font-size:22px;font-weight:700">Vos cultures</span></div>
+    <div class="trow"><small>Corps · 17 / 500</small><span style="font-size:17px;font-weight:500;max-width:46ch">Semez en pépinière, puis repiquez quand les plants sont assez forts.</span></div>
+    <div class="trow"><small>Légende · 13 / 600</small><span style="font-size:13px;font-weight:600;color:var(--text2)">Mis à jour il y a 2 heures</span></div>
+    <div class="trow"><small>Chiffres · 30 / 800, alignés</small><span style="font-size:30px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.02em">185 000 FCFA</span></div>
+  </div>
+  <p class="note">La police sera embarquée dans l'application : elle s'affiche même sans Internet. Taille du texte agrandissable jusqu'à 200 %.</p>
+</section>
+
+<section>
+  <span class="eyebrow">Écrans</span>
+  <h2>Accueil, marchés, vente, assistant</h2>
+  <div class="phones">
+
+    <div class="pcell"><small>Accueil · clair</small>
+    <div class="phone"><div class="screen t-light">
+      <div class="sbar"><span>09:41</span><span>4G ▪▪▪</span></div>
+      <div class="body">
+        <div class="hello"><div><span class="chip">Thiès · Sénégal</span><h4 style="margin-top:8px">Bonjour, Awa</h4></div><div class="avatar">A</div></div>
+        <div class="bento">
+          <div class="card acc wide"><span class="lab">Météo · Thiès</span><span class="big"><span class="cnt" data-to="32">32</span>°<small>C</small></span><span class="sub">Pas de pluie signalée</span></div>
+          <div class="card"><span class="lab">Oignon</span>
+            <div class="ring"><svg viewBox="0 0 64 64"><circle class="tr" cx="32" cy="32" r="26"/><circle class="fg" cx="32" cy="32" r="26"/></svg><span class="big" style="font-size:22px">62<small>%</small></span></div>
+            <span class="sub">Récolte dans 38 j</span></div>
+          <div class="card"><span class="lab">Stock</span><span class="big">120<small>sacs</small></span><span class="sub">Oignon · 3 produits</span></div>
+          <div class="card wide"><span class="lab">Revenus du mois</span><span class="big"><span class="cnt" data-to="185000">185 000</span><small>FCFA</small></span><span class="sub up">▲ Ventes enregistrées</span></div>
+          <div class="card wide"><span class="lab">Prix de vos cultures</span>
+            <div class="prices"><div class="prow"><span>Oignon</span><span>400 F/kg <span class="up">▲</span></span></div><div class="prow"><span>Arachide</span><span>750 F/kg <span class="down">▼</span></span></div></div></div>
+        </div>
+      </div>
+      <div class="nav"><div class="on"><i></i>Accueil</div><div><i></i>Cultures</div><div><i></i>Marchés</div><div><i></i>Assistant</div></div>
+    </div></div></div>
+
+    <div class="pcell"><small>Accueil · sombre</small>
+    <div class="phone"><div class="screen t-dark">
+      <div class="sbar"><span>21:05</span><span>4G ▪▪▪</span></div>
+      <div class="body">
+        <div class="hello"><div><span class="chip">Thiès · Sénégal</span><h4 style="margin-top:8px">Bonsoir, Awa</h4></div><div class="avatar">A</div></div>
+        <div class="bento">
+          <div class="card acc wide"><span class="lab">Météo · Thiès</span><span class="big">27°<small>C</small></span><span class="sub">Nuit claire</span></div>
+          <div class="card"><span class="lab">Oignon</span>
+            <div class="ring"><svg viewBox="0 0 64 64"><circle class="tr" cx="32" cy="32" r="26"/><circle class="fg" cx="32" cy="32" r="26"/></svg><span class="big" style="font-size:22px">62<small>%</small></span></div>
+            <span class="sub">Récolte dans 38 j</span></div>
+          <div class="card"><span class="lab">Stock</span><span class="big">120<small>sacs</small></span><span class="sub">Oignon · 3 produits</span></div>
+          <div class="card wide"><span class="lab">Revenus du mois</span><span class="big">185 000<small>FCFA</small></span><span class="sub up">▲ Ventes enregistrées</span></div>
+          <div class="card wide"><span class="lab">Prix de vos cultures</span>
+            <div class="prices"><div class="prow"><span>Oignon</span><span>400 F/kg <span class="up">▲</span></span></div><div class="prow"><span>Arachide</span><span>750 F/kg <span class="down">▼</span></span></div></div></div>
+        </div>
+      </div>
+      <div class="nav"><div class="on"><i></i>Accueil</div><div><i></i>Cultures</div><div><i></i>Marchés</div><div><i></i>Assistant</div></div>
+    </div></div></div>
+
+    <div class="pcell"><small>Marchés · carte et fiche</small>
+    <div class="phone"><div class="screen t-light">
+      <div class="map"></div>
+      <div class="sbar" style="position:relative"><span>09:41</span><span>4G ▪▪▪</span></div>
+      <div style="position:relative;padding:4px 14px"><div class="field" style="min-height:48px;border-radius:99px"><small>Produit</small><b style="font-size:15px">Oignon</b></div></div>
+      <div class="pin" style="left:46px;top:170px"><b>420 F</b><i></i></div>
+      <div class="pin mid" style="left:150px;top:230px"><b>400 F</b><i></i></div>
+      <div class="pin low" style="left:210px;top:140px"><b>370 F</b><i></i></div>
+      <div class="sheet">
+        <span class="grab"></span>
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+          <div><b style="font-size:18px">Marché exemple</b><div class="sub" style="color:var(--p-text2);font-size:13px">Thiès · 12 km</div></div>
+          <span class="chip" style="background:var(--p-accbg);color:var(--p-acc)">Au-dessus de la moyenne</span></div>
+        <div style="display:flex;gap:10px;align-items:flex-end"><span style="font-size:32px;font-weight:800;letter-spacing:-.02em">420</span><span style="color:var(--p-text2);font-weight:700;padding-bottom:5px">FCFA / kg · relevé du 12 oct.</span></div>
+        <button class="pbtn" type="button" id="m-voir">Voir le marché</button>
+      </div>
+    </div></div></div>
+
+    <div class="pcell"><small>Vente · confirmation sans geste caché</small>
+    <div class="phone"><div class="screen t-light">
+      <div class="sbar"><span>09:41</span><span>4G ▪▪▪</span></div>
+      <div class="body" style="gap:12px">
+        <h4 style="margin:0;font-size:22px;font-weight:800">Vendre du stock</h4>
+        <span class="chip" style="align-self:flex-start">Oignon · 120 sacs disponibles</span>
+        <div class="field"><small>Quantité vendue</small><b>40 sacs</b></div>
+        <div class="field"><small>Prix par sac</small><b>2 000 FCFA</b></div>
+        <div class="card" style="background:var(--p-accbg);border-color:transparent"><span class="lab" style="color:var(--p-acc)">Total de la vente</span><span class="big" style="color:var(--p-acc)">80 000<small>FCFA</small></span><span class="sub">Il restera 80 sacs en stock</span></div>
+      </div>
+      <div style="padding:10px 14px 18px;display:flex;flex-direction:column;gap:10px;background:var(--p-bg)">
+        <button class="pbtn" type="button" id="v-ok">Confirmer la vente</button>
+        <button class="pbtn sec" type="button" id="v-no">Annuler</button>
+      </div>
+    </div></div></div>
+
+    <div class="pcell"><small>Assistant · réponse avec source</small>
+    <div class="phone"><div class="screen t-light">
+      <div class="sbar"><span>09:41</span><span>4G ▪▪▪</span></div>
+      <div class="body" style="gap:8px">
+        <h4 style="margin:0;font-size:22px;font-weight:800">Naatal IA</h4>
+        <div class="bub me">Quand semer l'oignon ?</div>
+        <div class="bub ia">Exemple de réponse courte et claire, avec la fiche utilisée juste dessous.<br><span class="src">Fiche Oignon · [1]</span></div>
+        <div class="sugg"><span>Quel engrais ?</span><span>Quelles maladies ?</span><span>Combien d'eau ?</span></div>
+      </div>
+      <div class="compose"><div>Posez votre question…</div><i></i></div>
+    </div></div></div>
+
+    <div class="pcell"><small>États : hors ligne, vide, chargement</small>
+    <div class="phone"><div class="screen t-light">
+      <div class="sbar"><span>09:41</span><span>Hors ligne</span></div>
+      <div class="offline"><b>Hors ligne</b> Dernière mise à jour hier à 18:20</div>
+      <div class="body">
+        <div class="card wide"><span class="lab">Prix de l'oignon</span>
+          <div class="empty"><div class="ico"><i></i></div><h5>Aucun relevé de prix</h5><p>Ajoutez un relevé ou revenez quand vous aurez du réseau.</p></div>
+          <button class="pbtn sec" type="button" id="e-add">Ajouter un relevé</button></div>
+        <div class="card wide" style="gap:8px"><span class="lab">Chargement</span>
+          <div class="sk" style="height:18px;width:60%"></div><div class="sk" style="height:34px"></div><div class="sk" style="height:18px;width:40%"></div></div>
+      </div>
+      <div class="nav"><div><i></i>Accueil</div><div class="on"><i></i>Cultures</div><div><i></i>Marchés</div><div><i></i>Assistant</div></div>
+    </div></div></div>
+
+  </div>
+</section>
+
+<section>
+  <span class="eyebrow">Mouvement</span>
+  <h2>Fluide, utile, léger</h2>
+  <button class="btn-replay" type="button" id="replay">Rejouer les animations</button>
+  <div class="demos">
+    <div class="demo"><h3>Chiffre qui se compte</h3><div class="stage"><span class="bignum" id="d-num">185 000</span></div><p>800 ms. Les revenus et le stock montent jusqu'à leur valeur à l'ouverture de l'écran.</p></div>
+    <div class="demo"><h3>Anneau d'avancement</h3><div class="stage"><svg class="dring" id="d-ring" viewBox="0 0 84 84"><circle class="tr" cx="42" cy="42" r="36"/><circle class="fg" cx="42" cy="42" r="36"/></svg></div><p>900 ms, courbe douce. Montre où en est une culture entre semis et récolte.</p></div>
+    <div class="demo"><h3>Liste en cascade</h3><div class="stage" id="d-list"><div class="li">Oignon · 120 sacs</div><div class="li">Arachide · 45 sacs</div><div class="li">Mil · 30 sacs</div></div><p>350 ms par ligne, 60 ms de décalage entre chacune.</p></div>
+    <div class="demo"><h3>Carte qui s'ouvre</h3><div class="stage"><button class="demo-card" type="button" id="d-card" aria-expanded="false"><b>Culture d'oignon</b><span style="font-size:13px;color:var(--text2)">Touchez pour ouvrir</span><span class="more"><div><p>Les détails se déplient sans saut : semis, récolte prévue, activités.</p></div></span></button></div><p>Transition partagée entre la liste et le détail. 350 ms.</p></div>
+  </div>
+  <div class="tw"><table>
+    <tr><th>Mouvement</th><th>Durée</th><th>Où</th></tr>
+    <tr><td>Appui sur un bouton</td><td>120 ms</td><td>Partout</td></tr>
+    <tr><td>Ouverture d'une fiche</td><td>350 ms</td><td>Marchés, cultures</td></tr>
+    <tr><td>Changement d'onglet</td><td>250 ms</td><td>Barre du bas</td></tr>
+    <tr><td>Chiffre, anneau, courbe</td><td>800 à 900 ms</td><td>Accueil, prix</td></tr>
+  </table></div>
+  <p class="note">Les flous en temps réel et les grosses ombres animées sont évités : ils ralentissent les téléphones d'entrée de gamme. Si l'utilisateur réduit les animations dans son téléphone, tout apparaît directement. Les mesures se feront sur un vrai téléphone modeste.</p>
+</section>
+
+<section>
+  <span class="eyebrow">Composants</span>
+  <h2>Boutons et champs</h2>
+  <div class="row t-light" style="background:var(--p-bg);border:1px solid var(--p-line);border-radius:20px;padding:20px;color:var(--p-text)">
+    <div style="display:flex;flex-direction:column;gap:12px;width:min(100%,300px)">
+      <button class="pbtn" type="button" id="c1">Action principale · 56 px</button>
+      <button class="pbtn sec" type="button" id="c2">Action secondaire</button>
+      <button class="pbtn dan" type="button" id="c3">Supprimer la culture</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px;width:min(100%,300px)">
+      <div class="field"><small>Surface</small><b>1,5 ha</b></div>
+      <div class="field" style="border-color:var(--p-clay)"><small style="color:var(--p-clay)">Quantité</small><b style="color:var(--p-clay)">Saisissez un nombre</b></div>
+    </div>
+  </div>
+  <p class="note">La suppression et les actions qui engagent de l'argent demandent une confirmation dans une fenêtre claire, avec deux gros boutons : « Confirmer » et « Annuler ». Aucun geste caché.</p>
+</section>
+</div>
+
+<script>
+(function(){
+  var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function fmt(n){return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g,' ');}
+  function count(el,to,ms){
+    if(reduce){el.textContent=fmt(to);return;}
+    var t0=null;
+    function step(t){ if(t0===null)t0=t; var p=Math.min(1,(t-t0)/ms); var e=1-Math.pow(1-p,3);
+      el.textContent=fmt(to*e); if(p<1)requestAnimationFrame(step);}
+    requestAnimationFrame(step);
+  }
+  var num=document.getElementById('d-num'), ring=document.getElementById('d-ring'), list=document.getElementById('d-list');
+  function replay(){
+    count(num,185000,800);
+    ring.classList.add('zero');
+    void ring.getBoundingClientRect();
+    requestAnimationFrame(function(){ring.classList.remove('zero');});
+    var items=list.querySelectorAll('.li');
+    items.forEach(function(li){li.classList.add('hide');});
+    void list.offsetHeight;
+    items.forEach(function(li,i){ setTimeout(function(){li.classList.remove('hide');}, reduce?0:60*i+30); });
+  }
+  document.getElementById('replay').addEventListener('click',replay);
+  var card=document.getElementById('d-card');
+  card.addEventListener('click',function(){
+    var open=card.classList.toggle('open'); card.setAttribute('aria-expanded',open?'true':'false');
+  });
+})();
+</script>

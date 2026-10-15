@@ -49,6 +49,11 @@ dev_dependencies:
 flutter:
   uses-material-design: true
 
+  fonts:
+    - family: Onest
+      fonts:
+        - asset: assets/fonts/Onest.ttf
+
   assets:
     - assets/images/
     - assets/images/products/

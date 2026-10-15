@@ -4,11 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'core/theme/app_theme.dart';
+import 'core/network/connectivity_provider.dart';
+import 'ui/ui.dart';
 import 'core/router/app_router.dart';
 import 'core/network/api_client.dart';
 import 'core/network/sync_service.dart';
-import 'core/widgets/offline_banner.dart';
 import 'features/auth/data/auth_provider.dart';
 
 final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
@@ -81,21 +81,38 @@ class _NataalAgroAppState extends ConsumerState<NataalAgroApp> {
 
   @override
   Widget build(BuildContext context) {
+    final reduceEffects = ref.watch(effectsReducedProvider);
+    final offline = ref.watch(isOfflineProvider);
     return MaterialApp.router(
-      title: 'Nataal Agro',
+      title: 'Naatal Agro',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
+      theme: NaatalTheme.light,
+      darkTheme: NaatalTheme.dark,
+      themeMode: ThemeMode.system,
       routerConfig: _router,
       builder: (context, child) {
-        return Column(
-          children: [
-            const OfflineBanner(),
-            Expanded(child: child ?? const SizedBox.shrink()),
-          ],
+        return EffectsScope(
+          reduced: reduceEffects,
+          child: Stack(
+            children: [
+              Positioned.fill(child: child ?? const SizedBox.shrink()),
+              if (offline)
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  top: 0,
+                  child: SafeArea(
+                    bottom: false,
+                    child: const Padding(
+                      padding: EdgeInsets.only(top: Space.s),
+                      child: StatusStrip(text: 'Hors ligne : vos actions seront envoyées au retour du réseau.'),
+                    ),
+                  ),
+                ),
+            ],
+          ),
         );
       },
     );
   }
 }
-
-

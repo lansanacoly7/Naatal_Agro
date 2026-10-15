@@ -1,0 +1,336 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Direction D Naatal Agro</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap">
+<style>
+:root{--pbg:#E9EDE8;--pink:#0F1B14;--pink2:#43534A;--pline:#C7D0C7;--psurf:#FFFFFF;--pacc:#0E4A2E}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--pbg:#0B100D;--pink:#EDF3EE;--pink2:#AEBDB3;--pline:#26312A;--psurf:#131B16;--pacc:#8FE0A6}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--pbg);color:var(--pink);font:16px/1.5 'Manrope',system-ui,sans-serif;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px 60px}
+.page{max-width:1100px;margin:0 auto;display:flex;flex-direction:column;gap:24px}
+h1{margin:0;font-size:clamp(28px,5vw,40px);line-height:1.05;letter-spacing:-.02em}
+.lead{margin:0;color:var(--pink2);max-width:66ch}
+.layout{display:flex;flex-wrap:wrap;gap:36px;align-items:flex-start;justify-content:center}
+.side{flex:1 1 320px;max-width:520px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.box{background:var(--psurf);border:1px solid var(--pline);border-radius:18px;padding:16px 18px}
+.box h2{margin:0 0 8px;font-size:17px}
+.box ul{margin:0;padding-left:18px;color:var(--pink2);font-size:14px}.box li{margin:4px 0}
+.ctl{display:flex;flex-wrap:wrap;gap:10px}
+.cb{font:700 14px 'Manrope',sans-serif;min-height:46px;padding:0 16px;border-radius:12px;border:1.5px solid var(--pline);background:var(--psurf);color:var(--pink);cursor:pointer}
+.cb[aria-pressed="true"]{background:var(--pacc);border-color:var(--pacc);color:var(--psurf)}
+.cb:focus-visible{outline:3px solid var(--pacc);outline-offset:3px}
+
+/* ---------- Téléphone ---------- */
+.phone{width:352px;height:716px;border-radius:46px;padding:9px;background:#141816;box-shadow:0 26px 60px rgba(0,0,0,.3);flex:none}
+.screen{--ink:#0E1F16;--ink2:#47584D;--sheet:#F6F8F4;--line:#DFE5DC;--gold:#F2B84B;--mint:#5ED1A0;--coral:#F08A6A;--ok:#157A4A;--neg:#8E3A22;
+  position:relative;height:100%;border-radius:38px;overflow:hidden;background:#06241A;color:#fff;font-size:14px}
+.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+.i{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.glass{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.26);backdrop-filter:blur(16px) saturate(1.35);-webkit-backdrop-filter:blur(16px) saturate(1.35)}
+.lite .glass,.lite .glassnav{backdrop-filter:none;-webkit-backdrop-filter:none;background:rgba(255,255,255,.2)}
+.lite .glassnav{background:rgba(14,48,32,.92)}
+.aurora{position:absolute;inset:0;overflow:hidden;pointer-events:none;background:linear-gradient(170deg,#0A3322 0%,#06241A 55%,#041A12 100%)}
+.aurora i{position:absolute;border-radius:50%;filter:blur(38px);opacity:.8;will-change:transform}
+.aurora .a{width:240px;height:240px;right:-70px;top:-40px;background:radial-gradient(circle,rgba(242,184,75,.85),transparent 68%);animation:drift1 9s ease-in-out infinite alternate}
+.aurora .b{width:260px;height:260px;left:-90px;top:60px;background:radial-gradient(circle,rgba(63,191,138,.65),transparent 68%);animation:drift2 11s ease-in-out infinite alternate}
+.aurora .c{width:200px;height:200px;right:20px;top:230px;background:radial-gradient(circle,rgba(240,138,106,.35),transparent 68%);animation:drift1 13s ease-in-out infinite alternate-reverse}
+.lite .aurora i{animation:none;filter:none;opacity:.55}
+@keyframes drift1{from{transform:translate(0,0)}to{transform:translate(-26px,22px)}}
+@keyframes drift2{from{transform:translate(0,0)}to{transform:translate(30px,-16px)}}
+.sbar{position:absolute;top:0;left:0;right:0;z-index:20;display:flex;justify-content:space-between;padding:12px 26px 0;font-size:12.5px;font-weight:700;pointer-events:none}
+
+.view{position:absolute;inset:0;opacity:0;visibility:hidden;transform:translateY(14px) scale(.985);transition:opacity .38s ease,transform .45s cubic-bezier(.2,.8,.2,1),visibility 0s .45s}
+.view.on{opacity:1;visibility:visible;transform:none;transition:opacity .38s ease,transform .45s cubic-bezier(.2,.8,.2,1),visibility 0s}
+.view.dark{color:#fff}
+
+/* Accueil */
+.top{position:absolute;left:20px;right:20px;top:48px;display:flex;flex-direction:column;gap:4px}
+.who{display:flex;justify-content:space-between;align-items:center}
+.who .l{display:flex;gap:10px;align-items:center;font-weight:700}
+.av{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--coral));color:#2B1700;display:grid;place-items:center;font-weight:800}
+.ib{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;color:#fff;border:0;cursor:pointer}
+.lab{font-size:13px;font-weight:600;color:rgba(255,255,255,.78)}
+.rev{font-size:42px;font-weight:800;letter-spacing:-.04em;line-height:1.05}
+.rev small{font-size:17px;font-weight:600;color:rgba(255,255,255,.7);letter-spacing:0;margin-left:5px}
+.pills{display:flex;gap:10px;margin-top:6px}
+.pill{font:700 15px 'Manrope',sans-serif;min-height:48px;padding:0 22px;border-radius:99px;border:0;cursor:pointer;display:inline-flex;align-items:center;gap:8px;color:#fff;transition:transform .12s ease}
+.pill:active{transform:scale(.96)}
+.pill.w{background:#fff;color:#0E1F16}
+.pill:focus-visible,.ib:focus-visible,.key:focus-visible,.nv:focus-visible,.fld:focus-visible,.big:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.stack{position:absolute;right:-16px;top:226px;width:84px;height:130px;border:0;background:transparent;padding:0;cursor:pointer}
+.stack i{position:absolute;right:0;width:76px;height:112px;border-radius:20px 0 0 20px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+.stack i:nth-child(1){background:var(--gold);right:30px;top:12px;transform:scale(.92)}
+.stack i:nth-child(2){background:var(--mint);right:16px;top:6px;transform:scale(.96)}
+.stack i:nth-child(3){background:var(--coral);right:0;top:0}
+.stk{position:absolute;left:20px;top:282px;right:92px;height:84px;border-radius:22px;padding:12px 14px;display:flex;flex-direction:column;justify-content:space-between}
+.stk .row{display:flex;justify-content:space-between;align-items:center}
+.stk b{font-size:22px;letter-spacing:-.02em}
+.dots{display:flex}.dots span{width:30px;height:30px;border-radius:50%;border:2px solid rgba(255,255,255,.9);margin-left:-9px;display:grid;place-items:center;font-size:11px;font-weight:800;color:#1B1405}
+.dots span:first-child{margin-left:0}
+.sheet{position:absolute;left:0;right:0;top:388px;bottom:0;background:var(--sheet);color:var(--ink);border-radius:30px 30px 0 0;padding:10px 18px 0;overflow:hidden;box-shadow:0 -12px 34px rgba(0,0,0,.25)}
+.sheet:after{content:"";position:absolute;left:0;right:0;bottom:0;height:110px;background:linear-gradient(0deg,var(--sheet) 25%,rgba(246,248,244,0));pointer-events:none}
+.grab{width:42px;height:5px;border-radius:9px;background:#CAD3C8;margin:0 auto 10px}
+.sh{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.sh h3{margin:0;font-size:18px;letter-spacing:-.01em}
+.sh .t{font-size:12px;font-weight:700;color:var(--ink2);background:#E7ECE4;border-radius:99px;padding:5px 10px}
+.act{display:flex;align-items:center;gap:12px;min-height:60px;border-bottom:1px solid var(--line)}
+.act .dot{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;flex:none;color:#1B1405}
+.act .tt{flex:1;min-width:0;font-weight:700;font-size:14.5px}.act .tt small{display:block;font-weight:500;color:var(--ink2);font-size:12px}
+.act .v{font-weight:800;font-size:14.5px}.act .v.p{color:var(--ok)}.act .v.n{color:var(--neg)}
+.act.new{animation:rowin .6s cubic-bezier(.2,.8,.2,1) both;background:linear-gradient(90deg,rgba(94,209,160,.22),transparent)}
+@keyframes rowin{from{opacity:0;transform:translateY(-14px)}to{opacity:1;transform:none}}
+
+.glassnav{position:absolute;left:18px;right:18px;bottom:16px;height:68px;border-radius:99px;z-index:30;display:grid;grid-template-columns:repeat(4,1fr);align-items:center;padding:6px;background:rgba(12,44,30,.58);border:1px solid rgba(255,255,255,.28);backdrop-filter:blur(20px) saturate(1.5);-webkit-backdrop-filter:blur(20px) saturate(1.5);box-shadow:0 14px 34px rgba(0,0,0,.35);transition:transform .4s cubic-bezier(.2,.8,.2,1),opacity .3s}
+.glassnav.off{transform:translateY(120px);opacity:0;pointer-events:none}
+.nv{height:56px;border:0;background:transparent;color:rgba(255,255,255,.82);border-radius:99px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font:700 10.5px 'Manrope',sans-serif;cursor:pointer;transition:background .3s,color .3s,transform .12s}
+.nv:active{transform:scale(.94)}
+.nv.on{background:#fff;color:#0E1F16}
+
+/* Cultures */
+.vh{position:absolute;left:20px;right:20px;top:50px;display:flex;justify-content:space-between;align-items:center}
+.vh h2{margin:0;font-size:26px;letter-spacing:-.03em}
+.cards{position:absolute;left:18px;right:18px;top:112px;bottom:100px;overflow:hidden}
+.cc{position:relative;height:176px;border-radius:30px;padding:16px 18px;color:#1B1405;margin-bottom:-44px;display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 18px 40px var(--gl);cursor:pointer;opacity:0;transform:translateY(40px)}
+.view.on .cc{animation:ccin .6s cubic-bezier(.2,.8,.2,1) both}
+.view.on .cc:nth-child(2){animation-delay:.09s}.view.on .cc:nth-child(3){animation-delay:.18s}
+@keyframes ccin{from{opacity:0;transform:translateY(60px)}to{opacity:1;transform:none}}
+.cc .r1{display:flex;justify-content:space-between;align-items:flex-start;font-weight:800;font-size:19px;letter-spacing:-.02em}
+.cc .r1 small{display:block;font-size:12.5px;font-weight:600;opacity:.8;letter-spacing:0}
+.cc .r2{display:flex;justify-content:space-between;align-items:flex-end;font-weight:700;font-size:13px}
+.cc .pc{font-size:30px;font-weight:800;letter-spacing:-.03em}
+.bar{height:8px;border-radius:9px;background:rgba(27,20,5,.18);overflow:hidden;width:130px;margin-top:6px}.bar i{display:block;height:100%;background:#1B1405;border-radius:9px;width:0;transition:width 1s cubic-bezier(.2,.8,.2,1) .3s}
+
+/* Vente */
+.vs{position:absolute;left:0;right:0;top:112px;bottom:0;background:var(--sheet);color:var(--ink);border-radius:30px 30px 0 0;padding:12px 18px 16px;display:flex;flex-direction:column;gap:10px;box-shadow:0 -12px 34px rgba(0,0,0,.25)}
+.flds{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fld{border:2px solid var(--line);background:#fff;border-radius:18px;padding:9px 14px;min-height:64px;text-align:left;font:inherit;color:var(--ink);cursor:pointer;display:flex;flex-direction:column;justify-content:center;transition:border-color .2s,box-shadow .2s}
+.fld small{font-size:11.5px;font-weight:700;color:var(--ink2)}.fld b{font-size:22px;letter-spacing:-.02em}
+.fld.on{border-color:var(--ok);box-shadow:0 0 0 4px rgba(21,122,74,.14)}
+.tot{border-radius:22px;padding:12px 16px;background:linear-gradient(135deg,#0F4F31,#157A4A);color:#fff;display:flex;justify-content:space-between;align-items:flex-end;gap:8px}
+.tot .lab{color:rgba(255,255,255,.85)}.tot b{font-size:32px;letter-spacing:-.03em;line-height:1}.tot small{font-size:14px;font-weight:600;margin-left:4px;opacity:.85}
+.tot.err{background:linear-gradient(135deg,#7A2E19,#A4472B)}
+.keys{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.key{height:54px;border:0;border-radius:16px;background:#E8EDE5;color:var(--ink);font:700 22px 'Manrope',sans-serif;cursor:pointer;display:grid;place-items:center;transition:transform .1s,background .15s}
+.key:active{transform:scale(.93);background:#D6DFD2}
+.big{min-height:58px;border:0;border-radius:20px;background:linear-gradient(135deg,var(--gold),#F0922E);color:#2B1700;font:800 17px 'Manrope',sans-serif;cursor:pointer;box-shadow:0 10px 24px rgba(240,146,46,.35);transition:transform .12s,opacity .2s}
+.big:active{transform:scale(.97)}.big[disabled]{opacity:.45;box-shadow:none;cursor:not-allowed}
+
+/* Succès */
+.done{background:#0F7A45;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;padding:30px}
+.chk{width:92px;height:92px;border-radius:50%;background:rgba(255,255,255,.18);display:grid;place-items:center}
+.chk svg{width:50px;height:50px;fill:none;stroke:#fff;stroke-width:5;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:60;stroke-dashoffset:60}
+.view.on .chk svg{animation:draw .6s .35s ease forwards}
+@keyframes draw{to{stroke-dashoffset:0}}
+.done h2{margin:6px 0 0;font-size:34px;letter-spacing:-.03em}
+.done p{margin:0;color:rgba(255,255,255,.9);font-weight:600}
+.disc{position:absolute;width:40px;height:40px;border-radius:50%;background:#0F7A45;z-index:40;transform:scale(0);pointer-events:none}
+.disc.go{animation:disc .75s cubic-bezier(.5,0,.2,1) forwards}
+@keyframes disc{to{transform:scale(34)}}
+.stub{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;padding:40px;color:rgba(255,255,255,.85)}
+.toast{position:absolute;left:24px;right:24px;top:56px;z-index:50;background:rgba(10,30,20,.9);color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:16px;padding:12px 14px;font-weight:600;transform:translateY(-120px);transition:transform .4s cubic-bezier(.2,.8,.2,1)}
+.toast.on{transform:none}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}.cc{opacity:1!important;transform:none!important}.chk svg{stroke-dashoffset:0}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></symbol>
+  <symbol id="i-leaf" viewBox="0 0 24 24"><path d="M5 19c0-9 5-14 15-14 0 10-5 15-14 15M5 19l7-7"/></symbol>
+  <symbol id="i-store" viewBox="0 0 24 24"><path d="M4 9l1-5h14l1 5M4 9v11h16V9M4 9c0 2 3 2 4 0 1 2 3 2 4 0 1 2 3 2 4 0 1 2 4 2 4 0M10 20v-5h4v5"/></symbol>
+  <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3l2 6 6 2-6 2-2 6-2-6-6-2 6-2z"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 17V11a6 6 0 0 1 12 0v6l2 2H4zM10 21h4"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+  <symbol id="i-del" viewBox="0 0 24 24"><path d="M21 5H9l-6 7 6 7h12zM15 9l-4 6M11 9l4 6"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-tag" viewBox="0 0 24 24"><path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1.3"/></symbol>
+</svg>
+
+<div class="page">
+  <header style="display:flex;flex-direction:column;gap:10px">
+    <h1>Direction D : lueur d'aube et verre dépoli</h1>
+    <p class="lead">Prototype cliquable inspiré de votre vidéo, adapté à Naatal Agro. Essayez le parcours complet : touchez <b>Vendre</b>, tapez la quantité au clavier, confirmez, puis regardez le revenu et le stock se mettre à jour sur l'accueil. Tous les noms et chiffres sont des exemples.</p>
+  </header>
+
+  <div class="layout">
+    <div class="phone" id="phone"><div class="screen" id="scr">
+      <div class="aurora" aria-hidden="true"><i class="a"></i><i class="b"></i><i class="c"></i></div>
+      <div class="sbar"><span id="clock">09:41</span><span>4G ▪▪▪</span></div>
+
+      <!-- Accueil -->
+      <section class="view dark on" id="v-home" aria-label="Accueil">
+        <div class="top">
+          <div class="who"><div class="l"><span class="av">A</span><span>Bonjour, Awa</span></div><button class="ib glass" type="button" aria-label="Notifications" data-toast="Notifications : écran à dessiner à l'étape suivante."><svg class="i"><use href="#i-bell"/></svg></button></div>
+          <span class="lab" style="margin-top:14px">Revenus du mois</span>
+          <div class="rev num"><span id="rev">185 000</span><small>FCFA</small></div>
+          <div class="pills"><button class="pill w" type="button" id="goSell"><svg class="i" style="width:18px;height:18px"><use href="#i-tag"/></svg>Vendre</button><button class="pill glass" type="button" data-toast="Récolte : écran à dessiner à l'étape suivante."><svg class="i" style="width:18px;height:18px"><use href="#i-leaf"/></svg>Récolter</button></div>
+        </div>
+        <button class="stack" type="button" id="goCult" aria-label="Voir mes 3 cultures"><i></i><i></i><i></i></button>
+        <div class="stk glass"><div class="row"><span class="lab">Stock</span><div class="dots" aria-hidden="true"><span style="background:#F2C14E">O</span><span style="background:#5ED1A0">A</span><span style="background:#F08A6A">M</span><span style="background:#fff;color:#0E1F16">+2</span></div></div><b class="num" id="stockv">120 sacs</b></div>
+        <div class="sheet" id="sheet">
+          <div class="grab"></div>
+          <div class="sh"><h3>Activité</h3><span class="t">Exemples</span></div>
+          <div id="acts">
+            <div class="act"><span class="dot" style="background:#5ED1A0"><svg class="i" style="width:20px;height:20px"><use href="#i-leaf"/></svg></span><span class="tt">Récolte · Oignon<small>Il y a 2 jours</small></span><span class="v num">+120 sacs</span></div>
+            <div class="act"><span class="dot" style="background:#F2C14E"><svg class="i" style="width:20px;height:20px"><use href="#i-tag"/></svg></span><span class="tt">Vente · Arachide<small>Il y a 3 jours</small></span><span class="v p num">+45 000 F</span></div>
+            <div class="act"><span class="dot" style="background:#F08A6A"><svg class="i" style="width:20px;height:20px"><use href="#i-store"/></svg></span><span class="tt">Dépense · Engrais<small>Il y a 5 jours</small></span><span class="v n num">−15 000 F</span></div>
+            <div class="act"><span class="dot" style="background:#F2C14E"><svg class="i" style="width:20px;height:20px"><use href="#i-tag"/></svg></span><span class="tt">Vente · Mil<small>Il y a 6 jours</small></span><span class="v p num">+30 000 F</span></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Cultures -->
+      <section class="view dark" id="v-cult" aria-label="Mes cultures">
+        <div class="vh"><h2>Mes cultures</h2><button class="ib glass" type="button" aria-label="Nouvelle culture" data-toast="Nouvelle culture : écran à dessiner à l'étape suivante."><svg class="i"><use href="#i-plus"/></svg></button></div>
+        <div class="cards">
+          <div class="cc" style="background:var(--gold);--gl:rgba(242,184,75,.38)"><div class="r1"><span>Arachide<small>1,5 ha · Thiès</small></span><span class="pc num">18%</span></div><div class="r2"><span>Semis il y a 21 jours<div class="bar"><i data-w="18"></i></div></span><span>Récolte dans 99 j</span></div></div>
+          <div class="cc" style="background:var(--mint);--gl:rgba(94,209,160,.38)"><div class="r1"><span>Oignon<small>0,8 ha · Thiès</small></span><span class="pc num">62%</span></div><div class="r2"><span>Semis il y a 62 jours<div class="bar"><i data-w="62"></i></div></span><span>Récolte dans 38 j</span></div></div>
+          <div class="cc" style="background:var(--coral);--gl:rgba(240,138,106,.38)"><div class="r1"><span>Mil<small>2 ha · Thiès</small></span><span class="pc num">85%</span></div><div class="r2"><span>Semis il y a 72 jours<div class="bar"><i data-w="85"></i></div></span><span>Récolte dans 13 j</span></div></div>
+        </div>
+      </section>
+
+      <!-- Vente -->
+      <section class="view dark" id="v-sell" aria-label="Vendre">
+        <div class="vh" style="top:48px"><button class="ib glass" type="button" id="backSell" aria-label="Retour"><svg class="i"><use href="#i-back"/></svg></button><span style="font-weight:800;font-size:18px">Vendre</span><span class="glass" style="border-radius:99px;padding:7px 12px;font-size:12px;font-weight:700">Oignon · <span id="stk2" class="num">120</span> sacs</span></div>
+        <div class="vs">
+          <div class="flds"><button class="fld on" type="button" id="fq"><small>Quantité vendue</small><b class="num"><span id="q">40</span> sacs</b></button><button class="fld" type="button" id="fp"><small>Prix par sac</small><b class="num"><span id="p">2 000</span> F</b></button></div>
+          <div class="tot" id="tot"><div><span class="lab" id="tl">Total de la vente</span><div style="margin-top:6px"><b class="num" id="tv">80 000</b><small>FCFA</small></div></div><span class="lab" style="text-align:right" id="after">Il restera<br><b style="font-size:16px" class="num">80 sacs</b></span></div>
+          <div class="keys" id="keys"></div>
+          <button class="big" type="button" id="ok">Confirmer la vente</button>
+        </div>
+      </section>
+
+      <!-- Succès -->
+      <section class="view done" id="v-done" aria-label="Vente enregistrée">
+        <div class="chk"><svg viewBox="0 0 50 50"><path d="M12 26l9 9 17-19"/></svg></div>
+        <h2 class="num"><span id="dv">80 000</span> FCFA</h2>
+        <p>Vente enregistrée</p>
+        <p style="opacity:.85;font-size:13.5px" id="dd">Oignon · 40 sacs · stock restant : 80 sacs</p>
+        <button class="pill w" type="button" id="fin" style="margin-top:22px;min-height:56px;padding:0 34px;font-size:16px">Terminer</button>
+      </section>
+
+      <!-- À dessiner -->
+      <section class="view dark stub" id="v-stub" aria-label="À dessiner"><b style="font-size:20px" id="stubT">Marchés</b><span>Cet écran sera dessiné à l'étape suivante, avec le même langage visuel.</span></section>
+
+      <nav class="glassnav" id="nav" aria-label="Navigation principale">
+        <button class="nv on" type="button" data-go="home"><svg class="i"><use href="#i-home"/></svg>Accueil</button>
+        <button class="nv" type="button" data-go="cult"><svg class="i"><use href="#i-leaf"/></svg>Cultures</button>
+        <button class="nv" type="button" data-go="stub" data-t="Marchés"><svg class="i"><use href="#i-store"/></svg>Marchés</button>
+        <button class="nv" type="button" data-go="stub" data-t="Assistant"><svg class="i"><use href="#i-spark"/></svg>Assistant</button>
+      </nav>
+      <div class="disc" id="disc"></div>
+      <div class="toast" id="toast" role="status"></div>
+    </div></div>
+
+    <aside class="side">
+      <div class="ctl">
+        <button class="cb" type="button" id="reset">Recommencer le parcours</button>
+        <button class="cb" type="button" id="lite" aria-pressed="false">Téléphone modeste : effets réduits</button>
+      </div>
+      <div class="box"><h2>Repris de la vidéo</h2><ul><li>En-tête sombre avec une lueur qui bouge doucement</li><li>Gros chiffre central et deux boutons en pilule</li><li>Carte en verre avec pastilles qui se chevauchent</li><li>Feuille blanche qui glisse sur le fond sombre</li><li>Barre de navigation flottante en verre dépoli</li><li>Cartes colorées empilées, clavier géant, disque de confirmation</li></ul></div>
+      <div class="box"><h2>Adapté à Naatal Agro</h2><ul><li>Palette de terre : vert profond, or d'aube, menthe, corail</li><li>Le solde devient « Revenus du mois », la dépense devient le stock</li><li>Le clavier calcule quantité × prix et affiche le stock restant</li><li>Les opérations sont vos récoltes, ventes et dépenses réelles</li><li>Une vente met à jour revenus, stock et activité, comme dans l'application réelle</li></ul></div>
+      <div class="box"><h2>Volontairement pas repris</h2><ul><li>Le glissement pour confirmer : un vrai bouton de 58 px est plus sûr avec des gants</li><li>Le flou en temps réel partout : il est limité à 4 éléments, et le bouton « effets réduits » montre le repli pour téléphone modeste</li><li>Les décimales en gris clair : peu lisibles au soleil</li><li>Une erreur claire si vous vendez plus que le stock (essayez 150 sacs)</li></ul></div>
+    </aside>
+  </div>
+</div>
+
+<script>
+(function(){
+  var reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var $=function(id){return document.getElementById(id)};
+  var state={rev:185000,stock:120,q:'40',p:'2000',field:'q',view:'home'};
+  var views={home:$('v-home'),cult:$('v-cult'),sell:$('v-sell'),done:$('v-done'),stub:$('v-stub')};
+  var nav=$('nav'),toast=$('toast'),tt=null;
+  function fmt(n){return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g,' ');}
+  function say(m){toast.textContent=m;toast.classList.add('on');clearTimeout(tt);tt=setTimeout(function(){toast.classList.remove('on')},2400);}
+  function count(el,from,to,ms){
+    if(reduce){el.textContent=fmt(to);return;}
+    var t0=null;(function s(t){if(t0===null)t0=t;var p=Math.min(1,(t-t0)/ms),e=1-Math.pow(1-p,3);el.textContent=fmt(from+(to-from)*e);if(p<1)requestAnimationFrame(s);else el.textContent=fmt(to);})(performance.now());
+  }
+  function go(v,title){
+    state.view=v;
+    Object.keys(views).forEach(function(k){views[k].classList.toggle('on',k===v);});
+    nav.classList.toggle('off',v==='sell'||v==='done');
+    document.querySelectorAll('.nv').forEach(function(b){
+      var g=b.dataset.go,on=(g===v&&(g!=='stub'||b.dataset.t===title));
+      b.classList.toggle('on',on);
+    });
+    if(v==='stub')$('stubT').textContent=title||'À dessiner';
+    if(v==='cult')document.querySelectorAll('.bar i').forEach(function(b){b.style.width='0';requestAnimationFrame(function(){requestAnimationFrame(function(){b.style.width=b.dataset.w+'%';});});});
+  }
+  document.querySelectorAll('[data-go]').forEach(function(b){b.addEventListener('click',function(){go(b.dataset.go,b.dataset.t);});});
+  document.querySelectorAll('[data-toast]').forEach(function(b){b.addEventListener('click',function(){say(b.dataset.toast);});});
+  $('goCult').addEventListener('click',function(){go('cult');});
+  $('goSell').addEventListener('click',function(){state.q='40';state.p='2000';state.field='q';calc();go('sell');});
+  $('backSell').addEventListener('click',function(){go('home');});
+
+  // Clavier
+  var keys=$('keys'),labels=['1','2','3','4','5','6','7','8','9','','0','del'];
+  labels.forEach(function(k){
+    var b=document.createElement('button');b.type='button';b.className='key';
+    if(k==='')b.style.visibility='hidden';
+    else if(k==='del'){b.setAttribute('aria-label','Effacer');b.innerHTML='<svg class="i"><use href="#i-del"/></svg>';}
+    else b.textContent=k;
+    b.addEventListener('click',function(){
+      if(k==='')return;
+      var f=state.field,v=state[f];
+      if(k==='del')v=v.slice(0,-1);else if(v.length<7)v=(v==='0'?'':v)+k;
+      state[f]=v;calc();
+    });
+    keys.appendChild(b);
+  });
+  $('fq').addEventListener('click',function(){state.field='q';calc();});
+  $('fp').addEventListener('click',function(){state.field='p';calc();});
+  function calc(){
+    var q=+state.q||0,p=+state.p||0,tot=q*p,over=q>state.stock;
+    $('q').textContent=fmt(q);$('p').textContent=fmt(p);
+    $('fq').classList.toggle('on',state.field==='q');$('fp').classList.toggle('on',state.field==='p');
+    $('tv').textContent=fmt(tot);
+    $('tot').classList.toggle('err',over);
+    $('tl').textContent=over?'Stock insuffisant':'Total de la vente';
+    $('after').innerHTML=over?('Vous avez<br><b style="font-size:16px" class="num">'+state.stock+' sacs</b>'):('Il restera<br><b style="font-size:16px" class="num">'+fmt(state.stock-q)+' sacs</b>');
+    $('ok').disabled=over||q<=0||p<=0;
+  }
+  $('stk2').textContent=state.stock;
+
+  // Confirmation
+  function confirmSale(skipAnim){
+    var q=+state.q,p=+state.p,tot=q*p,oldRev=state.rev;
+    state.rev+=tot;state.stock-=q;
+    $('dv').textContent=fmt(tot);
+    $('dd').textContent='Oignon · '+fmt(q)+' sacs · stock restant : '+fmt(state.stock)+' sacs';
+    $('stockv').textContent=fmt(state.stock)+' sacs';$('stk2').textContent=state.stock;
+    var row=document.createElement('div');row.className='act new';
+    row.innerHTML='<span class="dot" style="background:#F2C14E"><svg class="i" style="width:20px;height:20px"><use href="#i-tag"/></svg></span><span class="tt">Vente · Oignon<small>À l’instant</small></span><span class="v p num">+'+fmt(tot)+' F</span>';
+    $('acts').insertBefore(row,$('acts').firstChild);
+    if(skipAnim||reduce){$('rev').textContent=fmt(state.rev);go('done');return;}
+    var ph=$('scr').getBoundingClientRect(),br=$('ok').getBoundingClientRect(),d=$('disc');
+    d.style.left=(br.left+br.width/2-ph.left-20)+'px';d.style.top=(br.top+br.height/2-ph.top-20)+'px';
+    d.classList.remove('go');void d.offsetWidth;d.classList.add('go');
+    setTimeout(function(){go('done');},420);
+    setTimeout(function(){d.classList.remove('go');},1000);
+    state._count=[oldRev,state.rev];
+  }
+  $('ok').addEventListener('click',function(){confirmSale(false);});
+  $('fin').addEventListener('click',function(){
+    go('home');
+    if(state._count){setTimeout(function(){count($('rev'),state._count[0],state._count[1],900);state._count=null;},350);}
+  });
+
+  $('reset').addEventListener('click',function(){location.hash='';location.reload();});
+  var lite=$('lite');
+  lite.addEventListener('click',function(){var on=lite.getAttribute('aria-pressed')!=='true';lite.setAttribute('aria-pressed',on);$('phone').classList.toggle('lite',on);});
+
+  // Raccourcis pour captures : #cultures, #sell, #done
+  var h=(location.hash||'').slice(1);
+  if(h==='cultures')go('cult');
+  else if(h==='sell'){calc();go('sell');}
+  else if(h==='done'){calc();confirmSale(true);}
+  else if(h==='lite'){$('phone').classList.add('lite');lite.setAttribute('aria-pressed','true');}
+  calc();
+})();
+</script>
+</body>
+</html>
