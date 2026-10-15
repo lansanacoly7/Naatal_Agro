@@ -39,6 +39,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   // Step 4: OTP
   final _otpController = TextEditingController();
   bool _isVerifying = false;
+  bool _isSendingOtp = false;
+  String? _otpFeedback;
 
   @override
   void dispose() {
@@ -51,6 +53,37 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     _confirmPasswordController.dispose();
     _otpController.dispose();
     super.dispose();
+  }
+
+  Future<void> _sendRegisterOtp() async {
+    setState(() => _isSendingOtp = true);
+    try {
+      final res = await ref.read(authRepositoryProvider).sendOtp(
+        _phoneController.text.trim(),
+        purpose: 'register',
+      );
+      if (!mounted) return;
+      setState(() {
+        _isSendingOtp = false;
+        if (res['dev_code'] != null) {
+          _otpFeedback = "Code SMS envoyé (Mode dev: ${res['dev_code']})";
+          _otpController.text = res['dev_code'].toString();
+        } else {
+          _otpFeedback = "Un code SMS à 4 chiffres a été envoyé au ${_phoneController.text.trim()}";
+        }
+        if (_currentStep < 4) {
+          _currentStep++;
+          _pageController.nextPage(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
+        }
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isSendingOtp = false);
+      _showError(e.toString().replaceAll('Exception: ', ''));
+    }
   }
 
   void _nextStep() {
@@ -81,7 +114,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         _showError('Veuillez sélectionner au moins une culture.');
         return;
       }
-      // Logique pour passer à l'OTP sans appeler l'API tout de suite (pour l'UI de la prez)
+      _sendRegisterOtp();
+      return;
     }
 
     if (_currentStep < 4) {
@@ -104,7 +138,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   }
 
   Future<void> _verifyAndRegister() async {
-    if (_otpController.text.length < 4) {
+    final code = _otpController.text.trim();
+    if (code.length < 4) {
       _showError('Veuillez entrer un code OTP valide.');
       return;
     }
@@ -134,6 +169,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       dateOfBirth: formattedDob,
       mainCrops: _selectedCrops,
       privacyAccepted: _acceptTerms,
+      otpCode: code,
     );
 
     final authState = ref.read(authStateProvider);
@@ -680,7 +716,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   ],
                 ),
                 const SizedBox(height: 32),
-                _buildButton('S\'inscrire', _nextStep, showIcon: false),
+                _buildButton('S\'inscrire', _nextStep, showIcon: false, isVerifying: _isSendingOtp),
               ],
             ),
           ),
@@ -747,36 +783,47 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  margin: const EdgeInsets.only(bottom: 20),
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.amber.shade50,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: Colors.amber.shade200),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.info_outline, color: Colors.amber.shade800, size: 20),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          "Mode démonstration : saisissez un code à 4 chiffres pour valider l'inscription.",
-                          style: TextStyle(fontSize: 13, color: Colors.amber.shade900, fontWeight: FontWeight.w500),
+                if (_otpFeedback != null)
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 20),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.mark_email_read_outlined, color: AppColors.primary, size: 20),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            _otpFeedback!,
+                            style: const TextStyle(fontSize: 13, color: AppColors.primary, fontWeight: FontWeight.w600),
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
                 _buildLabel('Code OTP'),
                 _buildTextField(
                   controller: _otpController,
-                  hint: '----',
+                  hint: 'Ex: 1234',
                   icon: Icons.message_outlined,
                   type: TextInputType.number,
                 ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton.icon(
+                      onPressed: _isSendingOtp ? null : _sendRegisterOtp,
+                      icon: const Icon(Icons.refresh, size: 16),
+                      label: Text(_isSendingOtp ? 'Envoi...' : 'Renvoyer le code'),
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 16),
-                _buildButton('Vérifier', _verifyAndRegister, showIcon: false, isVerifying: _isVerifying),
+                _buildButton('Valider et Activer mon Compte', _verifyAndRegister, showIcon: false, isVerifying: _isVerifying),
               ],
             ),
           ),

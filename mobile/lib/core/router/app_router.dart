@@ -21,6 +21,7 @@ import '../../features/agriculture/presentation/screens/crops_list_screen.dart';
 import '../../features/agriculture/presentation/screens/add_crop_screen.dart';
 import '../../features/agriculture/presentation/screens/guides_list_screen.dart';
 import '../../features/agriculture/presentation/screens/guide_detail_screen.dart';
+import '../../features/weather/presentation/screens/weather_screen.dart';
 
 import '../../features/agriculture/data/models/crop.dart';
 import '../../features/agriculture/presentation/screens/crop_detail_screen.dart';
@@ -36,8 +37,10 @@ import '../../features/profile/presentation/screens/settings_notifications_scree
 import '../../features/profile/presentation/screens/settings_language_screen.dart';
 import '../../features/profile/presentation/screens/settings_security_screen.dart';
 import '../../features/profile/presentation/screens/settings_support_screen.dart';
+import '../localization/locale_provider.dart';
+
 /// Shell avec Bottom Navigation Bar premium — Navigation principale
-class MainShell extends StatelessWidget {
+class MainShell extends ConsumerWidget {
   final Widget child;
 
   const MainShell({super.key, required this.child});
@@ -72,8 +75,9 @@ class MainShell extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final selectedIndex = _calculateSelectedIndex(context);
+    final tr = ref.watch(stringsProvider);
 
     return Scaffold(
       body: child,
@@ -93,31 +97,31 @@ class MainShell extends StatelessWidget {
           backgroundColor: Colors.white,
           indicatorColor: AppColors.primary.withValues(alpha: 0.12),
           elevation: 0,
-          destinations: const [
+          destinations: [
             NavigationDestination(
-              icon: Icon(Icons.dashboard_outlined),
-              selectedIcon: Icon(Icons.dashboard_rounded, color: AppColors.primary),
-              label: 'Accueil',
+              icon: const Icon(Icons.dashboard_outlined),
+              selectedIcon: const Icon(Icons.dashboard_rounded, color: AppColors.primary),
+              label: tr('nav_home'),
             ),
             NavigationDestination(
-              icon: Icon(Icons.eco_outlined),
-              selectedIcon: Icon(Icons.eco_rounded, color: AppColors.primary),
-              label: 'Mes Cultures',
+              icon: const Icon(Icons.eco_outlined),
+              selectedIcon: const Icon(Icons.eco_rounded, color: AppColors.primary),
+              label: tr('nav_crops'),
             ),
             NavigationDestination(
-              icon: Icon(Icons.storefront_outlined),
-              selectedIcon: Icon(Icons.storefront_rounded, color: AppColors.primary),
-              label: 'Marchés',
+              icon: const Icon(Icons.storefront_outlined),
+              selectedIcon: const Icon(Icons.storefront_rounded, color: AppColors.primary),
+              label: tr('nav_markets'),
             ),
             NavigationDestination(
-              icon: Icon(Icons.auto_awesome_outlined),
-              selectedIcon: Icon(Icons.auto_awesome_rounded, color: AppColors.primary),
-              label: 'Naatal IA',
+              icon: const Icon(Icons.auto_awesome_outlined),
+              selectedIcon: const Icon(Icons.auto_awesome_rounded, color: AppColors.primary),
+              label: tr('nav_ai'),
             ),
             NavigationDestination(
-              icon: Icon(Icons.person_outline_rounded),
-              selectedIcon: Icon(Icons.person_rounded, color: AppColors.primary),
-              label: 'Profil',
+              icon: const Icon(Icons.person_outline_rounded),
+              selectedIcon: const Icon(Icons.person_rounded, color: AppColors.primary),
+              label: tr('nav_profile'),
             ),
           ],
         ),
@@ -268,6 +272,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         parentNavigatorKey: _rootNavigatorKey,
         path: '/inventory',
         builder: (context, state) => const InventoryManagementScreen(),
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: '/weather',
+        builder: (context, state) => const WeatherScreen(),
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,

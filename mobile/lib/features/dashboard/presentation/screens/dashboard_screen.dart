@@ -184,11 +184,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
         Row(
           children: [
             GestureDetector(
-              onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Recherche globale bientôt disponible')),
-                );
-              },
+              onTap: () => context.go('/markets'),
               child: Container(
                 width: 40,
                 height: 40,
@@ -256,19 +252,22 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
   // WEATHER CARD
   // ─────────────────────────────────────────────
   Widget _buildWeatherCard(WeatherSummary weather) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: AppColors.primary,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
+    return InkWell(
+      onTap: () => _showWeatherDetails(context, weather),
+      borderRadius: BorderRadius.circular(24),
+      child: Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: AppColors.primary,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primary.withValues(alpha: 0.3),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -312,7 +311,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
           ),
           const SizedBox(height: 24),
           ElevatedButton(
-            onPressed: () => _showWeatherDetails(context, weather),
+            onPressed: () => context.push('/weather'),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.white,
               foregroundColor: AppColors.primary,
@@ -330,6 +329,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
           ),
         ],
       ),
+    ),
     );
   }
 

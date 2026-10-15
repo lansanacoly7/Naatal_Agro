@@ -95,6 +95,7 @@ class AuthRepository {
     String? dateOfBirth,
     List<String> mainCrops = const [],
     bool privacyAccepted = true,
+    String? otpCode,
   }) async {
     try {
       final formattedPhone = _formatPhone(phone);
@@ -111,6 +112,7 @@ class AuthRepository {
           if (email != null && email.isNotEmpty) 'email': email,
           if (dateOfBirth != null && dateOfBirth.isNotEmpty) 'date_of_birth': dateOfBirth,
           if (mainCrops.isNotEmpty) 'main_crops': mainCrops,
+          if (otpCode != null && otpCode.isNotEmpty) 'otp_code': otpCode,
         },
       );
 
@@ -125,6 +127,55 @@ class AuthRepository {
         throw Exception(registrationErrorMessage(e.response?.data));
       }
       throw Exception('Impossible de se connecter au serveur. Vérifiez votre connexion.');
+    }
+  }
+
+  /// Envoi d'un code OTP par SMS
+  Future<Map<String, dynamic>> sendOtp(String phone, {String purpose = 'register'}) async {
+    final formattedPhone = _formatPhone(phone);
+    final response = await _apiClient.post(
+      AppConstants.sendOtpEndpoint,
+      data: {
+        'phone_number': formattedPhone,
+        'purpose': purpose,
+      },
+    );
+    if (response.statusCode == 200 && response.data is Map<String, dynamic>) {
+      return response.data as Map<String, dynamic>;
+    }
+    throw Exception(response.data?['error'] ?? 'Échec de l\'envoi du code OTP');
+  }
+
+  /// Vérification du code OTP
+  Future<bool> verifyOtp(String phone, String code, {String purpose = 'register'}) async {
+    final formattedPhone = _formatPhone(phone);
+    final response = await _apiClient.post(
+      AppConstants.verifyOtpEndpoint,
+      data: {
+        'phone_number': formattedPhone,
+        'code': code.trim(),
+        'purpose': purpose,
+      },
+    );
+    if (response.statusCode == 200) {
+      return response.data?['valid'] == true;
+    }
+    throw Exception(response.data?['error'] ?? 'Code OTP invalide ou expiré');
+  }
+
+  /// Réinitialisation de mot de passe par code OTP SMS
+  Future<void> resetPassword(String phone, String code, String newPassword) async {
+    final formattedPhone = _formatPhone(phone);
+    final response = await _apiClient.post(
+      AppConstants.resetPasswordEndpoint,
+      data: {
+        'phone_number': formattedPhone,
+        'otp_code': code.trim(),
+        'new_password': newPassword,
+      },
+    );
+    if (response.statusCode != 200 && response.statusCode != 204) {
+      throw Exception(response.data?['error'] ?? response.data?['otp_code'] ?? 'Échec de réinitialisation');
     }
   }
 

@@ -135,3 +135,57 @@ class UserAuthAndProfileTests(TestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn('phone_number', response.data)
 
+    def test_send_and_verify_otp(self):
+        """Teste la génération et la vérification réussie d'un code OTP."""
+        send_url = reverse('users:send_otp')
+        payload = {'phone_number': '+221773334455', 'purpose': 'register'}
+        send_res = self.client.post(send_url, payload, format='json')
+        self.assertEqual(send_res.status_code, status.HTTP_200_OK)
+        code = send_res.data.get('code')
+        self.assertIsNotNone(code)
+
+        verify_url = reverse('users:verify_otp')
+        verify_res = self.client.post(verify_url, {
+            'phone_number': '+221773334455',
+            'code': code,
+            'purpose': 'register'
+        }, format='json')
+        self.assertEqual(verify_res.status_code, status.HTTP_200_OK)
+        self.assertTrue(verify_res.data.get('valid'))
+
+    def test_verify_otp_invalid_code(self):
+        """Vérifie le rejet d'un mauvais code OTP."""
+        verify_url = reverse('users:verify_otp')
+        verify_res = self.client.post(verify_url, {
+            'phone_number': '+221773334455',
+            'code': '0000',
+            'purpose': 'register'
+        }, format='json')
+        self.assertEqual(verify_res.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_reset_password_flow(self):
+        """Teste le flux complet de réinitialisation de mot de passe par SMS/OTP."""
+        send_url = reverse('users:send_otp')
+        send_res = self.client.post(send_url, {
+            'phone_number': '+221771234567',
+            'purpose': 'password_reset'
+        }, format='json')
+        self.assertEqual(send_res.status_code, status.HTTP_200_OK)
+        otp = send_res.data.get('code')
+
+        reset_url = reverse('users:reset_password')
+        reset_res = self.client.post(reset_url, {
+            'phone_number': '+221771234567',
+            'otp_code': otp,
+            'new_password': 'NewSecurePassword2026!'
+        }, format='json')
+        self.assertEqual(reset_res.status_code, status.HTTP_200_OK)
+
+        # Vérifie qu'on peut se connecter avec le nouveau mot de passe
+        login_url = reverse('users:token_obtain_pair')
+        login_res = self.client.post(login_url, {
+            'phone_number': '+221771234567',
+            'password': 'NewSecurePassword2026!'
+        }, format='json')
+        self.assertEqual(login_res.status_code, status.HTTP_200_OK)
+

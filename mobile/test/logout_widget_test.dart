@@ -33,9 +33,23 @@ class _FakeAuthRepository implements AuthRepository {
     String? dateOfBirth,
     List<String> mainCrops = const [],
     bool privacyAccepted = true,
+    String? otpCode,
   }) async {
     authenticated = true;
   }
+
+  @override
+  Future<Map<String, dynamic>> sendOtp(String phone, {String purpose = 'register'}) async {
+    return {'status': 'success', 'message': 'OTP sent'};
+  }
+
+  @override
+  Future<bool> verifyOtp(String phone, String code, {String purpose = 'register'}) async {
+    return true;
+  }
+
+  @override
+  Future<void> resetPassword(String phone, String code, String newPassword) async {}
 
   @override
   Future<void> logout() async {

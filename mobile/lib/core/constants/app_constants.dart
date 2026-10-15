@@ -34,6 +34,9 @@ class AppConstants {
   static const String refreshTokenEndpoint = '/users/auth/refresh/';
   static const String logoutEndpoint = '/users/auth/logout/';
   static const String changePasswordEndpoint = '/users/auth/password/change/';
+  static const String sendOtpEndpoint = '/users/auth/otp/send/';
+  static const String verifyOtpEndpoint = '/users/auth/otp/verify/';
+  static const String resetPasswordEndpoint = '/users/auth/password/reset/';
 
   // Endpoints Confidentialité & RGPD / CDP
   static const String deleteAccountEndpoint = '/privacy/delete-account/';

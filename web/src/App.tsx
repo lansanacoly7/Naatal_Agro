@@ -18,6 +18,8 @@ import {
   ArrowRight
 } from 'lucide-react';
 import axios from 'axios';
+import { AiModule } from './modules/ai/AiModule';
+import { WeatherModule } from './modules/weather/WeatherModule';
 
 interface MarketPrice {
   id: string;
@@ -66,10 +68,6 @@ export function App() {
   });
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [searchTerm, setSearchTerm] = useState<string>('');
-  const [aiMessage, setAiMessage] = useState<string>('');
-  const [aiChat, setAiChat] = useState<Array<{ sender: 'user' | 'ia'; text: string }>>([
-    { sender: 'ia', text: 'Salam alikoum ! Je suis Naatal IA, votre agronome intelligent. Posez-moi vos questions sur les rendements, les prix à Dakar ou les ravageurs.' }
-  ]);
 
   const loadData = async () => {
     setIsLoading(true);
@@ -126,27 +124,6 @@ export function App() {
   useEffect(() => {
     loadData();
   }, []);
-
-  const handleSendAi = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!aiMessage.trim()) return;
-    const query = aiMessage.trim();
-    setAiChat((prev) => [...prev, { sender: 'user', text: query }]);
-    setAiMessage('');
-
-    setTimeout(() => {
-      let reply = 'Recommandation agronomique pour le Sénégal : veillez à respecter les préconisations du CNRA/ISRA et à espacer les irrigations.';
-      const q = query.toLowerCase();
-      if (q.includes('oignon')) {
-        reply = 'Pour l’oignon (cycle 90-120 jours), le prix actuel est favorable sur Tilène (~350 F/kg). Réduisez l’eau 10 jours avant la récolte pour assurer un bon séchage au stockage.';
-      } else if (q.includes('tomate')) {
-        reply = 'Pour la tomate, surveillez l’hygrométrie en cas de forte humidité pour éviter le mildiou. Appliquez un fongicide cuprique préventif.';
-      } else if (q.includes('arachide')) {
-        reply = 'L’arachide dans le bassin arachidier bénéficie d’un cours soutenu (~580 F/kg à Kaolack). Veillez au stockage en sacs bien aérés à l’abri de l’humidité.';
-      }
-      setAiChat((prev) => [...prev, { sender: 'ia', text: reply }]);
-    }, 600);
-  };
 
   const filteredPrices = prices.filter((p) =>
     p.product_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -429,108 +406,10 @@ export function App() {
         )}
 
         {/* Tab 4: Météo Agricole */}
-        {activeTab === 'weather' && (
-          <div className="card-section">
-            <div className="section-header">
-              <h2 className="section-title">Bulletins Météo Agro-Climatiques Régionaux</h2>
-              <span className="badge badge-green">Flux ANACIM & Open-Meteo</span>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '20px', marginTop: '20px' }}>
-              {[
-                { zone: 'Pôle Urbain Diamniadio & Niayes-Sud', temp: '29°C', humidity: '65%', rain: '0 mm', advice: 'Idéal pour le maraîchage périurbain et la logistique vers le MIN.' },
-                { zone: 'Zone des Niayes Nord (Thiès / Saint-Louis)', temp: '26°C', humidity: '78%', rain: '0 mm', advice: 'Forte humidité matinale. Risque fongique modéré sur oignon.' },
-                { zone: 'Bassin Arachidier (Kaolack / Fatick / Diourbel)', temp: '32°C', humidity: '52%', rain: '0 mm', advice: 'Bonne maturité des cultures sèches. Stockage à l’abri préconisé.' },
-                { zone: 'Vallée du Fleuve Sénégal (Podor / Matam)', temp: '35°C', humidity: '40%', rain: '0 mm', advice: 'Évaporation élevée. Renforcer les tours d’arrosage sur le riz.' },
-                { zone: 'Casamance (Ziguinchor / Kolda)', temp: '29°C', humidity: '72%', rain: '0 mm', advice: 'Conditions favorables au verger et aux cultures de diversification.' },
-              ].map((w, idx) => (
-                <div key={idx} style={{ padding: '20px', background: '#F8FAFC', borderRadius: '16px', border: '1px solid #E2E8F0' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                    <h3 style={{ fontSize: '15px', fontWeight: 700 }}>{w.zone}</h3>
-                    <CloudSun size={24} color="#FF6B35" />
-                  </div>
-                  <div style={{ fontSize: '24px', fontWeight: 800, color: '#0F172A', marginBottom: '4px' }}>{w.temp}</div>
-                  <p style={{ fontSize: '13px', color: '#64748B', marginBottom: '12px' }}>Humidité : {w.humidity} • Précipitations : {w.rain}</p>
-                  <div style={{ padding: '10px', background: 'white', borderRadius: '10px', fontSize: '12px', color: '#2E7D32', fontWeight: 500 }}>
-                    💡 {w.advice}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+        {activeTab === 'weather' && <WeatherModule />}
 
         {/* Tab 5: Naatal IA */}
-        {activeTab === 'ai' && (
-          <div className="card-section" style={{ maxWidth: '800px', margin: '0 auto' }}>
-            <div className="section-header">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div style={{ background: '#E8F5E9', padding: '8px', borderRadius: '10px' }}>
-                  <Bot size={22} color="#2E7D32" />
-                </div>
-                <div>
-                  <h2 className="section-title">Assistant Agronomique Naatal IA</h2>
-                  <p style={{ fontSize: '13px', color: '#64748B' }}>Intelligence Artificielle agricole contextuelle (Gemini + Groq)</p>
-                </div>
-              </div>
-            </div>
-
-            <div style={{ height: '360px', overflowY: 'auto', padding: '16px', background: '#F8FAFC', borderRadius: '16px', marginBottom: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {aiChat.map((msg, i) => (
-                <div
-                  key={i}
-                  style={{
-                    alignSelf: msg.sender === 'user' ? 'flex-end' : 'flex-start',
-                    maxWidth: '80%',
-                    padding: '12px 16px',
-                    borderRadius: '16px',
-                    background: msg.sender === 'user' ? '#2E7D32' : 'white',
-                    color: msg.sender === 'user' ? 'white' : '#0F172A',
-                    boxShadow: '0 2px 6px rgba(0,0,0,0.04)',
-                    fontSize: '14px',
-                    lineHeight: 1.5,
-                  }}
-                >
-                  {msg.text}
-                </div>
-              ))}
-            </div>
-
-            <form onSubmit={handleSendAi} style={{ display: 'flex', gap: '10px' }}>
-              <input
-                type="text"
-                placeholder="Posez une question technique (ex : traitement chenilles, rentabilité tomate...)"
-                value={aiMessage}
-                onChange={(e) => setAiMessage(e.target.value)}
-                style={{
-                  flex: 1,
-                  padding: '14px 18px',
-                  borderRadius: '14px',
-                  border: '1px solid #CBD5E1',
-                  outline: 'none',
-                  fontSize: '14px',
-                }}
-              />
-              <button
-                type="submit"
-                style={{
-                  padding: '0 24px',
-                  background: '#2E7D32',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '14px',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                }}
-              >
-                <span>Envoyer</span>
-                <ArrowRight size={16} />
-              </button>
-            </form>
-          </div>
-        )}
+        {activeTab === 'ai' && <AiModule />}
       </main>
     </div>
   );
