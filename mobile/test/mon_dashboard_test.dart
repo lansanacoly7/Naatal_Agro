@@ -48,17 +48,14 @@ void main() {
     expect(find.textContaining('500 Kg'), findsOneWidget);
 
     // Vérification : les 3 sections et les boutons d'action sont présents
-    expect(find.text('Finances'), findsOneWidget);
-    expect(find.text('Stock et valeur'), findsOneWidget);
-    expect(find.text('Opportunités stratégiques'), findsOneWidget);
-    expect(find.text('Ouvrir les finances'), findsOneWidget);
-    expect(find.text('Ouvrir le stock'), findsOneWidget);
-
-    // Vérification : cartes d'opportunités et conseils
-    expect(find.text('RENTABILITÉ'), findsOneWidget);
-    expect(find.text('INVESTIR'), findsOneWidget);
-    expect(find.text('PRÉVISION'), findsOneWidget);
-    expect(find.text('Conseils pratiques'), findsOneWidget);
+    expect(find.text('Mon exploitation'), findsWidgets);
+    expect(find.text('Trésorerie nette'), findsOneWidget);
+    expect(find.text('Stock valorisé'), findsOneWidget);
+    expect(find.text('Opportunités du marché'), findsOneWidget);
+    expect(find.text('Vendre'), findsOneWidget);
+    expect(find.text('Noter dépense'), findsOneWidget);
+    expect(find.text('Détails'), findsOneWidget);
+    expect(find.text('Tout voir'), findsOneWidget);
 
     // Vérification : aucun faux montant en dur "2 450 000 FCFA"
     expect(find.text('2 450 000 FCFA'), findsNothing);
@@ -85,9 +82,9 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('Aucun produit en stock actuellement'), findsOneWidget);
-    expect(find.textContaining('Aucune transaction enregistrée'), findsOneWidget);
-    expect(find.text('Ouvrir les finances'), findsOneWidget);
-    expect(find.text('Ouvrir le stock'), findsOneWidget);
+    expect(find.textContaining('Votre stock est vide'), findsOneWidget);
+    expect(find.text('0 F'), findsWidgets);
+    expect(find.text('Trésorerie nette'), findsOneWidget);
+    expect(find.text('Stock valorisé'), findsOneWidget);
   });
 }

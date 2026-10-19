@@ -220,10 +220,10 @@ void main() {
 
     testWidgets('Mon Dashboard ($tag)', (tester) async {
       await VisualHarness.shoot(tester, 'mon_dashboard_$tag', const MonDashboardScreen(), dark: dark, overrides: _overrides(), size: const Size(390, 1600));
-      expect(find.text('Mon Dashboard'), findsWidgets);
-      expect(find.text('Finances'), findsWidgets);
-      expect(find.text('Stock et valeur'), findsOneWidget);
-      expect(find.text('Opportunités stratégiques'), findsOneWidget);
+      expect(find.text('Mon exploitation'), findsWidgets);
+      expect(find.text('Trésorerie nette'), findsOneWidget);
+      expect(find.text('Stock valorisé'), findsOneWidget);
+      expect(find.text('Opportunités du marché'), findsOneWidget);
     });
 
     testWidgets('Nouvelle culture ($tag)', (tester) async {

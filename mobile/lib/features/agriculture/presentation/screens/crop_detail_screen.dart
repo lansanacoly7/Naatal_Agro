@@ -928,15 +928,9 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
             children: [
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: () {
-                    context.push('/market_comparison', extra: {
-                      'productName': crop.cropType.isNotEmpty ? crop.cropType : crop.name,
-                      'imageAsset': crop.imageAsset,
-                      'price': '',
-                    });
-                  },
+                  onPressed: () => context.go('/markets'),
                   icon: const Icon(Icons.storefront_rounded, size: 16),
-                  label: const Text('Comparer les cours'),
+                  label: const Text('Consulter les marchés'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.primary,
                     side: const BorderSide(color: AppColors.primary),

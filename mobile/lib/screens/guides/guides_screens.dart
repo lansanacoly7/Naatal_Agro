@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../features/agriculture/data/guides_provider.dart';
 import '../../features/agriculture/data/models/agronomic_guide.dart';
 import '../../ui/ui.dart';
+import '../markets/markets_data.dart';
 
 const _categories = [
   ('all', 'Toutes'),
@@ -90,44 +91,122 @@ class _GuidesListScreenState extends ConsumerState<GuidesListScreen> {
               else if (shown.isEmpty)
                 const EmptyState(icon: Icons.search_off_rounded, title: 'Aucune fiche', message: 'Aucune culture ne correspond à votre recherche.')
               else
-                GroupedList(
-                  children: [
-                    for (var i = 0; i < shown.length; i++)
-                      Reveal(
-                        index: i,
-                        child: GroupedRow(
-                          leading: IconTile(icon: _icon(shown[i].category), color: _tint(c, shown[i].category)),
-                          title: shown[i].name,
-                          subtitle: [
-                            shown[i].categoryLabel,
-                            if (shown[i].cycleDisplay != null) shown[i].cycleDisplay!,
-                          ].join(' · '),
-                          chevron: true,
-                          onTap: () => context.push('/agriculture/guides/${shown[i].slug}'),
-                        ),
-                      ),
-                  ],
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: Space.gutter),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final cardWidth = (constraints.maxWidth - Space.m) / 2;
+                      return Wrap(
+                        spacing: Space.m,
+                        runSpacing: Space.m,
+                        children: [
+                          for (var i = 0; i < shown.length; i++)
+                            SizedBox(
+                              width: cardWidth,
+                              child: Reveal(
+                                index: i,
+                                child: _GuidePhotoCard(
+                                  guide: shown[i],
+                                  onTap: () => context.push('/agriculture/guides/${shown[i].slug}'),
+                                ),
+                              ),
+                            ),
+                        ],
+                      );
+                    },
+                  ),
                 ),
+              const SizedBox(height: Space.xxl),
             ],
           ),
         ),
       ],
     );
   }
+}
 
-  IconData _icon(String category) => switch (category.toLowerCase()) {
-        'cereale' => Icons.grass_rounded,
-        'legumineuse' => Icons.spa_rounded,
-        'fruit' => Icons.apple_rounded,
-        _ => Icons.eco_rounded,
-      };
+class _GuidePhotoCard extends StatelessWidget {
+  const _GuidePhotoCard({required this.guide, required this.onTap});
 
-  Color _tint(NaatalColors c, String category) => switch (category.toLowerCase()) {
-        'cereale' => const Color(0xFFB07A1E),
-        'legumineuse' => c.slate,
-        'fruit' => c.clay,
-        _ => c.accent,
-      };
+  final AgronomicGuide guide;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final img = productImageForName(guide.name);
+    return PressScale(
+      onTap: onTap,
+      child: Container(
+        height: 184,
+        decoration: BoxDecoration(
+          color: c.surface,
+          borderRadius: BorderRadius.circular(Radii.l),
+          border: Border.all(color: c.line),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: c.isDark ? 0.2 : 0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              child: Container(
+                color: c.surfaceAlt,
+                padding: const EdgeInsets.all(Space.m),
+                child: Image.asset(
+                  img,
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, __, ___) => Center(
+                    child: Icon(Icons.eco_rounded, size: 40, color: c.accent),
+                  ),
+                ),
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.fromLTRB(Space.m, Space.s, Space.m, Space.m),
+              color: c.surface,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    guide.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: T.body(color: c.ink, weight: 800),
+                  ),
+                  const SizedBox(height: 3),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: c.accent.withValues(alpha: c.isDark ? 0.25 : 0.1),
+                          borderRadius: BorderRadius.circular(Radii.pill),
+                        ),
+                        child: Text(
+                          guide.cycleDisplay ?? guide.categoryLabel,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: T.caption(color: c.accent, weight: 700),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 /// Détail d'une fiche : chaque rubrique vide est signalée « non documentée ».
@@ -138,6 +217,7 @@ class GuideDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.c;
     final state = ref.watch(guideDetailProvider(slug));
     final guide = state.guide;
 
@@ -146,6 +226,18 @@ class GuideDetailScreen extends ConsumerWidget {
       eyebrow: guide?.categoryLabel,
       reserveNav: false,
       onRefresh: () => ref.read(guideDetailProvider(slug).notifier).loadGuide(),
+      bottom: guide == null
+          ? null
+          : Container(
+              padding: EdgeInsets.fromLTRB(Space.gutter, Space.m, Space.gutter, MediaQuery.paddingOf(context).bottom + Space.m),
+              decoration: BoxDecoration(color: c.bg, border: Border(top: BorderSide(color: c.line))),
+              child: PillButton(
+                label: 'Cultiver ${guide.name}',
+                icon: Icons.add_rounded,
+                expand: true,
+                onPressed: () => context.push('/agriculture/add', extra: guide.slug),
+              ),
+            ),
       slivers: [
         SliverToBoxAdapter(
           child: Builder(builder: (context) {
@@ -158,39 +250,75 @@ class GuideDetailScreen extends ConsumerWidget {
                 onRetry: () => ref.read(guideDetailProvider(slug).notifier).loadGuide(),
               );
             }
+            final img = productImageForName(guide.name);
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (state.isFromCache) const StatusStrip(text: 'Fiche enregistrée sur votre téléphone (hors ligne).', icon: Icons.offline_pin_rounded),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: Space.gutter),
-                  child: AuroraBackground(
-                    borderRadius: BorderRadius.circular(28),
-                    child: Padding(
-                      padding: const EdgeInsets.all(Space.xl),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if (guide.scientificName.isNotEmpty)
-                            Text(guide.scientificName, style: T.body(color: Colors.white.withValues(alpha: 0.85)).copyWith(fontStyle: FontStyle.italic)),
-                          const SizedBox(height: Space.s),
-                          Text(guide.summary.isEmpty ? 'Présentation non documentée dans nos sources.' : guide.summary, style: T.body(color: Colors.white)),
-                          const SizedBox(height: Space.l),
-                          Wrap(
-                            spacing: Space.s,
-                            runSpacing: Space.s,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: c.surface,
+                      borderRadius: BorderRadius.circular(Radii.xl),
+                      border: Border.all(color: c.line),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: c.isDark ? 0.25 : 0.04),
+                          blurRadius: 14,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Container(
+                          height: 160,
+                          color: c.surfaceAlt,
+                          padding: const EdgeInsets.all(Space.l),
+                          child: Image.asset(
+                            img,
+                            fit: BoxFit.contain,
+                            errorBuilder: (_, __, ___) => Icon(Icons.eco_rounded, size: 64, color: c.accent),
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.all(Space.xl),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              if (guide.cycleDisplay != null) _Fact(icon: Icons.timer_outlined, text: 'Cycle : ${guide.cycleDisplay}'),
-                              _Fact(icon: Icons.menu_book_rounded, text: '${guide.sources.length} source${guide.sources.length > 1 ? 's' : ''}'),
+                              if (guide.scientificName.isNotEmpty)
+                                Text(
+                                  guide.scientificName,
+                                  style: T.caption(color: c.ink2).copyWith(fontStyle: FontStyle.italic),
+                                ),
+                              const SizedBox(height: Space.xs),
+                              Text(
+                                guide.summary.isEmpty ? 'Présentation non documentée dans nos sources.' : guide.summary,
+                                style: T.body(color: c.ink),
+                              ),
+                              const SizedBox(height: Space.m),
+                              Wrap(
+                                spacing: Space.s,
+                                runSpacing: Space.s,
+                                children: [
+                                  if (guide.cycleDisplay != null)
+                                    _GuideChip(icon: Icons.timer_outlined, text: 'Cycle : ${guide.cycleDisplay}', color: c.accent),
+                                  _GuideChip(icon: Icons.menu_book_rounded, text: '${guide.sources.length} source${guide.sources.length > 1 ? 's' : ''}', color: c.slate),
+                                ],
+                              ),
                             ],
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
                 const SizedBox(height: Space.l),
                 GuideSections(guide: guide),
+                const SizedBox(height: Space.xxl),
               ],
             );
           }),
@@ -200,24 +328,29 @@ class GuideDetailScreen extends ConsumerWidget {
   }
 }
 
-class _Fact extends StatelessWidget {
-  const _Fact({required this.icon, required this.text});
+class _GuideChip extends StatelessWidget {
+  const _GuideChip({required this.icon, required this.text, required this.color});
 
   final IconData icon;
   final String text;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
-    return Glass(
-      style: GlassStyle.onHero,
-      radius: Radii.pill,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+    final c = context.c;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: c.isDark ? 0.2 : 0.08),
+        borderRadius: BorderRadius.circular(Radii.pill),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
+      ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 15, color: Colors.white),
-          const SizedBox(width: 5),
-          Text(text, style: T.caption(color: Colors.white, weight: 700)),
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 6),
+          Text(text, style: T.caption(color: color, weight: 700)),
         ],
       ),
     );
