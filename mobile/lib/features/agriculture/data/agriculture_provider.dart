@@ -115,12 +115,13 @@ class AgricultureRepository {
     String description = '',
     double? cost,
   }) async {
+    final effectiveDesc = description.trim().isNotEmpty ? description.trim() : 'Intervention enregistrée';
     final response = await _apiClient.post(
       '/agriculture/activities/',
       data: {
         'crop': cropId,
         'activity_type': type,
-        'description': description,
+        'description': effectiveDesc,
         'date': date,
         if (cost != null && cost > 0) 'cost': cost,
       },

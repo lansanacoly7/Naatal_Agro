@@ -6,15 +6,16 @@ class AppColors {
   // Primaire — Vert Forêt (Premium, Action)
   static const Color primary = Color(0xFF1B5E20);
   static const Color primaryLight = Color(0xFF4C8C4A);
-  static const Color primaryDark = Color(0xFF003300);
+  static const Color primaryDark = Color(0xFF0F4F31);
 
   // Secondaire — iOS Blue
   static const Color secondary = Color(0xFF007AFF);
 
-  // Surface & Background
-  static const Color background = Color(0xFFF4F6F8); // Gris ultra clair
+  // Surface & Background — Crème sahélien chaud (#FBF7F0)
+  static const Color background = Color(0xFFFBF7F0);
+  static const Color backgroundWarm = Color(0xFFFBF7F0);
   static const Color surface = Color(0xFFFFFFFF); // Cartes blanches pures
-  static const Color surfaceVariant = Color(0xFFE8ECEF);
+  static const Color surfaceVariant = Color(0xFFF0ECE3);
 
   // Alertes
   static const Color error = Color(0xFFFF3B30);
@@ -25,6 +26,15 @@ class AppColors {
   static const Color accentGoldLight = Color(0xFFFEF3C7);
   static const Color accentEmerald = Color(0xFF059669); // Émeraude vivace
   static const Color accentSky = Color(0xFF0284C7); // Azur météorologique
+
+  // Palette par Domaine (Refonte visuelle Images d'Abord)
+  static const Color domainCultures = Color(0xFF1B5E20); // Vert Forêt (Marque)
+  static const Color domainStock = Color(0xFFD97706); // Ocre / Or
+  static const Color domainMarches = Color(0xFFA8401F); // Terre cuite
+  static const Color domainMeteo = Color(0xFF0284C7); // Bleu ciel
+  static const Color domainFinances = Color(0xFF3A5670); // Bleu ardoise
+  static const Color domainAlerts = Color(0xFFFF9500); // Orange
+  static const Color domainIa = Color(0xFF7C3AED); // Indigo / Violet doux
 
   // Gradients Signature Naatal Agro
   static const LinearGradient primaryGradient = LinearGradient(

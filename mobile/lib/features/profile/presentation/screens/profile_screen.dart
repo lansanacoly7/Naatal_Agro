@@ -693,8 +693,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             'Assistance & Support',
             Colors.purple,
             subtitle: 'Support Naatal 24/7',
-            isLast: true,
             onTap: () => _showSupportDialog(context),
+          ),
+          _buildPremiumTile(
+            Icons.photo_library_rounded,
+            'Crédits photos',
+            Colors.indigo,
+            subtitle: 'Attributions & licences libres',
+            isLast: true,
+            onTap: () => _showPhotoCreditsDialog(context),
           ),
         ],
       ),
@@ -1171,6 +1178,126 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               },
             ),
             const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showPhotoCreditsDialog(BuildContext context) {
+    const credits = [
+      ('Patate douce', 'Arivumathi', 'CC0 1.0 (Domaine public)'),
+      ('Piment', 'Arivumathi', 'CC0 1.0 (Domaine public)'),
+      ('Laitue', 'Rainer Zenz', 'GPL / GFDL'),
+      ('Manioc', 'Domaine public', 'CC0 1.0 (Domaine public)'),
+      ('Melon', 'Renee Comet (NCI / USDA)', 'Domaine public'),
+      ('Navet', 'Tiia Monto', 'CC BY-SA 4.0'),
+      ('Orange', 'Evan-Amos', 'CC BY-SA 3.0'),
+      ('Poivron', 'Luc Viatour', 'CC BY-SA 3.0'),
+      ('Sorgho', 'Roger Culos / MHNT', 'CC BY-SA 4.0'),
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        height: MediaQuery.of(ctx).size.height * 0.75,
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        child: Column(
+          children: [
+            Container(
+              margin: const EdgeInsets.only(top: 12, bottom: 8),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 12, 24, 16),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.photo_library_rounded, color: AppColors.primary, size: 22),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Crédits photos',
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        ),
+                        Text(
+                          'Photographies sous licence libre (Wikimedia Commons)',
+                          style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded),
+                    onPressed: () => Navigator.pop(ctx),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 1),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.all(20),
+                children: [
+                  ...credits.map((c) => Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade50,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.grey.shade200),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            flex: 4,
+                            child: Text(
+                              c.$1,
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                            ),
+                          ),
+                          Expanded(
+                            flex: 6,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(c.$2, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+                                Text(c.$3, style: const TextStyle(fontSize: 11, color: AppColors.primary, fontWeight: FontWeight.w600)),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Les 13 autres photographies de produits du catalogue ont été générées par intelligence artificielle spécifiquement pour Naatal Agro.',
+                    style: TextStyle(fontSize: 11, color: Colors.grey.shade500, fontStyle: FontStyle.italic),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ),

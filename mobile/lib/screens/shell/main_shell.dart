@@ -3,50 +3,43 @@ import 'package:go_router/go_router.dart';
 
 import '../../ui/ui.dart';
 
-/// Coque des quatre onglets principaux : le contenu passe sous une barre
-/// de navigation flottante en verre dépoli.
+/// Coque des onglets principaux : une barre de navigation fixe, qui ne recouvre jamais le contenu.
 class MainShell extends StatelessWidget {
   const MainShell({super.key, required this.child});
 
   final Widget child;
 
-  static const _items = [
-    NavItem(icon: Icons.home_outlined, activeIcon: Icons.home_rounded, label: 'Accueil'),
-    NavItem(icon: Icons.eco_outlined, activeIcon: Icons.eco_rounded, label: 'Cultures'),
-    NavItem(icon: Icons.storefront_outlined, activeIcon: Icons.storefront_rounded, label: 'Marchés'),
-    NavItem(icon: Icons.auto_awesome_outlined, activeIcon: Icons.auto_awesome_rounded, label: 'Assistant'),
-  ];
-
-  static const _paths = ['/', '/agriculture', '/markets', '/ai'];
+  static const _paths = ['/', '/agriculture', '/markets', '/ai', '/profile'];
 
   int _indexFor(String location) {
     if (location.startsWith('/agriculture')) return 1;
     if (location.startsWith('/markets')) return 2;
     if (location.startsWith('/ai')) return 3;
+    if (location.startsWith('/profile')) return 4;
     return 0;
   }
 
   @override
   Widget build(BuildContext context) {
     final location = GoRouterState.of(context).matchedLocation;
+    final c = context.c;
 
     return Scaffold(
-      backgroundColor: context.c.bg,
-      extendBody: true,
-      body: Stack(
-        children: [
-          Positioned.fill(child: child),
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: FloatingNavBar(
-              items: _items,
-              currentIndex: _indexFor(location),
-              onTap: (i) => context.go(_paths[i]),
-            ),
-          ),
-        ],
+      backgroundColor: c.bg,
+      body: child,
+      bottomNavigationBar: DecoratedBox(
+        decoration: BoxDecoration(color: c.surface, border: Border(top: BorderSide(color: c.line))),
+        child: NavigationBar(
+          selectedIndex: _indexFor(location),
+          onDestinationSelected: (i) => context.go(_paths[i]),
+          destinations: const [
+            NavigationDestination(icon: Icon(Icons.dashboard_outlined), selectedIcon: Icon(Icons.dashboard_rounded), label: 'Accueil'),
+            NavigationDestination(icon: Icon(Icons.eco_outlined), selectedIcon: Icon(Icons.eco_rounded), label: 'Cultures'),
+            NavigationDestination(icon: Icon(Icons.storefront_outlined), selectedIcon: Icon(Icons.storefront_rounded), label: 'Marchés'),
+            NavigationDestination(icon: Icon(Icons.auto_awesome_outlined), selectedIcon: Icon(Icons.auto_awesome_rounded), label: 'Naatal IA'),
+            NavigationDestination(icon: Icon(Icons.person_outline_rounded), selectedIcon: Icon(Icons.person_rounded), label: 'Profil'),
+          ],
+        ),
       ),
     );
   }

@@ -9,7 +9,9 @@ from dotenv import load_dotenv
 # Updated to parent.parent.parent because this file is in core/settings/base.py
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
-# Load environment variables from .env
+# Load environment variables from .env : celui de la racine du dépôt d'abord (clés partagées),
+# puis backend/.env ; une variable déjà définie n'est jamais écrasée.
+load_dotenv(BASE_DIR.parent / '.env')
 load_dotenv(BASE_DIR / '.env')
 
 # SECURITY WARNING: keep the secret key used in production secret!

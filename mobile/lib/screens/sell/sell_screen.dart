@@ -6,6 +6,7 @@ import '../../features/inventory/data/inventory_provider.dart';
 import '../../features/inventory/data/models/stock_item.dart';
 import '../../shared/utils/data_refresh.dart';
 import '../../ui/ui.dart';
+import '../markets/markets_data.dart';
 
 /// Vente d'un produit du stock : quantité et prix au clavier géant, total et
 /// stock restant calculés en direct, puis confirmation avec un grand bouton.
@@ -131,6 +132,7 @@ class _SellScreenState extends ConsumerState<SellScreen> {
           final sellable = items.where((i) => i.quantity > 0).toList();
           if (sellable.isEmpty) {
             return EmptyState(
+              imageAsset: 'assets/images/ui/ui_stock.jpg',
               icon: Icons.inventory_2_rounded,
               title: 'Rien à vendre',
               message: 'Votre stock est vide. Enregistrez une récolte ou ajoutez un produit au stock pour pouvoir le vendre.',
@@ -255,19 +257,36 @@ class _ProductSelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
+    final img = productImageForName(item.name);
     return AppCard(
       onTap: canChange ? onTap : null,
       padding: const EdgeInsets.symmetric(horizontal: Space.l, vertical: Space.m),
       child: Row(
         children: [
-          IconTile(icon: Icons.inventory_2_rounded, color: c.accent),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(Radii.m),
+            child: Container(
+              width: 52,
+              height: 52,
+              color: c.surfaceAlt,
+              child: Padding(
+                padding: const EdgeInsets.all(4),
+                child: Image.asset(
+                  img,
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, __, ___) => Icon(Icons.inventory_2_rounded, color: c.accent, size: 28),
+                ),
+              ),
+            ),
+          ),
           const SizedBox(width: Space.m),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(item.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: T.body(color: c.ink, weight: 700)),
-                Text('${Fmt.decimal(item.quantity)} ${item.unit} en stock', style: T.caption(color: c.ink2, weight: 500)),
+                Text(item.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: T.body(color: c.ink, weight: 800)),
+                const SizedBox(height: 2),
+                Text('${Fmt.decimal(item.quantity)} ${item.unit} en stock', style: T.caption(color: c.ink2, weight: 600)),
               ],
             ),
           ),
@@ -303,7 +322,23 @@ class _StockPicker extends StatelessWidget {
               GroupedList(children: [
                 for (final i in items)
                   GroupedRow(
-                    leading: IconTile(icon: Icons.inventory_2_rounded, color: c.accent),
+                    minHeight: 60,
+                    leading: ClipRRect(
+                      borderRadius: BorderRadius.circular(Radii.m),
+                      child: Container(
+                        width: 44,
+                        height: 44,
+                        color: c.surfaceAlt,
+                        child: Padding(
+                          padding: const EdgeInsets.all(4),
+                          child: Image.asset(
+                            productImageForName(i.name),
+                            fit: BoxFit.contain,
+                            errorBuilder: (_, __, ___) => Icon(Icons.inventory_2_rounded, color: c.accent, size: 24),
+                          ),
+                        ),
+                      ),
+                    ),
                     title: i.name,
                     value: '${Fmt.decimal(i.quantity)} ${i.unit}',
                     trailing: i.id == selectedId ? Icon(Icons.check_circle_rounded, color: c.accent) : null,

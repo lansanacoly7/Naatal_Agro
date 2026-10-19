@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0F4F31">
+  <title>Pas de connexion — Naatal Agro</title>
+  <style>
+    html, body { margin: 0; height: 100%; }
+    body {
+      display: flex; align-items: center; justify-content: center; text-align: center;
+      padding: env(safe-area-inset-top) 24px env(safe-area-inset-bottom);
+      background: linear-gradient(160deg, #0F4F31, #2E7D46); color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    main { max-width: 340px; }
+    .icon { width: 84px; height: 84px; margin: 0 auto 24px; border-radius: 28px; background: rgba(255,255,255,.16);
+      display: flex; align-items: center; justify-content: center; }
+    h1 { margin: 0 0 8px; font-size: 28px; letter-spacing: -.5px; }
+    p { margin: 0 0 28px; font-size: 17px; line-height: 1.45; opacity: .9; }
+    button { border: 0; border-radius: 999px; padding: 16px 32px; font-size: 17px; font-weight: 700;
+      background: #fff; color: #0F4F31; cursor: pointer; min-height: 56px; }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="icon">
+      <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M2 8.8a15 15 0 0 1 20 0M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0"/><circle cx="12" cy="19.5" r="1" fill="#fff"/><path d="M3 3l18 18"/>
+      </svg>
+    </div>
+    <h1>Pas de connexion</h1>
+    <p>Vérifiez votre réseau, puis réessayez. Vos données enregistrées sur ce téléphone seront là dès le retour de la connexion.</p>
+    <button onclick="location.href='/'">Réessayer</button>
+  </main>
+</body>
+</html>

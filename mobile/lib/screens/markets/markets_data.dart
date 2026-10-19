@@ -4,6 +4,21 @@ import 'package:latlong2/latlong.dart';
 
 import '../../features/auth/data/auth_provider.dart';
 
+/// Chemin de l'image de produit : `assets/images/products/{slug}.png`
+String productImageForName(String name) {
+  final clean = name
+      .toLowerCase()
+      .replaceAll(RegExp('[éèêë]'), 'e')
+      .replaceAll(RegExp('[àâä]'), 'a')
+      .replaceAll(RegExp('[îï]'), 'i')
+      .replaceAll(RegExp('[ôö]'), 'o')
+      .replaceAll(RegExp('[ùûü]'), 'u')
+      .replaceAll('ç', 'c')
+      .trim();
+  final slug = clean.replaceAll(RegExp(r'[^a-z0-9]+'), '_').replaceAll(RegExp(r'^_+|_+$'), '');
+  return 'assets/images/products/$slug.png';
+}
+
 /// Dernier prix relevé d'un produit sur un marché.
 class MarketQuote {
   const MarketQuote({

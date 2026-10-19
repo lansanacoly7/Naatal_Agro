@@ -7,13 +7,15 @@ import '../../data/models/dashboard_data.dart';
 import '../../../inventory/data/models/stock_item.dart';
 import '../../../markets/data/markets_provider.dart';
 import '../../../markets/data/models/price.dart';
+import '../../../../screens/markets/market_sheet.dart' show PriceChart;
+import '../../../../screens/markets/markets_data.dart' show PricePoint;
 
 class MarketPricesSection extends ConsumerStatefulWidget {
   final List<MarketPrice> markets;
   final List<StockItem> stocks;
 
   const MarketPricesSection({
-    super.key, 
+    super.key,
     required this.markets,
     required this.stocks,
   });
@@ -23,22 +25,31 @@ class MarketPricesSection extends ConsumerStatefulWidget {
 }
 
 class _MarketPricesSectionState extends ConsumerState<MarketPricesSection> {
-  String _selectedProduct = 'Oignon';
+  String? _picked;
 
-  static const Map<String, double> _referenceBasePrices = {
-    'Oignon': 350.0,
-    'Tomate': 900.0,
-    'Mil': 330.0,
-    'Arachide': 580.0,
-    'Maïs': 240.0,
-    'Riz': 420.0,
-    'Pomme de terre': 400.0,
-    'Pastèque': 180.0,
-    'Papaye': 550.0,
-    'Mangue': 450.0,
-    'Fraise': 1800.0,
-    'Pomme': 1100.0,
-  };
+  String get _selectedProduct {
+    final products = _availableProducts;
+    if (_picked != null && products.contains(_picked)) return _picked!;
+    return products.isEmpty ? '' : products.first;
+  }
+
+
+  /// Prix moyen par jour : plusieurs marchés le même jour ne font plus osciller la courbe.
+  List<PricePoint> _daily(List<Price>? history) {
+    if (history == null) return const [];
+    final byDay = <String, List<double>>{};
+    for (final p in history) {
+      final day = p.date.length >= 10 ? p.date.substring(0, 10) : p.date;
+      byDay.putIfAbsent(day, () => []).add(p.priceValue);
+    }
+    final points = <PricePoint>[];
+    byDay.forEach((day, values) {
+      final d = DateTime.tryParse(day);
+      if (d != null) points.add(PricePoint(date: d, price: values.reduce((a, b) => a + b) / values.length));
+    });
+    points.sort((a, b) => a.date.compareTo(b.date));
+    return points;
+  }
 
   List<String> get _availableProducts {
     final productsFromMarkets = widget.markets
@@ -49,12 +60,13 @@ class _MarketPricesSectionState extends ConsumerState<MarketPricesSection> {
     if (productsFromMarkets.isNotEmpty) {
       return productsFromMarkets;
     }
-    return _referenceBasePrices.keys.toList();
+    return const <String>[];
   }
 
   double? _getProductCurrentPrice(String product, List<Price>? history) {
-    if (history != null && history.isNotEmpty) {
-      return history.last.priceValue;
+    final daily = _daily(history);
+    if (daily.isNotEmpty) {
+      return daily.last.price;
     }
     final match = widget.markets.cast<MarketPrice?>().firstWhere(
       (m) => m?.productName.toLowerCase() == product.toLowerCase(),
@@ -63,7 +75,7 @@ class _MarketPricesSectionState extends ConsumerState<MarketPricesSection> {
     if (match != null && match.price > 0) {
       return match.price;
     }
-    return _referenceBasePrices[product];
+    return null;
   }
 
   String _getImageForProduct(String productName) {
@@ -85,6 +97,17 @@ class _MarketPricesSectionState extends ConsumerState<MarketPricesSection> {
 
   @override
   Widget build(BuildContext context) {
+    if (_availableProducts.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24), border: Border.all(color: Colors.grey.withValues(alpha: 0.1))),
+        child: const Text(
+          'Aucun prix pour vos cultures. Ajoutez une culture : ses prix relevés sur les marchés apparaîtront ici.',
+          style: TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.4),
+        ),
+      );
+    }
     final historyAsync = ref.watch(productPriceHistoryProvider(_selectedProduct));
 
     return Container(
@@ -103,7 +126,13 @@ class _MarketPricesSectionState extends ConsumerState<MarketPricesSection> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildProductCards(),
+          if (_availableProducts.isEmpty)
+            const Text(
+              'Aucun prix pour vos cultures. Ajoutez une culture : ses prix relevés sur les marchés apparaîtront ici.',
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.4),
+            )
+          else
+            _buildProductCards(),
           const SizedBox(height: 24),
           historyAsync.when(
             data: (history) => _buildCurrentPriceHeader(history),
@@ -112,7 +141,7 @@ class _MarketPricesSectionState extends ConsumerState<MarketPricesSection> {
           ),
           const SizedBox(height: 24),
           SizedBox(
-            height: 220,
+            height: 190,
             child: historyAsync.when(
               data: (history) => _buildChart(history),
               loading: () => const Center(
@@ -121,6 +150,10 @@ class _MarketPricesSectionState extends ConsumerState<MarketPricesSection> {
               error: (_, __) => _buildFallbackChart(),
             ),
           ),
+          const SizedBox(height: 8),
+          Text('Relevés indicatifs, non officiels.', style: TextStyle(color: Colors.grey.shade500, fontSize: 11)),
+          const SizedBox(height: 16),
+          historyAsync.maybeWhen(data: (history) => _buildAnalyzeButton(history), orElse: () => const SizedBox.shrink()),
         ],
       ),
     );
@@ -129,7 +162,7 @@ class _MarketPricesSectionState extends ConsumerState<MarketPricesSection> {
   Widget _buildProductCards() {
     final products = _availableProducts;
     return SizedBox(
-      height: 110,
+      height: 66,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         physics: const BouncingScrollPhysics(),
@@ -142,28 +175,27 @@ class _MarketPricesSectionState extends ConsumerState<MarketPricesSection> {
             (m) => m?.productName.toLowerCase() == product.toLowerCase(),
             orElse: () => null,
           );
-          final double? currentPrice = (match != null && match.price > 0)
-              ? match.price
-              : _referenceBasePrices[product];
-          final isUp = match != null ? (match.trend == 'up') : true;
+          final double? currentPrice = (match != null && match.price > 0) ? match.price : null;
+          final change = match?.changePercent;
+          final isUp = (change ?? 0) >= 0;
           final trendColor = isUp ? Colors.green : Colors.red;
           final trendIcon = isUp ? Icons.trending_up : Icons.trending_down;
-          final trendLabel = isUp ? '+1.2%' : '-1.5%';
+          final trendLabel = change == null ? '' : '${isUp ? '+' : '−'}${change.abs().toStringAsFixed(1)}%';
 
           return GestureDetector(
             onTap: () {
               setState(() {
-                _selectedProduct = product;
+                _picked = product;
               });
             },
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 300),
-              width: 200,
-              margin: const EdgeInsets.only(right: 16),
-              padding: const EdgeInsets.all(12),
+              width: 168,
+              margin: const EdgeInsets.only(right: 10),
+              padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: isSelected ? AppColors.primary.withValues(alpha: 0.05) : Colors.white,
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(16),
                 border: Border.all(
                   color: isSelected ? AppColors.primary : Colors.grey.withValues(alpha: 0.1),
                   width: isSelected ? 2 : 1,
@@ -179,8 +211,8 @@ class _MarketPricesSectionState extends ConsumerState<MarketPricesSection> {
               child: Row(
                 children: [
                   Container(
-                    width: 48,
-                    height: 48,
+                    width: 36,
+                    height: 36,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: [
@@ -202,7 +234,7 @@ class _MarketPricesSectionState extends ConsumerState<MarketPricesSection> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -230,7 +262,7 @@ class _MarketPricesSectionState extends ConsumerState<MarketPricesSection> {
                               ),
                             ),
                             const Spacer(),
-                            if (currentPrice != null) ...[
+                            if (currentPrice != null && change != null) ...[
                               Icon(trendIcon, size: 12, color: trendColor),
                               const SizedBox(width: 2),
                               Text(
@@ -296,8 +328,9 @@ class _MarketPricesSectionState extends ConsumerState<MarketPricesSection> {
       );
     }
     double previousPrice = currentPrice;
-    if (history != null && history.length > 1) {
-      previousPrice = history[history.length - 2].priceValue;
+    final daily = _daily(history);
+    if (daily.length > 1) {
+      previousPrice = daily[daily.length - 2].price;
     }
     final diff = currentPrice - previousPrice;
     final percent = previousPrice > 0 ? (diff / previousPrice) * 100 : 0.0;
@@ -307,7 +340,8 @@ class _MarketPricesSectionState extends ConsumerState<MarketPricesSection> {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        Column(
+        Expanded(
+         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
@@ -317,7 +351,11 @@ class _MarketPricesSectionState extends ConsumerState<MarketPricesSection> {
             const SizedBox(height: 4),
             Row(
               children: [
-                Text(
+                Flexible(
+                 child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
                   '${currentPrice.toInt()} FCFA / kg',
                   style: const TextStyle(
                     fontSize: 24,
@@ -325,7 +363,10 @@ class _MarketPricesSectionState extends ConsumerState<MarketPricesSection> {
                     color: AppColors.textPrimary,
                   ),
                 ),
+                 ),
+                ),
                 const SizedBox(width: 12),
+                if (_daily(history).length > 1)
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
@@ -354,55 +395,53 @@ class _MarketPricesSectionState extends ConsumerState<MarketPricesSection> {
               ],
             ),
           ],
-        ),
-        GestureDetector(
-          onTap: () {
-            double stockQuantity = 0.0;
-            try {
-              final stock = widget.stocks.firstWhere(
-                (s) => s.name.toLowerCase() == _selectedProduct.toLowerCase(),
-              );
-              stockQuantity = stock.quantity;
-            } catch (_) {}
-
-            context.push('/price-analysis', extra: {
-              'product': _selectedProduct,
-              'price': currentPrice,
-              'stock': stockQuantity,
-            });
-          },
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [AppColors.primary, AppColors.primary.withValues(alpha: 0.8)],
-              ),
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.2),
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: const Row(
-              children: [
-                Icon(Icons.auto_awesome, color: Colors.white, size: 16),
-                SizedBox(width: 8),
-                Text(
-                  'Analyser',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
-                ),
-              ],
-            ),
-          ),
+         ),
         ),
       ],
     );
   }
 
+  Widget _buildAnalyzeButton(List<Price>? history) {
+    final currentPrice = _getProductCurrentPrice(_selectedProduct, history);
+    if (currentPrice == null) return const SizedBox.shrink();
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton.icon(
+        onPressed: () {
+          double stockQuantity = 0.0;
+          try {
+            final stock = widget.stocks.firstWhere((s) => s.name.toLowerCase() == _selectedProduct.toLowerCase());
+            stockQuantity = stock.quantity;
+          } catch (_) {}
+          context.push('/price-analysis', extra: {
+            'product': _selectedProduct,
+            'price': currentPrice,
+            'stock': stockQuantity,
+          });
+        },
+        icon: const Icon(Icons.auto_awesome, size: 18),
+        label: Text('Analyser $_selectedProduct'),
+      ),
+    );
+  }
+
   Widget _buildChart(List<Price> history) {
+    final daily = _daily(history);
+    if (daily.length >= 2) {
+      return Align(alignment: Alignment.bottomCenter, child: PriceChart(points: daily, color: AppColors.primary));
+    }
+    return const Center(
+      child: Text(
+        'Pas encore assez de relevés pour tracer une courbe.',
+        textAlign: TextAlign.center,
+        style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+      ),
+    );
+  }
+
+  // Ancienne courbe en zig-zag (conservée pour référence, non utilisée)
+  // ignore: unused_element
+  Widget _buildChartLegacy(List<Price> history) {
     if (history.isEmpty) {
       return _buildFallbackChart();
     }
@@ -561,83 +600,13 @@ class _MarketPricesSectionState extends ConsumerState<MarketPricesSection> {
   }
 
   Widget _buildFallbackChart() {
-    final currentPrice = _getProductCurrentPrice(_selectedProduct, null);
-    if (currentPrice == null) {
-      return const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.show_chart_rounded, size: 40, color: Colors.grey),
-            SizedBox(height: 8),
-            Text(
-              'Aucun relevé disponible pour ce produit',
-              style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
-            ),
-          ],
-        ),
-      );
-    }
-    final spots = [
-      FlSpot(0, currentPrice),
-      FlSpot(1, currentPrice),
-      FlSpot(2, currentPrice),
-    ];
-
-    return LineChart(
-      LineChartData(
-        gridData: FlGridData(
-          show: true,
-          drawVerticalLine: false,
-          horizontalInterval: 100,
-          getDrawingHorizontalLine: (value) => FlLine(
-            color: Colors.grey.withValues(alpha: 0.15),
-            strokeWidth: 1.5,
-            dashArray: [8, 4],
-          ),
-        ),
-        titlesData: FlTitlesData(
-          show: true,
-          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          bottomTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              getTitlesWidget: (val, meta) => Padding(
-                padding: const EdgeInsets.only(top: 8.0),
-                child: Text(
-                  val == 1 ? "Aujourd'hui" : '',
-                  style: const TextStyle(fontSize: 10, color: Colors.grey),
-                ),
-              ),
-            ),
-          ),
-          leftTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              reservedSize: 50,
-              getTitlesWidget: (val, meta) => Text(
-                '${val.toInt()} F',
-                style: const TextStyle(fontSize: 10, color: Colors.grey),
-              ),
-            ),
-          ),
-        ),
-        borderData: FlBorderData(show: false),
-        minX: 0,
-        maxX: 2,
-        minY: (currentPrice - 100).clamp(0.0, double.infinity),
-        maxY: currentPrice + 100,
-        lineBarsData: [
-          LineChartBarData(
-            spots: spots,
-            isCurved: false,
-            color: AppColors.primary.withValues(alpha: 0.7),
-            barWidth: 2,
-            belowBarData: BarAreaData(
-              show: true,
-              color: AppColors.primary.withValues(alpha: 0.08),
-            ),
-          ),
+    return const Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.show_chart_rounded, size: 40, color: Colors.grey),
+          SizedBox(height: 8),
+          Text('Historique des prix indisponible', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
         ],
       ),
     );

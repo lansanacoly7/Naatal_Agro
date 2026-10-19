@@ -244,21 +244,24 @@ PUT /users/me/
 ### Create crop
 
 ```http
-POST /agriculture/crops/
+POST /api/agriculture/crops/
+Authorization: Bearer <token>
 ```
 
 ```json
 {
-  "name": "tomate",
-  "category": "maraichage",
-  "planting_date": "2026-01-01",
-  "area_size": 2,
-  "location": {
-    "lat": 14.7,
-    "lng": -17.4
-  }
+  "name": "Oignon Violet de Galmi",
+  "crop_type": "Oignon",
+  "planting_date": "2026-01-15",
+  "expected_harvest_date": "2026-05-15",
+  "status": "active",
+  "area_size": 2.5,
+  "location": "Thiès, Sénégal",
+  "guide": "<uuid_optionnel_fiche_agronomique>"
 }
 ```
+
+> **Règle de validation (zéro donnée inventée)** : Si un `guide` agronomique documenté avec cycle (`cycle_days_min/max`) est fourni, la date `expected_harvest_date` peut être automatiquement calculée à partir de `planting_date`. Dans le cas contraire, `expected_harvest_date` est **strictement obligatoire** (aucun cycle arbitraire de 90 jours n'est attribué par défaut).
 
 ---
 
@@ -348,6 +351,61 @@ GET /markets/
 ```http
 GET /markets/prices?product=tomate
 ```
+
+---
+
+## Latest prices (un relevé par marché)
+
+```http
+GET /api/markets/prices/latest/?product=Oignon
+```
+
+Dernier relevé de prix de **chaque marché** pour un produit : une ligne par marché, triée par nom de marché.
+Sert à la carte des marchés et au classement « meilleur marché ».
+
+- `product` est **requis** (recherche partielle, insensible à la casse) ; `400` si absent ou vide.
+- Réponse : tableau JSON **non paginé** (un objet par marché) :
+
+```json
+[
+  {
+    "market": "uuid",
+    "market_name": "Marché de Thiès",
+    "region": "Thiès",
+    "location_gps": "14.79,-17.44",
+    "product_name": "Oignon Local",
+    "price": 450.0,
+    "trend": "up",
+    "date": "2026-10-14"
+  }
+]
+```
+
+---
+
+## Price history (historique journalier)
+
+```http
+GET /api/markets/prices/history/?product=Oignon&market=<id>&days=30
+```
+
+Série journalière d'un produit, sur les `days` derniers jours glissants à partir du relevé le plus récent.
+
+- `product` : requis, recherche partielle (insensible à la casse) ; `400` si absent ou vide.
+- `market` (facultatif) : identifiant d'un marché. Sans ce paramètre, la série est la **moyenne de tous les marchés**
+  ce jour-là ; avec, les relevés de ce marché seul.
+- `days` (facultatif) : 30 par défaut, borné entre 1 et 120 ; valeur non numérique : `400`.
+- Aucun relevé pour le produit : tableau vide `[]`.
+
+```json
+[
+  { "date": "2026-10-12", "price": 425.5, "markets": 3 },
+  { "date": "2026-10-13", "price": 450.0, "markets": 4 }
+]
+```
+
+`price` est la moyenne (ou le prix du marché demandé) arrondie à 2 décimales ; `markets` est le nombre de marchés
+ayant un relevé ce jour-là.
 
 ---
 
@@ -452,25 +510,87 @@ POST /notifications/{id}/read/
 ## Aggregation endpoint
 
 ```http
-GET /dashboard/
+GET /api/dashboard/
+Authorization: Bearer <access>
 ```
+
+Endpoint d'agrégation : cultures, prix des cultures de l'utilisateur, météo de sa région, stocks, calendrier,
+produits tendance et alertes, en une seule requête. Accès : connecté (`IsAuthenticated`).
 
 ---
 
 ## Response
 
+Réponse `200` (tableau/objets JSON directement, sans enveloppe) :
+
 ```json
 {
-  "success": true,
-  "data": {
-    "weather": {},
-    "markets": [],
-    "crops": [],
-    "alerts": [],
-    "recommendations": []
-  }
+  "agriculture": {
+    "active_crops_count": 3,
+    "total_area_size": 4.5
+  },
+  "markets": [
+    {
+      "product_name": "oignon local",
+      "price": 450.0,
+      "min_price": 400.0,
+      "max_price": 520.0,
+      "markets_count": 4,
+      "date": "2026-10-14",
+      "change_percent": 2.5,
+      "trend": "up",
+      "market__name": "4 marchés"
+    }
+  ],
+  "weather": {
+    "location": "Thiès, Sénégal",
+    "temp": 28.5,
+    "humidity": 70.0,
+    "rainfall": 12.0,
+    "date": "2026-10-14"
+  },
+  "alerts": [],
+  "stockItems": [],
+  "calendarEvents": [],
+  "featuredProducts": []
 }
 ```
+
+### `markets` — prix des cultures de l'utilisateur
+
+Pour chaque produit que l'utilisateur cultive ou suit (noms de ses cultures, de leur type et `main_crops`,
+3 caractères minimum, 12 produits au maximum, 6 résultats renvoyés) : le relevé le plus récent, **tous marchés
+confondus** (moyenne à la date du dernier relevé).
+
+| Champ | Sens |
+|---|---|
+| `product_name` | Nom du produit (tel que renvoyé par le relevé) |
+| `price` | Moyenne des prix de tous les marchés à la date du relevé le plus récent, arrondie à 2 décimales |
+| `min_price` | Prix le plus bas relevé ce jour-là |
+| `max_price` | Prix le plus haut relevé ce jour-là |
+| `markets_count` | Nombre de marchés ayant donné un prix ce jour-là |
+| `date` | Date du relevé (`AAAA-MM-JJ`) |
+| `change_percent` | Évolution en % par rapport au relevé d'au moins 7 jours avant (arrondie à 0,1) ; `null` si aucun relevé assez ancien |
+| `trend` | `up` si `change_percent` > 1 %, `down` si < −1 %, sinon `stable` |
+| `market__name` | Libellé du nombre de marchés (« 4 marchés ») |
+
+Liste vide si l'utilisateur ne cultive rien ou si aucun prix n'existe.
+
+### `weather` — météo de la région de l'utilisateur
+
+Relevé le plus récent de la **région de l'utilisateur uniquement** (première partie de son `location` avant la
+virgule) : `location`, `temp`, `humidity`, `rainfall` et `date` (date de prévision, **nouveau champ** ; côté client,
+l'absence de `temp` signale qu'aucune météo n'est disponible). Objet `{}` si aucune donnée pour sa région.
+
+### Autres clés
+
+| Clé | Contenu |
+|---|---|
+| `agriculture` | `{active_crops_count, total_area_size}` (cultures dont le statut est `active`) |
+| `alerts` | Jusqu'à 5 notifications non lues : `{id, type, message, created_at}` |
+| `stockItems` | Éléments de stock : `{id, name, quantity, unit, alert_status, ai_storage_advice, updated_at}` |
+| `calendarEvents` | 5 prochaines activités : `{title, description, date ("14\nOCT"), phase}` (nom de la culture) |
+| `featuredProducts` | 5 produits tendance (`is_trending`, sinon les 5 premiers) : `{id, name, category, price, trend_percentage, imageAsset}` |
 
 ---
 

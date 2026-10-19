@@ -1,23 +1,29 @@
 {
-    "name": "nataal_agro",
-    "short_name": "nataal_agro",
-    "start_url": ".",
+    "name": "Naatal Agro",
+    "short_name": "Naatal Agro",
+    "id": "/",
+    "start_url": "/",
+    "scope": "/",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#F2F4F1",
+    "theme_color": "#0F4F31",
+    "description": "Copilote agricole : cultures, stock, ventes, prix des marchés et conseils sourcés.",
+    "lang": "fr",
     "orientation": "portrait-primary",
+    "categories": ["productivity", "business"],
     "prefer_related_applications": false,
     "icons": [
         {
             "src": "icons/Icon-192.png",
             "sizes": "192x192",
-            "type": "image/png"
+            "type": "image/png",
+            "purpose": "any"
         },
         {
             "src": "icons/Icon-512.png",
             "sizes": "512x512",
-            "type": "image/png"
+            "type": "image/png",
+            "purpose": "any"
         },
         {
             "src": "icons/Icon-maskable-192.png",

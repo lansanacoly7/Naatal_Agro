@@ -55,7 +55,7 @@ class Activity(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     crop = models.ForeignKey(Crop, on_delete=models.CASCADE, related_name='activities')
     activity_type = models.CharField(max_length=255)
-    description = models.TextField()
+    description = models.TextField(blank=True, default='')
     date = models.DateField()
     cost = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)

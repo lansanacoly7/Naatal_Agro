@@ -31,6 +31,17 @@ class VisualHarness {
     TestWidgetsFlutterBinding.ensureInitialized();
     FlutterSecureStorage.setMockInitialValues({});
     SharedPreferences.setMockInitialValues({});
+    for (final channelName in [
+      'plugins.flutter.io/path_provider',
+      'plugins.flutter.io/path_provider_windows',
+      'plugins.flutter.io/path_provider_android',
+      'plugins.flutter.io/path_provider_ios',
+    ]) {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(MethodChannel(channelName), (MethodCall methodCall) async {
+        return Directory.systemTemp.path;
+      });
+    }
     await _loadFont('Onest', File('assets/fonts/Onest.ttf'));
     final sdk = Platform.environment['FLUTTER_ROOT'] ??
         'C:/Users/HP/Documents/Flutter/flutter_windows_3.41.1-stable/flutter';
@@ -66,12 +77,15 @@ class VisualHarness {
         overrides: [sharedPreferencesProvider.overrideWithValue(prefs), ...overrides],
         child: RepaintBoundary(
           key: key,
-          child: MaterialApp(
-            debugShowCheckedModeBanner: false,
-            theme: NaatalTheme.light,
-            darkTheme: NaatalTheme.dark,
-            themeMode: dark ? ThemeMode.dark : ThemeMode.light,
-            home: EffectsScope(reduced: false, child: screen),
+          child: DefaultAssetBundle(
+            bundle: _DiskAssetBundle(),
+            child: MaterialApp(
+              debugShowCheckedModeBanner: false,
+              theme: NaatalTheme.light,
+              darkTheme: NaatalTheme.dark,
+              themeMode: dark ? ThemeMode.dark : ThemeMode.light,
+              home: EffectsScope(reduced: false, child: screen),
+            ),
           ),
         ),
       ),
@@ -124,3 +138,15 @@ class FakeProfile extends ProfileNotifier {
 }
 
 final fakeSummary = FinancialSummary(totalRevenue: 185000, totalExpenses: 15000, balance: 170000);
+
+class _DiskAssetBundle extends PlatformAssetBundle {
+  @override
+  Future<ByteData> load(String key) async {
+    final file = File(key);
+    if (file.existsSync()) {
+      final bytes = file.readAsBytesSync();
+      return ByteData.sublistView(bytes);
+    }
+    return super.load(key);
+  }
+}

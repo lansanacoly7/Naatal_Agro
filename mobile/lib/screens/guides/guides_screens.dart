@@ -138,7 +138,6 @@ class GuideDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final c = context.c;
     final state = ref.watch(guideDetailProvider(slug));
     final guide = state.guide;
 
@@ -191,79 +190,7 @@ class GuideDetailScreen extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: Space.l),
-                _Section(title: 'Zones de culture', text: guide.zones, icon: Icons.map_rounded),
-                _Section(title: 'Calendrier', text: guide.calendar, icon: Icons.event_rounded),
-                _Section(title: 'Sol et semis', text: guide.soilAndSowing, icon: Icons.grass_rounded),
-                _Section(title: 'Eau', text: guide.waterNeeds, icon: Icons.water_drop_rounded),
-                _Section(title: 'Fertilisation', text: guide.fertilization, icon: Icons.science_rounded),
-                _PestsSection(items: guide.pestsDiseases),
-                _Section(title: 'Récolte', text: guide.harvest, icon: Icons.agriculture_rounded),
-                _Section(title: 'Rendement', text: guide.yieldInfo, icon: Icons.bar_chart_rounded),
-                if (guide.limitations.trim().isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(Space.gutter, Space.s, Space.gutter, 0),
-                    child: Container(
-                      padding: const EdgeInsets.all(Space.l),
-                      decoration: BoxDecoration(color: c.clay.withValues(alpha: c.isDark ? 0.18 : 0.1), borderRadius: BorderRadius.circular(Radii.l)),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Icon(Icons.info_outline_rounded, color: c.clay),
-                          const SizedBox(width: Space.m),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('À vérifier', style: T.body(color: c.clay, weight: 800)),
-                                const SizedBox(height: 2),
-                                Text(guide.limitations.trim(), style: T.caption(color: c.ink, weight: 500)),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                const SectionHeader('Sources'),
-                if (guide.sources.isEmpty)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: Space.gutter),
-                    child: Text('Aucune source enregistrée.', style: T.body(color: c.ink2)),
-                  )
-                else
-                  GroupedList(
-                    children: [
-                      for (var i = 0; i < guide.sources.length; i++)
-                        GroupedRow(
-                          leading: Container(
-                            width: 38,
-                            height: 38,
-                            alignment: Alignment.center,
-                            decoration: BoxDecoration(color: c.accent.withValues(alpha: 0.14), borderRadius: BorderRadius.circular(12)),
-                            child: Text('${i + 1}', style: T.number(16, color: c.accent)),
-                          ),
-                          title: guide.sources[i].title,
-                          subtitle: [
-                            if (guide.sources[i].publisher.isNotEmpty) guide.sources[i].publisher,
-                            if (guide.sources[i].year.isNotEmpty) guide.sources[i].year,
-                            if (!guide.sources[i].isSenegal) 'Référence hors Sénégal, à adapter',
-                          ].join(' · '),
-                          trailing: guide.sources[i].url.isEmpty ? null : Icon(Icons.copy_rounded, size: 18, color: c.ink2),
-                          onTap: guide.sources[i].url.isEmpty
-                              ? null
-                              : () async {
-                                  await Clipboard.setData(ClipboardData(text: guide.sources[i].url));
-                                  if (context.mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Lien de la source copié.')));
-                                  }
-                                },
-                        ),
-                    ],
-                  ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(Space.gutter + 4, Space.m, Space.gutter, 0),
-                  child: Text('Confirmez toujours les doses et produits avec un conseiller agricole (ANCAR, SAED).', style: T.caption(color: c.ink2, weight: 500)),
-                ),
+                GuideSections(guide: guide),
               ],
             );
           }),
@@ -437,6 +364,97 @@ class _PestsSectionState extends State<_PestsSection> {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Rubriques d'une fiche technique (zones, calendrier, sol, eau, fertilisation, ravageurs,
+/// récolte, rendement, limites, sources) : utilisées par la fiche d'une culture.
+class GuideSections extends StatelessWidget {
+  const GuideSections({super.key, required this.guide});
+
+  final AgronomicGuide guide;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _Section(title: 'Zones de culture', text: guide.zones, icon: Icons.map_rounded),
+        _Section(title: 'Calendrier', text: guide.calendar, icon: Icons.event_rounded),
+        _Section(title: 'Sol et semis', text: guide.soilAndSowing, icon: Icons.grass_rounded),
+        _Section(title: 'Eau', text: guide.waterNeeds, icon: Icons.water_drop_rounded),
+        _Section(title: 'Fertilisation', text: guide.fertilization, icon: Icons.science_rounded),
+        _PestsSection(items: guide.pestsDiseases),
+        _Section(title: 'Récolte', text: guide.harvest, icon: Icons.agriculture_rounded),
+        _Section(title: 'Rendement', text: guide.yieldInfo, icon: Icons.bar_chart_rounded),
+        if (guide.limitations.trim().isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(Space.gutter, Space.s, Space.gutter, 0),
+            child: Container(
+              padding: const EdgeInsets.all(Space.l),
+              decoration: BoxDecoration(color: c.clay.withValues(alpha: c.isDark ? 0.18 : 0.1), borderRadius: BorderRadius.circular(Radii.l)),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.info_outline_rounded, color: c.clay),
+                  const SizedBox(width: Space.m),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('À vérifier', style: T.body(color: c.clay, weight: 800)),
+                        const SizedBox(height: 2),
+                        Text(guide.limitations.trim(), style: T.caption(color: c.ink, weight: 500)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        const SectionHeader('Sources'),
+        if (guide.sources.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: Space.gutter),
+            child: Text('Aucune source enregistrée.', style: T.body(color: c.ink2)),
+          )
+        else
+          GroupedList(
+            children: [
+              for (var i = 0; i < guide.sources.length; i++)
+                GroupedRow(
+                  leading: Container(
+                    width: 38,
+                    height: 38,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(color: c.accent.withValues(alpha: 0.14), borderRadius: BorderRadius.circular(12)),
+                    child: Text('${i + 1}', style: T.number(16, color: c.accent)),
+                  ),
+                  title: guide.sources[i].title,
+                  subtitle: [
+                    if (guide.sources[i].publisher.isNotEmpty) guide.sources[i].publisher,
+                    if (guide.sources[i].year.isNotEmpty) guide.sources[i].year,
+                    if (!guide.sources[i].isSenegal) 'Référence hors Sénégal, à adapter',
+                  ].join(' · '),
+                  trailing: guide.sources[i].url.isEmpty ? null : Icon(Icons.copy_rounded, size: 18, color: c.ink2),
+                  onTap: guide.sources[i].url.isEmpty
+                      ? null
+                      : () async {
+                          await Clipboard.setData(ClipboardData(text: guide.sources[i].url));
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Lien de la source copié.')));
+                          }
+                        },
+                ),
+            ],
+          ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(Space.gutter + 4, Space.m, Space.gutter, 0),
+          child: Text('Confirmez toujours les doses et produits avec un conseiller agricole (ANCAR, SAED).', style: T.caption(color: c.ink2, weight: 500)),
+        ),
+      ],
     );
   }
 }

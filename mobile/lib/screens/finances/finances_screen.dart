@@ -6,6 +6,7 @@ import '../../features/finances/data/finances_provider.dart';
 import '../../features/finances/data/models/financial_summary.dart';
 import '../../shared/utils/data_refresh.dart';
 import '../../ui/ui.dart';
+import '../markets/markets_data.dart';
 
 /// Finances : solde, revenus, dépenses et historique des opérations.
 /// Chaque vente enregistrée apparaît ici comme un revenu.
@@ -119,6 +120,7 @@ class _FinancesScreenState extends ConsumerState<FinancesScreen> {
                   }).toList();
                   if (shown.isEmpty) {
                     return EmptyState(
+                      imageAsset: 'assets/images/ui/ui_depenses.jpg',
                       icon: Icons.receipt_long_rounded,
                       title: list.isEmpty ? 'Aucune opération' : 'Rien dans cette catégorie',
                       message: list.isEmpty
@@ -274,11 +276,49 @@ class _TransactionRow extends StatelessWidget {
     final c = context.c;
     final income = item.type == 'income';
     final date = DateTime.tryParse(item.date);
-    return GroupedRow(
-      leading: IconTile(
+
+    final descLower = item.description.toLowerCase();
+    String? matchedCrop;
+    for (final crop in const [
+      'oignon', 'arachide', 'tomate', 'piment', 'mais', 'maïs', 'mil', 'manioc', 'riz', 'chou', 'carotte'
+    ]) {
+      if (descLower.contains(crop)) {
+        matchedCrop = crop == 'maïs' ? 'mais' : crop;
+        break;
+      }
+    }
+
+    Widget leading;
+    if (matchedCrop != null) {
+      leading = ClipRRect(
+        borderRadius: BorderRadius.circular(Radii.m),
+        child: Container(
+          width: 44,
+          height: 44,
+          color: (income ? c.accent : c.clay).withValues(alpha: c.isDark ? 0.2 : 0.1),
+          child: Padding(
+            padding: const EdgeInsets.all(4),
+            child: Image.asset(
+              productImageForName(matchedCrop),
+              fit: BoxFit.contain,
+              errorBuilder: (_, __, ___) => IconTile(
+                icon: income ? Icons.south_west_rounded : Icons.north_east_rounded,
+                color: income ? c.accent : c.clay,
+              ),
+            ),
+          ),
+        ),
+      );
+    } else {
+      leading = IconTile(
         icon: income ? Icons.south_west_rounded : Icons.north_east_rounded,
         color: income ? c.accent : c.clay,
-      ),
+      );
+    }
+
+    return GroupedRow(
+      minHeight: 60,
+      leading: leading,
       title: item.description,
       subtitle: date == null ? null : Fmt.shortDate(date),
       value: '${income ? '+' : '−'}${Fmt.grouped(item.amount)} F',
@@ -302,6 +342,9 @@ class _AddTransactionSheetState extends ConsumerState<_AddTransactionSheet> {
   late String _type = widget.initialType;
   bool _busy = false;
   String? _error;
+
+  static const _quickIncomes = ['Vente directe', 'Avance récolte', 'Subvention', 'Aide de campagne'];
+  static const _quickExpenses = ['Engrais NPK', 'Semences', 'Carburant / Transport', 'Main d\'œuvre', 'Traitement'];
 
   @override
   void dispose() {
@@ -347,6 +390,8 @@ class _AddTransactionSheetState extends ConsumerState<_AddTransactionSheet> {
     final c = context.c;
     final income = _type == 'income';
     final accent = income ? c.accent : c.clay;
+    final suggestions = income ? _quickIncomes : _quickExpenses;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(Space.xxl, Space.xl, Space.xxl, Space.xl),
       child: Column(
@@ -389,6 +434,44 @@ class _AddTransactionSheetState extends ConsumerState<_AddTransactionSheet> {
             inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9., ]'))],
             style: T.number(32, color: accent),
             decoration: const InputDecoration(labelText: 'Montant en FCFA', hintText: '0'),
+          ),
+          const SizedBox(height: Space.m),
+          Text('Suggestions rapides', style: T.caption(color: c.ink2, weight: 700)),
+          const SizedBox(height: Space.s),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                for (final s in suggestions) ...[
+                  PressScale(
+                    onTap: () {
+                      setState(() {
+                        _description.text = s;
+                        _error = null;
+                      });
+                    },
+                    child: Container(
+                      height: 44,
+                      padding: const EdgeInsets.symmetric(horizontal: Space.m, vertical: Space.s),
+                      decoration: BoxDecoration(
+                        color: _description.text == s ? accent.withValues(alpha: c.isDark ? 0.25 : 0.12) : c.surfaceAlt,
+                        borderRadius: BorderRadius.circular(Radii.m),
+                        border: Border.all(color: _description.text == s ? accent : Colors.transparent, width: 1.5),
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        s,
+                        style: T.caption(
+                          color: _description.text == s ? accent : c.ink,
+                          weight: _description.text == s ? 800 : 600,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: Space.s),
+                ],
+              ],
+            ),
           ),
           const SizedBox(height: Space.m),
           TextField(

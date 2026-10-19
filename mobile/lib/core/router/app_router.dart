@@ -15,24 +15,31 @@ import '../../features/profile/presentation/screens/settings_language_screen.dar
 import '../../features/profile/presentation/screens/settings_security_screen.dart';
 import '../../features/profile/presentation/screens/settings_support_screen.dart';
 
-import '../../screens/crops/add_crop_screen.dart';
-import '../../screens/crops/crop_detail_screen.dart';
-import '../../screens/crops/crops_screen.dart';
 import '../../screens/assistant/assistant_screen.dart';
-import '../../screens/auth/login_screen.dart';
-import '../../screens/auth/onboarding_screen.dart';
-import '../../screens/auth/register_screen.dart';
-import '../../screens/auth/welcome_screen.dart';
+import '../../features/auth/presentation/screens/login_screen.dart';
+import '../../features/auth/presentation/screens/onboarding_screen.dart';
+import '../../features/auth/presentation/screens/register_screen.dart';
+import '../../features/auth/presentation/screens/welcome_loading_screen.dart';
 import '../../features/weather/presentation/screens/weather_screen.dart';
+import '../../features/agriculture/data/agriculture_provider.dart';
+import '../../features/agriculture/presentation/screens/add_crop_screen.dart';
+import '../../features/agriculture/presentation/screens/crop_detail_screen.dart';
+import '../../features/agriculture/presentation/screens/culture_fiche_screen.dart';
+import '../../features/agriculture/presentation/screens/cultures_screen.dart';
+import '../../features/markets/data/models/product.dart';
 import '../../screens/finances/finances_screen.dart';
 import '../../screens/guides/guides_screens.dart';
 import '../../screens/notifications/notifications_screen.dart';
 import '../../screens/profile/profile_screen.dart';
-import '../../screens/home/home_screen.dart';
+import '../../features/dashboard/presentation/screens/calendar_screen.dart';
+import '../../features/dashboard/presentation/screens/dashboard_screen.dart';
+import '../../features/dashboard/presentation/screens/mon_dashboard_screen.dart';
+import '../../features/dashboard/presentation/screens/price_analysis_screen.dart';
 import '../../screens/markets/markets_screen.dart';
 import '../../screens/sell/sell_screen.dart';
 import '../../screens/shell/main_shell.dart';
 import '../../screens/stock/stock_screen.dart';
+import '../../ui/ui.dart' show AuthStyle;
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
 final _shellNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'farmerShell');
@@ -123,8 +130,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         navigatorKey: _shellNavigatorKey,
         builder: (context, state, child) => MainShell(child: child),
         routes: [
-          GoRoute(path: '/', builder: (context, state) => const HomeScreen()),
-          GoRoute(path: '/agriculture', builder: (context, state) => const CropsScreen()),
+          GoRoute(path: '/', builder: (context, state) => const DashboardScreen()),
+          GoRoute(path: '/profile', builder: (context, state) => const ProfileScreen()),
+          GoRoute(path: '/agriculture', builder: (context, state) => const CulturesScreen()),
           GoRoute(path: '/markets', builder: (context, state) => const MarketsScreen()),
           GoRoute(path: '/ai', builder: (context, state) => const AssistantScreen()),
         ],
@@ -132,28 +140,36 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
         path: '/onboarding',
-        builder: (context, state) => const OnboardingScreen(),
+        builder: (context, state) => const AuthStyle(child: OnboardingScreen()),
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
         path: '/login',
-        builder: (context, state) => const LoginScreen(),
+        builder: (context, state) => const AuthStyle(child: LoginScreen()),
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
         path: '/register',
-        builder: (context, state) => const RegisterScreen(),
+        builder: (context, state) => const AuthStyle(child: RegisterScreen()),
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
         path: '/welcome',
-        builder: (context, state) => const WelcomeLoadingScreen(),
+        builder: (context, state) => const AuthStyle(child: WelcomeLoadingScreen()),
       ),
       // Cultures : les chemins fixes passent avant « :id ».
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
         path: '/agriculture/add',
-        builder: (context, state) => const AddCropScreen(),
+        builder: (context, state) => AddCropScreen(initialGuideSlug: state.extra is String ? state.extra as String : null),
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: '/agriculture/culture',
+        builder: (context, state) {
+          final product = state.extra;
+          return product is Product ? CultureFicheScreen(product: product) : const CulturesScreen();
+        },
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
@@ -170,15 +186,15 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
         path: '/agriculture/:id',
-        builder: (context, state) => CropDetailScreen(cropId: state.pathParameters['id'] ?? ''),
+        builder: (context, state) => _CropById(cropId: state.pathParameters['id'] ?? ''),
       ),
-      // Ancien chemin encore utilisé par d'anciens écrans : renvoie vers la fiche.
+      // Ouverture directe avec l'objet culture (depuis la liste).
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
         path: '/crop_detail',
-        redirect: (context, state) {
+        builder: (context, state) {
           final crop = state.extra;
-          return crop is Crop ? '/agriculture/${crop.id}' : '/agriculture';
+          return crop is Crop ? CropDetailScreen(crop: crop) : const CulturesScreen();
         },
       ),
       GoRoute(
@@ -236,8 +252,21 @@ final routerProvider = Provider<GoRouter>((ref) {
           );
         },
       ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: '/price-analysis',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>? ?? {};
+          return PriceAnalysisScreen(
+            productName: extra['product'] as String? ?? 'Inconnu',
+            currentPrice: (extra['price'] as num?)?.toDouble() ?? 0.0,
+            initialStock: (extra['stock'] as num?)?.toDouble() ?? 0.0,
+          );
+        },
+      ),
+      GoRoute(parentNavigatorKey: _rootNavigatorKey, path: '/calendar', builder: (context, state) => const CalendarScreen()),
+      GoRoute(parentNavigatorKey: _rootNavigatorKey, path: '/mon_dashboard', builder: (context, state) => const MonDashboardScreen()),
       GoRoute(parentNavigatorKey: _rootNavigatorKey, path: '/weather', builder: (context, state) => const WeatherScreen()),
-      GoRoute(parentNavigatorKey: _rootNavigatorKey, path: '/profile', builder: (context, state) => const ProfileScreen()),
       GoRoute(parentNavigatorKey: _rootNavigatorKey, path: '/price-alerts', builder: (context, state) => const PriceAlertsScreen()),
       GoRoute(parentNavigatorKey: _rootNavigatorKey, path: '/notifications', builder: (context, state) => const NotificationsScreen()),
       GoRoute(parentNavigatorKey: _rootNavigatorKey, path: '/edit-profile', builder: (context, state) => const EditProfileScreen()),
@@ -248,3 +277,27 @@ final routerProvider = Provider<GoRouter>((ref) {
     ],
   );
 });
+
+
+/// Fiche d'une culture ouverte par son identifiant (liens venant d'autres écrans).
+class _CropById extends ConsumerWidget {
+  const _CropById({required this.cropId});
+
+  final String cropId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final crops = ref.watch(cropsProvider);
+    return crops.when(
+      loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
+      error: (e, _) => Scaffold(appBar: AppBar(), body: const Center(child: Text('Impossible de charger cette culture.'))),
+      data: (list) {
+        final matches = list.where((c) => c.id == cropId);
+        if (matches.isEmpty) {
+          return Scaffold(appBar: AppBar(), body: const Center(child: Text('Culture introuvable.')));
+        }
+        return CropDetailScreen(crop: matches.first);
+      },
+    );
+  }
+}

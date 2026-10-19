@@ -223,6 +223,19 @@ class _CropsListScreenState extends ConsumerState<CropsListScreen> with SingleTi
     );
   }
 
+  String _statusLabel(String status) {
+    switch (status.toLowerCase()) {
+      case 'active':
+        return 'EN COURS';
+      case 'harvested':
+        return 'RÉCOLTÉE';
+      case 'attention':
+        return 'À SURVEILLER';
+      default:
+        return status.toUpperCase();
+    }
+  }
+
   Widget _buildCropCard(BuildContext context, Crop crop) {
     Color statusColor = crop.status == 'active'
         ? Colors.green
@@ -306,7 +319,7 @@ class _CropsListScreenState extends ConsumerState<CropsListScreen> with SingleTi
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              crop.status.toUpperCase(),
+                              _statusLabel(crop.status),
                               style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
                             ),
                           ],

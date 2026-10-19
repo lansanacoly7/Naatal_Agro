@@ -22,19 +22,19 @@ abstract final class T {
 
   /// Titre d'écran (grand titre qui se réduit au défilement).
   static TextStyle largeTitle({Color? color}) =>
-      _base(34, 800, height: 1.05, spacing: -1.0, color: color);
+      _base(30, 800, height: 1.08, spacing: -0.8, color: color);
 
   /// Titre de section ou de feuille.
   static TextStyle title({Color? color}) =>
-      _base(22, 700, height: 1.15, spacing: -0.4, color: color);
+      _base(20, 700, height: 1.15, spacing: -0.3, color: color);
 
   /// Texte courant et lignes de liste.
   static TextStyle body({Color? color, int weight = 500}) =>
-      _base(16, weight, height: 1.35, color: color);
+      _base(15, weight, height: 1.35, color: color);
 
   /// Légende, sous-titre, étiquette.
   static TextStyle caption({Color? color, int weight = 600}) =>
-      _base(13, weight, height: 1.3, color: color);
+      _base(12, weight, height: 1.3, color: color);
 
   /// Grand chiffre (revenus, température, total).
   static TextStyle number(double size, {Color? color, int weight = 800}) =>
@@ -43,5 +43,5 @@ abstract final class T {
 
   /// Chiffre de taille courante, aligné.
   static TextStyle figure({Color? color, int weight = 700}) =>
-      _base(16, weight, height: 1.3, color: color, tabular: true);
+      _base(15, weight, height: 1.3, color: color, tabular: true);
 }

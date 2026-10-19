@@ -66,6 +66,30 @@ abstract final class NaatalTheme {
         TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
         TargetPlatform.linux: CupertinoPageTransitionsBuilder(),
       }),
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: c.surface,
+        surfaceTintColor: Colors.transparent,
+        height: 64,
+        indicatorColor: c.accent.withValues(alpha: 0.12),
+        labelTextStyle: WidgetStateProperty.resolveWith((states) {
+          final selected = states.contains(WidgetState.selected);
+          return T.caption(color: selected ? c.accent : c.ink2, weight: selected ? 700 : 500);
+        }),
+        iconTheme: WidgetStateProperty.resolveWith((states) =>
+            IconThemeData(size: 24, color: states.contains(WidgetState.selected) ? c.accent : c.ink2)),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: c.accent,
+          foregroundColor: c.onAccent,
+          disabledBackgroundColor: c.accent.withValues(alpha: 0.5),
+          disabledForegroundColor: c.onAccent.withValues(alpha: 0.8),
+          elevation: 0,
+          minimumSize: const Size(double.infinity, 56),
+          shape: const StadiumBorder(),
+          textStyle: T.body(weight: 700),
+        ),
+      ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: c.surface,
@@ -123,6 +147,39 @@ abstract final class NaatalTheme {
         color: c.accent,
         linearTrackColor: c.surfaceAlt,
       ),
+    );
+  }
+}
+
+
+/// Style des écrans d'entrée (présentation, connexion, inscription) : champs sans contour,
+/// posés sur des blocs blancs arrondis, comme dans la première version de l'application.
+class AuthStyle extends StatelessWidget {
+  const AuthStyle({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final base = Theme.of(context);
+    final c = context.c;
+    OutlineInputBorder none(Color color, double w) => OutlineInputBorder(
+          borderRadius: BorderRadius.circular(Radii.m),
+          borderSide: color == Colors.transparent ? BorderSide.none : BorderSide(color: color, width: w),
+        );
+    return Theme(
+      data: base.copyWith(
+        inputDecorationTheme: base.inputDecorationTheme.copyWith(
+          filled: true,
+          fillColor: c.surface,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          border: none(Colors.transparent, 0),
+          enabledBorder: none(Colors.transparent, 0),
+          focusedBorder: none(c.accent, 2),
+          errorBorder: none(c.clay, 1.5),
+        ),
+      ),
+      child: child,
     );
   }
 }

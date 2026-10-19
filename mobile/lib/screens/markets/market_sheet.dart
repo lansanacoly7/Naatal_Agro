@@ -59,45 +59,69 @@ class _MarketSheet extends ConsumerWidget {
             style: T.body(color: c.ink2),
           ),
           const SizedBox(height: Space.l),
-          Container(
-            padding: const EdgeInsets.all(Space.l),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: c.isDark ? 0.18 : 0.1),
-              borderRadius: BorderRadius.circular(Radii.l),
-              border: Border.all(color: color.withValues(alpha: 0.35)),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(quote.productName, style: T.caption(color: c.ink2)),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.end,
+          Builder(
+            builder: (context) {
+              final productImg = productImageForName(quote.productName);
+              return Container(
+                padding: const EdgeInsets.all(Space.l),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: c.isDark ? 0.18 : 0.1),
+                  borderRadius: BorderRadius.circular(Radii.l),
+                  border: Border.all(color: color.withValues(alpha: 0.35)),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    if (productImg.isNotEmpty) ...[
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(Radii.m),
+                        child: Container(
+                          width: 52,
+                          height: 52,
+                          color: c.surface,
+                          child: Padding(
+                            padding: const EdgeInsets.all(4),
+                            child: Image.asset(
+                              productImg,
+                              fit: BoxFit.contain,
+                              errorBuilder: (_, __, ___) => Icon(Icons.eco_rounded, size: 28, color: c.accent),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: Space.m),
+                    ],
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          AnimatedNumber(value: quote.price, style: T.number(36, color: color)),
-                          const SizedBox(width: 6),
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 5),
-                            child: Text('FCFA/kg', style: T.caption(color: c.ink2, weight: 700)),
+                          Text(quote.productName, style: T.caption(color: c.ink2)),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              AnimatedNumber(value: quote.price, style: T.number(36, color: color)),
+                              const SizedBox(width: 6),
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 5),
+                                child: Text('FCFA/kg', style: T.caption(color: c.ink2, weight: 700)),
+                              ),
+                            ],
                           ),
                         ],
                       ),
-                    ],
-                  ),
+                    ),
+                    if (diff != null)
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text('${diff >= 0 ? '+' : '−'}${Fmt.decimal(diff.abs())} %', style: T.figure(color: color, weight: 800)),
+                          Text('moy. ${Fmt.grouped(average)} F', style: T.caption(color: c.ink2, weight: 500)),
+                        ],
+                      ),
+                  ],
                 ),
-                if (diff != null)
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text('${diff >= 0 ? '+' : '−'}${Fmt.decimal(diff.abs())} %', style: T.figure(color: color, weight: 800)),
-                      Text('moy. ${Fmt.grouped(average)} F', style: T.caption(color: c.ink2, weight: 500)),
-                    ],
-                  ),
-              ],
-            ),
+              );
+            },
           ),
           const SizedBox(height: Space.m),
           Text(verdict, style: T.body(color: c.ink)),
@@ -105,6 +129,11 @@ class _MarketSheet extends ConsumerWidget {
             Padding(
               padding: const EdgeInsets.only(top: 2),
               child: Text('Relevé du ${Fmt.shortDate(quote.date!)}', style: T.caption(color: c.ink2, weight: 500)),
+            )
+          else
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Text('Prix de référence (valeur catalogue)', style: T.caption(color: c.ink2, weight: 500)),
             ),
           const SizedBox(height: Space.xl),
           Text('30 derniers jours', style: T.body(color: c.ink, weight: 700)),
@@ -203,6 +232,10 @@ class PriceChart extends StatelessWidget {
                 getTitlesWidget: (v, meta) {
                   final i = v.round();
                   if (i < 0 || i >= points.length) return const SizedBox.shrink();
+                  final step = math.max(1, ((points.length - 1) / 3).floor());
+                  final last = points.length - 1;
+                  final onStep = i % step == 0 && (last - i) >= step * 0.6;
+                  if (i != last && !onStep) return const SizedBox.shrink();
                   return Padding(
                     padding: const EdgeInsets.only(top: 6),
                     child: Text(Fmt.shortDay(points[i].date), style: T.caption(color: c.ink2, weight: 500).copyWith(fontSize: 10)),

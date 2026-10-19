@@ -7,6 +7,7 @@ import '../../features/inventory/data/inventory_provider.dart';
 import '../../features/inventory/data/models/stock_item.dart';
 import '../../shared/utils/data_refresh.dart';
 import '../../ui/ui.dart';
+import '../markets/markets_data.dart';
 
 /// Stock : ce que l'utilisateur possède, avec le conseil de conservation s'il existe.
 class StockScreen extends ConsumerWidget {
@@ -45,6 +46,7 @@ class StockScreen extends ConsumerWidget {
             data: (items) {
               if (items.isEmpty) {
                 return const EmptyState(
+                  imageAsset: 'assets/images/ui/ui_stock.jpg',
                   icon: Icons.inventory_2_rounded,
                   title: 'Votre stock est vide',
                   message: 'Une récolte enregistrée ajoute automatiquement son stock. Vous pouvez aussi ajouter un produit à la main.',
@@ -88,8 +90,31 @@ class _StockRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.c;
+    final img = productImageForName(item.name);
     return GroupedRow(
-      leading: IconTile(icon: Icons.inventory_2_rounded, color: item.alertStatus ? c.clay : c.accent),
+      minHeight: 64,
+      leading: ClipRRect(
+        borderRadius: BorderRadius.circular(Radii.m),
+        child: Container(
+          width: 48,
+          height: 48,
+          color: item.alertStatus
+              ? c.clay.withValues(alpha: c.isDark ? 0.2 : 0.1)
+              : c.surfaceAlt,
+          child: Padding(
+            padding: const EdgeInsets.all(4),
+            child: Image.asset(
+              img,
+              fit: BoxFit.contain,
+              errorBuilder: (_, __, ___) => Icon(
+                Icons.inventory_2_rounded,
+                color: item.alertStatus ? c.clay : c.accent,
+                size: 24,
+              ),
+            ),
+          ),
+        ),
+      ),
       title: item.name,
       subtitle: item.alertStatus ? 'Stock bas' : null,
       value: '${Fmt.decimal(item.quantity)} ${item.unit}',
@@ -108,15 +133,44 @@ class _StockActions extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.c;
+    final img = productImageForName(item.name);
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(Space.xxl, Space.xl, Space.xxl, Space.xl),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(item.name, style: T.title(color: c.ink)),
-          const SizedBox(height: 2),
-          Text('${Fmt.decimal(item.quantity)} ${item.unit} en stock', style: T.body(color: c.ink2)),
+          Row(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(Radii.l),
+                child: Container(
+                  width: 60,
+                  height: 60,
+                  color: c.surfaceAlt,
+                  child: Padding(
+                    padding: const EdgeInsets.all(6),
+                    child: Image.asset(
+                      img,
+                      fit: BoxFit.contain,
+                      errorBuilder: (_, __, ___) => Icon(Icons.inventory_2_rounded, color: c.accent, size: 30),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: Space.m),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(item.name, style: T.title(color: c.ink)),
+                    const SizedBox(height: 2),
+                    Text('${Fmt.decimal(item.quantity)} ${item.unit} en stock', style: T.body(color: c.ink2, weight: 600)),
+                  ],
+                ),
+              ),
+            ],
+          ),
           if ((item.aiStorageAdvice ?? '').trim().isNotEmpty) ...[
             const SizedBox(height: Space.l),
             Container(
@@ -292,6 +346,7 @@ class _AddStockSheetState extends ConsumerState<_AddStockSheet> {
   String? _error;
 
   static const _units = ['kg', 'sacs', 'tonnes'];
+  static const _quickCrops = ['Oignon', 'Arachide', 'Tomate', 'Piment', 'Maïs', 'Mil', 'Manioc', 'Riz'];
 
   @override
   void dispose() {
@@ -337,7 +392,67 @@ class _AddStockSheetState extends ConsumerState<_AddStockSheet> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text('Ajouter au stock', style: T.title(color: c.ink)),
-          const SizedBox(height: Space.xl),
+          const SizedBox(height: Space.l),
+          Text('Produits courants', style: T.caption(color: c.ink2, weight: 700)),
+          const SizedBox(height: Space.s),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                for (final crop in _quickCrops) ...[
+                  PressScale(
+                    onTap: () {
+                      setState(() {
+                        _name.text = crop;
+                        _error = null;
+                      });
+                    },
+                    child: Container(
+                      height: 48,
+                      padding: const EdgeInsets.symmetric(horizontal: Space.m, vertical: Space.s),
+                      decoration: BoxDecoration(
+                        color: _name.text == crop
+                            ? c.accent.withValues(alpha: c.isDark ? 0.25 : 0.12)
+                            : c.surfaceAlt,
+                        borderRadius: BorderRadius.circular(Radii.m),
+                        border: Border.all(
+                          color: _name.text == crop ? c.accent : Colors.transparent,
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(6),
+                            child: SizedBox(
+                              width: 28,
+                              height: 28,
+                              child: Image.asset(
+                                productImageForName(crop),
+                                fit: BoxFit.contain,
+                                errorBuilder: (_, __, ___) => Icon(Icons.eco_rounded, size: 18, color: c.accent),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: Space.s),
+                          Text(
+                            crop,
+                            style: T.caption(
+                              color: _name.text == crop ? c.accent : c.ink,
+                              weight: _name.text == crop ? 800 : 600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: Space.s),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(height: Space.m),
           TextField(
             controller: _name,
             textCapitalization: TextCapitalization.sentences,

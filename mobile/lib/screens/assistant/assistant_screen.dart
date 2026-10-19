@@ -12,6 +12,7 @@ import '../../features/auth/data/auth_provider.dart';
 import '../../features/profile/data/profile_provider.dart';
 import '../../shared/utils/data_refresh.dart';
 import '../../ui/ui.dart';
+import '../markets/markets_data.dart';
 
 /// Assistant Naatal IA : répond d'abord avec les fiches techniques sourcées, et dit
 /// clairement quand il s'agit d'un conseil général non vérifié.
@@ -245,14 +246,45 @@ class _Welcome extends ConsumerWidget {
     final c = context.c;
     final name = ref.watch(profileNotifierProvider).valueOrNull?.fullName.trim().split(RegExp(r'\s+')).first ?? '';
     return ListView(
-      padding: const EdgeInsets.fromLTRB(Space.gutter, Space.xl, Space.gutter, 220),
+      padding: const EdgeInsets.fromLTRB(Space.gutter, Space.l, Space.gutter, 220),
       children: [
-        Reveal(index: 0, child: Text(name.isEmpty ? 'Bonjour' : 'Bonjour, $name', style: T.largeTitle(color: c.ink))),
-        const SizedBox(height: Space.xs),
-        Reveal(index: 1, child: Text('Posez une question sur vos cultures.', style: T.body(color: c.ink2))),
-        const SizedBox(height: Space.xl),
         Reveal(
-          index: 2,
+          index: 0,
+          child: Container(
+            height: 140,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(Radii.l),
+              image: const DecorationImage(
+                image: AssetImage('assets/images/ui/ui_ia.jpg'),
+                fit: BoxFit.cover,
+              ),
+            ),
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(Radii.l),
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Colors.transparent, Colors.black.withValues(alpha: 0.78)],
+                ),
+              ),
+              padding: const EdgeInsets.all(Space.l),
+              alignment: Alignment.bottomLeft,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(name.isEmpty ? 'Conseiller Naatal IA' : 'Bonjour, $name', style: T.title(color: Colors.white)),
+                  const SizedBox(height: 2),
+                  Text('Questions agricoles analysées avec l\'IA et l\'ISRA', style: T.caption(color: Colors.white.withValues(alpha: 0.85), weight: 600)),
+                ],
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: Space.l),
+        Reveal(
+          index: 1,
           child: AppCard(
             color: c.accent.withValues(alpha: c.isDark ? 0.14 : 0.08),
             border: false,
@@ -271,14 +303,14 @@ class _Welcome extends ConsumerWidget {
             ),
           ),
         ),
-        const SectionHeaderInline('Essayez'),
+        const SectionHeaderInline('Questions suggérées'),
         for (final (i, q) in const [
-          (Icons.grass_rounded, 'Quand semer l\'oignon dans les Niayes ?'),
-          (Icons.science_outlined, 'Quels engrais utiliser pour la tomate ?'),
-          (Icons.bug_report_outlined, 'Comment protéger l\'arachide de la rosette ?'),
+          ('Oignon', 'Quand semer l\'oignon dans les Niayes ?'),
+          ('Tomate', 'Quels engrais utiliser pour la tomate ?'),
+          ('Arachide', 'Comment protéger l\'arachide de la rosette ?'),
         ].indexed)
           Reveal(
-            index: 3 + i,
+            index: 2 + i,
             child: Padding(
               padding: const EdgeInsets.only(bottom: Space.s),
               child: AppCard(
@@ -286,7 +318,22 @@ class _Welcome extends ConsumerWidget {
                 padding: const EdgeInsets.symmetric(horizontal: Space.l, vertical: Space.m),
                 child: Row(
                   children: [
-                    IconTile(icon: q.$1, color: c.accent),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(Radii.m),
+                      child: Container(
+                        width: 44,
+                        height: 44,
+                        color: c.surfaceAlt,
+                        child: Padding(
+                          padding: const EdgeInsets.all(4),
+                          child: Image.asset(
+                            productImageForName(q.$1),
+                            fit: BoxFit.contain,
+                            errorBuilder: (_, __, ___) => Icon(Icons.eco_rounded, color: c.accent, size: 24),
+                          ),
+                        ),
+                      ),
+                    ),
                     const SizedBox(width: Space.m),
                     Expanded(child: Text(q.$2, style: T.body(color: c.ink, weight: 600))),
                   ],
@@ -295,20 +342,28 @@ class _Welcome extends ConsumerWidget {
             ),
           ),
         Reveal(
-          index: 6,
+          index: 5,
           child: AppCard(
             onTap: onPhoto,
             padding: const EdgeInsets.symmetric(horizontal: Space.l, vertical: Space.m),
             child: Row(
               children: [
-                IconTile(icon: Icons.photo_camera_rounded, color: c.slate),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(Radii.m),
+                  child: Container(
+                    width: 44,
+                    height: 44,
+                    color: c.accent.withValues(alpha: 0.12),
+                    child: Icon(Icons.photo_camera_rounded, color: c.accent, size: 24),
+                  ),
+                ),
                 const SizedBox(width: Space.m),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text('Diagnostiquer une plante malade', style: T.body(color: c.ink, weight: 600)),
-                      Text('Envoyez une photo', style: T.caption(color: c.ink2, weight: 500)),
+                      Text('Prenez ou choisissez une photo', style: T.caption(color: c.ink2, weight: 500)),
                     ],
                   ),
                 ),
@@ -318,10 +373,13 @@ class _Welcome extends ConsumerWidget {
         ),
         const SizedBox(height: Space.m),
         Reveal(
-          index: 7,
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: PillButton(label: 'Signaler une maladie observée', icon: Icons.warning_amber_rounded, variant: PillVariant.danger, compact: true, onPressed: onReport),
+          index: 6,
+          child: PillButton(
+            label: 'Signaler une maladie observée',
+            icon: Icons.warning_amber_rounded,
+            variant: PillVariant.danger,
+            expand: true,
+            onPressed: onReport,
           ),
         ),
       ],
@@ -432,10 +490,10 @@ class _Composer extends StatelessWidget {
                   semanticLabel: 'Envoyer',
                   child: AnimatedContainer(
                     duration: Motion.base,
-                    width: 52,
-                    height: 52,
+                    width: 56,
+                    height: 56,
                     decoration: BoxDecoration(color: busy ? c.ink2 : c.accent, shape: BoxShape.circle),
-                    child: Icon(Icons.arrow_upward_rounded, color: c.onAccent, size: 26),
+                    child: Icon(Icons.arrow_upward_rounded, color: c.onAccent, size: 28),
                   ),
                 ),
               ],

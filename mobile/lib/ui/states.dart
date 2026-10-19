@@ -59,11 +59,13 @@ class _SkeletonState extends State<Skeleton> with SingleTickerProviderStateMixin
   }
 }
 
-/// Écran ou bloc vide : explique quoi faire, jamais une valeur inventée.
+/// Écran ou bloc vide : montre une image ou icône parlante + un seul bouton clair.
+/// Respecte le principe « Honnête » : aucune donnée inventée.
 class EmptyState extends StatelessWidget {
   const EmptyState({
     super.key,
-    required this.icon,
+    this.icon,
+    this.imageAsset,
     required this.title,
     required this.message,
     this.actionLabel,
@@ -71,37 +73,88 @@ class EmptyState extends StatelessWidget {
     this.compact = false,
   });
 
-  final IconData icon;
+  /// Icône d'illustration (utilisée si [imageAsset] est null).
+  final IconData? icon;
+
+  /// Photo ou illustration illustrative (recommandé pour la refonte « images d'abord »).
+  final String? imageAsset;
+
+  /// Titre court (1 à 4 mots).
   final String title;
+
+  /// Explication courte et bienveillante.
   final String message;
+
+  /// Libellé du bouton unique d'action (facultatif).
   final String? actionLabel;
+
+  /// Callback de l'action.
   final VoidCallback? onAction;
+
+  /// Affichage compact dans un sous-bloc ou une carte.
   final bool compact;
 
   @override
   Widget build(BuildContext context) {
     final c = context.c;
+    final effectiveIcon = icon ?? Icons.spa_rounded;
+
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: Space.xxl, vertical: compact ? Space.xl : Space.huge),
+      padding: EdgeInsets.symmetric(
+        horizontal: Space.xxl,
+        vertical: compact ? Space.xl : Space.huge,
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            width: compact ? 56 : 72,
-            height: compact ? 56 : 72,
-            decoration: BoxDecoration(
-              color: c.accent.withValues(alpha: c.isDark ? 0.18 : 0.12),
-              borderRadius: BorderRadius.circular(compact ? 18 : 24),
+          // Image plein cadre ou Icône dans pastille
+          if (imageAsset != null) ...[
+            Container(
+              constraints: BoxConstraints(
+                maxHeight: compact ? 110 : 150,
+                maxWidth: compact ? 220 : 280,
+              ),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(Radii.l),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: c.isDark ? 0.3 : 0.06),
+                    blurRadius: 16,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(Radii.l),
+                child: Image.asset(
+                  imageAsset!,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => Container(
+                    padding: const EdgeInsets.all(Space.l),
+                    color: c.accent.withValues(alpha: 0.12),
+                    child: Icon(effectiveIcon, size: 40, color: c.accent),
+                  ),
+                ),
+              ),
             ),
-            child: Icon(icon, size: compact ? 28 : 34, color: c.accent),
-          ),
+          ] else ...[
+            Container(
+              width: compact ? 56 : 72,
+              height: compact ? 56 : 72,
+              decoration: BoxDecoration(
+                color: c.accent.withValues(alpha: c.isDark ? 0.18 : 0.12),
+                borderRadius: BorderRadius.circular(compact ? 18 : 24),
+              ),
+              child: Icon(effectiveIcon, size: compact ? 28 : 34, color: c.accent),
+            ),
+          ],
           const SizedBox(height: Space.l),
           Text(title, textAlign: TextAlign.center, style: T.title(color: c.ink)),
           const SizedBox(height: Space.s),
           Text(message, textAlign: TextAlign.center, style: T.body(color: c.ink2)),
           if (actionLabel != null && onAction != null) ...[
             const SizedBox(height: Space.xl),
-            PillButton(label: actionLabel!, onPressed: onAction, compact: true),
+            PillButton(label: actionLabel!, onPressed: onAction, compact: compact),
           ],
         ],
       ),

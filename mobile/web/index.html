@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 <head>
   <!--
     If you are serving your web app in a path other than the root, change the
@@ -18,13 +18,16 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="description" content="Copilote agricole : cultures, stock, ventes, prix des marchés et conseils sourcés.">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0F4F31">
 
-  <!-- iOS meta tags & icons -->
+  <!-- PWA : installable sur l'écran d'accueil (Android Chrome, iOS Safari) -->
   <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="nataal_agro">
-  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Naatal Agro">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
@@ -95,6 +98,21 @@
       font-weight: 600;
       cursor: pointer;
     }
+    /* Bannière d'installation PWA : discrète, fermable */
+    #install-banner {
+      position: fixed; left: 12px; right: 12px; top: calc(env(safe-area-inset-top) + 10px);
+      z-index: 1000000; display: none; align-items: center; gap: 12px;
+      max-width: 440px; margin: 0 auto; padding: 12px 12px 12px 16px;
+      background: rgba(15, 79, 49, 0.94); color: #fff; border-radius: 18px;
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.25); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+      font-size: 14px; line-height: 1.35;
+    }
+    #install-banner.show { display: flex; }
+    #install-banner .ib-text { flex: 1; font-weight: 600; }
+    #install-banner .ib-text svg { vertical-align: -4px; margin: 0 2px; }
+    #install-banner button { border: 0; cursor: pointer; font: inherit; font-weight: 700; }
+    #install-banner .ib-install { background: #fff; color: #0F4F31; border-radius: 999px; padding: 10px 16px; min-height: 44px; }
+    #install-banner .ib-close { background: transparent; color: #fff; opacity: .8; width: 44px; height: 44px; font-size: 22px; line-height: 1; }
     @keyframes spin {
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
@@ -143,10 +161,12 @@
       // message d'erreur) est retiré au lieu de recouvrir l'application.
       if (detail) console.error('[Naatal Agro] Échec du démarrage : ' + detail);
       var content = splash.querySelector('.splash-content');
+      var offline = navigator.onLine === false;
       content.innerHTML =
-        '<div class="splash-title">Naatal Agro</div>' +
-        '<div class="splash-subtitle splash-error">Impossible de démarrer l’application. ' +
-        'Vérifiez votre connexion puis réessayez.</div>' +
+        '<div class="splash-title">' + (offline ? 'Pas de connexion' : 'Naatal Agro') + '</div>' +
+        '<div class="splash-subtitle splash-error">' +
+        (offline ? 'Vous êtes hors ligne. Vérifiez votre réseau, puis réessayez.'
+                 : 'Impossible de démarrer l’application. Vérifiez votre connexion puis réessayez.') + '</div>' +
         '<button class="splash-retry" onclick="window.location.reload()">Réessayer</button>';
     }
 
@@ -160,6 +180,80 @@
     setTimeout(function() {
       if (document.getElementById('splash-screen')) showStartupError('délai de démarrage dépassé');
     }, 300000);
+  </script>
+  <div id="install-banner" role="dialog" aria-label="Installer l'application">
+    <span class="ib-text" id="ib-text"></span>
+    <button class="ib-install" id="ib-install" type="button" hidden>Installer l'app</button>
+    <button class="ib-close" id="ib-close" type="button" aria-label="Fermer">&times;</button>
+  </div>
+
+  <script>
+    // Bannière d'installation : rien si l'app est déjà installée ou si l'utilisateur l'a fermée.
+    (function () {
+      var KEY = 'naatal_install_dismissed';
+      var banner = document.getElementById('install-banner');
+      var text = document.getElementById('ib-text');
+      var installBtn = document.getElementById('ib-install');
+      var deferred = null;
+
+      function read() { try { return localStorage.getItem(KEY); } catch (e) { return null; } }
+      function write() { try { localStorage.setItem(KEY, String(Date.now())); } catch (e) {} }
+      function installed() {
+        return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
+      }
+      function hide() { wanted = false; banner.classList.remove('show'); }
+      var wanted = false;
+      // La bannière ne s'affiche pas sur la présentation ni l'accueil animé : elle masquerait « Passer ».
+      function onAllowedScreen() {
+        var h = location.hash || '';
+        return h !== '' && h !== '#/' && h.indexOf('#/onboarding') !== 0 && h.indexOf('#/welcome') !== 0;
+      }
+      function show() { wanted = true; refresh(); }
+      function refresh() {
+        if (wanted && !installed() && !read() && onAllowedScreen()) banner.classList.add('show');
+        else banner.classList.remove('show');
+      }
+      window.addEventListener('hashchange', refresh);
+      setInterval(refresh, 1500);
+
+      document.getElementById('ib-close').addEventListener('click', function () { write(); hide(); });
+
+      // Android et ordinateur
+      window.addEventListener('beforeinstallprompt', function (e) {
+        e.preventDefault();
+        deferred = e;
+        text.textContent = 'Installez Naatal Agro sur votre appareil.';
+        installBtn.hidden = false;
+        show();
+      });
+      installBtn.addEventListener('click', function () {
+        if (!deferred) return;
+        deferred.prompt();
+        deferred.userChoice.then(function () { deferred = null; hide(); write(); });
+      });
+      window.addEventListener('appinstalled', function () { write(); hide(); });
+
+      // iPhone et iPad (Safari) : pas d'événement, on explique le geste
+      var ua = navigator.userAgent || '';
+      var isIos = /iphone|ipad|ipod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      var isSafari = /safari/i.test(ua) && !/crios|fxios|edgios|chrome/i.test(ua);
+      if (isIos && !installed()) {
+        var share = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label="Partager"><path d="M12 15V3M8 7l4-4 4 4"/><path d="M5 11v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8"/></svg>';
+        text.innerHTML = isSafari
+          ? 'Appuie sur Partager ' + share + ' puis "Sur l\'écran d\'accueil".'
+          : 'Ouvre ce site dans Safari, puis appuie sur Partager ' + share + ' et "Sur l\'écran d\'accueil".';
+        setTimeout(show, 2500);
+      }
+    })();
+  </script>
+
+  <script>
+    // Cache hors ligne de l'interface (jamais l'API) — voir naatal_sw.js
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('/naatal_sw.js').catch(function (e) { console.warn('[PWA] service worker non enregistré', e); });
+      });
+    }
   </script>
   <script src="flutter_bootstrap.js" async onerror="showStartupError('flutter_bootstrap.js introuvable')"></script>
 </body>

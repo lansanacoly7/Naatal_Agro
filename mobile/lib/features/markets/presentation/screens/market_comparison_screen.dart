@@ -226,30 +226,125 @@ class _MarketComparisonScreenState extends ConsumerState<MarketComparisonScreen>
     );
   }
 
+  /// Sélecteur compact : un résumé des marchés choisis et une liste avec recherche, au lieu d'un mur de pastilles.
   Widget _buildMarketChips(List<String> marketNames) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: marketNames.map((market) {
-        final isSelected = _selectedMarkets.contains(market);
-        return FilterChip(
-          label: Text(market, style: TextStyle(color: isSelected ? Colors.white : AppColors.textPrimary, fontSize: 12, fontWeight: FontWeight.bold)),
-          selected: isSelected,
-          onSelected: (selected) {
-            setState(() {
-              if (selected) {
-                _selectedMarkets.add(market);
-              } else {
-                _selectedMarkets.remove(market);
-              }
-            });
+    final selected = marketNames.where(_selectedMarkets.contains).toList();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (selected.isNotEmpty)
+          SizedBox(
+            height: 34,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: selected.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              itemBuilder: (context, i) => Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                alignment: Alignment.center,
+                decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(18)),
+                child: Text(selected[i], style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+              ),
+            ),
+          ),
+        if (selected.isNotEmpty) const SizedBox(height: 10),
+        OutlinedButton.icon(
+          onPressed: () => _openMarketPicker(marketNames),
+          icon: const Icon(Icons.tune_rounded, size: 18),
+          label: Text(selected.isEmpty ? 'Choisir les marchés' : 'Modifier les marchés (${selected.length} sur ${marketNames.length})'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: AppColors.primary,
+            side: const BorderSide(color: AppColors.primary),
+            minimumSize: const Size(0, 44),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _openMarketPicker(List<String> marketNames) {
+    return showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) {
+        var query = '';
+        return StatefulBuilder(
+          builder: (ctx, setSheet) {
+            final q = query.trim().toLowerCase();
+            final shown = marketNames.where((m) => q.isEmpty || m.toLowerCase().contains(q)).toList();
+            return Padding(
+              padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(ctx).bottom),
+              child: SizedBox(
+                height: MediaQuery.sizeOf(ctx).height * 0.75,
+                child: Column(
+                  children: [
+                    const SizedBox(height: 10),
+                    Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2))),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 14, 20, 6),
+                      child: Row(
+                        children: [
+                          const Expanded(child: Text('Marchés à comparer', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary))),
+                          TextButton(
+                            onPressed: () {
+                              setState(() => _selectedMarkets
+                                ..clear()
+                                ..addAll(marketNames));
+                              setSheet(() {});
+                            },
+                            child: const Text('Tous'),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              setState(() => _selectedMarkets.clear());
+                              setSheet(() {});
+                            },
+                            child: const Text('Aucun'),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+                      child: TextField(
+                        onChanged: (v) => setSheet(() => query = v),
+                        decoration: const InputDecoration(hintText: 'Rechercher un marché', prefixIcon: Icon(Icons.search_rounded)),
+                      ),
+                    ),
+                    Expanded(
+                      child: ListView.builder(
+                        itemCount: shown.length,
+                        itemBuilder: (context, i) {
+                          final name = shown[i];
+                          return CheckboxListTile(
+                            value: _selectedMarkets.contains(name),
+                            activeColor: AppColors.primary,
+                            controlAffinity: ListTileControlAffinity.trailing,
+                            title: Text(name, style: const TextStyle(fontWeight: FontWeight.w600)),
+                            onChanged: (v) {
+                              setState(() => v == true ? _selectedMarkets.add(name) : _selectedMarkets.remove(name));
+                              setSheet(() {});
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                    SafeArea(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+                        child: ElevatedButton(onPressed: () => Navigator.of(ctx).pop(), child: Text('Valider (${_selectedMarkets.length})')),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
           },
-          selectedColor: AppColors.primary,
-          backgroundColor: Colors.grey.shade100,
-          checkmarkColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide.none),
         );
-      }).toList(),
+      },
     );
   }
 

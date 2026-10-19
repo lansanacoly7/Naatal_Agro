@@ -40,18 +40,31 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    // Vérification : les montants du mock sont bien affichés
-    expect(find.text('500 000 FCFA'), findsNWidgets(2)); // totalRevenue (card principale + carte revenu)
-    expect(find.text('Solde net : 350 000 FCFA'), findsOneWidget);
-    expect(find.text('150 000 FCFA'), findsOneWidget); // dépenses
-    expect(find.text('Arachide décortiquée'), findsOneWidget);
-    expect(find.text('500 Kg'), findsOneWidget);
+    // Vérification : les montants réels sont bien affichés
+    expect(find.text('+350 000 F'), findsOneWidget); // Solde net
+    expect(find.textContaining('500 000 F'), findsWidgets); // Recettes
+    expect(find.textContaining('150 000 F'), findsWidgets); // Dépenses
+    expect(find.textContaining('Arachide décortiquée'), findsOneWidget);
+    expect(find.textContaining('500 Kg'), findsOneWidget);
 
-    // Vérification : l'ancien faux montant en dur "2 450 000 FCFA" n'existe plus
+    // Vérification : les 3 sections et les boutons d'action sont présents
+    expect(find.text('Finances'), findsOneWidget);
+    expect(find.text('Stock et valeur'), findsOneWidget);
+    expect(find.text('Opportunités stratégiques'), findsOneWidget);
+    expect(find.text('Ouvrir les finances'), findsOneWidget);
+    expect(find.text('Ouvrir le stock'), findsOneWidget);
+
+    // Vérification : cartes d'opportunités et conseils
+    expect(find.text('RENTABILITÉ'), findsOneWidget);
+    expect(find.text('INVESTIR'), findsOneWidget);
+    expect(find.text('PRÉVISION'), findsOneWidget);
+    expect(find.text('Conseils pratiques'), findsOneWidget);
+
+    // Vérification : aucun faux montant en dur "2 450 000 FCFA"
     expect(find.text('2 450 000 FCFA'), findsNothing);
   });
 
-  testWidgets('MonDashboardScreen affiche un état vide propre quand le stock est vide', (tester) async {
+  testWidgets('MonDashboardScreen affiche un état vide propre quand les données sont vides', (tester) async {
     final fakeSummary = FinancialSummary(
       totalRevenue: 0.0,
       totalExpenses: 0.0,
@@ -72,7 +85,9 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    expect(find.text('Aucun produit en stock actuellement'), findsOneWidget);
-    expect(find.text('Ajouter un stock'), findsOneWidget);
+    expect(find.textContaining('Aucun produit en stock actuellement'), findsOneWidget);
+    expect(find.textContaining('Aucune transaction enregistrée'), findsOneWidget);
+    expect(find.text('Ouvrir les finances'), findsOneWidget);
+    expect(find.text('Ouvrir le stock'), findsOneWidget);
   });
 }

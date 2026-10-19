@@ -71,6 +71,8 @@ class HarvestCreateSerializer(serializers.Serializer):
         return harvest
 
 class ActivitySerializer(serializers.ModelSerializer):
+    description = serializers.CharField(required=False, allow_blank=True, default='')
+
     class Meta:
         model = Activity
         fields = '__all__'
@@ -103,7 +105,9 @@ class CropSerializer(serializers.ModelSerializer):
                 days = guide.cycle_days_max or guide.cycle_days_min
                 attrs['expected_harvest_date'] = planting_date + datetime.timedelta(days=days)
             elif not self.instance:
-                attrs['expected_harvest_date'] = planting_date + datetime.timedelta(days=90)
+                raise serializers.ValidationError({
+                    'expected_harvest_date': 'La date prévisionnelle de récolte est obligatoire.'
+                })
         return attrs
 
 class PestReportSerializer(serializers.ModelSerializer):

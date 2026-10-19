@@ -107,8 +107,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 children: [
                   Image.asset(
                     'assets/images/naatal_agro_logo-removebg-preview.png',
-                    height: 36,
-                    errorBuilder: (context, error, stackTrace) => const SizedBox(height: 36, width: 36),
+                    height: 64,
+                    errorBuilder: (context, error, stackTrace) => const SizedBox(height: 64, width: 64),
                   ),
                   if (_currentPage < 2)
                     TextButton(

@@ -87,11 +87,14 @@ class _NataalAgroAppState extends ConsumerState<NataalAgroApp> {
       title: 'Naatal Agro',
       debugShowCheckedModeBanner: false,
       theme: NaatalTheme.light,
-      darkTheme: NaatalTheme.dark,
-      themeMode: ThemeMode.system,
+      themeMode: ThemeMode.light, // mode sombre désactivé : thème clair uniquement
       routerConfig: _router,
       builder: (context, child) {
-        return EffectsScope(
+        // Texte global un peu plus petit (le réglage de taille du téléphone reste respecté).
+        final mq = MediaQuery.of(context);
+        return MediaQuery(
+          data: mq.copyWith(textScaler: TextScaler.linear(0.9 * mq.textScaler.scale(1))),
+          child: EffectsScope(
           reduced: reduceEffects,
           child: Stack(
             children: [
@@ -110,6 +113,7 @@ class _NataalAgroAppState extends ConsumerState<NataalAgroApp> {
                   ),
                 ),
             ],
+          ),
           ),
         );
       },

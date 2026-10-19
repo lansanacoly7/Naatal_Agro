@@ -510,11 +510,11 @@ class _CropCalendarDetailScreenState extends State<CropCalendarDetailScreen> {
                 decoration = BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: const LinearGradient(
-                    colors: [Color(0xFF4CAF50), Color(0xFF2E7D32)],
+                    colors: [AppColors.primaryLight, AppColors.primary],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
-                  boxShadow: [BoxShadow(color: Colors.green.withValues(alpha: 0.4), blurRadius: 6, offset: const Offset(0, 2))],
+                  boxShadow: [BoxShadow(color: AppColors.primary.withValues(alpha: 0.35), blurRadius: 6, offset: const Offset(0, 2))],
                 );
                 textColor = Colors.white;
                 fontWeight = FontWeight.bold;

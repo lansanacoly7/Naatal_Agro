@@ -188,13 +188,25 @@ class _MarketsScreenState extends ConsumerState<MarketsScreen> {
                       radius: Radii.pill,
                       padding: const EdgeInsets.symmetric(horizontal: Space.l),
                       child: SizedBox(
-                        height: 52,
+                        height: 56,
                         child: Row(
                           children: [
-                            Icon(Icons.eco_rounded, size: 20, color: c.accent),
-                            const SizedBox(width: Space.s),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(10),
+                              child: Container(
+                                width: 34,
+                                height: 34,
+                                color: c.accent.withValues(alpha: 0.12),
+                                child: Image.asset(
+                                  productImageForName(product ?? ''),
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => Icon(Icons.eco_rounded, size: 20, color: c.accent),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: Space.s + 2),
                             Expanded(
-                              child: Text(product ?? 'Produit', maxLines: 1, overflow: TextOverflow.ellipsis, style: T.body(color: c.ink, weight: 700)),
+                              child: Text(product ?? 'Choisir un produit', maxLines: 1, overflow: TextOverflow.ellipsis, style: T.body(color: c.ink, weight: 700)),
                             ),
                             Icon(Icons.expand_more_rounded, color: c.ink2),
                           ],
@@ -219,10 +231,10 @@ class _MarketsScreenState extends ConsumerState<MarketsScreen> {
                     strong: true,
                     radius: Radii.pill,
                     child: SizedBox(
-                      width: 52,
-                      height: 52,
+                      width: 56,
+                      height: 56,
                       child: location.loading
-                          ? const Padding(padding: EdgeInsets.all(15), child: CircularProgressIndicator(strokeWidth: 2.5))
+                          ? const Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator(strokeWidth: 2.5))
                           : Icon(location.position == null ? Icons.near_me_outlined : Icons.near_me_rounded, color: location.position == null ? c.ink : c.accent),
                     ),
                   ),
@@ -382,8 +394,24 @@ class _RankingSheet extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: Space.gutter),
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
+                if (product != null) ...[
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      width: 44,
+                      height: 44,
+                      color: c.accent.withValues(alpha: 0.12),
+                      child: Image.asset(
+                        productImageForName(product!),
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Icon(Icons.eco_rounded, size: 24, color: c.accent),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: Space.m),
+                ],
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -443,9 +471,10 @@ class _RankingSheet extends StatelessWidget {
               children: [
                 for (final q in quotes)
                   GroupedRow(
+                    minHeight: 56,
                     leading: Container(
-                      width: 38,
-                      height: 38,
+                      width: 40,
+                      height: 40,
                       decoration: BoxDecoration(color: levelColor(context, levelOf(q.price, average)), borderRadius: BorderRadius.circular(12)),
                       child: const Icon(Icons.storefront_rounded, size: 20, color: Colors.white),
                     ),
@@ -487,7 +516,7 @@ class _Chip extends StatelessWidget {
       child: AnimatedContainer(
         duration: Motion.base,
         curve: Motion.out,
-        height: 40,
+        height: 48,
         padding: const EdgeInsets.symmetric(horizontal: Space.l),
         alignment: Alignment.center,
         decoration: BoxDecoration(
@@ -519,7 +548,7 @@ class _ProductPickerState extends State<_ProductPicker> {
     final c = context.c;
     final shown = widget.names.where((n) => n.toLowerCase().contains(_query.toLowerCase())).toList();
     return SizedBox(
-      height: MediaQuery.sizeOf(context).height * 0.7,
+      height: MediaQuery.sizeOf(context).height * 0.75,
       child: Column(
         children: [
           Padding(
@@ -531,7 +560,7 @@ class _ProductPickerState extends State<_ProductPicker> {
                 const SizedBox(height: Space.m),
                 TextField(
                   onChanged: (v) => setState(() => _query = v),
-                  decoration: const InputDecoration(hintText: 'Rechercher', prefixIcon: Icon(Icons.search_rounded)),
+                  decoration: const InputDecoration(hintText: 'Rechercher : oignon, piment, arachide...', prefixIcon: Icon(Icons.search_rounded)),
                 ),
               ],
             ),
@@ -546,9 +575,22 @@ class _ProductPickerState extends State<_ProductPicker> {
                         children: [
                           for (final n in shown)
                             GroupedRow(
+                              leading: ClipRRect(
+                                borderRadius: BorderRadius.circular(10),
+                                child: Container(
+                                  width: 44,
+                                  height: 44,
+                                  color: c.accent.withValues(alpha: 0.08),
+                                  child: Image.asset(
+                                    productImageForName(n),
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) => Icon(Icons.eco_rounded, size: 22, color: c.accent),
+                                  ),
+                                ),
+                              ),
                               title: n,
-                              minHeight: 52,
-                              trailing: n == widget.selected ? Icon(Icons.check_circle_rounded, color: c.accent) : null,
+                              minHeight: 56,
+                              trailing: n == widget.selected ? Icon(Icons.check_circle_rounded, color: c.accent, size: 22) : null,
                               onTap: () {
                                 HapticFeedback.selectionClick();
                                 Navigator.pop(context, n);

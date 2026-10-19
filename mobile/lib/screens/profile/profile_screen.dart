@@ -127,6 +127,13 @@ class ProfileScreen extends ConsumerWidget {
                       onTap: () => showNaatalSheet<void>(context, builder: (ctx) => const _PolicySheet()),
                     ),
                     GroupedRow(
+                      leading: IconTile(icon: Icons.photo_library_rounded, color: c.slate),
+                      title: 'Crédits photos',
+                      subtitle: 'Auteurs et licences des images',
+                      chevron: true,
+                      onTap: () => showNaatalSheet<void>(context, builder: (ctx) => const _PhotoCreditsSheet()),
+                    ),
+                    GroupedRow(
                       leading: IconTile(icon: Icons.delete_forever_rounded, color: c.clay),
                       title: 'Supprimer mon compte',
                       subtitle: 'Efface définitivement toutes vos données',
@@ -538,6 +545,91 @@ class _PolicySheetState extends ConsumerState<_PolicySheet> {
                 return SingleChildScrollView(
                   padding: const EdgeInsets.fromLTRB(Space.xxl, 0, Space.xxl, Space.xxl),
                   child: SelectableText(snap.data!, style: T.body(color: c.ink).copyWith(height: 1.5)),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PhotoCreditsSheet extends StatelessWidget {
+  const _PhotoCreditsSheet();
+
+  static const _credits = [
+    ('Patate douce', 'Arivumathi', 'CC0 1.0 (Domaine public)'),
+    ('Piment', 'Arivumathi', 'CC0 1.0 (Domaine public)'),
+    ('Laitue', 'Rainer Zenz', 'GPL / GFDL'),
+    ('Manioc', 'Domaine public', 'CC0 1.0 (Domaine public)'),
+    ('Melon', 'Renee Comet (NCI / USDA)', 'Domaine public'),
+    ('Navet', 'Tiia Monto', 'CC BY-SA 4.0'),
+    ('Orange', 'Evan-Amos', 'CC BY-SA 3.0'),
+    ('Poivron', 'Luc Viatour', 'CC BY-SA 3.0'),
+    ('Sorgho', 'Roger Culos / MHNT', 'CC BY-SA 4.0'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    return SizedBox(
+      height: MediaQuery.sizeOf(context).height * 0.75,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(Space.xxl, Space.xl, Space.xxl, Space.m),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Crédits photos', style: T.title(color: c.ink)),
+                const SizedBox(height: Space.xs),
+                Text(
+                  'Photographies sous licence libre issues de Wikimedia Commons.',
+                  style: T.caption(color: c.ink2),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: ListView.separated(
+              padding: const EdgeInsets.fromLTRB(Space.xxl, 0, Space.xxl, Space.xxl),
+              itemCount: _credits.length + 1,
+              separatorBuilder: (_, __) => Divider(height: 1, color: c.line),
+              itemBuilder: (context, i) {
+                if (i == _credits.length) {
+                  return Padding(
+                    padding: const EdgeInsets.only(top: Space.l),
+                    child: Text(
+                      'Les 13 autres photographies de produits du catalogue ont été générées par intelligence artificielle spécifiquement pour Naatal Agro.',
+                      style: T.caption(color: c.ink2, weight: 400),
+                    ),
+                  );
+                }
+                final item = _credits[i];
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: Space.s),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        flex: 4,
+                        child: Text(item.$1, style: T.body(color: c.ink, weight: 600)),
+                      ),
+                      const SizedBox(width: Space.s),
+                      Expanded(
+                        flex: 6,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(item.$2, style: T.body(color: c.ink, weight: 500)),
+                            Text(item.$3, style: T.caption(color: c.accent, weight: 500)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 );
               },
             ),

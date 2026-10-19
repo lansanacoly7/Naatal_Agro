@@ -12,6 +12,11 @@ import 'package:nataal_agro/features/finances/data/finances_provider.dart';
 import 'package:nataal_agro/features/finances/data/models/financial_summary.dart';
 import 'package:nataal_agro/features/inventory/data/inventory_provider.dart';
 import 'package:nataal_agro/features/inventory/data/models/stock_item.dart';
+import 'package:nataal_agro/features/markets/data/markets_provider.dart';
+import 'package:nataal_agro/features/markets/data/models/price.dart';
+import 'package:nataal_agro/features/markets/data/models/product.dart';
+import 'package:nataal_agro/screens/markets/markets_data.dart';
+import 'package:nataal_agro/screens/markets/markets_screen.dart';
 import 'package:nataal_agro/features/profile/data/notifications_provider.dart';
 import 'package:nataal_agro/features/profile/data/profile_provider.dart';
 import 'package:nataal_agro/features/profile/domain/profile_model.dart';
@@ -20,13 +25,14 @@ import 'package:nataal_agro/screens/crops/add_crop_screen.dart';
 import 'package:nataal_agro/screens/crops/crop_detail_screen.dart';
 import 'package:nataal_agro/screens/crops/crops_screen.dart';
 import 'package:nataal_agro/screens/assistant/assistant_screen.dart';
-import 'package:nataal_agro/screens/auth/login_screen.dart';
-import 'package:nataal_agro/screens/auth/onboarding_screen.dart';
-import 'package:nataal_agro/screens/auth/register_screen.dart';
+import 'package:nataal_agro/features/auth/presentation/screens/login_screen.dart';
+import 'package:nataal_agro/features/auth/presentation/screens/onboarding_screen.dart';
+import 'package:nataal_agro/features/auth/presentation/screens/register_screen.dart';
 import 'package:nataal_agro/screens/finances/finances_screen.dart';
 import 'package:nataal_agro/screens/guides/guides_screens.dart';
 import 'package:nataal_agro/screens/profile/profile_screen.dart';
-import 'package:nataal_agro/screens/home/home_screen.dart';
+import 'package:nataal_agro/features/dashboard/presentation/screens/dashboard_screen.dart';
+import 'package:nataal_agro/features/dashboard/presentation/screens/mon_dashboard_screen.dart';
 import 'package:nataal_agro/screens/sell/sell_screen.dart';
 import 'package:nataal_agro/screens/stock/stock_screen.dart';
 import 'package:nataal_agro/ui/ui.dart';
@@ -122,7 +128,32 @@ List<Override> _overrides({bool empty = false}) {
     inventoryNotifierProvider.overrideWith((ref) => FakeInventory()),
     profileNotifierProvider.overrideWith((ref) => FakeProfile()),
     notificationsProvider.overrideWith((ref) => _FakeNotifications()),
+    productPriceHistoryProvider.overrideWith((ref, name) async => empty
+        ? <Price>[]
+        : [
+            for (var d = 29; d >= 0; d--)
+              for (var m = 0; m < 3; m++)
+                Price(
+                  id: 'p$d$m', marketId: 'm$m', productName: name,
+                  priceValue: 430 + ((d * 7 + m * 13) % 40) - 20 + (30 - d) * 0.8,
+                  trend: 'stable', date: _d(-d),
+                ),
+          ]),
     guidesNotifierProvider.overrideWith((ref) => _FakeGuides(ref.read(sharedPreferencesProvider))),
+    allProductsProvider.overrideWith((ref) async => empty
+        ? <Product>[]
+        : [
+            Product(id: '1', name: 'Oignon', category: 'Légume', currentPrice: 435, trendPercentage: 4.2, imageAsset: '', isTrending: true),
+            Product(id: '2', name: 'Arachide', category: 'Légumineuse', currentPrice: 760, trendPercentage: -2.8, imageAsset: '', isTrending: false),
+            Product(id: '3', name: 'Tomate', category: 'Légume', currentPrice: 350, trendPercentage: 1.5, imageAsset: '', isTrending: false),
+          ]),
+    marketQuotesProvider.overrideWith((ref, product) async => empty
+        ? <MarketQuote>[]
+        : [
+            MarketQuote(marketId: 'm1', marketName: 'Castors', region: 'Dakar', productName: product, price: 460, trend: 'up', date: DateTime.now()),
+            MarketQuote(marketId: 'm2', marketName: 'Tilène', region: 'Dakar', productName: product, price: 435, trend: 'stable', date: DateTime.now()),
+            MarketQuote(marketId: 'm3', marketName: 'Thiès Central', region: 'Thiès', productName: product, price: 410, trend: 'down', date: DateTime.now()),
+          ]),
   ];
 }
 
@@ -133,18 +164,16 @@ void main() {
     final tag = dark ? 'dark' : 'light';
 
     testWidgets('Accueil ($tag)', (tester) async {
-      await VisualHarness.shoot(tester, 'home_$tag', const HomeScreen(), dark: dark, overrides: _overrides(), size: const Size(390, 1900));
-      expect(find.text("Aujourd'hui"), findsWidgets);
-      expect(find.text('Vos cultures'), findsOneWidget);
+      await VisualHarness.shoot(tester, 'home_$tag', const DashboardScreen(), dark: dark, overrides: _overrides(), size: const Size(390, 1900));
+      expect(find.textContaining('Bonjour'), findsWidgets);
       expect(find.text('Oignon'), findsWidgets);
-      expect(find.textContaining('Relevé du'), findsOneWidget);
+      expect(find.text('Relevés indicatifs, non officiels.'), findsOneWidget);
     });
 
     testWidgets('Accueil sans donnée ($tag)', (tester) async {
-      await VisualHarness.shoot(tester, 'home_empty_$tag', const HomeScreen(), dark: dark, overrides: _overrides(empty: true), size: const Size(390, 1900));
+      await VisualHarness.shoot(tester, 'home_empty_$tag', const DashboardScreen(), dark: dark, overrides: _overrides(empty: true), size: const Size(390, 1900));
       expect(find.text('Météo non disponible'), findsOneWidget);
-      expect(find.text('Aucune culture'), findsOneWidget);
-      expect(find.text('Aucun prix pour vos cultures'), findsOneWidget);
+      expect(find.textContaining('Aucun prix pour vos cultures'), findsOneWidget);
     });
 
     testWidgets('Cultures ($tag)', (tester) async {
@@ -189,6 +218,14 @@ void main() {
       expect(find.textContaining('Vente de Oignon'), findsOneWidget);
     });
 
+    testWidgets('Mon Dashboard ($tag)', (tester) async {
+      await VisualHarness.shoot(tester, 'mon_dashboard_$tag', const MonDashboardScreen(), dark: dark, overrides: _overrides(), size: const Size(390, 1600));
+      expect(find.text('Mon Dashboard'), findsWidgets);
+      expect(find.text('Finances'), findsWidgets);
+      expect(find.text('Stock et valeur'), findsOneWidget);
+      expect(find.text('Opportunités stratégiques'), findsOneWidget);
+    });
+
     testWidgets('Nouvelle culture ($tag)', (tester) async {
       await VisualHarness.shoot(tester, 'add_crop_$tag', const AddCropScreen(), dark: dark, overrides: _overrides(), size: const Size(390, 1300));
       expect(find.text('Enregistrer la culture'), findsOneWidget);
@@ -210,22 +247,24 @@ void main() {
     });
 
     testWidgets('Connexion ($tag)', (tester) async {
-      await VisualHarness.shoot(tester, 'login_$tag', const LoginScreen(), dark: dark, overrides: _overrides(), size: const Size(390, 900));
+      await VisualHarness.shoot(tester, 'login_$tag', const AuthStyle(child: LoginScreen()), dark: dark, overrides: _overrides(), size: const Size(390, 900));
       expect(find.text('Se connecter'), findsOneWidget);
       expect(find.text('Mot de passe oublié ?'), findsOneWidget);
     });
 
     testWidgets('Inscription ($tag)', (tester) async {
-      await VisualHarness.shoot(tester, 'register_$tag', const RegisterScreen(), dark: dark, overrides: _overrides(), size: const Size(390, 900));
-      expect(find.text('Créer votre compte'), findsOneWidget);
-      await tester.tap(find.text('Continuer'));
-      await tester.pump();
-      expect(find.text('Saisissez votre nom complet.'), findsOneWidget);
+      await VisualHarness.shoot(tester, 'register_$tag', const AuthStyle(child: RegisterScreen()), dark: dark, overrides: _overrides(), size: const Size(390, 900));
+      expect(find.text('ÉTAPE 1 SUR 4'), findsOneWidget);
     });
 
     testWidgets('Présentation ($tag)', (tester) async {
-      await VisualHarness.shoot(tester, 'onboarding_$tag', const OnboardingScreen(), dark: dark, overrides: _overrides(), size: const Size(390, 800));
-      expect(find.text('Suivez vos cultures'), findsOneWidget);
+      await VisualHarness.shoot(tester, 'onboarding_$tag', const AuthStyle(child: OnboardingScreen()), dark: dark, overrides: _overrides(), size: const Size(390, 800));
+      expect(find.text("Réinventer l'agriculture"), findsOneWidget);
+    });
+
+    testWidgets('Marchés ($tag)', (tester) async {
+      await VisualHarness.shoot(tester, 'markets_$tag', const MarketsScreen(), dark: dark, overrides: _overrides(), size: const Size(390, 844));
+      expect(find.byType(MarketsScreen), findsOneWidget);
     });
   }
 }

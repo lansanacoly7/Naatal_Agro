@@ -27,7 +27,7 @@ class _PriceAnalysisScreenState extends ConsumerState<PriceAnalysisScreen> {
   int _selectedDays = 7;
   late TextEditingController _stockController;
   final TextEditingController _chatController = TextEditingController();
-  
+
   final List<Map<String, String>> _messages = [
     {'sender': 'ia', 'text': 'Bonjour ! Je suis Naatal IA. Comment puis-je vous aider à optimiser vos revenus aujourd\'hui ?'},
   ];
@@ -81,11 +81,11 @@ class _PriceAnalysisScreenState extends ConsumerState<PriceAnalysisScreen> {
     }
     final percent = (diff / basePrice).abs() * 100;
     final percentStr = percent.toStringAsFixed(1);
-    
+
     if (diff > 0) {
-      return "Selon la tendance observée sur les marchés, le prix de ${widget.productName} devrait progresser d'environ $percentStr% dans $days jours. Conserver votre stock permet d'espérer une meilleure marge.";
+      return "Selon la tendance observée sur les marchés, le prix de ${widget.productName} pourrait progresser d'environ $percentStr% dans $days jours si la tendance se poursuit. Estimation indicative fondée sur les derniers relevés, sans garantie.";
     } else {
-      return "Le prix de ${widget.productName} montre une tendance baissière (-$percentStr%) sur les derniers relevés. Il est conseillé d'écouler les stocks disponibles pour sécuriser vos gains.";
+      return "Le prix de ${widget.productName} montre une tendance baissière (-$percentStr%) sur les derniers relevés. Estimation indicative, sans garantie : comparez avec les prix des marchés avant de vendre.";
     }
   }
 
@@ -106,7 +106,7 @@ class _PriceAnalysisScreenState extends ConsumerState<PriceAnalysisScreen> {
       // On enrichit le contexte de la question avec les infos du produit
       final contextualQuery = "Concernant le produit ${widget.productName} (Prix actuel: ${widget.currentPrice.toInt()} FCFA): $text";
       final responseText = (await repository.askQuestion(contextualQuery)).text;
-      
+
       if (mounted) {
         setState(() {
           _messages.add({'sender': 'ia', 'text': responseText});
@@ -198,7 +198,7 @@ class _PriceAnalysisScreenState extends ConsumerState<PriceAnalysisScreen> {
                         bottom: 20,
                         left: 20,
                         right: 20,
-                        child: 
+                        child:
                             Row(
                               crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
@@ -246,7 +246,7 @@ class _PriceAnalysisScreenState extends ConsumerState<PriceAnalysisScreen> {
                       ),
                     ],
                   ),
-                  
+
                   Padding(
                     padding: const EdgeInsets.all(20),
                     child: Column(
@@ -274,7 +274,7 @@ class _PriceAnalysisScreenState extends ConsumerState<PriceAnalysisScreen> {
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        colors: isUp 
+                        colors: isUp
                           ? [Colors.green.shade50, Colors.green.shade100] // Dégradé vert très doux
                           : [Colors.red.shade50, Colors.red.shade100], // Dégradé rouge très doux
                         begin: Alignment.topLeft,
@@ -451,7 +451,7 @@ class _PriceAnalysisScreenState extends ConsumerState<PriceAnalysisScreen> {
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                   ),
                   const SizedBox(height: 16),
-                  
+
                   // Chat Messages Area (inside the scroll)
                   ListView.builder(
                     shrinkWrap: true,
@@ -504,7 +504,7 @@ class _PriceAnalysisScreenState extends ConsumerState<PriceAnalysisScreen> {
           ),
         ),
       ),
-          
+
           // Chat Input Area (Fixed at bottom)
           Container(
             padding: EdgeInsets.only(

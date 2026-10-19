@@ -1,24 +1,54 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
+
 import '../../../../core/theme/app_theme.dart';
-import '../../data/models/crop.dart';
-import '../../data/agriculture_provider.dart';
 import '../../../../shared/utils/data_refresh.dart';
+import '../../../../ui/ui.dart';
+import '../../data/agriculture_provider.dart';
+import '../../data/models/crop.dart';
 
+/// Formate une date en français sans intl (compatible Web et mobile sans locale pack).
+String _formatFrenchDate(String? dateStr, {bool short = false}) {
+  if (dateStr == null || dateStr.trim().isEmpty) return 'Date non renseignée';
+  final date = DateTime.tryParse(dateStr.trim());
+  if (date == null) return dateStr;
+  const shortMonths = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+  const fullMonths = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+  final m = (short ? shortMonths : fullMonths)[date.month - 1];
+  return '${date.day} $m ${date.year}';
+}
+
+/// Formate un montant en FCFA avec séparateur de milliers
+String _formatFcfa(double amount) {
+  final intVal = amount.round();
+  final s = intVal.toString();
+  final buffer = StringBuffer();
+  for (int i = 0; i < s.length; i++) {
+    if (i > 0 && (s.length - i) % 3 == 0) {
+      buffer.write(' ');
+    }
+    buffer.write(s[i]);
+  }
+  return buffer.toString();
+}
+
+/// Fiche détaillée d'une culture sur l'exploitation : avancement, récoltes réelles,
+/// activités de parcelle enregistrées via l'API, conseils agronomiques et valorisation.
 class CropDetailScreen extends ConsumerStatefulWidget {
-  final Crop crop;
-
   const CropDetailScreen({super.key, required this.crop});
+
+  final Crop crop;
 
   @override
   ConsumerState<CropDetailScreen> createState() => _CropDetailScreenState();
 }
 
 class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
-  final Set<String> _completedTasks = {};
   late String _currentStatus;
+  final List<CropActivity> _localAddedActivities = [];
+  final List<CropHarvest> _localAddedHarvests = [];
 
   @override
   void initState() {
@@ -26,209 +56,166 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
     _currentStatus = widget.crop.status;
   }
 
-  // --- Helpers for Growth Calculation ---
-  double _calculateGrowthProgress() {
-    try {
-      final start = DateTime.parse(widget.crop.plantingDate);
-      final end = DateTime.parse(widget.crop.expectedHarvestDate);
-      final now = DateTime.now();
-
-      if (now.isBefore(start)) return 0.0;
-      if (now.isAfter(end)) return 1.0;
-
-      final totalDuration = end.difference(start).inDays;
-      final elapsed = now.difference(start).inDays;
-
-      return elapsed / totalDuration;
-    } catch (e) {
-      return 0.5; // fallback if dates are invalid
-    }
-  }
-
-  String _formatDate(String dateStr) {
-    try {
-      final date = DateTime.parse(dateStr);
-      return DateFormat('dd MMM yyyy', 'fr_FR').format(date);
-    } catch (e) {
-      return dateStr;
-    }
+  // --- Calcul de l'avancement cultural ---
+  double? _calculateGrowthProgress(Crop c) {
+    final start = c.parsedPlantingDate;
+    final end = c.parsedHarvestDate;
+    if (start == null || end == null) return null;
+    final totalDays = end.difference(start).inDays;
+    if (totalDays <= 0) return null;
+    final elapsed = DateTime.now().difference(start).inDays;
+    return (elapsed / totalDays).clamp(0.0, 1.0);
   }
 
   @override
   Widget build(BuildContext context) {
-    final progress = _calculateGrowthProgress();
-    final progressPercent = (progress * 100).toInt();
+    // Écoute de la liste des cultures pour récupérer les activités et récoltes à jour
+    final cropsAsync = ref.watch(cropsProvider);
+    final serverCrop = cropsAsync.asData?.value.cast<Crop?>().firstWhere(
+      (c) => c?.id == widget.crop.id,
+      orElse: () => null,
+    );
+    final crop = serverCrop ?? widget.crop;
+
+    // Fusion des activités serveur et des activités ajoutées localement dans la session
+    final allActivities = <CropActivity>[
+      ...crop.activities,
+      ..._localAddedActivities.where((a) => !crop.activities.any((sa) => sa.id == a.id)),
+    ]..sort((a, b) => (b.parsedDate ?? DateTime(1970)).compareTo(a.parsedDate ?? DateTime(1970)));
+
+    // Fusion des récoltes serveur et des récoltes ajoutées localement dans la session
+    final allHarvests = <CropHarvest>[
+      ...crop.harvests,
+      ..._localAddedHarvests.where((h) => !crop.harvests.any((sh) => sh.id == h.id)),
+    ]..sort((a, b) => (b.parsedDate ?? DateTime(1970)).compareTo(a.parsedDate ?? DateTime(1970)));
+
+    final progress = _calculateGrowthProgress(crop);
+    final isHarvested = _currentStatus.toLowerCase() == 'harvested' || crop.status.toLowerCase() == 'harvested';
 
     return Scaffold(
-      backgroundColor: Colors.white,
-      bottomNavigationBar: (_currentStatus == 'active' || _currentStatus == 'attention')
-          ? SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                child: ElevatedButton.icon(
-                  onPressed: () => _showHarvestDialog(context),
-                  icon: const Icon(Icons.agriculture_rounded, color: Colors.white),
-                  label: const Text(
-                    'Enregistrer la récolte (Ajouter au stock)',
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                    elevation: 4,
-                  ),
-                ),
-              ),
-            )
-          : null,
+      backgroundColor: AppColors.background,
       body: CustomScrollView(
         slivers: [
-          _buildSliverAppBar(),
+          _buildSliverAppBar(crop, isHarvested),
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.all(24.0),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildGrowthSection(progress, progressPercent),
-                  const SizedBox(height: 32),
-                  _buildAiCard(),
-                  const SizedBox(height: 32),
-                  _buildTasksSection(),
-                  const SizedBox(height: 32),
-                  _buildRisksSection(),
-                  const SizedBox(height: 32),
-                  _buildSalesSection(),
-                  const SizedBox(height: 40),
+                  // 1. Actions rapides (Images d'abord)
+                  _buildPhotoActions(crop),
+                  const SizedBox(height: 18),
+
+                  // 2. Cycle & Calendrier cultural
+                  _buildGrowthCard(crop, progress, isHarvested),
+                  const SizedBox(height: 14),
+
+                  // 2. Récoltes déjà enregistrées
+                  _buildHarvestsCard(crop, allHarvests, isHarvested),
+                  const SizedBox(height: 14),
+
+                  // 3. Activités & Travaux réels (enregistrés via l'API)
+                  _buildActivitiesCard(crop, allActivities),
+                  const SizedBox(height: 14),
+
+                  // 4. Santé & Suivi phytosanitaire
+                  _buildSanitaryCard(crop),
+                  const SizedBox(height: 14),
+
+                  // 5. Commercialisation & Marchés
+                  _buildMarketCard(crop),
+                  const SizedBox(height: 14),
+
+                  // 6. Conseil Naatal IA
+                  _buildAiCard(crop),
+                  const SizedBox(height: 20),
                 ],
               ),
             ),
           ),
         ],
       ),
+      bottomNavigationBar: _buildBottomBar(crop, isHarvested),
     );
   }
 
-  Widget _buildAiCard() {
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFFE8F5E9), Color(0xFFC8E6C9)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.green.withValues(alpha: 0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: () {
-            context.go('/ai');
-          },
-          child: Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.auto_awesome, color: Colors.green, size: 24),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
-                      Text('Besoin d\'un conseil ?', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.green)),
-                      SizedBox(height: 4),
-                      Text('Demandez à Naatal IA des recommandations personnalisées pour cette culture.', style: TextStyle(color: Colors.black87, fontSize: 12, height: 1.4)),
-                    ],
-                  ),
-                ),
-                const Icon(Icons.arrow_forward_ios, color: Colors.green, size: 16),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+  // ────────────────────────── SliverAppBar ──────────────────────────
 
-  Widget _buildSliverAppBar() {
+  Widget _buildSliverAppBar(Crop crop, bool isHarvested) {
     return SliverAppBar(
-      expandedHeight: 280.0,
+      expandedHeight: 250.0,
       pinned: true,
       backgroundColor: AppColors.primary,
-      iconTheme: const IconThemeData(color: Colors.white),
+      foregroundColor: Colors.white,
+      leading: IconButton(
+        icon: Container(
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            color: Colors.black.withValues(alpha: 0.35),
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: Colors.white),
+        ),
+        onPressed: () => context.pop(),
+      ),
       flexibleSpace: FlexibleSpaceBar(
         background: Stack(
           fit: StackFit.expand,
           children: [
             Image.asset(
-              widget.crop.imageAsset,
+              crop.imageAsset,
               fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) => Container(
-                color: Colors.grey.shade300,
-                child: const Icon(Icons.image_not_supported, size: 50, color: Colors.grey),
+              errorBuilder: (_, __, ___) => Container(
+                color: AppColors.primary,
+                child: const Icon(Icons.eco_rounded, size: 72, color: Colors.white24),
               ),
             ),
-            Container(
+            DecoratedBox(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [Colors.transparent, Colors.black.withValues(alpha: 0.8)],
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black.withValues(alpha: 0.35),
+                    Colors.black.withValues(alpha: 0.8),
+                  ],
                 ),
               ),
             ),
             Positioned(
-              bottom: 24,
-              left: 24,
-              right: 24,
+              bottom: 18,
+              left: 20,
+              right: 20,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
-                      _buildGlassChip(
-                        _currentStatus == 'active'
-                            ? 'EN CROISSANCE'
-                            : (_currentStatus == 'attention' ? 'SURVEILLANCE' : 'RÉCOLTÉ'),
-                        Icons.eco,
-                        _currentStatus == 'active'
-                            ? Colors.greenAccent
-                            : (_currentStatus == 'attention' ? Colors.amberAccent : Colors.orangeAccent),
-                      ),
+                      _statusChip(isHarvested),
                       const SizedBox(width: 8),
-                      _buildGlassChip('${widget.crop.areaSize} ha', Icons.square_foot, Colors.white),
+                      _glassChip('${crop.areaSize.toStringAsFixed(crop.areaSize.truncateToDouble() == crop.areaSize ? 0 : 1)} ha', Icons.square_foot_rounded),
                     ],
                   ),
-                  const SizedBox(height: 12),
-                  Text(
-                    widget.crop.name,
-                    style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold),
-                  ),
                   const SizedBox(height: 8),
+                  Text(
+                    crop.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w800, letterSpacing: -0.3),
+                  ),
+                  const SizedBox(height: 4),
                   Row(
                     children: [
-                      const Icon(Icons.location_on, color: Colors.white70, size: 16),
+                      const Icon(Icons.location_on_rounded, color: Colors.white70, size: 14),
                       const SizedBox(width: 4),
-                      Text(
-                        widget.crop.location,
-                        style: const TextStyle(color: Colors.white70, fontSize: 14),
+                      Expanded(
+                        child: Text(
+                          crop.location.isNotEmpty ? crop.location : 'Parcelle d\'exploitation',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500),
+                        ),
                       ),
                     ],
                   ),
@@ -241,356 +228,139 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
     );
   }
 
-  Widget _buildGlassChip(String label, IconData? icon, Color color) {
+  Widget _statusChip(bool isHarvested) {
+    final (label, icon, color) = isHarvested
+        ? ('RÉCOLTÉE', Icons.check_circle_rounded, const Color(0xFF6FD3A0))
+        : (_currentStatus == 'attention'
+            ? ('SURVEILLANCE', Icons.warning_amber_rounded, AppColors.warning)
+            : ('EN CROISSANCE', Icons.grass_rounded, Colors.white));
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.2),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+        color: Colors.black.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (icon != null) ...[
-            Icon(icon, size: 14, color: color),
-            const SizedBox(width: 4),
-          ],
-          Text(
-            label,
-            style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.bold),
-          ),
+          Icon(icon, size: 12, color: color),
+          const SizedBox(width: 4),
+          Text(label, style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w800)),
         ],
       ),
     );
   }
 
-  Widget _buildGrowthSection(double progress, int progressPercent) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text('Stade de croissance', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
-            Text('$progressPercent%', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: AppColors.primary)),
-          ],
-        ),
-        const SizedBox(height: 16),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(10),
-          child: LinearProgressIndicator(
-            value: progress,
-            minHeight: 12,
-            backgroundColor: Colors.grey.shade200,
-            color: AppColors.primary,
-          ),
-        ),
-        const SizedBox(height: 12),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            _buildStageInfo('Semis', _formatDate(widget.crop.plantingDate), progress >= 0.0, CrossAxisAlignment.start),
-            _buildStageInfo('Croissance', 'En cours', progress > 0.0 && progress < 1.0, CrossAxisAlignment.center),
-            _buildStageInfo('Récolte', _formatDate(widget.crop.expectedHarvestDate), progress >= 1.0, CrossAxisAlignment.end),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStageInfo(String title, String subtitle, bool isActive, CrossAxisAlignment alignment) {
-    return Expanded(
-      child: Column(
-        crossAxisAlignment: alignment,
-        children: [
-          Text(
-            title,
-            style: TextStyle(
-              color: isActive ? AppColors.primary : AppColors.textSecondary,
-              fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-              fontSize: 13,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            subtitle,
-            style: TextStyle(
-              fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
-              fontSize: 11,
-              color: isActive ? AppColors.textPrimary : Colors.grey.shade500,
-            ),
-            textAlign: alignment == CrossAxisAlignment.end 
-                ? TextAlign.right 
-                : alignment == CrossAxisAlignment.center 
-                    ? TextAlign.center 
-                    : TextAlign.left,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTasksSection() {
-    final activities = widget.crop.activities;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text("Activités & Travaux de parcelle", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
-        const SizedBox(height: 16),
-        if (activities.isNotEmpty)
-          ...activities.map((act) => _buildTaskTile(
-                act.description.isNotEmpty ? act.description : act.activityType,
-                act.date,
-              ))
-        else
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade50,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey.shade200),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.assignment_outlined, color: Colors.grey.shade500, size: 24),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    "Aucune intervention enregistrée pour cette culture. Consultez le guide agronomique pour le calendrier recommandé.",
-                    style: TextStyle(color: Colors.grey.shade600, fontSize: 13, height: 1.4),
-                  ),
-                ),
-              ],
-            ),
-          ),
-      ],
-    );
-  }
-
-  Widget _buildTaskTile(String title, String time) {
-    final isDone = _completedTasks.contains(title);
+  Widget _glassChip(String label, IconData icon) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Colors.black.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
       ),
-      child: ListTile(
-        onTap: () {
-          setState(() {
-            if (isDone) {
-              _completedTasks.remove(title);
-            } else {
-              _completedTasks.add(title);
-            }
-          });
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(isDone ? 'Tâche "$title" marquée non terminée' : 'Bravo ! Tâche "$title" accomplie'),
-              duration: const Duration(seconds: 2),
-              backgroundColor: isDone ? Colors.grey.shade800 : AppColors.primary,
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-        },
-        leading: Icon(
-          isDone ? Icons.check_circle : Icons.circle_outlined,
-          color: isDone ? Colors.green : Colors.grey.shade400,
-        ),
-        title: Text(
-          title,
-          style: TextStyle(
-            decoration: isDone ? TextDecoration.lineThrough : null,
-            fontWeight: FontWeight.w600,
-            color: isDone ? Colors.grey : AppColors.textPrimary,
-          ),
-        ),
-        subtitle: Text(time, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-        trailing: Icon(
-          isDone ? Icons.done_all_rounded : Icons.touch_app_outlined,
-          size: 16,
-          color: isDone ? Colors.green : Colors.grey,
-        ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: Colors.white70),
+          const SizedBox(width: 4),
+          Text(label, style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700)),
+        ],
       ),
     );
   }
 
-  Widget _buildRisksSection() {
-    final hasGuide = widget.crop.guideSlug != null && widget.crop.guideSlug!.isNotEmpty;
+  // ────────────────────────── 0. Actions rapides photo ──────────────────────────
+
+  Widget _buildPhotoActions(Crop crop) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text("Santé & Suivi phytosanitaire", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
-        const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.green.withValues(alpha: 0.05),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.green.withValues(alpha: 0.2)),
+        const Text(
+          'Actions de la parcelle',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w800,
+            color: AppColors.textPrimary,
           ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Icon(Icons.verified_user_outlined, color: Colors.green, size: 28),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Aucune alerte sanitaire déclarée', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.green)),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Aucun foyer parasitaire ou maladie n\'a été signalé pour cette culture dans votre zone de ${widget.crop.location.isNotEmpty ? widget.crop.location : "production"}.',
-                      style: const TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.4),
-                    ),
-                    if (hasGuide) ...[
-                      const SizedBox(height: 8),
-                      GestureDetector(
-                        onTap: () => context.push('/agriculture/guides/${widget.crop.guideSlug}'),
-                        child: const Text(
-                          'Voir les bonnes pratiques de prévention dans le guide >',
-                          style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 13),
-                        ),
-                      ),
-                    ],
-                  ],
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: PhotoTile(
+                imageAsset: 'assets/images/ui/ui_arroser.jpg',
+                label: 'Arroser',
+                icon: Icons.water_drop_rounded,
+                height: 110,
+                onTap: () => _performQuickActivity(
+                  crop,
+                  type: 'irrigation',
+                  label: 'Arrosage',
+                  icon: Icons.water_drop_rounded,
                 ),
               ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSalesSection() {
-    final isHarvested = _currentStatus == 'harvested';
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text("Gestion du Stock & Vente", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
-            OutlinedButton.icon(
-              onPressed: () => _showCreatePriceAlertDialog(context),
-              icon: const Icon(Icons.notifications_active, size: 16, color: AppColors.primary),
-              label: const Text('Alerte prix', style: TextStyle(color: AppColors.primary, fontSize: 12)),
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: AppColors.primary),
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: PhotoTile(
+                imageAsset: 'assets/images/ui/ui_engrais.jpg',
+                label: 'Engrais',
+                icon: Icons.grain_rounded,
+                height: 110,
+                onTap: () => _performQuickActivity(
+                  crop,
+                  type: 'fertilisation',
+                  label: 'Engrais',
+                  icon: Icons.grain_rounded,
+                ),
               ),
             ),
           ],
         ),
-        const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: isHarvested ? Colors.green.withValues(alpha: 0.05) : AppColors.primary.withValues(alpha: 0.05),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: isHarvested ? Colors.green.withValues(alpha: 0.3) : AppColors.primary.withValues(alpha: 0.2)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(
-                    isHarvested ? Icons.check_circle_rounded : Icons.inventory_2,
-                    color: isHarvested ? Colors.green : AppColors.primaryDark,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    isHarvested ? 'Récolte effectuée — En Stock' : 'Cycle de Récolte & Commercialisation',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 15,
-                      color: isHarvested ? Colors.green.shade800 : AppColors.primaryDark,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(
-                isHarvested
-                    ? 'La récolte a été enregistrée avec succès. La production a été ajoutée à vos stocks et est prête à être commercialisée ou conservée.'
-                    : 'Dès que la récolte est prête, enregistrez-la pour transférer automatiquement le volume dans vos stocks et suivre vos revenus.',
-                style: const TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.4),
-              ),
-              const SizedBox(height: 16),
-              if (!isHarvested) ...[
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: () => _showHarvestDialog(context),
-                    icon: const Icon(Icons.agriculture_rounded, color: Colors.white),
-                    label: const Text(
-                      'Enregistrer la récolte (Transférer au Stock)',
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green.shade700,
-                      elevation: 0,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 10),
-              ] else ...[
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: () => context.push('/inventory'),
-                    icon: const Icon(Icons.inventory_2_rounded, color: Colors.white),
-                    label: const Text(
-                      'Voir les stocks & Enregistrer une vente',
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green.shade700,
-                      elevation: 0,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 10),
-              ],
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton(
-                  onPressed: () {
-                    context.push('/market_comparison', extra: {
-                      'productName': widget.crop.cropType,
-                      'imageAsset': widget.crop.imageAsset,
-                      'price': '',
-                    });
-                  },
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: AppColors.primary),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  child: const Text('Analyser les prix du marché', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: PhotoTile(
+                imageAsset: 'assets/images/ui/ui_traiter.jpg',
+                label: 'Traiter',
+                icon: Icons.health_and_safety_rounded,
+                height: 110,
+                onTap: () => _performQuickActivity(
+                  crop,
+                  type: 'traitement',
+                  label: 'Traitement',
+                  icon: Icons.health_and_safety_rounded,
                 ),
               ),
-            ],
-          ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: PhotoTile(
+                imageAsset: 'assets/images/ui/ui_recolter_geste.jpg',
+                label: 'Récolter',
+                icon: Icons.agriculture_rounded,
+                height: 110,
+                onTap: () => _showHarvestDialog(context),
+              ),
+            ),
+          ],
         ),
       ],
     );
   }
 
-  void _showCreatePriceAlertDialog(BuildContext context) {
-    final priceController = TextEditingController();
-    String alertCondition = 'greater';
+  void _performQuickActivity(
+    Crop crop, {
+    required String type,
+    required String label,
+    required IconData icon,
+  }) {
+    final costController = TextEditingController();
+    final descController = TextEditingController();
 
     showModalBottomSheet(
       context: context,
@@ -600,72 +370,152 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
         builder: (ctx, setSheetState) => Padding(
           padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
           child: Container(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
             decoration: const BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text('Alerte de prix : ${widget.crop.name}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                    IconButton(icon: const Icon(Icons.close_rounded), onPressed: () => Navigator.pop(ctx)),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                DropdownButtonFormField<String>(
-                  initialValue: alertCondition,
-                  decoration: InputDecoration(
-                    labelText: 'Condition de déclenchement',
-                    prefixIcon: const Icon(Icons.tune_rounded),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
                   ),
-                  items: const [
-                    DropdownMenuItem(value: 'greater', child: Text('Quand le prix dépasse (> )')),
-                    DropdownMenuItem(value: 'lower', child: Text('Quand le prix descend sous (< )')),
+                ),
+                Row(
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(icon, color: AppColors.primary, size: 24),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Enregistrer $label', style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
+                          Text(crop.name, style: const TextStyle(fontSize: 13, color: AppColors.textSecondary, fontWeight: FontWeight.w500)),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded, size: 20),
+                      onPressed: () => Navigator.pop(ctx),
+                      visualDensity: VisualDensity.compact,
+                    ),
                   ],
-                  onChanged: (val) {
-                    if (val != null) {
-                      setSheetState(() => alertCondition = val);
-                    }
-                  },
                 ),
                 const SizedBox(height: 16),
                 TextField(
-                  controller: priceController,
+                  controller: costController,
                   keyboardType: TextInputType.number,
                   decoration: InputDecoration(
-                    labelText: 'Prix seuil cible (FCFA / kg)',
-                    prefixIcon: const Icon(Icons.payments_outlined),
+                    labelText: 'Coût en FCFA (optionnel)',
+                    labelStyle: const TextStyle(fontSize: 13),
+                    hintText: '0 FCFA',
+                    prefixIcon: const Icon(Icons.payments_outlined, size: 18),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: descController,
+                  decoration: InputDecoration(
+                    labelText: 'Note ou observation (optionnel)',
+                    labelStyle: const TextStyle(fontSize: 13),
+                    hintText: 'Ex: engrais NPK, dose habituelle',
+                    prefixIcon: const Icon(Icons.edit_note_rounded, size: 20),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                ),
+                const SizedBox(height: 18),
                 SizedBox(
                   width: double.infinity,
-                  height: 50,
+                  height: 56,
                   child: ElevatedButton(
-                    onPressed: () {
-                      final val = priceController.text.trim();
-                      if (val.isEmpty) return;
-                      Navigator.pop(ctx);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Alerte enregistrée : alerte si le prix de ${widget.crop.name} est ${alertCondition == "greater" ? ">" : "<"} $val FCFA/kg'),
-                          backgroundColor: AppColors.primary,
-                          behavior: SnackBarBehavior.floating,
-                        ),
-                      );
+                    onPressed: () async {
+                      final now = DateTime.now();
+                      final dateStr = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+                      final rawCost = costController.text.trim().replaceAll(' ', '').replaceAll(',', '.');
+                      final cost = double.tryParse(rawCost);
+                      final desc = descController.text.trim().isNotEmpty ? descController.text.trim() : label;
+
+                      final messenger = ScaffoldMessenger.of(context);
+                      final nav = Navigator.of(ctx);
+
+                      try {
+                        await ref.read(agricultureRepositoryProvider).addActivity(
+                          cropId: crop.id,
+                          type: type,
+                          date: dateStr,
+                          description: desc,
+                          cost: cost,
+                        );
+
+                        if (!mounted) return;
+
+                        setState(() {
+                          _localAddedActivities.add(
+                            CropActivity(
+                              id: 'local_${now.millisecondsSinceEpoch}',
+                              cropId: crop.id,
+                              activityType: type,
+                              description: desc,
+                              date: dateStr,
+                              cost: cost,
+                              createdAt: now.toIso8601String(),
+                            ),
+                          );
+                        });
+
+                        refreshAfterDataChange(ref);
+                        nav.pop();
+
+                        final size = MediaQuery.of(context).size;
+                        await showSuccessReveal(
+                          context,
+                          origin: Offset(size.width / 2, size.height * 0.8),
+                          headline: 'INTERVENTION ENREGISTRÉE',
+                          title: label,
+                          details: [
+                            crop.name,
+                            cost != null && cost > 0 ? '${_formatFcfa(cost)} FCFA' : 'Sans coût supplémentaire',
+                            desc,
+                          ],
+                          doneLabel: 'Super',
+                        );
+                      } catch (e) {
+                        messenger.showSnackBar(
+                          SnackBar(
+                            content: Text('Impossible d\'enregistrer : $e'),
+                            backgroundColor: AppColors.error,
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      }
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     ),
-                    child: const Text('Activer l\'alerte', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                    child: Text('Valider $label', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
                   ),
                 ),
               ],
@@ -676,7 +526,824 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
     );
   }
 
-  void _showHarvestDialog(BuildContext context) {
+  // ────────────────────────── 1. Cycle & Calendrier ──────────────────────────
+
+  Widget _buildGrowthCard(Crop crop, double? progress, bool isHarvested) {
+    final days = crop.daysToHarvest;
+    final progressVal = isHarvested ? 1.0 : (progress ?? 0.0);
+    final percent = (progressVal * 100).toInt();
+
+    final caption = isHarvested
+        ? 'Cycle achevé'
+        : days == null
+            ? 'Dates à renseigner'
+            : days < 0
+                ? 'Récolte attendue il y a ${-days} j'
+                : days == 0
+                    ? 'Récolte aujourd\'hui'
+                    : 'Récolte dans $days j';
+
+    return _cardContainer(
+      title: 'Cycle cultural',
+      trailing: Text(
+        isHarvested ? '100%' : (progress == null ? '—' : '$percent%'),
+        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.primary),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: LinearProgressIndicator(
+              value: progressVal,
+              minHeight: 8,
+              backgroundColor: AppColors.surfaceVariant,
+              valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _stageColumn('Semis', _formatFrenchDate(crop.plantingDate, short: true), CrossAxisAlignment.start),
+              _stageColumn('État', caption, CrossAxisAlignment.center, isHighlight: true),
+              _stageColumn('Récolte prévue', _formatFrenchDate(crop.expectedHarvestDate, short: true), CrossAxisAlignment.end),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _stageColumn(String label, String value, CrossAxisAlignment align, {bool isHighlight = false}) {
+    return Column(
+      crossAxisAlignment: align,
+      children: [
+        Text(label, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary, fontWeight: FontWeight.w500)),
+        const SizedBox(height: 2),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: isHighlight ? FontWeight.w700 : FontWeight.w600,
+            color: isHighlight ? AppColors.primary : AppColors.textPrimary,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ────────────────────────── 2. Récoltes enregistrées ──────────────────────────
+
+  Widget _buildHarvestsCard(Crop crop, List<CropHarvest> harvests, bool isHarvested) {
+    final double totalHarvested = harvests.fold<double>(0, (sum, h) => sum + h.quantity);
+    final primaryUnit = harvests.isNotEmpty ? harvests.first.unit : 'kg';
+
+    return _cardContainer(
+      title: 'Récoltes enregistrées',
+      tag: harvests.isNotEmpty ? '${harvests.length}' : null,
+      trailing: TextButton.icon(
+        onPressed: () => _showHarvestDialog(context),
+        icon: const Icon(Icons.add_rounded, size: 16, color: AppColors.primary),
+        label: const Text('Ajouter', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.primary)),
+        style: TextButton.styleFrom(
+          visualDensity: VisualDensity.compact,
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (harvests.isNotEmpty) ...[
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              margin: const EdgeInsets.only(bottom: 12),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.agriculture_rounded, size: 20, color: AppColors.primary),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Total récolté : ${totalHarvested.toStringAsFixed(totalHarvested.truncateToDouble() == totalHarvested ? 0 : 1)} $primaryUnit',
+                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.primary),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            for (final h in harvests) ...[
+              Container(
+                padding: const EdgeInsets.all(12),
+                margin: const EdgeInsets.only(bottom: 8),
+                decoration: BoxDecoration(
+                  color: AppColors.background,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: Colors.grey.withValues(alpha: 0.1)),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.12),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.inventory_2_rounded, size: 18, color: AppColors.primary),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                '${h.quantity.toStringAsFixed(h.quantity.truncateToDouble() == h.quantity ? 0 : 1)} ${h.unit}',
+                                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+                              ),
+                              Text(
+                                _formatFrenchDate(h.date, short: true),
+                                style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                              ),
+                            ],
+                          ),
+                          if (h.notes.isNotEmpty) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              h.notes,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(fontSize: 11.5, color: AppColors.textSecondary),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ] else ...[
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: AppColors.background,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.info_outline_rounded, size: 20, color: AppColors.textSecondary),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      isHarvested
+                          ? 'Cette culture est marquée récoltée, mais aucune pesée détaillée n\'a été enregistrée.'
+                          : 'Aucune récolte enregistrée pour le moment. Enregistrez la pesée dès la coupe pour incrémenter le stock.',
+                      style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, height: 1.4),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  // ────────────────────────── 3. Activités & Travaux réels ──────────────────────────
+
+  Widget _buildActivitiesCard(Crop crop, List<CropActivity> activities) {
+    return _cardContainer(
+      title: 'Activités & travaux',
+      tag: activities.isNotEmpty ? '${activities.length}' : null,
+      trailing: TextButton.icon(
+        onPressed: () => _showAddActivityDialog(context, crop),
+        icon: const Icon(Icons.add_rounded, size: 16, color: AppColors.primary),
+        label: const Text('Ajouter', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.primary)),
+        style: TextButton.styleFrom(
+          visualDensity: VisualDensity.compact,
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (activities.isNotEmpty) ...[
+            for (final act in activities) ...[
+              Container(
+                padding: const EdgeInsets.all(12),
+                margin: const EdgeInsets.only(bottom: 8),
+                decoration: BoxDecoration(
+                  color: AppColors.background,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: Colors.grey.withValues(alpha: 0.1)),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(_activityIcon(act.activityType), size: 18, color: AppColors.primary),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                _readableActivityType(act.activityType),
+                                style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                              ),
+                              Text(
+                                _formatFrenchDate(act.date, short: true),
+                                style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                              ),
+                            ],
+                          ),
+                          if (act.description.isNotEmpty) ...[
+                            const SizedBox(height: 3),
+                            Text(
+                              act.description,
+                              style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, height: 1.3),
+                            ),
+                          ],
+                          if (act.cost != null && act.cost! > 0) ...[
+                            const SizedBox(height: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: AppColors.surfaceVariant,
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                '${_formatFcfa(act.cost!)} F (dépense enregistrée)',
+                                style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ] else ...[
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: AppColors.background,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.assignment_outlined, size: 20, color: AppColors.textSecondary),
+                  const SizedBox(width: 10),
+                  const Expanded(
+                    child: Text(
+                      'Aucune intervention enregistrée sur cette parcelle. Notez vos arrosages, engrais et traitements pour suivre vos coûts.',
+                      style: TextStyle(fontSize: 12, color: AppColors.textSecondary, height: 1.4),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  IconData _activityIcon(String type) {
+    final t = type.toLowerCase();
+    if (t.contains('arros') || t.contains('irrig')) return Icons.water_drop_rounded;
+    if (t.contains('engrais') || t.contains('fertil')) return Icons.eco_rounded;
+    if (t.contains('trait') || t.contains('phyto') || t.contains('pestic')) return Icons.healing_rounded;
+    if (t.contains('desherb') || t.contains('sarcl')) return Icons.content_cut_rounded;
+    if (t.contains('semis') || t.contains('plant')) return Icons.grass_rounded;
+    if (t.contains('recolt')) return Icons.agriculture_rounded;
+    if (t.contains('butt')) return Icons.landscape_rounded;
+    return Icons.event_note_rounded;
+  }
+
+  String _readableActivityType(String type) {
+    final t = type.toLowerCase();
+    if (t == 'irrigation') return 'Irrigation / Arrosage';
+    if (t == 'fertilisation') return 'Fertilisation / Engrais';
+    if (t == 'traitement') return 'Traitement phytosanitaire';
+    if (t == 'desherbage') return 'Désherbage / Sarclage';
+    if (t == 'semis') return 'Semis / Repiquage';
+    if (t == 'recolte') return 'Récolte';
+    if (t == 'buttage') return 'Buttage';
+    return type.isNotEmpty ? '${type[0].toUpperCase()}${type.substring(1)}' : 'Intervention';
+  }
+
+  // ────────────────────────── 4. Suivi phytosanitaire ──────────────────────────
+
+  Widget _buildSanitaryCard(Crop crop) {
+    final hasGuide = crop.guideSlug != null && crop.guideSlug!.isNotEmpty;
+
+    return _cardContainer(
+      title: 'Santé phytosanitaire',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.verified_user_rounded, size: 18, color: AppColors.primary),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Parcelle sous contrôle', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Aucune alerte sanitaire ou parasitaire majeure n\'a été signalée pour cette culture à ${crop.location.isNotEmpty ? crop.location : "votre zone"}.',
+                      style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, height: 1.35),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (hasGuide) ...[
+            const SizedBox(height: 12),
+            InkWell(
+              onTap: () => context.push('/agriculture/guides/${crop.guideSlug}'),
+              borderRadius: BorderRadius.circular(10),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(
+                  children: const [
+                    Text(
+                      'Consulter la fiche technique de référence',
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.primary),
+                    ),
+                    SizedBox(width: 4),
+                    Icon(Icons.arrow_forward_rounded, size: 14, color: AppColors.primary),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  // ────────────────────────── 5. Commercialisation ──────────────────────────
+
+  Widget _buildMarketCard(Crop crop) {
+    return _cardContainer(
+      title: 'Marchés & Commercialisation',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    context.push('/market_comparison', extra: {
+                      'productName': crop.cropType.isNotEmpty ? crop.cropType : crop.name,
+                      'imageAsset': crop.imageAsset,
+                      'price': '',
+                    });
+                  },
+                  icon: const Icon(Icons.storefront_rounded, size: 16),
+                  label: const Text('Comparer les cours'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.primary,
+                    side: const BorderSide(color: AppColors.primary),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    textStyle: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => _showCreatePriceAlertDialog(context, crop),
+                  icon: const Icon(Icons.notifications_active_rounded, size: 16),
+                  label: const Text('Alerte de prix'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.textPrimary,
+                    side: BorderSide(color: Colors.grey.withValues(alpha: 0.3)),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    textStyle: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ────────────────────────── 6. Conseil IA ──────────────────────────
+
+  Widget _buildAiCard(Crop crop) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(20),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: () => context.go('/ai'),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: AppColors.primary.withValues(alpha: 0.15)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.auto_awesome_rounded, size: 20, color: AppColors.primary),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Besoin d\'un conseil agronomique ?', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Demandez à Naatal IA des recommandations personnalisées pour ${crop.name}.',
+                      style: const TextStyle(fontSize: 11.5, color: AppColors.textSecondary, height: 1.3),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right_rounded, color: AppColors.textSecondary, size: 20),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ────────────────────────── BottomBar ──────────────────────────
+
+  Widget _buildBottomBar(Crop crop, bool isHarvested) {
+    return SafeArea(
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border(top: BorderSide(color: Colors.grey.withValues(alpha: 0.15))),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 10,
+              offset: const Offset(0, -4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              flex: 1,
+              child: SizedBox(
+                height: 56,
+                child: OutlinedButton.icon(
+                  onPressed: () => _showAddActivityDialog(context, crop),
+                  icon: const Icon(Icons.post_add_rounded, size: 20),
+                  label: const Text('Activité'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.primary,
+                    side: const BorderSide(color: AppColors.primary, width: 1.5),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              flex: 2,
+              child: SizedBox(
+                height: 56,
+                child: ElevatedButton.icon(
+                  onPressed: isHarvested ? () => context.push('/stock') : () => _showHarvestDialog(context),
+                  icon: Icon(isHarvested ? Icons.inventory_2_rounded : Icons.agriculture_rounded, size: 20),
+                  label: Text(isHarvested ? 'Voir en Stock' : 'Enregistrer la récolte'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ────────────────────────── Helper Container ──────────────────────────
+
+  Widget _cardContainer({required String title, String? tag, Widget? trailing, required Widget child}) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.grey.withValues(alpha: 0.1)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
+                  if (tag != null) ...[
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(tag, style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: AppColors.primary)),
+                    ),
+                  ],
+                ],
+              ),
+              if (trailing != null) trailing,
+            ],
+          ),
+          const SizedBox(height: 12),
+          child,
+        ],
+      ),
+    );
+  }
+
+  // ────────────────────────── Dialogs ──────────────────────────
+
+  void _showAddActivityDialog(BuildContext context, Crop crop) {
+    final descController = TextEditingController();
+    final costController = TextEditingController();
+    String activityType = 'irrigation';
+    DateTime selectedDate = DateTime.now();
+
+    final activityOptions = const [
+      ('irrigation', 'Irrigation / Arrosage'),
+      ('fertilisation', 'Fertilisation / Engrais'),
+      ('traitement', 'Traitement phytosanitaire'),
+      ('desherbage', 'Désherbage / Sarclage'),
+      ('semis', 'Semis / Repiquage'),
+      ('buttage', 'Buttage'),
+      ('recolte', 'Travail de récolte'),
+      ('autre', 'Autre intervention'),
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheetState) => Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Nouvelle activité', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded, size: 20),
+                      onPressed: () => Navigator.pop(ctx),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  initialValue: activityType,
+                  decoration: InputDecoration(
+                    labelText: 'Type d\'intervention',
+                    labelStyle: const TextStyle(fontSize: 13),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                  items: [
+                    for (final opt in activityOptions)
+                      DropdownMenuItem(value: opt.$1, child: Text(opt.$2, style: const TextStyle(fontSize: 13))),
+                  ],
+                  onChanged: (val) {
+                    if (val != null) setSheetState(() => activityType = val);
+                  },
+                ),
+                const SizedBox(height: 10),
+                InkWell(
+                  onTap: () async {
+                    final picked = await showDatePicker(
+                      context: ctx,
+                      initialDate: selectedDate,
+                      firstDate: DateTime(2020),
+                      lastDate: DateTime(2035),
+                    );
+                    if (picked != null) {
+                      setSheetState(() => selectedDate = picked);
+                    }
+                  },
+                  borderRadius: BorderRadius.circular(14),
+                  child: InputDecorator(
+                    decoration: InputDecoration(
+                      labelText: 'Date de l\'intervention',
+                      labelStyle: const TextStyle(fontSize: 13),
+                      prefixIcon: const Icon(Icons.calendar_today_rounded, size: 18),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                    ),
+                    child: Text(
+                      '${selectedDate.day.toString().padLeft(2, '0')}/${selectedDate.month.toString().padLeft(2, '0')}/${selectedDate.year}',
+                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: descController,
+                  maxLines: 2,
+                  decoration: InputDecoration(
+                    labelText: 'Description ou observations',
+                    labelStyle: const TextStyle(fontSize: 13),
+                    hintText: 'Ex: 2 sacs de NPK, désherbage manuel...',
+                    hintStyle: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: costController,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    labelText: 'Coût en FCFA (optionnel)',
+                    labelStyle: const TextStyle(fontSize: 13),
+                    prefixIcon: const Icon(Icons.payments_outlined, size: 18),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      final dateStr = '${selectedDate.year}-${selectedDate.month.toString().padLeft(2, '0')}-${selectedDate.day.toString().padLeft(2, '0')}';
+                      final rawCost = costController.text.trim().replaceAll(' ', '').replaceAll(',', '.');
+                      final cost = double.tryParse(rawCost);
+                      final optLabel = activityOptions.firstWhere((o) => o.$1 == activityType, orElse: () => ('', 'Intervention')).$2;
+                      final desc = descController.text.trim().isNotEmpty ? descController.text.trim() : optLabel;
+
+                      final messenger = ScaffoldMessenger.of(context);
+                      final nav = Navigator.of(ctx);
+
+                      try {
+                        await ref.read(agricultureRepositoryProvider).addActivity(
+                          cropId: crop.id,
+                          type: activityType,
+                          date: dateStr,
+                          description: desc,
+                          cost: cost,
+                        );
+
+                        setState(() {
+                          _localAddedActivities.add(
+                            CropActivity(
+                              id: 'local_${DateTime.now().millisecondsSinceEpoch}',
+                              cropId: crop.id,
+                              activityType: activityType,
+                              description: desc,
+                              date: dateStr,
+                              cost: cost,
+                              createdAt: DateTime.now().toIso8601String(),
+                            ),
+                          );
+                        });
+
+                        refreshAfterDataChange(ref);
+                        nav.pop();
+
+                        messenger.showSnackBar(
+                          SnackBar(
+                            content: const Text('Activité enregistrée avec succès !'),
+                            backgroundColor: AppColors.primary,
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                        );
+                      } catch (e) {
+                        String errorText = 'Impossible d\'enregistrer l\'activité.';
+                        if (e is DioException) {
+                          final data = e.response?.data;
+                          if (data is Map) {
+                            final firstVal = data.values.first;
+                            if (firstVal is List && firstVal.isNotEmpty) {
+                              errorText = firstVal.first.toString();
+                            } else if (firstVal is String) {
+                              errorText = firstVal;
+                            } else if (data['detail'] != null) {
+                              errorText = data['detail'].toString();
+                            }
+                          } else if (e.response?.statusCode == 400) {
+                            errorText = 'Données d\'activité invalides. Veuillez vérifier les champs.';
+                          } else if (e.response?.statusCode == 401 || e.response?.statusCode == 403) {
+                            errorText = 'Vous n\'êtes pas autorisé à modifier cette culture.';
+                          }
+                        }
+                        messenger.showSnackBar(
+                          SnackBar(
+                            content: Text(errorText),
+                            backgroundColor: AppColors.error,
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                        );
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    ),
+                    child: const Text('Enregistrer l\'activité', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showHarvestDialog([BuildContext? _]) {
     final quantityController = TextEditingController();
     final notesController = TextEditingController();
     String unit = 'kg';
@@ -689,28 +1356,43 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
         builder: (ctx, setSheetState) => Padding(
           padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
           child: Container(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
             decoration: const BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Récolter : ${widget.crop.name}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                    IconButton(icon: const Icon(Icons.close_rounded), onPressed: () => Navigator.pop(ctx)),
+                    Text('Pesée de récolte : ${widget.crop.name}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded, size: 20),
+                      onPressed: () => Navigator.pop(ctx),
+                      visualDensity: VisualDensity.compact,
+                    ),
                   ],
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  'Cette récolte basculera le statut de la culture à "Récolté" et incrémentera automatiquement votre inventaire de stock.',
-                  style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                const SizedBox(height: 6),
+                const Text(
+                  'Cette pesée enregistre la production récoltée et l\'ajoute automatiquement à votre inventaire de stock.',
+                  style: TextStyle(color: AppColors.textSecondary, fontSize: 12, height: 1.35),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 14),
                 Row(
                   children: [
                     Expanded(
@@ -719,25 +1401,29 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
                         controller: quantityController,
                         keyboardType: const TextInputType.numberWithOptions(decimal: true),
                         decoration: InputDecoration(
-                          labelText: 'Quantité récoltée',
-                          prefixIcon: const Icon(Icons.scale_rounded),
+                          labelText: 'Quantité',
+                          labelStyle: const TextStyle(fontSize: 13),
+                          prefixIcon: const Icon(Icons.scale_rounded, size: 18),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 10),
                     Expanded(
                       flex: 1,
                       child: DropdownButtonFormField<String>(
                         initialValue: unit,
                         decoration: InputDecoration(
                           labelText: 'Unité',
+                          labelStyle: const TextStyle(fontSize: 13),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
                         ),
                         items: const [
-                          DropdownMenuItem(value: 'kg', child: Text('kg')),
-                          DropdownMenuItem(value: 'tonnes', child: Text('tonnes')),
-                          DropdownMenuItem(value: 'sacs', child: Text('sacs')),
+                          DropdownMenuItem(value: 'kg', child: Text('kg', style: TextStyle(fontSize: 13))),
+                          DropdownMenuItem(value: 'tonnes', child: Text('tonnes', style: TextStyle(fontSize: 13))),
+                          DropdownMenuItem(value: 'sacs', child: Text('sacs', style: TextStyle(fontSize: 13))),
                         ],
                         onChanged: (val) {
                           if (val != null) setSheetState(() => unit = val);
@@ -746,21 +1432,23 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 10),
                 TextField(
                   controller: notesController,
                   maxLines: 2,
                   decoration: InputDecoration(
-                    labelText: 'Notes ou observations (optionnel)',
-                    prefixIcon: const Icon(Icons.notes_rounded),
-                    hintText: 'Ex: Qualité exceptionnelle, parcelle Est...',
+                    labelText: 'Observations (optionnel)',
+                    labelStyle: const TextStyle(fontSize: 13),
+                    hintText: 'Ex: Qualité supérieure, première passe...',
+                    hintStyle: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 18),
                 SizedBox(
                   width: double.infinity,
-                  height: 50,
+                  height: 48,
                   child: ElevatedButton(
                     onPressed: () async {
                       final qty = double.tryParse(quantityController.text.trim()) ?? 0.0;
@@ -781,29 +1469,165 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
                           unit: unit,
                           notes: notesController.text.trim(),
                         );
+
+                        if (!mounted) return;
+
+                        final now = DateTime.now();
+                        final dateStr = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+
                         setState(() {
                           _currentStatus = 'harvested';
+                          _localAddedHarvests.add(
+                            CropHarvest(
+                              id: 'local_${now.millisecondsSinceEpoch}',
+                              quantity: qty,
+                              unit: unit,
+                              date: dateStr,
+                              notes: notesController.text.trim(),
+                            ),
+                          );
                         });
+
                         refreshAfterDataChange(ref);
                         nav.pop();
-                        messenger.showSnackBar(
-                          SnackBar(
-                            content: Text('Récolte de $qty $unit enregistrée ! Le stock et les alertes sont à jour.'),
-                            backgroundColor: AppColors.primary,
-                            behavior: SnackBarBehavior.floating,
-                          ),
+
+                        final size = MediaQuery.of(context).size;
+                        await showSuccessReveal(
+                          context,
+                          origin: Offset(size.width / 2, size.height * 0.8),
+                          headline: 'RÉCOLTE ENREGISTRÉE',
+                          title: '$qty $unit',
+                          details: [
+                            widget.crop.name,
+                            'Production ajoutée à votre stock',
+                            if (notesController.text.trim().isNotEmpty) notesController.text.trim(),
+                          ],
+                          doneLabel: 'Super',
                         );
                       } catch (e) {
                         messenger.showSnackBar(
-                          SnackBar(content: Text('Erreur: $e')),
+                          SnackBar(
+                            content: Text('Erreur: $e'),
+                            backgroundColor: AppColors.error,
+                            behavior: SnackBarBehavior.floating,
+                          ),
                         );
                       }
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                     ),
-                    child: const Text('Confirmer la Récolte', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                    child: const Text('Confirmer la pesée', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showCreatePriceAlertDialog(BuildContext context, Crop crop) {
+    final priceController = TextEditingController();
+    String alertCondition = 'greater';
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheetState) => Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Alerte de cours : ${crop.name}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded, size: 20),
+                      onPressed: () => Navigator.pop(ctx),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  initialValue: alertCondition,
+                  decoration: InputDecoration(
+                    labelText: 'Condition de déclenchement',
+                    labelStyle: const TextStyle(fontSize: 13),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                  items: const [
+                    DropdownMenuItem(value: 'greater', child: Text('Quand le prix dépasse (> )', style: TextStyle(fontSize: 13))),
+                    DropdownMenuItem(value: 'lower', child: Text('Quand le prix descend sous (< )', style: TextStyle(fontSize: 13))),
+                  ],
+                  onChanged: (val) {
+                    if (val != null) setSheetState(() => alertCondition = val);
+                  },
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: priceController,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    labelText: 'Prix seuil cible (FCFA / kg)',
+                    labelStyle: const TextStyle(fontSize: 13),
+                    prefixIcon: const Icon(Icons.payments_outlined, size: 18),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      final val = priceController.text.trim();
+                      if (val.isEmpty) return;
+                      Navigator.pop(ctx);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Alerte enregistrée : alerte dès que le cours est ${alertCondition == "greater" ? ">" : "<"} $val FCFA/kg'),
+                          backgroundColor: AppColors.primary,
+                          behavior: SnackBarBehavior.floating,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    ),
+                    child: const Text('Activer l\'alerte', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
                   ),
                 ),
               ],

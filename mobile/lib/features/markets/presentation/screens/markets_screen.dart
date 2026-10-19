@@ -16,7 +16,7 @@ enum _Level { high, mid, low, none }
 enum _PriceFilter { all, high, low }
 
 const _levelColors = {
-  _Level.high: Color(0xFF2E7D32),
+  _Level.high: AppColors.primary,
   _Level.mid: Color(0xFFEF8F00),
   _Level.low: Color(0xFFC62828),
   _Level.none: Color(0xFF546E7A),

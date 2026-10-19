@@ -21,7 +21,7 @@
 
 ## 🛠️ Stack Technique
 
-- **Mobile** : Flutter 3.x, Riverpod (State Management), GoRouter (Navigation), flutter_map (Cartographie OSM).
+- **Mobile** : Flutter 3.x, Riverpod (State Management), GoRouter (Navigation), flutter_map (Cartographie OSM), Charte « Images d'abord » (fond sahélien `#FBF7F0`, cibles tactiles ≥ 56 px, 44 photographies studio de produits, composants `PhotoTile` et `BigActionButton`).
 - **Backend** : Python 3.12+, Django 5.x, Django REST Framework, SimpleJWT.
 - **Base de Données** : PostgreSQL (Production) / SQLite (Développement local).
 - **Intelligence Artificielle** : Groq (Llama-3.1-8b-instant) + Google Gemini (modèle configurable via `GEMINI_MODEL`).
@@ -80,6 +80,40 @@ flutter run --dart-define=API_BASE_URL=http://192.168.1.20:8000/api
 ```bash
 cd web && npm ci && npm run dev
 ```
+
+---
+
+## 🎭 Mode démonstration
+
+Pour une soutenance ou une démo, un compte préchargé et un mode OTP sans SMS sont disponibles.
+
+### Compte de démonstration
+
+```bash
+cd backend
+python manage.py setup_demo
+```
+
+La commande crée (ou recrée) un exploitant fictif à Diamniadio avec ses données complètes : cultures,
+activités, récolte, stocks, cotations du MIN de Diamniadio (+ historique 30 jours), finances et notifications.
+
+| Champ | Valeur |
+|---|---|
+| Identifiant (téléphone) | `+221770000000` |
+| Mot de passe | `DemoSenegal2026#` |
+| Exploitant | Ousmane Ndiaye — Diamniadio |
+
+La commande refuse de s'exécuter hors `DEBUG`/`OTP_DEMO_MODE` (données fictives) ; `--force` n'est à utiliser
+que sur une base de démonstration, jamais sur une base de production.
+
+### `OTP_DEMO_MODE` (OTP sans passerelle SMS)
+
+Sans passerelle SMS, `OTP_DEMO_MODE=True` (dans `backend/.env`) renvoie le code de vérification **dans la
+réponse API** de `POST /api/users/auth/otp/send/` (champs `code` et `demo: true`), ce qui évite l'envoi
+d'un vrai SMS pendant les démos.
+
+⚠️ **Ne jamais l'activer en production** : avec ce mode, n'importe qui peut obtenir le code et réinitialiser
+un mot de passe. `OTP_DEMO_MODE` est actif par défaut dès que `DEBUG=True`.
 
 ---
 
