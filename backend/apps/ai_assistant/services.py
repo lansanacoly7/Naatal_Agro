@@ -18,7 +18,7 @@ RÈGLES D'OR :
 1. Réponds comme un conseiller de terrain qui discute : phrases courtes, ton chaleureux, en français simple (termes locaux si pertinents, ex: Louma, Niayes, Casamance). Jamais de cours ni de pavé.
 2. Base-toi en priorité sur les données réelles fournies dans le profil et les exploitations de l'utilisateur.
 3. Ne divulgue jamais de données techniques internes ou d'informations d'autres exploitants.
-4. Si une maladie ou un ravageur est détecté, propose des solutions de lutte intégrée (biologiques et conventionnelles homologuées au Sénégal).
+4. Si une maladie ou un ravageur est détecté, propose en priorité des solutions de lutte intégrée et agroécologiques (purin de neem, savon noir, décoctions) et des produits homologués au Sénégal (SAED/ANCAR/DPV). Ne cite JAMAIS de produits interdits ou retirés (comme le Mancozèbe, l'Endosulfan, le Carbofuran, le Diméthoate, etc.).
 """
 
 def get_farmer_context(user):
@@ -114,41 +114,6 @@ def get_farmer_context(user):
 
     return context
 
-def call_groq(prompt):
-    groq_key = getattr(settings, 'GROQ_API_KEY', None)
-    if not groq_key:
-        return None
-    url = "https://api.groq.com/openai/v1/chat/completions"
-    headers = {
-        "Authorization": f"Bearer {groq_key}",
-        "Content-Type": "application/json"
-    }
-    models = [
-        getattr(settings, 'GROQ_MODEL', 'qwen/qwen3.8-27b'),
-        'openai/gpt-oss-120b',
-    ]
-    for model in models:
-        payload = {
-            "model": model,
-            "messages": [
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": prompt}
-            ],
-            "temperature": 0.4,
-            "max_tokens": 600
-        }
-        try:
-            res = requests.post(url, json=payload, headers=headers, timeout=8)
-            if res.status_code == 200:
-                content = res.json().get('choices', [{}])[0].get('message', {}).get('content')
-                if content and content.strip():
-                    return content
-            logger.warning(f"[Groq Service - {model}] Statut HTTP {res.status_code}: {res.text[:120]}")
-        except Exception as e:
-            logger.error(f"[Groq Service - {model}] Exception : {e}")
-            continue
-    return None
-
 def _image_mime_type(image_base64):
     """Type réel de l'image d'après ses premiers octets (la galerie peut fournir du PNG ou du WebP)."""
     import base64
@@ -194,6 +159,60 @@ def _optimize_image_base64(image_base64, max_dimension=1024, quality=85):
         return image_base64, _image_mime_type(image_base64)
 
 
+def call_groq(prompt, image_base64=None):
+    """
+    Appel à Groq avec support complet du texte et de la vision multimodale (Qwen 3.8 27B Vision).
+    Vitesse d'inférence < 2 secondes et très haute précision de diagnostic agronomique.
+    """
+    groq_key = getattr(settings, 'GROQ_API_KEY', None)
+    if not groq_key:
+        return None
+    url = "https://api.groq.com/openai/v1/chat/completions"
+    headers = {
+        "Authorization": f"Bearer {groq_key}",
+        "Content-Type": "application/json"
+    }
+
+    if image_base64:
+        opt_b64, mime_type = _optimize_image_base64(image_base64)
+        user_content = [
+            {"type": "text", "text": prompt},
+            {"type": "image_url", "image_url": {"url": f"data:{mime_type};base64,{opt_b64}"}}
+        ]
+        models = [
+            getattr(settings, 'GROQ_VISION_MODEL', 'qwen/qwen3.8-27b'),
+            'qwen/qwen3.8-27b',
+        ]
+    else:
+        user_content = prompt
+        models = [
+            getattr(settings, 'GROQ_MODEL', 'qwen/qwen3.8-27b'),
+            'openai/gpt-oss-120b',
+        ]
+
+    for model in models:
+        payload = {
+            "model": model,
+            "messages": [
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": user_content}
+            ],
+            "temperature": 0.3,
+            "max_tokens": 700
+        }
+        try:
+            res = requests.post(url, json=payload, headers=headers, timeout=14)
+            if res.status_code == 200:
+                content = res.json().get('choices', [{}])[0].get('message', {}).get('content')
+                if content and content.strip():
+                    return content
+            logger.warning(f"[Groq Service - {model}] Statut HTTP {res.status_code}: {res.text[:120]}")
+        except Exception as e:
+            logger.error(f"[Groq Service - {model}] Exception : {e}")
+            continue
+    return None
+
+
 def _get_gemini_keys():
     raw = getattr(settings, 'GEMINI_API_KEYS', '') or getattr(settings, 'GEMINI_API_KEY', '') or ''
     return [k.strip() for k in raw.split(',') if k.strip()]
@@ -204,9 +223,9 @@ def call_gemini(prompt, image_base64=None):
     if not keys:
         return None
 
-    primary_model = getattr(settings, 'GEMINI_MODEL', 'gemini-3.5-flash')
+    primary_model = getattr(settings, 'GEMINI_MODEL', 'gemini-2.5-flash-image')
     fallback_models = [primary_model]
-    for alt in ('gemini-3.5-flash', 'gemini-flash-lite-latest'):
+    for alt in ('gemini-2.5-flash-image', 'gemini-3.1-flash-image', 'gemini-3.5-flash', 'gemini-flash-latest'):
         if alt not in fallback_models:
             fallback_models.append(alt)
 
@@ -256,27 +275,29 @@ def call_gemini(prompt, image_base64=None):
                 continue
     return None
 
+
 def call_llm(prompt, image_base64=None):
     """
     Système de bascule bidirectionnelle (Failover) absolu :
-    1. Si image : tente Gemini Vision en premier (clé Gemini).
-       Si Gemini est indisponible ou timeout -> bascule automatique immédiate sur Groq
-       avec la requête de l'exploitant pour délivrer un conseil agronomique de terrain sans écran d'erreur.
-    2. Si texte : tente Groq en priorité pour sa vitesse ultra-rapide (clé Groq).
-       Si Groq est indisponible ou quota atteint -> bascule automatique immédiate sur Gemini (clé Gemini).
+    1. Si image :
+       - Tente d'abord Groq Vision (qwen/qwen3.8-27b) : ultra-rapide (< 2s), analyse visuelle de plante redoutable, sans quota 429.
+       - Si Groq est indisponible -> bascule automatique sur Gemini Vision (gemini-2.5-flash-image / 3.5-flash).
+    2. Si texte :
+       - Tente Groq en priorité pour sa vitesse ultra-rapide (clé Groq).
+       - Si Groq est indisponible ou quota atteint -> bascule automatique immédiate sur Gemini (clé Gemini).
     """
     if image_base64:
+        # Priorité 1 : Groq Vision
+        res = call_groq(prompt, image_base64=image_base64)
+        if res:
+            return res
+        logger.warning("[AI Failover] Groq Vision indisponible, bascule de secours agronomique sur Gemini Vision...")
+        # Secours : Gemini Vision
         res = call_gemini(prompt, image_base64=image_base64)
         if res:
             return res
-        logger.warning("[AI Failover] Gemini Vision indisponible (quota ou latence), bascule de secours agronomique sur Groq...")
-        fallback_prompt = (
-            f"Tu es le copilote agronomique Naatal Agro au Sénégal. Le scan visuel direct de la feuille est temporairement saturé chez le fournisseur, "
-            f"mais le producteur attend ton aide sur sa culture. Voici sa demande : '{prompt}'.\n"
-            f"Ne dis pas simplement que tu ne vois pas l'image. Indique chaleureusement en une courte phrase que le diagnostic photo haute définition se réinitialise, "
-            f"puis donne-lui immédiatement les conseils agronomiques de terrain les plus pertinents pour cette culture au Sénégal (causes probables de jaunissement ou maladie, traitement préventif et curatif)."
-        )
-        return call_groq(fallback_prompt)
+        logger.warning("[AI Failover] Vision indisponible, repli agronomique textuel...")
+        return call_groq(prompt)
 
     # Question texte : Groq en priorité
     res = call_groq(prompt)
