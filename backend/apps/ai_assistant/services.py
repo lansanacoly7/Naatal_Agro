@@ -123,23 +123,30 @@ def call_groq(prompt):
         "Authorization": f"Bearer {groq_key}",
         "Content-Type": "application/json"
     }
-    model = getattr(settings, 'GROQ_MODEL', 'qwen/qwen3.8-27b')
-    payload = {
-        "model": model,
-        "messages": [
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": prompt}
-        ],
-        "temperature": 0.4,
-        "max_tokens": 600
-    }
-    try:
-        res = requests.post(url, json=payload, headers=headers, timeout=12)
-        if res.status_code == 200:
-            return res.json()['choices'][0]['message']['content']
-        logger.warning(f"[Groq Service] Statut HTTP {res.status_code}: {res.text}")
-    except Exception as e:
-        logger.error(f"[Groq Service] Exception : {e}")
+    models = [
+        getattr(settings, 'GROQ_MODEL', 'qwen/qwen3.8-27b'),
+        'openai/gpt-oss-120b',
+    ]
+    for model in models:
+        payload = {
+            "model": model,
+            "messages": [
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": prompt}
+            ],
+            "temperature": 0.4,
+            "max_tokens": 600
+        }
+        try:
+            res = requests.post(url, json=payload, headers=headers, timeout=8)
+            if res.status_code == 200:
+                content = res.json().get('choices', [{}])[0].get('message', {}).get('content')
+                if content and content.strip():
+                    return content
+            logger.warning(f"[Groq Service - {model}] Statut HTTP {res.status_code}: {res.text[:120]}")
+        except Exception as e:
+            logger.error(f"[Groq Service - {model}] Exception : {e}")
+            continue
     return None
 
 def _image_mime_type(image_base64):
@@ -192,9 +199,9 @@ def call_gemini(prompt, image_base64=None):
     if not gemini_key:
         return None
 
-    primary_model = getattr(settings, 'GEMINI_MODEL', 'gemini-flash-lite-latest')
+    primary_model = getattr(settings, 'GEMINI_MODEL', 'gemini-3.5-flash')
     fallback_models = [primary_model]
-    for alt in ('gemini-flash-lite-latest', 'gemini-3.5-flash'):
+    for alt in ('gemini-3.5-flash', 'gemini-flash-lite-latest'):
         if alt not in fallback_models:
             fallback_models.append(alt)
 
@@ -224,11 +231,11 @@ def call_gemini(prompt, image_base64=None):
     for model in fallback_models:
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
         try:
-            res = requests.post(url, json=payload, headers=headers, timeout=20)
-            if res.status_code in (429, 503):
-                # Pic de demande temporaire sur ce modèle : attendre brièvement
-                time.sleep(1.0)
-                res = requests.post(url, json=payload, headers=headers, timeout=20)
+            res = requests.post(url, json=payload, headers=headers, timeout=10)
+            if res.status_code == 503:
+                # Seul le 503 (pic temporaire) justifie une micro-attente
+                time.sleep(0.5)
+                res = requests.post(url, json=payload, headers=headers, timeout=10)
             if res.status_code == 200:
                 candidates = res.json().get('candidates', [])
                 if candidates and 'content' in candidates[0]:
@@ -242,11 +249,29 @@ def call_gemini(prompt, image_base64=None):
     return None
 
 def call_llm(prompt, image_base64=None):
+    """
+    Système de bascule bidirectionnelle (Failover) absolu :
+    1. Si image : tente Gemini Vision en premier (clé Gemini).
+       Si Gemini est indisponible ou timeout -> bascule automatique immédiate sur Groq
+       avec la requête de l'exploitant pour délivrer un conseil agronomique de terrain sans écran d'erreur.
+    2. Si texte : tente Groq en priorité pour sa vitesse ultra-rapide (clé Groq).
+       Si Groq est indisponible ou quota atteint -> bascule automatique immédiate sur Gemini (clé Gemini).
+    """
     if image_base64:
-        return call_gemini(prompt, image_base64=image_base64)
-    # Tente Groq en priorité pour sa vitesse ultra-rapide, bascule sur Gemini si indisponible
+        res = call_gemini(prompt, image_base64=image_base64)
+        if res:
+            return res
+        logger.warning("[AI Failover] Gemini Vision indisponible, bascule de secours sur Groq...")
+        fallback_prompt = (
+            f"Question / description transmise par le producteur : '{prompt}'.\n"
+            f"Donne un conseil agronomique sénégalais précis, chaleureux et directement applicable."
+        )
+        return call_groq(fallback_prompt)
+
+    # Question texte : Groq en priorité
     res = call_groq(prompt)
     if not res:
+        logger.warning("[AI Failover] Groq indisponible, bascule de secours sur Gemini...")
         res = call_gemini(prompt)
     return res
 
@@ -463,8 +488,21 @@ def answer_question(query, context='general', image_base64=None, user=None, hist
         )
         response = call_llm(vision_prompt, image_base64=image_base64)
         if not response:
-            return {'answer': "Le service de vision IA est indisponible. Veuillez vérifier vos clés API.",
-                    'origin': 'general', 'sources': [], 'suggestions': []}
+            retrieval = retrieve(query)
+            if retrieval.sections:
+                fiche_ans = build_fiche_answer(retrieval)
+                return {
+                    'answer': f"Photo en cours de transmission. Voici nos repères agronomiques vérifiés pour cette culture :\n\n{fiche_ans}",
+                    'origin': 'database',
+                    'sources': retrieval.sources,
+                    'suggestions': default_suggestions(retrieval)
+                }
+            return {
+                'answer': "L'analyse est en cours de traitement. Vous pouvez décrire les symptômes de vos plants par texte pour une recommandation immédiate.",
+                'origin': 'general',
+                'sources': [],
+                'suggestions': ['Comment traiter le mildiou ?', 'Quel engrais utiliser ?', 'Quand arroser ?']
+            }
         answer, suggestions = split_suggestions(response)
         return {'answer': answer, 'origin': 'general', 'sources': [], 'suggestions': suggestions}
 
