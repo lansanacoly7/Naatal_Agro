@@ -57,6 +57,24 @@ class ConversationalAnswerTests(TestCase):
         self.assertIn('CONVERSATION EN COURS', prompt)
         self.assertIn('je veux cultiver les patates douces', prompt)
 
+    def test_meta_question_referencing_previous_image_does_not_trigger_maize_sheet(self):
+        history = [
+            {'role': 'user', 'content': 'Photo de ma plante transmise pour analyse'},
+            {'role': 'assistant', 'content': 'C est un Monstera qui souffre d un stress hydrique.'}
+        ]
+        meta_query = (
+            "Et pourtant il y a quelques minutes, je t'avais envoyé une image, "
+            "tu l'as bien lu, tu l'as bien vue et tu m'as donné des conseils voilà une réponse, "
+            "tu as bien identifié la plante la maladie et tout ça mais pourquoi cette fois-ci tu peux pas le faire"
+        )
+        with patch(LLM, return_value='Je comprends ton étonnement. Lors du second envoi, le flux visuel était saturé.\nSUGGESTIONS: Que faire pour mon Monstera ? | Recommencer le scan'):
+            result = answer_question(meta_query, history=history)
+        self.assertEqual(result['origin'], 'general')
+        self.assertEqual(result['sources'], [])
+        self.assertNotIn('Maïs', result['answer'])
+        self.assertNotIn('Fiches vérifiées', result['answer'])
+        self.assertIn('Je comprends ton étonnement', result['answer'])
+
 
 class AskEndpointConversationTests(TestCase):
     def setUp(self):

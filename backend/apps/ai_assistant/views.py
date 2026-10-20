@@ -10,8 +10,8 @@ from .services import answer_question
 
 MAX_QUERY_LENGTH = 1000
 MAX_IMAGE_BASE64_LENGTH = 7_000_000  # ~5 Mo d'image
-MAX_HISTORY_TURNS = 12
-CONVERSATION_WINDOW = datetime.timedelta(minutes=30)  # sans historique envoyé, on reprend la conversation récente
+MAX_HISTORY_TURNS = 24
+CONVERSATION_WINDOW = datetime.timedelta(hours=6)  # sans historique envoyé, on reprend la conversation récente
 
 
 def clean_history(raw):
@@ -27,9 +27,9 @@ def clean_history(raw):
 
 
 def recent_history(user):
-    """Derniers échanges de l'utilisateur (30 dernières minutes), du plus ancien au plus récent."""
+    """Derniers échanges de l'utilisateur (6 dernières heures), du plus ancien au plus récent."""
     since = timezone.now() - CONVERSATION_WINDOW
-    interactions = AIInteraction.objects.filter(user=user, created_at__gte=since).order_by('-created_at')[:6]
+    interactions = AIInteraction.objects.filter(user=user, created_at__gte=since).order_by('-created_at')[:12]
     turns = []
     for interaction in reversed(list(interactions)):
         turns.append({'role': 'user', 'content': interaction.query})

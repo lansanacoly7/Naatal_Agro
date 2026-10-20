@@ -15,9 +15,9 @@ class AiRepository {
     final Map<String, dynamic> data = {
       'query': query,
       'context': 'general',
-      // Mémoire de la conversation : les derniers échanges, pour que l'assistant comprenne les suites
+      // Mémoire de la conversation : les 20 derniers échanges pour un suivi continu et complet
       'history': [
-        for (final m in history.where((m) => !m.isError && m.text.trim().isNotEmpty).toList().reversed.take(8).toList().reversed)
+        for (final m in history.where((m) => !m.isError && m.text.trim().isNotEmpty).toList().reversed.take(20).toList().reversed)
           {'role': m.isUser ? 'user' : 'assistant', 'content': m.text},
       ],
     };
@@ -110,18 +110,22 @@ class ChatNotifier extends StateNotifier<ChatState> {
     if (state.isLoading) return;
     if (text.trim().isEmpty && imageBase64 == null) return;
 
+    final effectiveText = text.trim().isEmpty && imageBase64 != null
+        ? 'Photo de ma plante transmise pour analyse'
+        : text;
+
     final previousMessages = state.messages;
     state = state.copyWith(
       messages: [
         ...state.messages,
-        AiMessage(text: text, isUser: true, timestamp: DateTime.now(), imageBytes: imageBytes),
+        AiMessage(text: effectiveText, isUser: true, timestamp: DateTime.now(), imageBytes: imageBytes),
       ],
       isLoading: true,
     );
 
     try {
       final answer = await _repository.askQuestion(
-        text.trim().isEmpty ? 'Analyse cette image.' : text,
+        effectiveText,
         imageBase64: imageBase64,
         history: previousMessages,
       );

@@ -287,14 +287,17 @@ def call_llm(prompt, image_base64=None):
 
 CONVERSATION_RULES = """
 STYLE DE CONVERSATION (aussi important que l'exactitude) :
-- Tu es dans une discussion : réponds court. 2 à 4 phrases, ou 3 puces au maximum, environ 60 mots. Va à l'essentiel et ne dis pas tout.
-- Si la question est large ou vague (ex. « je veux cultiver des patates douces »), donne 1 ou 2 phrases utiles puis pose UNE question pour préciser (zone, saison, surface) ou propose de détailler.
-- Aère : paragraphes courts, puces commençant par « - », un seul **mot clé** en gras au besoin. Aucun titre, aucun tableau.
-- Tiens compte de la CONVERSATION EN COURS : ne répète pas ce qui a déjà été dit, comprends les suites (« et l'engrais ? »).
-- Si l'utilisateur demande plus de détails, développe alors, de façon structurée.
+- Tu es dans une discussion directe avec un producteur ou jardinier : sois concis, chaleureux, bienveillant et pratique (2 à 5 phrases ou 3 puces directes).
+- MÉMOIRE & CONTINUITÉ CONVERSATIONNELLE :
+  Tu as accès à l'historique des échanges récents ('CONVERSATION EN COURS').
+  Si le producteur fait référence à un échange passé, à une image de plante analysée précédemment (ex: Monstera, piment, mangue, etc.), à un conseil donné ou demande des explications ('tout à l'heure', 'mon image', 'tu m'as dit', 'pourquoi cette fois-ci...'), réponds avec intelligence et continuité en t'appuyant directement sur cet historique. Ne dis JAMAIS que tu n'as pas de mémoire ou que chaque échange repart de zéro.
+- EXPLICATIONS ET SERVICE :
+  Si l'utilisateur s'étonne d'un blocage d'analyse photo ou d'un souci technique, réponds avec franchise et bienveillance (ex: réinitialisation momentanée du flux visuel ou délai réseau), rappelle la plante concernée si elle est dans l'historique, et apporte-lui tes conseils de terrain.
+- Aère : phrases courtes, puces commençant par « - », un seul **mot clé** en gras si nécessaire. Jamais de tableau lourd ni de pavé.
+- Si l'utilisateur demande plus de détails, développe alors de façon structurée.
 - Termine TOUJOURS par une dernière ligne exactement de la forme :
 SUGGESTIONS: question 1 | question 2 | question 3
-(2 ou 3 questions courtes, de 3 à 7 mots, que le producteur pourrait poser ensuite, écrites à la première personne ou à l'impératif).
+(2 ou 3 questions courtes, de 3 à 7 mots, que le producteur pourrait poser ensuite).
 """
 
 GROUNDED_RULES = """Tu réponds à une question d'agriculture pour un producteur sénégalais.
@@ -424,18 +427,36 @@ def build_fiche_answer(retrieval):
 
 
 def history_block(history):
-    """Texte de la conversation en cours (les derniers échanges), pour le modèle."""
+    """Texte de la conversation en cours (jusqu'aux 20 derniers échanges), pour le modèle."""
     lines = []
-    for turn in (history or [])[-8:]:
+    for turn in (history or [])[-20:]:
         who = 'Producteur' if turn.get('role') == 'user' else 'Assistant'
         content = str(turn.get('content', '')).split('\n\nSources :')[0].strip()
         if content:
-            lines.append(f"{who} : {content[:500]}")
+            lines.append(f"{who} : {content[:1500]}")
     return "\n".join(lines)
+
+
+def _is_meta_conversational(query):
+    """Vrai si la question porte sur le dialogue lui-même, l'assistant ou le suivi d'une action passée."""
+    from .knowledge import normalize
+    q = normalize(query)
+    patterns = [
+        r'\b(tu m avais|je t avais|tu m as|je t ai)\b',
+        r'\b(tout a l heure|il y a quelques minutes|il y a un instant|plus haut|precedemment|derniere fois)\b',
+        r'\b(pourquoi cette fois|pourquoi tu (peux|ne peux|refuses|dis))\b',
+        r'\b(tu te souviens|te rappelles tu|comme tu as dit|comme j ai dit)\b',
+        r'\b(qui es tu|qui t a cree|ton nom)\b',
+    ]
+    return any(re.search(pat, q) for pat in patterns)
 
 
 def _retrieve_with_history(query, history):
     """Si la question seule ne désigne aucune culture (« et l'engrais ? »), s'appuie sur les messages précédents."""
+    # Si la question est méta-conversationnelle, ne pas forcer d'association avec des cultures de l'historique
+    if _is_meta_conversational(query):
+        return retrieve(query)
+
     retrieval = retrieve(query)
     if retrieval.guides or not history:
         return retrieval
@@ -559,7 +580,7 @@ def answer_question(query, context='general', image_base64=None, user=None, hist
     parts = [text]
     if missing:
         parts.append(missing)
-    if retrieval.is_agricultural:
+    if retrieval.is_agricultural and not _is_meta_conversational(query):
         parts.append(GENERAL_NOTICE)
     return {'answer': "\n\n".join(parts), 'origin': 'general', 'sources': [], 'suggestions': suggestions}
 

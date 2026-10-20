@@ -87,23 +87,42 @@ def guide_terms(guide):
     return {normalize(t) for t in terms if normalize(t)}
 
 
-# Termes qui, une fois les accents retirés, se confondent avec un mot courant : ils ne désignent la culture
-# que si la question est écrite avec l'accent d'origine ou si elle parle clairement d'agriculture.
-AMBIGUOUS_TERMS = {'mais': 'maïs'}
+# Motifs nominaux prouvant qu'il s'agit de la céréale (Zea mays) et non de la conjonction « mais »
+MAIZE_NOUN_PATTERNS = [
+    # Déterminants / articles devant « mais » : « le mais », « du mais », « au mais », etc.
+    re.compile(r'\b(du|le|au|mon|ton|notre|votre|ce|cet|un)\s+mais\b'),
+    # Compléments du nom : « culture de mais », « champ de mais », « semis de mais », etc.
+    re.compile(r'\b(champ|culture|semis|semer|graine|graines|grain|grains|variete|varietes|recolte|recolter|plant|plants|tige|tiges|production|cours|prix|marche|sac|sacs|kilo|kilos|kg|tonne|tonnes)\s+(de\s+|du\s+)?mais\b'),
+    # Qualificatifs après « mais » : « mais doux », « mais jaune », etc.
+    re.compile(r'\bmais\s+(doux|jaune|blanc|hybride|hybrides|pluvial|grain|grains|fourrage|fourrager|ensilage|local)\b'),
+]
 
 
-def _has_agricultural_context(normalized_query):
-    return (any(_contains_term(normalized_query, t) for t in AGRI_TERMS)
-            or bool(detect_topics(normalized_query)))
+def _is_maize_match(raw_query, normalized_query):
+    """
+    Vrai uniquement si la question désigne expressément la céréale (Zea mays).
+    En français, 'mais' sans accent est très majoritairement une conjonction de coordination
+    (ex: '...tout ça mais pourquoi cette fois-ci...'). Pour éviter les faux positifs aberrants :
+    1. Si le tréma 'maïs' est présent dans le texte d'origine -> Match certain.
+    2. Si le mot 'mais' sans tréma est inséré dans une locution nominale agricole explicite ('le mais', 'du mais', etc.) -> Match.
+    3. Dans tout autre cas (notamment conjonctions 'mais pourquoi', 'mais je', etc.) -> Ignorer.
+    """
+    raw_lower = raw_query.lower()
+    if 'maïs' in raw_lower or 'maïss' in raw_lower:
+        return True
+
+    return any(pattern.search(normalized_query) for pattern in MAIZE_NOUN_PATTERNS)
 
 
 def _guide_matches(guide, raw_query, normalized_query):
     for term in guide_terms(guide):
         if not _contains_term(normalized_query, term):
             continue
-        accented = AMBIGUOUS_TERMS.get(term)
-        if accented is None or accented in raw_query.lower() or _has_agricultural_context(normalized_query):
-            return True
+        if term == 'mais':
+            if _is_maize_match(raw_query, normalized_query):
+                return True
+            continue
+        return True
     return False
 
 

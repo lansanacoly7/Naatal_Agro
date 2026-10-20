@@ -149,9 +149,19 @@ class BatchTwoCropsTests(TestCase):
         self.assertEqual([g.slug for g in retrieve('Quand semer le maïs ?').guides], ['mais'])
 
     def test_the_conjunction_mais_never_selects_maize(self):
-        for question in ("Bonjour, mais je veux de l'aide", "J'ai essayé mais ça ne marche pas", 'Mais où est mon profil ?'):
+        questions = (
+            "Bonjour, mais je veux de l'aide",
+            "J'ai essayé mais ça ne marche pas",
+            'Mais où est mon profil ?',
+            "Et pourtant il y a quelques minutes, je t'avais envoyé une image, tu l'as bien lu... mais pourquoi cette fois-ci tu peux pas le faire",
+            "J'ai traité ma plante mais la maladie persiste",
+            "Mes plants jaunissent mais je ne sais pas pourquoi",
+            "Je veux du piment mais je n'ai pas d'eau",
+        )
+        for question in questions:
             with self.subTest(question=question):
-                self.assertEqual(retrieve(question).guides, [])
+                guides = [g.slug for g in retrieve(question).guides]
+                self.assertNotIn('mais', guides, f"Faux positif 'mais' détecté pour: {question}")
 
     def test_cowpea_sowing_rule_and_spacing(self):
         result = retrieve('Comment semer le niébé ?')
