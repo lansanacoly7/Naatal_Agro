@@ -194,9 +194,14 @@ def _optimize_image_base64(image_base64, max_dimension=1024, quality=85):
         return image_base64, _image_mime_type(image_base64)
 
 
+def _get_gemini_keys():
+    raw = getattr(settings, 'GEMINI_API_KEYS', '') or getattr(settings, 'GEMINI_API_KEY', '') or ''
+    return [k.strip() for k in raw.split(',') if k.strip()]
+
+
 def call_gemini(prompt, image_base64=None):
-    gemini_key = getattr(settings, 'GEMINI_API_KEY', None)
-    if not gemini_key:
+    keys = _get_gemini_keys()
+    if not keys:
         return None
 
     primary_model = getattr(settings, 'GEMINI_MODEL', 'gemini-3.5-flash')
@@ -204,11 +209,6 @@ def call_gemini(prompt, image_base64=None):
     for alt in ('gemini-3.5-flash', 'gemini-flash-lite-latest'):
         if alt not in fallback_models:
             fallback_models.append(alt)
-
-    headers = {
-        "x-goog-api-key": gemini_key,
-        "Content-Type": "application/json"
-    }
 
     parts = [{"text": f"{SYSTEM_PROMPT}\n\n{prompt}"}]
     if image_base64:
@@ -228,24 +228,32 @@ def call_gemini(prompt, image_base64=None):
         },
     }
 
-    for model in fallback_models:
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
-        try:
-            res = requests.post(url, json=payload, headers=headers, timeout=10)
-            if res.status_code == 503:
-                # Seul le 503 (pic temporaire) justifie une micro-attente
-                time.sleep(0.5)
-                res = requests.post(url, json=payload, headers=headers, timeout=10)
-            if res.status_code == 200:
-                candidates = res.json().get('candidates', [])
-                if candidates and 'content' in candidates[0]:
-                    for part in candidates[0]['content'].get('parts', []):
-                        if 'text' in part and part['text'].strip():
-                            return part['text']
-            logger.warning(f"[Gemini Service - {model}] Statut HTTP {res.status_code}: {res.text[:120]}")
-        except Exception as e:
-            logger.error(f"[Gemini Service - {model}] Exception : {e}")
-            continue
+    # Rotation sur les clés disponibles (si une clé a son quota 429 atteint)
+    for gemini_key in keys:
+        headers = {
+            "x-goog-api-key": gemini_key,
+            "Content-Type": "application/json"
+        }
+        for model in fallback_models:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+            try:
+                res = requests.post(url, json=payload, headers=headers, timeout=12)
+                if res.status_code == 503:
+                    time.sleep(0.5)
+                    res = requests.post(url, json=payload, headers=headers, timeout=12)
+                if res.status_code == 200:
+                    candidates = res.json().get('candidates', [])
+                    if candidates and 'content' in candidates[0]:
+                        for part in candidates[0]['content'].get('parts', []):
+                            if 'text' in part and part['text'].strip():
+                                return part['text']
+                if res.status_code == 429:
+                    logger.warning(f"[Gemini Quota] Clé ...{gemini_key[-6:]} quota 429 atteint, bascule sur clé/modèle suivant...")
+                    break  # Passer à la clé suivante si 429
+                logger.warning(f"[Gemini Service - {model}] Statut HTTP {res.status_code}: {res.text[:120]}")
+            except Exception as e:
+                logger.error(f"[Gemini Service - {model}] Exception : {e}")
+                continue
     return None
 
 def call_llm(prompt, image_base64=None):
@@ -261,10 +269,12 @@ def call_llm(prompt, image_base64=None):
         res = call_gemini(prompt, image_base64=image_base64)
         if res:
             return res
-        logger.warning("[AI Failover] Gemini Vision indisponible, bascule de secours sur Groq...")
+        logger.warning("[AI Failover] Gemini Vision indisponible (quota ou latence), bascule de secours agronomique sur Groq...")
         fallback_prompt = (
-            f"Question / description transmise par le producteur : '{prompt}'.\n"
-            f"Donne un conseil agronomique sénégalais précis, chaleureux et directement applicable."
+            f"Tu es le copilote agronomique Naatal Agro au Sénégal. Le scan visuel direct de la feuille est temporairement saturé chez le fournisseur, "
+            f"mais le producteur attend ton aide sur sa culture. Voici sa demande : '{prompt}'.\n"
+            f"Ne dis pas simplement que tu ne vois pas l'image. Indique chaleureusement en une courte phrase que le diagnostic photo haute définition se réinitialise, "
+            f"puis donne-lui immédiatement les conseils agronomiques de terrain les plus pertinents pour cette culture au Sénégal (causes probables de jaunissement ou maladie, traitement préventif et curatif)."
         )
         return call_groq(fallback_prompt)
 
