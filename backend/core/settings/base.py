@@ -173,7 +173,6 @@ REST_FRAMEWORK = {
         'user': '1000/minute',
         # Limites dédiées (vues avec throttle_scope)
         'auth': '10/minute',
-        'ai': '30/hour',
     }
 }
 
