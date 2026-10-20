@@ -123,8 +123,9 @@ def call_groq(prompt):
         "Authorization": f"Bearer {groq_key}",
         "Content-Type": "application/json"
     }
+    model = getattr(settings, 'GROQ_MODEL', 'qwen/qwen3.8-27b')
     payload = {
-        "model": "llama-3.1-8b-instant",
+        "model": model,
         "messages": [
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": prompt}
@@ -133,7 +134,7 @@ def call_groq(prompt):
         "max_tokens": 600
     }
     try:
-        res = requests.post(url, json=payload, headers=headers, timeout=10)
+        res = requests.post(url, json=payload, headers=headers, timeout=12)
         if res.status_code == 200:
             return res.json()['choices'][0]['message']['content']
         logger.warning(f"[Groq Service] Statut HTTP {res.status_code}: {res.text}")
@@ -155,48 +156,95 @@ def _image_mime_type(image_base64):
     return 'image/jpeg'
 
 
+def _optimize_image_base64(image_base64, max_dimension=1024, quality=85):
+    """
+    Optimise et compresse l'image si elle est trop volumineuse pour l'inférence.
+    Garantit des requêtes rapides (< 1s d'upload) et prévient les timeouts réseau.
+    """
+    import base64
+    import io
+    try:
+        from PIL import Image
+        raw_bytes = base64.b64decode(image_base64)
+        img = Image.open(io.BytesIO(raw_bytes))
+
+        # Si l'image est déjà légère (< 400 Ko) et de taille raisonnable, la garder telle quelle
+        if len(raw_bytes) < 400_000 and max(img.size) <= max_dimension:
+            return image_base64, _image_mime_type(image_base64)
+
+        if img.mode in ('RGBA', 'P'):
+            img = img.convert('RGB')
+
+        if max(img.size) > max_dimension:
+            img.thumbnail((max_dimension, max_dimension), Image.Resampling.LANCZOS)
+
+        out_buf = io.BytesIO()
+        img.save(out_buf, format='JPEG', quality=quality, optimize=True)
+        compressed_bytes = out_buf.getvalue()
+        return base64.b64encode(compressed_bytes).decode('ascii'), 'image/jpeg'
+    except Exception as e:
+        logger.warning(f"[Image Optimization] Fallback à l'original: {e}")
+        return image_base64, _image_mime_type(image_base64)
+
+
 def call_gemini(prompt, image_base64=None):
     gemini_key = getattr(settings, 'GEMINI_API_KEY', None)
     if not gemini_key:
         return None
-        
-    model = getattr(settings, 'GEMINI_MODEL', 'gemini-2.5-flash')
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+
+    primary_model = getattr(settings, 'GEMINI_MODEL', 'gemini-flash-lite-latest')
+    fallback_models = [primary_model]
+    for alt in ('gemini-flash-lite-latest', 'gemini-3.5-flash'):
+        if alt not in fallback_models:
+            fallback_models.append(alt)
+
     headers = {
         "x-goog-api-key": gemini_key,
         "Content-Type": "application/json"
     }
-    
+
     parts = [{"text": f"{SYSTEM_PROMPT}\n\n{prompt}"}]
     if image_base64:
+        opt_b64, mime_type = _optimize_image_base64(image_base64)
         parts.append({
             "inline_data": {
-                "mime_type": _image_mime_type(image_base64),
-                "data": image_base64
+                "mime_type": mime_type,
+                "data": opt_b64
             }
         })
 
     payload = {
         "contents": [{"parts": parts}],
-        "generationConfig": {"temperature": 0.4, "maxOutputTokens": 700, "thinkingConfig": {"thinkingBudget": 0}},
+        "generationConfig": {
+            "temperature": 0.4,
+            "maxOutputTokens": 700,
+        },
     }
-    try:
-        res = requests.post(url, json=payload, headers=headers, timeout=15)
-        if res.status_code in (429, 503):
-            # pic de demande côté Google : un seul nouvel essai, rapide
-            time.sleep(1.5)
-            res = requests.post(url, json=payload, headers=headers, timeout=15)
-        if res.status_code == 200:
-            return res.json()['candidates'][0]['content']['parts'][0]['text']
-        logger.warning(f"[Gemini Service] Statut HTTP {res.status_code}: {res.text}")
-    except Exception as e:
-        logger.error(f"[Gemini Service] Exception : {e}")
+
+    for model in fallback_models:
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+        try:
+            res = requests.post(url, json=payload, headers=headers, timeout=20)
+            if res.status_code in (429, 503):
+                # Pic de demande temporaire sur ce modèle : attendre brièvement
+                time.sleep(1.0)
+                res = requests.post(url, json=payload, headers=headers, timeout=20)
+            if res.status_code == 200:
+                candidates = res.json().get('candidates', [])
+                if candidates and 'content' in candidates[0]:
+                    for part in candidates[0]['content'].get('parts', []):
+                        if 'text' in part and part['text'].strip():
+                            return part['text']
+            logger.warning(f"[Gemini Service - {model}] Statut HTTP {res.status_code}: {res.text[:120]}")
+        except Exception as e:
+            logger.error(f"[Gemini Service - {model}] Exception : {e}")
+            continue
     return None
 
 def call_llm(prompt, image_base64=None):
     if image_base64:
         return call_gemini(prompt, image_base64=image_base64)
-    # Tente Groq en priorité, bascule sur Gemini si indisponible
+    # Tente Groq en priorité pour sa vitesse ultra-rapide, bascule sur Gemini si indisponible
     res = call_groq(prompt)
     if not res:
         res = call_gemini(prompt)
