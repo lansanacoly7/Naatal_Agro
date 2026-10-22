@@ -59,7 +59,14 @@ class AppConstants {
   static const String weatherEndpoint = '/weather/';
 
   // Endpoints IA
+  // Chemins relatifs à apiBaseUrl (qui se termine déjà par /api) : ne jamais les préfixer par /api.
   static const String aiAskEndpoint = '/ai/ask/';
+  static const String aiConversationsEndpoint = '/ai/conversations/';
+  static const String aiResolveActionEndpoint = '/ai/actions/execute/';
+  static const String aiTranscribeEndpoint = '/ai/voice/transcribe/';
+  static const String aiSynthesizeEndpoint = '/ai/voice/synthesize/';
+
+  static String aiConversationEndpoint(String id) => '$aiConversationsEndpoint$id/';
 
   // Endpoints Notifications
   static const String notificationsEndpoint = '/notifications/';

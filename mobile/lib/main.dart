@@ -10,6 +10,8 @@ import 'core/router/app_router.dart';
 import 'core/network/api_client.dart';
 import 'core/network/sync_service.dart';
 import 'features/auth/data/auth_provider.dart';
+import 'features/reminders/data/reminder_alarms.dart';
+import 'features/reminders/data/reminder_sync.dart';
 
 final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
   throw UnimplementedError('SharedPreferences non initialisé');
@@ -37,15 +39,55 @@ class NataalAgroApp extends ConsumerStatefulWidget {
   ConsumerState<NataalAgroApp> createState() => _NataalAgroAppState();
 }
 
-class _NataalAgroAppState extends ConsumerState<NataalAgroApp> {
+class _NataalAgroAppState extends ConsumerState<NataalAgroApp> with WidgetsBindingObserver {
   late final GoRouter _router;
   StreamSubscription<List<ConnectivityResult>>? _connectivitySub;
+  StreamSubscription<InAppAlert>? _alertSub;
+  final _messengerKey = GlobalKey<ScaffoldMessengerState>();
 
   @override
   void initState() {
     super.initState();
     _router = ref.read(routerProvider);
     _startOfflineSync();
+    _startReminderSync();
+  }
+
+  /// Alarmes de rappel : synchronisées à la connexion, à la reprise de l'application et au retour du réseau ;
+  /// retirées à la déconnexion pour qu'elles ne sonnent jamais pour un autre compte.
+  void _startReminderSync() {
+    WidgetsBinding.instance.addObserver(this);
+    final platform = ref.read(alarmPlatformProvider);
+    if (platform is InAppAlarmPlatform) {
+      // Pas de notifications système (navigateur, ordinateur) : le rappel s'affiche tant que l'application est ouverte
+      _alertSub = platform.alerts.listen(_showReminderAlert);
+    }
+    ref.listenManual<AsyncValue<bool>>(authStateProvider, (previous, next) {
+      final reminders = ref.read(reminderSyncProvider);
+      if (next.valueOrNull == true) {
+        reminders.syncQuietly();
+      } else if (next.valueOrNull == false && previous?.valueOrNull == true) {
+        reminders.clear().catchError((Object e) => debugPrint('[Rappels] Nettoyage des alarmes impossible : $e'));
+      }
+    }, fireImmediately: true);
+  }
+
+  void _showReminderAlert(InAppAlert alert) {
+    _messengerKey.currentState
+      ?..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(
+        content: Text('⏰ ${alert.body}'),
+        duration: const Duration(seconds: 20),
+        behavior: SnackBarBehavior.floating,
+        showCloseIcon: true,
+      ));
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && ref.read(authStateProvider).valueOrNull == true) {
+      ref.read(reminderSyncProvider).syncQuietly();
+    }
   }
 
   /// Rejoue les actions faites hors ligne au démarrage, puis à chaque retour du réseau.
@@ -56,6 +98,7 @@ class _NataalAgroAppState extends ConsumerState<NataalAgroApp> {
       _connectivitySub = Connectivity().onConnectivityChanged.listen((results) {
         if (!results.contains(ConnectivityResult.none)) {
           _syncOfflineActions(apiClient);
+          if (ref.read(authStateProvider).valueOrNull == true) ref.read(reminderSyncProvider).syncQuietly();
         }
       });
     } catch (e) {
@@ -75,6 +118,8 @@ class _NataalAgroAppState extends ConsumerState<NataalAgroApp> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _alertSub?.cancel();
     _connectivitySub?.cancel();
     super.dispose();
   }
@@ -89,6 +134,7 @@ class _NataalAgroAppState extends ConsumerState<NataalAgroApp> {
       theme: NaatalTheme.light,
       themeMode: ThemeMode.light, // mode sombre désactivé : thème clair uniquement
       routerConfig: _router,
+      scaffoldMessengerKey: _messengerKey,
       builder: (context, child) {
         // Texte global un peu plus petit (le réglage de taille du téléphone reste respecté).
         final mq = MediaQuery.of(context);

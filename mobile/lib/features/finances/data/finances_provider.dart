@@ -39,7 +39,7 @@ class TransactionsNotifier extends StateNotifier<AsyncValue<List<TransactionItem
   Future<void> addTransaction(TransactionItem item) async {
     try {
       final response = await _apiClient.post('/finances/transactions/', data: item.toJson());
-      if (response.statusCode == 201) {
+      if (response.statusCode == 201 || response.statusCode == 200 || response.statusCode == 202) {
         await fetchTransactions(); // Refresh the list
       }
     } catch (e) {

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -8,6 +9,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../features/ai/data/ai_provider.dart';
 import '../../features/ai/data/models/ai_message.dart';
+import '../../features/ai/data/services/voice_service.dart';
 import '../../features/auth/data/auth_provider.dart';
 import '../../features/profile/data/profile_provider.dart';
 import '../../shared/utils/data_refresh.dart';
@@ -100,7 +102,13 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
     _controller.clear();
     setState(() => _image = null);
     HapticFeedback.selectionClick();
-    ref.read(chatProvider.notifier).sendMessage(text, imageBase64: image == null ? null : base64Encode(image), imageBytes: image);
+    final currentLang = ref.read(aiLanguageProvider).trim().toLowerCase();
+    ref.read(chatProvider.notifier).sendMessage(
+      text,
+      imageBase64: image == null ? null : base64Encode(image),
+      imageBytes: image,
+      language: currentLang == 'wo' ? 'wo' : 'fr',
+    );
   }
 
   void _toBottom() {
@@ -123,6 +131,91 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
     await showNaatalSheet<void>(context, builder: (ctx) => _ReportSheet(location: location));
   }
 
+  void _promptRename([String? convId, String? currentTitle]) {
+    final chat = ref.read(chatProvider);
+    final id = convId ?? chat.currentConversationId;
+    if (id == null) return;
+    final title = currentTitle ?? chat.currentConversationTitle ?? 'Discussion';
+    final ctrl = TextEditingController(text: title);
+
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Renommer la discussion'),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          maxLength: 80,
+          textCapitalization: TextCapitalization.sentences,
+          decoration: const InputDecoration(
+            labelText: 'Titre de la discussion',
+            hintText: 'Ex: Diagnostic Mildiou Thiès',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Annuler'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final newTitle = ctrl.text.trim();
+              if (newTitle.isNotEmpty) {
+                Navigator.pop(ctx);
+                final success = await ref.read(chatProvider.notifier).renameConversation(id, newTitle);
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        success
+                            ? 'Discussion renommée.'
+                            : 'Échec du renommage de la discussion.',
+                      ),
+                    ),
+                  );
+                }
+              }
+            },
+            child: const Text('Enregistrer'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _openConversations() {
+    ref.read(chatProvider.notifier).loadConversations();
+    showNaatalSheet<void>(
+      context,
+      builder: (ctx) => _ConversationsSheet(
+        onSelect: (id) {
+          Navigator.pop(ctx);
+          ref.read(chatProvider.notifier).selectConversation(id);
+        },
+        onNew: () {
+          Navigator.pop(ctx);
+          ref.read(chatProvider.notifier).startNewConversation();
+        },
+        onRename: (id, title) => _promptRename(id, title),
+      ),
+    );
+  }
+
+  void _micSheet() {
+    showNaatalSheet<void>(
+      context,
+      builder: (ctx) => _VoiceRecordSheet(
+        onTranscribed: (text) {
+          _controller.text = text;
+          _controller.selection = TextSelection.fromPosition(TextPosition(offset: text.length));
+        },
+        onDirectSend: (text) {
+          _send(text);
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final c = context.c;
@@ -141,8 +234,11 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
             child: Column(
               children: [
                 _Header(
+                  title: chat.currentConversationTitle ?? 'Naatal IA',
                   canClear: chat.messages.isNotEmpty,
                   onClear: () => ref.read(chatProvider.notifier).clearChat(),
+                  onHistory: _openConversations,
+                  onRename: chat.currentConversationId != null ? () => _promptRename() : null,
                 ),
                 Expanded(
                   child: chat.isLoadingHistory && chat.messages.isEmpty
@@ -157,10 +253,17 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
                                 if (i == chat.messages.length) return const _Typing();
                                 final m = chat.messages[i];
                                 final last = i == chat.messages.length - 1;
+                                final canResolve = !chat.isLoading && m.interactionId != null && (m.actionData?.isPending ?? false);
                                 return _Bubble(
                                   message: m,
                                   onRetry: m.isError ? _retry : null,
                                   onSuggestion: last && !chat.isLoading ? _send : null,
+                                  onResolve: canResolve
+                                      ? (confirm) {
+                                          HapticFeedback.selectionClick();
+                                          ref.read(chatProvider.notifier).resolveProposal(m, confirm: confirm);
+                                        }
+                                      : null,
                                 );
                               },
                             ),
@@ -180,6 +283,7 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
                 busy: chat.isLoading,
                 onSend: _send,
                 onPhoto: _photoSheet,
+                onMic: _micSheet,
                 onRemovePhoto: () => setState(() => _image = null),
               ),
             ),
@@ -191,10 +295,19 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
 }
 
 class _Header extends StatelessWidget {
-  const _Header({required this.canClear, required this.onClear});
+  const _Header({
+    required this.title,
+    required this.canClear,
+    required this.onClear,
+    required this.onHistory,
+    this.onRename,
+  });
 
+  final String title;
   final bool canClear;
   final VoidCallback onClear;
+  final VoidCallback onHistory;
+  final VoidCallback? onRename;
 
   @override
   Widget build(BuildContext context) {
@@ -215,13 +328,36 @@ class _Header extends StatelessWidget {
           ),
           const SizedBox(width: Space.m),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Naatal IA', style: T.title(color: c.ink)),
-                Text('Conseils agricoles sourcés', style: T.caption(color: c.ink2, weight: 500)),
-              ],
+            child: GestureDetector(
+              onTap: onRename,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: T.title(color: c.ink),
+                        ),
+                      ),
+                      if (onRename != null) ...[
+                        const SizedBox(width: 4),
+                        Icon(Icons.edit_outlined, size: 14, color: c.ink2),
+                      ],
+                    ],
+                  ),
+                  Text('Conseils agricoles sourcés', style: T.caption(color: c.ink2, weight: 500)),
+                ],
+              ),
             ),
+          ),
+          IconButton(
+            tooltip: 'Historique des discussions',
+            onPressed: onHistory,
+            icon: Icon(Icons.forum_outlined, color: c.ink),
           ),
           IconButton(
             tooltip: 'Nouvelle conversation',
@@ -407,6 +543,7 @@ class _Composer extends StatelessWidget {
     required this.onSend,
     required this.onPhoto,
     required this.onRemovePhoto,
+    this.onMic,
   });
 
   final TextEditingController controller;
@@ -415,6 +552,7 @@ class _Composer extends StatelessWidget {
   final VoidCallback onSend;
   final VoidCallback onPhoto;
   final VoidCallback onRemovePhoto;
+  final VoidCallback? onMic;
 
   @override
   Widget build(BuildContext context) {
@@ -462,6 +600,12 @@ class _Composer extends StatelessWidget {
                   onPressed: onPhoto,
                   icon: Icon(Icons.add_photo_alternate_outlined, color: c.accent, size: 28),
                 ),
+                if (onMic != null)
+                  IconButton(
+                    tooltip: 'Entrée vocale',
+                    onPressed: onMic,
+                    icon: Icon(Icons.mic_none_rounded, color: c.accent, size: 26),
+                  ),
                 Expanded(
                   child: TextField(
                     controller: controller,
@@ -553,15 +697,18 @@ class _TypingState extends State<_Typing> with SingleTickerProviderStateMixin {
   }
 }
 
-class _Bubble extends StatelessWidget {
-  const _Bubble({required this.message, this.onRetry, this.onSuggestion});
+class _Bubble extends ConsumerWidget {
+  const _Bubble({required this.message, this.onRetry, this.onSuggestion, this.onResolve});
 
   final AiMessage message;
   final VoidCallback? onRetry;
   final ValueChanged<String>? onSuggestion;
 
+  /// Confirme (`true`) ou annule (`false`) la proposition d'opération portée par ce message.
+  final ValueChanged<bool>? onResolve;
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final c = context.c;
     final user = message.isUser;
     final maxWidth = MediaQuery.sizeOf(context).width * 0.84;
@@ -597,7 +744,31 @@ class _Bubble extends StatelessWidget {
                       padding: const EdgeInsets.only(bottom: Space.s),
                       child: ClipRRect(borderRadius: BorderRadius.circular(14), child: Image.memory(message.imageBytes!, width: 180, fit: BoxFit.cover)),
                     ),
-                  if (!user && !message.isError) _Origin(verified: message.isVerified),
+                  if (!user && !message.isError)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: Space.s),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          _Origin(verified: message.isVerified),
+                          if (message.text.isNotEmpty)
+                            IconButton(
+                              icon: Icon(Icons.volume_up_rounded, size: 20, color: c.accent),
+                              tooltip: 'Écouter la réponse vocale',
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                              onPressed: () {
+                                final voice = ref.read(voiceServiceProvider);
+                                if (voice.isSpeaking) {
+                                  voice.stopSpeaking();
+                                } else {
+                                  voice.speak(message.text);
+                                }
+                              },
+                            ),
+                        ],
+                      ),
+                    ),
                   if (message.text.isNotEmpty)
                     user || message.isError
                         ? Text(message.text, style: T.body(color: message.isError ? c.clay : fg, weight: 500))
@@ -634,6 +805,12 @@ class _Bubble extends StatelessWidget {
                       ],
                     ),
                   ],
+                  if (message.actionData != null)
+                    _ActionCard(
+                      action: message.actionData!,
+                      onConfirm: onResolve != null ? () => onResolve!(true) : null,
+                      onCancel: onResolve != null ? () => onResolve!(false) : null,
+                    ),
                   if (onRetry != null) ...[
                     const SizedBox(height: Space.m),
                     PillButton(label: 'Réessayer', icon: Icons.refresh_rounded, compact: true, onPressed: onRetry),
@@ -666,6 +843,155 @@ class _Bubble extends StatelessWidget {
             ),
         ],
       ),
+    );
+  }
+}
+
+class _ActionCard extends StatelessWidget {
+  const _ActionCard({required this.action, this.onConfirm, this.onCancel});
+
+  final AiActionData action;
+  final VoidCallback? onConfirm;
+  final VoidCallback? onCancel;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    if (action.isPending) {
+      return Container(
+        margin: const EdgeInsets.only(top: Space.m),
+        padding: const EdgeInsets.all(Space.m),
+        decoration: BoxDecoration(
+          color: c.accent.withValues(alpha: c.isDark ? 0.15 : 0.08),
+          borderRadius: BorderRadius.circular(Radii.m),
+          border: Border.all(color: c.accent.withValues(alpha: 0.3)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.pending_actions_rounded, color: c.accent, size: 20),
+                const SizedBox(width: Space.s),
+                Expanded(
+                  child: Text(
+                    'Confirmation requise',
+                    style: T.caption(color: c.accent, weight: 700),
+                  ),
+                ),
+              ],
+            ),
+            if (action.summary != null && action.summary!.isNotEmpty) ...[
+              const SizedBox(height: Space.xs),
+              Text(
+                action.summary!,
+                style: T.body(color: c.ink, weight: 600),
+              ),
+            ],
+            for (final warning in action.warnings) ...[
+              const SizedBox(height: Space.s),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.warning_amber_rounded, color: c.clay, size: 18),
+                  const SizedBox(width: Space.s),
+                  Expanded(child: Text(warning, style: T.caption(color: c.clay, weight: 600))),
+                ],
+              ),
+            ],
+            const SizedBox(height: Space.m),
+            Row(
+              children: [
+                if (onConfirm != null)
+                  Expanded(
+                    child: PillButton(
+                      label: 'Confirmer',
+                      icon: Icons.check_circle_outline_rounded,
+                      compact: true,
+                      onPressed: onConfirm,
+                    ),
+                  ),
+                if (onConfirm != null && onCancel != null) const SizedBox(width: Space.s),
+                if (onCancel != null)
+                  Expanded(
+                    child: PillButton(
+                      label: 'Annuler',
+                      icon: Icons.close_rounded,
+                      variant: PillVariant.secondary,
+                      compact: true,
+                      onPressed: onCancel,
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Proposition déjà traitée : simple rappel de son issue (le résultat détaillé est dans le message suivant)
+    if (action.isProposal) {
+      if (action.isExecuted) return _StatusLine(icon: Icons.check_circle_rounded, label: 'Opération confirmée', color: c.accent);
+      if (action.isFailed) return _StatusLine(icon: Icons.error_outline_rounded, label: 'Opération non enregistrée', color: c.clay);
+      if (action.isCancelled) return _StatusLine(icon: Icons.close_rounded, label: 'Opération annulée', color: c.ink2);
+      if (action.isExpired) return _StatusLine(icon: Icons.timer_off_outlined, label: 'Proposition expirée', color: c.ink2);
+      if (action.isSuperseded) {
+        return _StatusLine(icon: Icons.swap_horiz_rounded, label: 'Remplacée par une demande plus récente', color: c.ink2);
+      }
+      return const SizedBox.shrink();
+    }
+
+    // Résultat d'une proposition : l'état affiché est celui renvoyé par le serveur
+    if (action.isExecuted) {
+      return _StatusLine(
+        icon: Icons.check_circle_rounded,
+        label: 'Opération certifiée en base de données',
+        color: c.accent,
+        filled: true,
+      );
+    }
+    if (action.isFailed) {
+      return _StatusLine(
+        icon: Icons.error_outline_rounded,
+        label: 'Rien n\'a été enregistré',
+        color: c.clay,
+        filled: true,
+      );
+    }
+    return const SizedBox.shrink();
+  }
+}
+
+class _StatusLine extends StatelessWidget {
+  const _StatusLine({required this.icon, required this.label, required this.color, this.filled = false});
+
+  final IconData icon;
+  final String label;
+  final Color color;
+  final bool filled;
+
+  @override
+  Widget build(BuildContext context) {
+    final row = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, color: color, size: 18),
+        const SizedBox(width: Space.s),
+        Flexible(child: Text(label, style: T.caption(color: color, weight: 700))),
+      ],
+    );
+    if (!filled) {
+      return Padding(padding: const EdgeInsets.only(top: Space.s), child: row);
+    }
+    return Container(
+      margin: const EdgeInsets.only(top: Space.m),
+      padding: const EdgeInsets.symmetric(horizontal: Space.m, vertical: Space.s),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(Radii.m),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
+      ),
+      child: row,
     );
   }
 }
@@ -877,3 +1203,434 @@ class _ReportSheetState extends ConsumerState<_ReportSheet> {
     );
   }
 }
+
+class _ConversationsSheet extends ConsumerWidget {
+  const _ConversationsSheet({
+    required this.onSelect,
+    required this.onNew,
+    this.onRename,
+  });
+
+  final ValueChanged<String> onSelect;
+  final VoidCallback onNew;
+  final void Function(String id, String currentTitle)? onRename;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.c;
+    final chat = ref.watch(chatProvider);
+    final convs = chat.conversations;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(Space.xxl, Space.xl, Space.xxl, Space.xl),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.forum_outlined, color: c.accent, size: 26),
+              const SizedBox(width: Space.m),
+              Expanded(
+                child: Text('Historique des discussions', style: T.title(color: c.ink)),
+              ),
+              IconButton(
+                tooltip: 'Nouvelle discussion',
+                icon: Icon(Icons.add_circle_outline_rounded, color: c.accent),
+                onPressed: onNew,
+              ),
+            ],
+          ),
+          const SizedBox(height: Space.xs),
+          Text(
+            'Retrouvez vos échanges précédents avec Naatal IA.',
+            style: T.caption(color: c.ink2),
+          ),
+          const SizedBox(height: Space.m),
+          if (chat.isLoadingConversations && convs.isEmpty)
+            const Padding(
+              padding: EdgeInsets.all(Space.xl),
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else if (convs.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: Space.xl),
+              child: Center(
+                child: Text('Aucune discussion enregistrée.', style: T.body(color: c.ink2)),
+              ),
+            )
+          else
+            ConstrainedBox(
+              constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.45),
+              child: ListView.separated(
+                shrinkWrap: true,
+                itemCount: convs.length,
+                separatorBuilder: (_, __) => const SizedBox(height: Space.s),
+                itemBuilder: (context, i) {
+                  final item = convs[i];
+                  final isCurrent = item.id == chat.currentConversationId;
+                  return AppCard(
+                    color: isCurrent ? c.accent.withValues(alpha: 0.12) : null,
+                    onTap: () => onSelect(item.id),
+                    padding: const EdgeInsets.all(Space.m),
+                    child: Row(
+                      children: [
+                        Icon(
+                          isCurrent ? Icons.chat_bubble_rounded : Icons.chat_bubble_outline_rounded,
+                          color: isCurrent ? c.accent : c.ink2,
+                          size: 20,
+                        ),
+                        const SizedBox(width: Space.m),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                item.title,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: T.body(color: c.ink, weight: isCurrent ? 700 : 500),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                '${item.messageCount} échange(s)',
+                                style: T.caption(color: c.ink2),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (onRename != null)
+                          IconButton(
+                            icon: Icon(Icons.edit_outlined, size: 18, color: c.ink2),
+                            tooltip: 'Renommer',
+                            onPressed: () => onRename!(item.id, item.title),
+                          ),
+                        IconButton(
+                          icon: Icon(Icons.delete_outline_rounded, size: 18, color: c.clay),
+                          tooltip: 'Supprimer',
+                          onPressed: () async {
+                            final confirm = await showDialog<bool>(
+                              context: context,
+                              builder: (dCtx) => AlertDialog(
+                                title: const Text('Supprimer la discussion ?'),
+                                content: const Text('Cette action supprimera définitivement cette discussion et son historique.'),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(dCtx, false),
+                                    child: const Text('Annuler'),
+                                  ),
+                                  ElevatedButton(
+                                    onPressed: () => Navigator.pop(dCtx, true),
+                                    child: const Text('Supprimer'),
+                                  ),
+                                ],
+                              ),
+                            );
+                            if (confirm == true) {
+                              final ok = await ref.read(chatProvider.notifier).deleteConversation(item.id);
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(ok ? 'Discussion supprimée.' : 'Échec de la suppression.'),
+                                  ),
+                                );
+                              }
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _VoiceRecordSheet extends ConsumerStatefulWidget {
+  const _VoiceRecordSheet({
+    required this.onTranscribed,
+    required this.onDirectSend,
+  });
+
+  final ValueChanged<String> onTranscribed;
+  final ValueChanged<String> onDirectSend;
+
+  @override
+  ConsumerState<_VoiceRecordSheet> createState() => _VoiceRecordSheetState();
+}
+
+class _VoiceRecordSheetState extends ConsumerState<_VoiceRecordSheet> with SingleTickerProviderStateMixin {
+  late final AnimationController _pulseController = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1200),
+  )..repeat(reverse: true);
+
+  Timer? _timer;
+  int _seconds = 0;
+  bool _isRecording = false;
+  bool _isTranscribing = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _startRecording();
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _pulseController.dispose();
+    ref.read(voiceServiceProvider).stopRecording();
+    super.dispose();
+  }
+
+  Future<void> _startRecording() async {
+    setState(() {
+      _error = null;
+      _seconds = 0;
+    });
+    final voice = ref.read(voiceServiceProvider);
+    final ok = await voice.startRecording();
+    if (!mounted) return;
+    if (ok) {
+      setState(() {
+        _isRecording = true;
+      });
+      _timer?.cancel();
+      _timer = Timer.periodic(const Duration(seconds: 1), (t) {
+        if (!mounted) return;
+        setState(() {
+          _seconds++;
+        });
+      });
+    } else {
+      setState(() {
+        _isRecording = false;
+        _error = 'Impossible d\'activer le microphone. Vérifiez les autorisations de l\'appareil.';
+      });
+    }
+  }
+
+  Future<void> _stopAndTranscribe() async {
+    _timer?.cancel();
+    final voice = ref.read(voiceServiceProvider);
+    setState(() {
+      _isRecording = false;
+      _isTranscribing = true;
+      _error = null;
+    });
+
+    try {
+      final audioBytes = await voice.stopRecording();
+      if (!mounted) return;
+      if (audioBytes == null || audioBytes.isEmpty) {
+        setState(() {
+          _isTranscribing = false;
+          _error = 'Aucun signal audio enregistré. Réessayez.';
+        });
+        return;
+      }
+
+      final text = await ref.read(aiRepositoryProvider).transcribeAudio(audioBytes);
+      if (!mounted) return;
+
+      final trimmed = text.trim();
+      if (trimmed.isEmpty) {
+        setState(() {
+          _isTranscribing = false;
+          _error = 'Aucune parole détectée dans l\'enregistrement.';
+        });
+        return;
+      }
+
+      Navigator.pop(context);
+      widget.onDirectSend(trimmed);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isTranscribing = false;
+        _error = 'Erreur lors de la transcription : $e';
+      });
+    }
+  }
+
+  Future<void> _cancel() async {
+    _timer?.cancel();
+    await ref.read(voiceServiceProvider).stopRecording();
+    if (mounted) Navigator.pop(context);
+  }
+
+  String _formatDuration(int seconds) {
+    final m = (seconds ~/ 60).toString().padLeft(2, '0');
+    final s = (seconds % 60).toString().padLeft(2, '0');
+    return '$m:$s';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(Space.xxl, Space.xl, Space.xxl, Space.xl),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.mic_rounded, color: c.accent, size: 28),
+              const SizedBox(width: Space.m),
+              Expanded(
+                child: Text('Entrée vocale Naatal IA', style: T.title(color: c.ink)),
+              ),
+              IconButton(
+                icon: const Icon(Icons.close_rounded),
+                onPressed: _cancel,
+              ),
+            ],
+          ),
+          const SizedBox(height: Space.s),
+          Text(
+            'Parlez en français ou en wolof. Votre voix sera transcrite automatiquement par Whisper.',
+            style: T.body(color: c.ink2),
+          ),
+          const SizedBox(height: Space.xl),
+          Center(
+            child: AnimatedBuilder(
+              animation: _pulseController,
+              builder: (ctx, child) {
+                final scale = _isRecording ? 1.0 + (_pulseController.value * 0.15) : 1.0;
+                final ringAlpha = _isRecording ? (0.35 - _pulseController.value * 0.25).clamp(0.05, 0.4) : 0.0;
+                return Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    if (_isRecording)
+                      Container(
+                        width: 110 * scale,
+                        height: 110 * scale,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: c.accent.withValues(alpha: ringAlpha),
+                        ),
+                      ),
+                    Container(
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        color: _isRecording ? c.accent : (_isTranscribing ? c.ink2 : c.surfaceAlt),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          if (_isRecording)
+                            BoxShadow(
+                              color: c.accent.withValues(alpha: 0.4),
+                              blurRadius: 16,
+                              spreadRadius: 2,
+                            ),
+                        ],
+                      ),
+                      child: Center(
+                        child: _isTranscribing
+                            ? const SizedBox(
+                                width: 28,
+                                height: 28,
+                                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
+                              )
+                            : Icon(
+                                _isRecording ? Icons.mic_rounded : Icons.mic_none_rounded,
+                                color: _isRecording ? c.onAccent : c.ink,
+                                size: 36,
+                              ),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: Space.m),
+          Center(
+            child: Text(
+              _isTranscribing
+                  ? 'Transcription en cours...'
+                  : _isRecording
+                      ? 'Écoute en cours : ${_formatDuration(_seconds)}'
+                      : 'Prêt',
+              style: T.caption(color: _isRecording ? c.accent : c.ink2, weight: 700),
+            ),
+          ),
+          if (_error != null) ...[
+            const SizedBox(height: Space.m),
+            Container(
+              padding: const EdgeInsets.all(Space.m),
+              decoration: BoxDecoration(
+                color: c.clay.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(Radii.m),
+                border: Border.all(color: c.clay.withValues(alpha: 0.3)),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.error_outline_rounded, color: c.clay, size: 20),
+                  const SizedBox(width: Space.s),
+                  Expanded(
+                    child: Text(_error!, style: T.caption(color: c.clay, weight: 600)),
+                  ),
+                ],
+              ),
+            ),
+          ],
+          const SizedBox(height: Space.xl),
+          if (_isRecording)
+            PillButton(
+              label: 'Arrêter et envoyer',
+              icon: Icons.send_rounded,
+              expand: true,
+              onPressed: _stopAndTranscribe,
+            )
+          else if (!_isTranscribing)
+            PillButton(
+              label: 'Commencer l\'enregistrement',
+              icon: Icons.mic_rounded,
+              expand: true,
+              onPressed: _startRecording,
+            ),
+          const SizedBox(height: Space.m),
+          Divider(color: c.line),
+          const SizedBox(height: Space.m),
+          Text(
+            'Ou utilisez un modèle d\'action rapide :',
+            style: T.caption(color: c.ink2, weight: 600),
+          ),
+          const SizedBox(height: Space.s),
+          PillButton(
+            label: '« Analyse mes finances »',
+            icon: Icons.account_balance_wallet_outlined,
+            variant: PillVariant.secondary,
+            expand: true,
+            compact: true,
+            onPressed: () {
+              Navigator.pop(context);
+              widget.onDirectSend('Analyse mes revenus et dépenses');
+            },
+          ),
+          const SizedBox(height: Space.xs),
+          PillButton(
+            label: '« J\'ai acheté 3 sacs d\'engrais à 15000 FCFA »',
+            icon: Icons.receipt_long_outlined,
+            variant: PillVariant.secondary,
+            expand: true,
+            compact: true,
+            onPressed: () {
+              Navigator.pop(context);
+              widget.onDirectSend('J\'ai acheté 3 sacs d\'engrais à 15000 FCFA');
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+

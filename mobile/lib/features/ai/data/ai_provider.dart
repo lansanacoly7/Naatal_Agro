@@ -1,9 +1,11 @@
+import 'dart:convert';
 import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../auth/data/auth_provider.dart';
+import '../../reminders/data/reminder_sync.dart';
 import 'models/ai_message.dart';
 
 class AiRepository {
@@ -11,10 +13,17 @@ class AiRepository {
 
   AiRepository(this._apiClient);
 
-  Future<AiAnswer> askQuestion(String query, {String? imageBase64, List<AiMessage> history = const []}) async {
+  Future<AiAnswer> askQuestion(
+    String query, {
+    String? imageBase64,
+    List<AiMessage> history = const [],
+    String? conversationId,
+    String? language,
+  }) async {
     final Map<String, dynamic> data = {
       'query': query,
       'context': 'general',
+      if (language != null && language.isNotEmpty) 'language': language,
       // Mémoire de la conversation : les 20 derniers échanges pour un suivi continu et complet
       'history': [
         for (final m in history.where((m) => !m.isError && m.text.trim().isNotEmpty).toList().reversed.take(20).toList().reversed)
@@ -24,9 +33,10 @@ class AiRepository {
     if (imageBase64 != null) {
       data['image_base64'] = imageBase64;
     }
+    if (conversationId != null && conversationId.isNotEmpty) {
+      data['conversation_id'] = conversationId;
+    }
 
-    // Le serveur peut mettre jusqu'à ~35 s (analyse d'image, réessai si le service IA est saturé) :
-    // on attend plus longtemps que le délai standard, et on ne met jamais une question en file hors ligne.
     final response = await _apiClient.post(
       AppConstants.aiAskEndpoint,
       data: data,
@@ -53,17 +63,109 @@ class AiRepository {
       final json = Map<String, dynamic>.from(raw);
       final createdAt = DateTime.tryParse('${json['created_at']}') ?? DateTime.now();
       messages.add(AiMessage(text: (json['query'] ?? '').toString(), isUser: true, timestamp: createdAt));
-      final answer = AiAnswer.fromJson(json);
-      messages.add(AiMessage(
-        text: answer.text,
-        isUser: false,
-        timestamp: createdAt,
-        origin: answer.origin,
-        sources: answer.sources,
-        suggestions: answer.suggestions,
-      ));
+      messages.add(AiMessage.fromAnswer(AiAnswer.fromJson(json), timestamp: createdAt));
     }
     return messages;
+  }
+
+  /// Liste des conversations sauvegardées de l'utilisateur.
+  Future<List<AiConversationSummary>> fetchConversations() async {
+    final response = await _apiClient.get(AppConstants.aiConversationsEndpoint);
+    final body = response.data;
+    final List<dynamic> items = body is List ? body : (body is Map ? (body['results'] as List<dynamic>? ?? const []) : const []);
+
+    return items
+        .whereType<Map<String, dynamic>>()
+        .map(AiConversationSummary.fromJson)
+        .toList();
+  }
+
+  /// Charge tous les messages d'une conversation spécifique.
+  Future<List<AiMessage>> fetchConversationMessages(String conversationId) async {
+    final response = await _apiClient.get(AppConstants.aiConversationEndpoint(conversationId));
+    if (response.data is! Map) return const [];
+    final json = Map<String, dynamic>.from(response.data as Map);
+    final interactions = (json['interactions'] as List<dynamic>? ?? const []);
+
+    final messages = <AiMessage>[];
+    for (final item in interactions) {
+      if (item is! Map) continue;
+      final mJson = Map<String, dynamic>.from(item);
+      final createdAt = DateTime.tryParse('${mJson['created_at']}') ?? DateTime.now();
+      messages.add(AiMessage(
+        text: (mJson['query'] ?? '').toString(),
+        isUser: true,
+        timestamp: createdAt,
+      ));
+      messages.add(AiMessage.fromAnswer(AiAnswer.fromJson(mJson), timestamp: createdAt));
+    }
+    return messages;
+  }
+
+  /// Supprime une conversation.
+  Future<void> deleteConversation(String conversationId) async {
+    await _apiClient.delete(AppConstants.aiConversationEndpoint(conversationId));
+  }
+
+  /// Renomme une conversation existante.
+  Future<AiConversationSummary> renameConversation(String conversationId, String newTitle) async {
+    final response = await _apiClient.patch(
+      AppConstants.aiConversationEndpoint(conversationId),
+      data: {'title': newTitle},
+    );
+    if (response.data is Map) {
+      return AiConversationSummary.fromJson(Map<String, dynamic>.from(response.data as Map));
+    }
+    throw Exception('Échec du renommage de la discussion.');
+  }
+
+  /// Transcrit un enregistrement audio en texte via Whisper (Phase 8).
+  Future<String> transcribeAudio(Uint8List audioBytes) async {
+    final response = await _apiClient.post(
+      AppConstants.aiTranscribeEndpoint,
+      data: {
+        'audio_base64': base64Encode(audioBytes),
+      },
+    );
+    if (response.data is Map && response.data['text'] != null) {
+      return response.data['text'].toString();
+    }
+    throw Exception('Échec de la transcription audio.');
+  }
+
+  /// Synthétise un texte en audio MP3 via le backend TTS (Phase 8).
+  Future<Uint8List> synthesizeSpeech(String text, {String lang = 'fr'}) async {
+    final response = await _apiClient.post(
+      AppConstants.aiSynthesizeEndpoint,
+      data: {
+        'text': text,
+        'lang': lang,
+      },
+    );
+    if (response.data is Map && response.data['audio_base64'] != null) {
+      return base64Decode(response.data['audio_base64'].toString());
+    }
+    throw Exception('Échec de la synthèse vocale.');
+  }
+
+  /// Confirme ou annule une proposition d'opération déjà faite par l'assistant.
+  ///
+  /// Seul l'identifiant de la proposition est envoyé : le serveur exécute les paramètres qu'il a lui-même
+  /// enregistrés. L'appel est idempotent : le renvoyer (double appui, reprise après coupure réseau) ne
+  /// peut pas enregistrer l'opération deux fois.
+  Future<AiAnswer> resolveProposal(String interactionId, {required bool confirm}) async {
+    final response = await _apiClient.post(
+      AppConstants.aiResolveActionEndpoint,
+      data: {
+        'interaction_id': interactionId,
+        'decision': confirm ? 'confirm' : 'cancel',
+      },
+      queueWhenOffline: false,
+    );
+    if ((response.statusCode == 200 || response.statusCode == 201) && response.data is Map) {
+      return AiAnswer.fromJson(Map<String, dynamic>.from(response.data as Map));
+    }
+    throw Exception('Échec de validation de l\'opération.');
   }
 }
 
@@ -76,37 +178,190 @@ class ChatState {
   final List<AiMessage> messages;
   final bool isLoading;
   final bool isLoadingHistory;
+  final String? currentConversationId;
+  final String? currentConversationTitle;
+  final List<AiConversationSummary> conversations;
+  final bool isLoadingConversations;
 
-  const ChatState({this.messages = const [], this.isLoading = false, this.isLoadingHistory = false});
+  const ChatState({
+    this.messages = const [],
+    this.isLoading = false,
+    this.isLoadingHistory = false,
+    this.currentConversationId,
+    this.currentConversationTitle,
+    this.conversations = const [],
+    this.isLoadingConversations = false,
+  });
 
-  ChatState copyWith({List<AiMessage>? messages, bool? isLoading, bool? isLoadingHistory}) => ChatState(
+  ChatState copyWith({
+    List<AiMessage>? messages,
+    bool? isLoading,
+    bool? isLoadingHistory,
+    String? currentConversationId,
+    bool clearConversationId = false,
+    String? currentConversationTitle,
+    bool clearConversationTitle = false,
+    List<AiConversationSummary>? conversations,
+    bool? isLoadingConversations,
+  }) =>
+      ChatState(
         messages: messages ?? this.messages,
         isLoading: isLoading ?? this.isLoading,
         isLoadingHistory: isLoadingHistory ?? this.isLoadingHistory,
+        currentConversationId: clearConversationId ? null : (currentConversationId ?? this.currentConversationId),
+        currentConversationTitle:
+            clearConversationTitle ? null : (currentConversationTitle ?? this.currentConversationTitle),
+        conversations: conversations ?? this.conversations,
+        isLoadingConversations: isLoadingConversations ?? this.isLoadingConversations,
       );
 }
 
 class ChatNotifier extends StateNotifier<ChatState> {
   final AiRepository _repository;
 
-  ChatNotifier(this._repository) : super(const ChatState(isLoadingHistory: true)) {
-    loadHistory();
+  /// Appelé quand l'assistant vient de créer, reporter ou annuler un rappel : les alarmes de l'appareil
+  /// doivent alors être resynchronisées avec le serveur.
+  final void Function()? _onReminderChanged;
+
+  ChatNotifier(this._repository, {void Function()? onReminderChanged})
+      : _onReminderChanged = onReminderChanged,
+        super(const ChatState(isLoadingHistory: true)) {
+    initChatSession();
   }
 
-  /// Recharge les échanges déjà enregistrés : rien n'est perdu en quittant la page ou l'application.
-  Future<void> loadHistory() async {
+  /// Initialise la session : charge les conversations existantes et restaure la plus récente.
+  Future<void> initChatSession() async {
     try {
-      final history = await _repository.fetchHistory();
+      state = state.copyWith(isLoadingConversations: true, isLoadingHistory: true);
+      final convs = await _repository.fetchConversations();
       if (!mounted) return;
-      // Si l'utilisateur a déjà écrit pendant le chargement, on garde sa conversation sans dupliquer l'historique
-      state = state.copyWith(messages: state.messages.isEmpty ? history : state.messages, isLoadingHistory: false);
+
+      if (convs.isNotEmpty) {
+        final latest = convs.first;
+        final messages = await _repository.fetchConversationMessages(latest.id);
+        if (!mounted) return;
+        state = state.copyWith(
+          conversations: convs,
+          currentConversationId: latest.id,
+          currentConversationTitle: latest.title,
+          messages: messages,
+          isLoadingConversations: false,
+          isLoadingHistory: false,
+        );
+      } else {
+        state = state.copyWith(
+          conversations: const [],
+          clearConversationId: true,
+          currentConversationTitle: 'Nouvelle discussion',
+          messages: const [],
+          isLoadingConversations: false,
+          isLoadingHistory: false,
+        );
+      }
     } catch (_) {
       if (!mounted) return;
-      state = state.copyWith(isLoadingHistory: false);
+      state = state.copyWith(
+        isLoadingConversations: false,
+        isLoadingHistory: false,
+        currentConversationTitle: 'Nouvelle discussion',
+      );
     }
   }
 
-  Future<void> sendMessage(String text, {String? imageBase64, Uint8List? imageBytes}) async {
+  /// Charge la liste de toutes les conversations de l'utilisateur.
+  Future<void> loadConversations() async {
+    try {
+      state = state.copyWith(isLoadingConversations: true);
+      final list = await _repository.fetchConversations();
+      if (!mounted) return;
+      state = state.copyWith(
+        conversations: list,
+        isLoadingConversations: false,
+      );
+    } catch (_) {
+      if (!mounted) return;
+      state = state.copyWith(isLoadingConversations: false);
+    }
+  }
+
+  /// Bascule sur une conversation existante.
+  Future<void> selectConversation(String conversationId) async {
+    try {
+      final summary = state.conversations.firstWhere(
+        (c) => c.id == conversationId,
+        orElse: () => AiConversationSummary(
+          id: conversationId,
+          title: 'Discussion',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          messageCount: 0,
+        ),
+      );
+
+      state = state.copyWith(
+        isLoading: true,
+        currentConversationId: conversationId,
+        currentConversationTitle: summary.title,
+      );
+      final messages = await _repository.fetchConversationMessages(conversationId);
+      if (!mounted) return;
+      state = state.copyWith(
+        messages: messages,
+        isLoading: false,
+      );
+    } catch (_) {
+      if (!mounted) return;
+      state = state.copyWith(isLoading: false);
+      _addError('Impossible de charger cette discussion.');
+    }
+  }
+
+  /// Renomme une conversation.
+  Future<bool> renameConversation(String conversationId, String newTitle) async {
+    final trimmed = newTitle.trim();
+    if (trimmed.isEmpty) return false;
+    try {
+      final updated = await _repository.renameConversation(conversationId, trimmed);
+      final updatedList = state.conversations.map((c) => c.id == conversationId ? updated : c).toList();
+      state = state.copyWith(
+        conversations: updatedList,
+        currentConversationTitle:
+            state.currentConversationId == conversationId ? updated.title : state.currentConversationTitle,
+      );
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Démarre une nouvelle conversation propre.
+  void startNewConversation() {
+    state = state.copyWith(
+      messages: const [],
+      clearConversationId: true,
+      currentConversationTitle: 'Nouvelle discussion',
+      isLoading: false,
+    );
+  }
+
+  /// Supprime une conversation.
+  Future<bool> deleteConversation(String conversationId) async {
+    try {
+      await _repository.deleteConversation(conversationId);
+      final updated = state.conversations.where((c) => c.id != conversationId).toList();
+      final isCurrent = state.currentConversationId == conversationId;
+      state = state.copyWith(
+        conversations: updated,
+        messages: isCurrent ? const [] : state.messages,
+        clearConversationId: isCurrent,
+      );
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<void> sendMessage(String text, {String? imageBase64, Uint8List? imageBytes, String? language}) async {
     if (state.isLoading) return;
     if (text.trim().isEmpty && imageBase64 == null) return;
 
@@ -128,22 +383,25 @@ class ChatNotifier extends StateNotifier<ChatState> {
         effectiveText,
         imageBase64: imageBase64,
         history: previousMessages,
+        conversationId: state.currentConversationId,
+        language: language,
       );
       if (!mounted) return;
+
+      final newConvId = answer.conversationId ?? state.currentConversationId;
+
       state = state.copyWith(
         messages: [
           ...state.messages,
-          AiMessage(
-            text: answer.text,
-            isUser: false,
-            timestamp: DateTime.now(),
-            origin: answer.origin,
-            sources: answer.sources,
-            suggestions: answer.suggestions,
-          ),
+          AiMessage.fromAnswer(answer, timestamp: DateTime.now()),
         ],
+        currentConversationId: newConvId,
         isLoading: false,
       );
+
+      _notifyIfReminderChanged(answer);
+      // Rafraîchir la liste des conversations en arrière-plan
+      loadConversations();
     } on DioException catch (e) {
       if (!mounted) return;
       final status = e.response?.statusCode;
@@ -161,6 +419,65 @@ class ChatNotifier extends StateNotifier<ChatState> {
     }
   }
 
+  /// Confirme ou annule une proposition d'opération (boutons de la carte d'action).
+  ///
+  /// La carte de la proposition prend l'état renvoyé par le serveur (exécutée, annulée, expirée…) ; en cas de
+  /// coupure réseau elle reste confirmable, et rappuyer est sans risque car le serveur n'enregistre qu'une fois.
+  Future<void> resolveProposal(AiMessage proposal, {required bool confirm}) async {
+    final interactionId = proposal.interactionId;
+    if (state.isLoading || interactionId == null) return;
+
+    state = state.copyWith(
+      messages: [
+        ...state.messages,
+        AiMessage(text: confirm ? 'Oui, je confirme' : 'Non, j\'annule', isUser: true, timestamp: DateTime.now()),
+      ],
+      isLoading: true,
+    );
+
+    try {
+      final answer = await _repository.resolveProposal(interactionId, confirm: confirm);
+      if (!mounted) return;
+      final finalStatus = answer.actionData?.status;
+      state = state.copyWith(
+        messages: [
+          for (final m in state.messages)
+            if (m.interactionId == interactionId && m.actionData != null && finalStatus != null)
+              m.copyWith(actionData: m.actionData!.copyWith(status: finalStatus))
+            else
+              m,
+          AiMessage.fromAnswer(answer, timestamp: DateTime.now()),
+        ],
+        isLoading: false,
+      );
+      _notifyIfReminderChanged(answer);
+      loadConversations();
+    } on DioException catch (e) {
+      if (!mounted) return;
+      final status = e.response?.statusCode;
+      final data = e.response?.data;
+      final serverMessage = data is Map ? data['error']?.toString() : null;
+      _addError(
+        (status == 404 || status == 409) && serverMessage != null && serverMessage.isNotEmpty
+            ? serverMessage
+            : status == 429
+                ? 'Trop de demandes en peu de temps. Réessayez dans un instant.'
+                : 'Connexion interrompue : l\'opération n\'a peut-être pas été traitée. '
+                    'Appuyez de nouveau sur « Confirmer » : elle ne sera enregistrée qu\'une seule fois.',
+      );
+    } catch (_) {
+      if (!mounted) return;
+      _addError('La validation n\'a pas pu aboutir. Réessayez dans un instant.');
+    }
+  }
+
+  void _notifyIfReminderChanged(AiAnswer answer) {
+    final action = answer.actionData;
+    if (action != null && action.isExecuted && !action.isProposal && action.reminderId != null) {
+      _onReminderChanged?.call();
+    }
+  }
+
   void _addError(String message) {
     state = state.copyWith(
       messages: [...state.messages, AiMessage(text: message, isUser: false, timestamp: DateTime.now(), isError: true)],
@@ -170,7 +487,7 @@ class ChatNotifier extends StateNotifier<ChatState> {
 
   /// Vide l'écran. L'historique reste enregistré sur le serveur.
   void clearChat() {
-    state = state.copyWith(messages: const [], isLoading: false);
+    startNewConversation();
   }
 }
 
@@ -178,7 +495,7 @@ final chatProvider = StateNotifierProvider<ChatNotifier, ChatState>((ref) {
   final repository = ref.watch(aiRepositoryProvider);
   // Une conversation par compte : elle est recréée à chaque connexion ou déconnexion
   ref.watch(authStateProvider);
-  return ChatNotifier(repository);
+  return ChatNotifier(repository, onReminderChanged: () => ref.read(reminderSyncProvider).syncQuietly());
 });
 
 // NAATAL_IA_IMPROVEMENT : Provider pour la langue

@@ -207,9 +207,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
           children: [
             GestureDetector(
               onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Recherche globale bientôt disponible')),
-                );
+                context.push('/map');
               },
               child: Container(
                 width: 40,
@@ -221,7 +219,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                     BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4)),
                   ],
                 ),
-                child: const Icon(Icons.search, color: AppColors.textPrimary, size: 20),
+                child: const Icon(Icons.map_outlined, color: AppColors.primary, size: 20),
               ),
             ),
             const SizedBox(width: 12),

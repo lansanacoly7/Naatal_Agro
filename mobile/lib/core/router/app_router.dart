@@ -6,6 +6,9 @@ import '../../main.dart';
 import '../../features/auth/data/auth_provider.dart';
 
 import '../../features/agriculture/data/models/crop.dart';
+import '../../features/map/presentation/screens/map_screen.dart';
+import '../../features/markets/data/models/market.dart';
+import '../../features/markets/presentation/screens/market_detail_screen.dart';
 import '../../features/markets/presentation/screens/product_detail_screen.dart';
 import '../../features/markets/presentation/screens/market_comparison_screen.dart';
 import '../../features/profile/presentation/screens/price_alerts_screen.dart';
@@ -267,6 +270,24 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(parentNavigatorKey: _rootNavigatorKey, path: '/calendar', builder: (context, state) => const CalendarScreen()),
       GoRoute(parentNavigatorKey: _rootNavigatorKey, path: '/mon_dashboard', builder: (context, state) => const MonDashboardScreen()),
       GoRoute(parentNavigatorKey: _rootNavigatorKey, path: '/weather', builder: (context, state) => const WeatherScreen()),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: '/map',
+        builder: (context, state) {
+          final extra = state.extra;
+          return MapScreen(initialMarket: extra is Market ? extra : null);
+        },
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: '/market-detail',
+        builder: (context, state) {
+          final extra = state.extra;
+          return extra is Market
+              ? MarketDetailScreen(market: extra)
+              : const Scaffold(body: Center(child: Text('Marché introuvable.')));
+        },
+      ),
       GoRoute(parentNavigatorKey: _rootNavigatorKey, path: '/price-alerts', builder: (context, state) => const PriceAlertsScreen()),
       GoRoute(parentNavigatorKey: _rootNavigatorKey, path: '/notifications', builder: (context, state) => const NotificationsScreen()),
       GoRoute(parentNavigatorKey: _rootNavigatorKey, path: '/edit-profile', builder: (context, state) => const EditProfileScreen()),

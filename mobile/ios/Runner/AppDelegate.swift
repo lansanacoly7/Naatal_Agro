@@ -1,5 +1,6 @@
 import Flutter
 import UIKit
+import UserNotifications
 
 @main
 @objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
@@ -12,5 +13,7 @@ import UIKit
 
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
+    // Rappels programmés : permet à iOS de délivrer les notifications locales (même application ouverte)
+    UNUserNotificationCenter.current().delegate = self as? UNUserNotificationCenterDelegate
   }
 }

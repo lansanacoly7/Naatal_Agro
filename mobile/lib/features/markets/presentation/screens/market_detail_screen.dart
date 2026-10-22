@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../data/models/market.dart';
 import '../../data/models/price.dart';
@@ -491,24 +492,18 @@ class _MarketDetailScreenState extends ConsumerState<MarketDetailScreen> {
                             ],
                           ),
                         ),
-                        const SizedBox(height: 24),
-                        ElevatedButton(
+                        ElevatedButton.icon(
                           onPressed: () {
                             Navigator.pop(ctx);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Position de ${market.name} : ${market.locationGps ?? market.region}'),
-                                backgroundColor: AppColors.primary,
-                                behavior: SnackBarBehavior.floating,
-                              ),
-                            );
+                            context.push('/map', extra: market);
                           },
+                          icon: const Icon(Icons.map_rounded),
+                          label: const Text('Voir sur la carte interactive'),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.primary,
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                           ),
-                          child: const Text('Localisation du marché'),
                         ),
                       ],
                     ),
