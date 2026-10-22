@@ -41,21 +41,15 @@ class HarvestCreateSerializer(serializers.Serializer):
         crop.status = 'harvested'
         crop.save(update_fields=['status'])
 
-        # 3. Synchroniser ou incrémenter le stock
+        # 3. Synchroniser ou incrémenter le stock (journalisé : motif « récolte »)
         from apps.inventory.models import StockItem
+        from apps.inventory.services import change_stock, create_stock_item
+        note = f"Récolte du {harvest_date}"
         stock_item = StockItem.objects.filter(user=user, name__iexact=crop.name).first()
         if stock_item:
-            stock_item.quantity = round(stock_item.quantity + quantity, 2)
-            stock_item.alert_status = False
-            stock_item.save(update_fields=['quantity', 'alert_status', 'updated_at'])
+            change_stock(stock_item, stock_item.quantity + quantity, reason='harvest', note=note)
         else:
-            StockItem.objects.create(
-                user=user,
-                name=crop.name,
-                quantity=quantity,
-                unit=unit,
-                alert_status=False
-            )
+            create_stock_item(user, crop.name, quantity, unit, reason='harvest', note=note)
 
         # 4. Créer une notification
         try:

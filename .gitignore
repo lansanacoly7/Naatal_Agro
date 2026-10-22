@@ -25,6 +25,9 @@ venv/
 ENV/
 *.sqlite3
 db.sqlite3
+# Sauvegardes et journaux de la base de développement (ex. db.sqlite3.avant-migration.bak, db.sqlite3-journal)
+db.sqlite3.*
+db.sqlite3-*
 
 # Flutter/Dart
 .dart_tool/

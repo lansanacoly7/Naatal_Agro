@@ -50,6 +50,61 @@ class AIAssistantSecurityTests(TestCase):
             location='Podor, Sénégal'
         )
 
+        # Stocks : Ali a des sacs de riz, Binta a des caisses d'anacarde
+        from apps.inventory.models import StockItem
+        self.stock_ali = StockItem.objects.create(
+            user=self.user_ali,
+            name='Riz Sahel 108',
+            quantity=25.0,
+            unit='sacs',
+            alert_status=False
+        )
+        self.stock_binta = StockItem.objects.create(
+            user=self.user_binta,
+            name='Noix d Anacarde Brute',
+            quantity=120.0,
+            unit='kg',
+            alert_status=False
+        )
+
+        # Récoltes : Ali a récolté du riz, Binta a récolté des anacardes
+        from apps.agriculture.models import Harvest
+        from datetime import date
+        self.harvest_ali = Harvest.objects.create(
+            user=self.user_ali,
+            crop=self.crop_ali,
+            date=date(2026, 6, 15),
+            quantity=450.0,
+            unit='kg',
+            notes='Excellente récolte d hivernage'
+        )
+        self.harvest_binta = Harvest.objects.create(
+            user=self.user_binta,
+            crop=self.crop_binta,
+            date=date(2026, 7, 20),
+            quantity=800.0,
+            unit='kg',
+            notes='Récolte confidentielle'
+        )
+
+        # Finances d'Ali : 1 vente de riz (50 000 FCFA) et 1 dépense d'engrais (15 000 FCFA)
+        from apps.finances.models import Sale, Transaction
+        self.sale_ali = Sale.objects.create(
+            user=self.user_ali,
+            crop=self.crop_ali,
+            quantity_sold=100.0,
+            price_per_unit=500.0,
+            date=date(2026, 6, 20),
+            buyer='GIE Bokk Jom'
+        )
+        self.expense_ali = Transaction.objects.create(
+            user=self.user_ali,
+            transaction_type='expense',
+            amount=15000.0,
+            date=date(2026, 6, 10),
+            description='Achat engrais urée 50kg'
+        )
+
     def test_farmer_context_strict_isolation(self):
         """
         Vérifie qu'aucun exploitant ne peut voir les cultures ou données
@@ -63,6 +118,45 @@ class AIAssistantSecurityTests(TestCase):
         self.assertNotIn('Verger Anacarde Secret', crop_names)
         self.assertEqual(context_ali['name'], 'Ali')
         self.assertEqual(context_ali['location'], 'Podor, Sénégal')
+
+    def test_farmer_context_stocks_isolation(self):
+        """Vérifie que les stocks sont injectés avec exactitude et cloisonnés."""
+        context_ali = get_farmer_context(self.user_ali)
+        stock_names = [s['produit'] for s in context_ali['inventory']]
+        self.assertIn('Riz Sahel 108', stock_names)
+        self.assertNotIn('Noix d Anacarde Brute', stock_names)
+        
+        stock_item = next(s for s in context_ali['inventory'] if s['produit'] == 'Riz Sahel 108')
+        self.assertEqual(stock_item['quantite'], 25.0)
+        self.assertEqual(stock_item['unite'], 'sacs')
+
+    def test_farmer_context_harvests_isolation(self):
+        """Vérifie que les récoltes sont injectées avec exactitude et cloisonnées."""
+        context_ali = get_farmer_context(self.user_ali)
+        harvest_crops = [h['culture'] for h in context_ali['harvests']]
+        self.assertIn('Rizière Delta', harvest_crops)
+        self.assertNotIn('Verger Anacarde Secret', harvest_crops)
+        
+        harvest = next(h for h in context_ali['harvests'] if h['culture'] == 'Rizière Delta')
+        self.assertEqual(harvest['quantite'], 450.0)
+        self.assertEqual(harvest['unite'], 'kg')
+
+    def test_farmer_context_deterministic_finances(self):
+        """Vérifie que les calculs de balance financière sont déterministes et conformes au centime près."""
+        context_ali = get_farmer_context(self.user_ali)
+        fin = context_ali['financial_summary']
+        
+        # Vente = 100 * 500 = 50 000 FCFA
+        self.assertEqual(fin['total_revenue_fcfa'], 50000.0)
+        # Dépense = 15 000 FCFA
+        self.assertEqual(fin['total_expenses_fcfa'], 15000.0)
+        # Solde = 50 000 - 15 000 = 35 000 FCFA
+        self.assertEqual(fin['balance_fcfa'], 35000.0)
+
+        # Vérifier que les détails des ventes récentes sont transmis
+        self.assertEqual(len(context_ali['recent_sales']), 1)
+        self.assertEqual(context_ali['recent_sales'][0]['total_fcfa'], 50000.0)
+        self.assertEqual(context_ali['recent_sales'][0]['acheteur'], 'GIE Bokk Jom')
 
     def test_farmer_context_includes_localized_weather(self):
         """Vérifie que la météo locale est automatiquement injectée dans le contexte IA de l'exploitant."""

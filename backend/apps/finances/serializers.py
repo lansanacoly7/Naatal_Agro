@@ -2,6 +2,7 @@ import datetime
 from rest_framework import serializers
 from .models import Sale, Transaction
 from apps.agriculture.models import Crop
+from .categories import category_label
 
 class SaleSerializer(serializers.ModelSerializer):
     crop_name = serializers.CharField(source='crop.name', read_only=True)
@@ -101,6 +102,29 @@ class SaleSerializer(serializers.ModelSerializer):
         return super().create(validated_data)
 
 class TransactionSerializer(serializers.ModelSerializer):
+    category_label = serializers.SerializerMethodField()
+    crop_name = serializers.CharField(source='crop.name', read_only=True, default=None)
+
     class Meta:
         model = Transaction
-        fields = ['id', 'transaction_type', 'amount', 'date', 'description', 'created_at']
+        fields = ['id', 'transaction_type', 'amount', 'date', 'description', 'category', 'category_label',
+                  'crop', 'crop_name', 'created_at']
+        extra_kwargs = {
+            'category': {'required': False},
+            'crop': {'required': False, 'allow_null': True},
+        }
+
+    def get_category_label(self, obj):
+        return category_label(obj.category) if obj.category else ''
+
+    def validate_crop(self, value):
+        request = self.context.get('request')
+        if value and request and request.user.is_authenticated and value.user != request.user:
+            raise serializers.ValidationError("Cette culture ne vous appartient pas.")
+        return value
+
+    def validate(self, attrs):
+        # Un revenu n'a pas de catégorie de dépense
+        if attrs.get('transaction_type') == 'income':
+            attrs['category'] = ''
+        return attrs

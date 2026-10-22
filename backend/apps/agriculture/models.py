@@ -1,5 +1,5 @@
 import uuid
-from django.db import models
+from django.db import models, transaction
 from django.conf import settings
 
 class Crop(models.Model):
@@ -70,28 +70,29 @@ class Activity(models.Model):
         return f"{self.activity_type} on {self.crop.name}"
 
     def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
-        self.sync_transaction()
+        # L'activité et sa dépense associée sont enregistrées ensemble ou pas du tout
+        with transaction.atomic():
+            super().save(*args, **kwargs)
+            self.sync_transaction()
 
     def sync_transaction(self):
-        try:
-            from apps.finances.models import Transaction
-            if self.cost and self.cost > 0:
-                Transaction.objects.update_or_create(
-                    activity=self,
-                    defaults={
-                        'user': self.crop.user,
-                        'transaction_type': 'expense',
-                        'amount': self.cost,
-                        'date': self.date,
-                        'description': f"Activité culture {self.crop.name} : {self.activity_type}",
-                    }
-                )
-            else:
-                from apps.finances.models import Transaction
-                Transaction.objects.filter(activity=self).delete()
-        except Exception:
-            pass
+        from apps.finances.models import Transaction
+        from apps.finances.categories import infer_activity_category
+        if self.cost and self.cost > 0:
+            Transaction.objects.update_or_create(
+                activity=self,
+                defaults={
+                    'user': self.crop.user,
+                    'transaction_type': 'expense',
+                    'amount': self.cost,
+                    'date': self.date,
+                    'description': f"Activité culture {self.crop.name} : {self.activity_type}",
+                    'category': infer_activity_category(self.activity_type, self.description),
+                    'crop': self.crop,
+                }
+            )
+        else:
+            Transaction.objects.filter(activity=self).delete()
 
 class PestReport(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

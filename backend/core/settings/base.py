@@ -173,7 +173,7 @@ REST_FRAMEWORK = {
         'user': '1000/minute',
         # Limites dédiées (vues avec throttle_scope)
         'auth': '10/minute',
-        'ai': '100000/day',
+        'ai': '60/hour',
     }
 }
 
@@ -223,6 +223,13 @@ LOGGING = {
         },
     },
 }
+
+# Naatal IA — seuils des analyses métier (hypothèses de travail, à valider avec des agriculteurs ; voir analysis.py)
+ANALYSIS_ANOMALY_RATIO = float(os.getenv('ANALYSIS_ANOMALY_RATIO', '1.5'))              # hausse anormale : >= 1,5 × la référence…
+ANALYSIS_ANOMALY_MIN_INCREASE = float(os.getenv('ANALYSIS_ANOMALY_MIN_INCREASE', '10000'))  # …ET au moins +10 000 FCFA
+ANALYSIS_STOCK_CRITICAL_DAYS = int(os.getenv('ANALYSIS_STOCK_CRITICAL_DAYS', '7'))       # rupture imminente sous 7 jours de ventes
+ANALYSIS_STOCK_WARNING_DAYS = int(os.getenv('ANALYSIS_STOCK_WARNING_DAYS', '14'))        # à surveiller sous 14 jours
+ANALYSIS_SEASON_DAYS = int(os.getenv('ANALYSIS_SEASON_DAYS', '120'))                     # « saison » = N derniers jours
 
 # Optimisation drastique de la vitesse d'exécution des tests (MD5 au lieu de PBKDF2 720k iterations)
 import sys

@@ -2,6 +2,7 @@ import uuid
 from django.db import models
 from django.conf import settings
 from apps.agriculture.models import Crop
+from .categories import CATEGORY_CHOICES, infer_expense_category
 
 class Sale(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -45,6 +46,14 @@ class Transaction(models.Model):
     amount = models.DecimalField(max_digits=12, decimal_places=2)
     date = models.DateField()
     description = models.CharField(max_length=255)
+    category = models.CharField(
+        max_length=30, choices=CATEGORY_CHOICES, blank=True, default='',
+        help_text="Catégorie de la dépense (vide pour un revenu) ; déduite du libellé si elle n'est pas fournie.",
+    )
+    crop = models.ForeignKey(
+        'agriculture.Crop', null=True, blank=True, on_delete=models.SET_NULL, related_name='transactions',
+        help_text="Culture concernée par la dépense, lorsqu'elle est connue (sert au calcul de rentabilité).",
+    )
     activity = models.OneToOneField('agriculture.Activity', null=True, blank=True, on_delete=models.CASCADE, related_name='transaction')
     sale = models.OneToOneField('finances.Sale', null=True, blank=True, on_delete=models.CASCADE, related_name='transaction')
     created_at = models.DateTimeField(auto_now_add=True)
@@ -54,6 +63,15 @@ class Transaction(models.Model):
         indexes = [
             models.Index(fields=['user', 'transaction_type']),
         ]
+
+    def save(self, *args, **kwargs):
+        # Toute dépense est classée, quel que soit le chemin d'écriture (API, assistant, activité de culture)
+        if self.transaction_type == 'expense' and not self.category:
+            self.category = infer_expense_category(self.description)
+            update_fields = kwargs.get('update_fields')
+            if update_fields is not None:
+                kwargs['update_fields'] = {*update_fields, 'category'}
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.get_transaction_type_display()} : {self.amount} ({self.date})"

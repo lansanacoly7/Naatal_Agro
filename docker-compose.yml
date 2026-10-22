@@ -47,6 +47,36 @@ services:
              python manage.py collectstatic --noinput &&
              gunicorn --bind 0.0.0.0:8000 --workers 3 --timeout 60 core.wsgi:application"
 
+  # Délivre les rappels programmés arrivés à échéance (et envoie le push Firebase si disponible).
+  # Sans ce service, les rappels sont tout de même délivrés quand l'utilisateur ouvre ses notifications.
+  scheduler:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: naatal_scheduler
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      backend:
+        condition: service_started
+    environment:
+      - DJANGO_SETTINGS_MODULE=core.settings.prod
+      - SECRET_KEY=${SECRET_KEY:?SECRET_KEY est obligatoire (voir .env.example)}
+      - DEBUG=False
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS:-localhost,127.0.0.1,naatal_backend,nginx,naatal-agro.sn}
+      - USE_POSTGRES=True
+      - DB_NAME=${DB_NAME:-naatal_agro_db}
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:?DB_PASSWORD est obligatoire (voir .env.example)}
+      - DB_HOST=db
+      - DB_PORT=5432
+      - FIREBASE_CREDENTIALS_PATH=${FIREBASE_CREDENTIALS_PATH:-}
+    command: >
+      sh -c "while true; do python manage.py send_scheduled_reminders; sleep 60; done"
+    healthcheck:
+      disable: true
+
   web:
     build:
       context: ./web

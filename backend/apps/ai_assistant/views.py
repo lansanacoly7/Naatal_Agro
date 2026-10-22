@@ -1,12 +1,27 @@
 import datetime
+import uuid
 
 from django.utils import timezone
 from rest_framework import views, permissions, status
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.response import Response
-from .models import AIInteraction
-from .serializers import AIInteractionSerializer
+from .models import AIConversation, AIInteraction
+from .serializers import (
+    AIInteractionSerializer,
+    AIConversationListSerializer,
+    AIConversationDetailSerializer
+)
 from .services import answer_question
+from .actions import (
+    detect_action_intent,
+    classify_reply,
+    analyze_farmer_finances,
+    analyze_farmer_inventory
+)
+from . import proposals
+from .queries import answer_query, detect_query_intent
+from .analysis_answers import answer_analysis, detect_analysis_intent
+from .proposals import ProposalNotFound, ProposalUnavailable, resolve_proposal
 
 MAX_QUERY_LENGTH = 1000
 MAX_IMAGE_BASE64_LENGTH = 7_000_000  # ~5 Mo d'image
@@ -36,6 +51,102 @@ def recent_history(user):
         turns.append({'role': 'assistant', 'content': interaction.response})
     return turns
 
+
+def _resolution_response(resolution):
+    """201 quand l'appel a produit le résultat, 200 quand il relit un résultat déjà enregistré (idempotence)."""
+    code = status.HTTP_200_OK if resolution.replayed else status.HTTP_201_CREATED
+    return Response(AIInteractionSerializer(resolution.interaction).data, status=code)
+
+
+def conversation_history(conversation):
+    """Historique spécifique d'une session de conversation, du plus ancien au plus récent."""
+    interactions = conversation.interactions.order_by('-created_at')[:12]
+    turns = []
+    for interaction in reversed(list(interactions)):
+        turns.append({'role': 'user', 'content': interaction.query})
+        turns.append({'role': 'assistant', 'content': interaction.response})
+    return turns
+
+
+class AIConversationListView(views.APIView):
+    permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'ai'
+
+    def get(self, request, *args, **kwargs):
+        """Liste des sessions de conversation de l'utilisateur connecté."""
+        conversations = AIConversation.objects.filter(user=request.user).order_by('-updated_at')[:50]
+        serializer = AIConversationListSerializer(conversations, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request, *args, **kwargs):
+        """Crée une nouvelle session de conversation."""
+        title = request.data.get('title', '').strip()
+        if title and len(title) > 255:
+            return Response({"error": "Le titre ne peut pas dépasser 255 caractères."}, status=status.HTTP_400_BAD_REQUEST)
+        conversation = AIConversation.objects.create(
+            user=request.user,
+            title=title or "Nouvelle discussion"
+        )
+        serializer = AIConversationDetailSerializer(conversation)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class AIConversationDetailView(views.APIView):
+    permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'ai'
+
+    def get(self, request, conversation_id, *args, **kwargs):
+        """Récupère une conversation et la totalité de son fil d'échanges."""
+        try:
+            conv_uuid = uuid.UUID(str(conversation_id))
+        except (ValueError, TypeError, AttributeError):
+            return Response({"error": "Format d'identifiant de conversation invalide."}, status=status.HTTP_400_BAD_REQUEST)
+
+        conversation = AIConversation.objects.filter(id=conv_uuid, user=request.user).first()
+        if not conversation:
+            return Response({"error": "Conversation introuvable."}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = AIConversationDetailSerializer(conversation)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def patch(self, request, conversation_id, *args, **kwargs):
+        """Renomme une conversation existante."""
+        try:
+            conv_uuid = uuid.UUID(str(conversation_id))
+        except (ValueError, TypeError, AttributeError):
+            return Response({"error": "Format d'identifiant de conversation invalide."}, status=status.HTTP_400_BAD_REQUEST)
+
+        conversation = AIConversation.objects.filter(id=conv_uuid, user=request.user).first()
+        if not conversation:
+            return Response({"error": "Conversation introuvable."}, status=status.HTTP_404_NOT_FOUND)
+
+        title = request.data.get('title', '').strip()
+        if not title:
+            return Response({"error": "Le titre ne peut pas être vide."}, status=status.HTTP_400_BAD_REQUEST)
+        if len(title) > 255:
+            return Response({"error": "Le titre ne peut pas dépasser 255 caractères."}, status=status.HTTP_400_BAD_REQUEST)
+
+        conversation.title = title
+        conversation.save()
+        return Response(AIConversationDetailSerializer(conversation).data, status=status.HTTP_200_OK)
+
+    def delete(self, request, conversation_id, *args, **kwargs):
+        """Supprime une conversation et ses messages en cascade."""
+        try:
+            conv_uuid = uuid.UUID(str(conversation_id))
+        except (ValueError, TypeError, AttributeError):
+            return Response({"error": "Format d'identifiant de conversation invalide."}, status=status.HTTP_400_BAD_REQUEST)
+
+        conversation = AIConversation.objects.filter(id=conv_uuid, user=request.user).first()
+        if not conversation:
+            return Response({"error": "Conversation introuvable."}, status=status.HTTP_404_NOT_FOUND)
+
+        conversation.delete()
+        return Response({"message": "Conversation supprimée avec succès."}, status=status.HTTP_204_NO_CONTENT)
+
+
 class AskAIView(views.APIView):
     permission_classes = [permissions.IsAuthenticated]
     throttle_classes = [ScopedRateThrottle]
@@ -43,14 +154,26 @@ class AskAIView(views.APIView):
 
     def get(self, request, *args, **kwargs):
         """Récupère l'historique récent des interactions IA de l'utilisateur."""
-        interactions = AIInteraction.objects.filter(user=request.user).order_by('-created_at')[:20]
+        conv_id = request.query_params.get('conversation_id')
+        if conv_id:
+            try:
+                conv_uuid = uuid.UUID(str(conv_id))
+            except (ValueError, TypeError, AttributeError):
+                return Response({"error": "Format d'identifiant de conversation invalide."}, status=status.HTTP_400_BAD_REQUEST)
+            conversation = AIConversation.objects.filter(id=conv_uuid, user=request.user).first()
+            if not conversation:
+                return Response({"error": "Conversation introuvable."}, status=status.HTTP_404_NOT_FOUND)
+            interactions = conversation.interactions.order_by('created_at')
+        else:
+            interactions = AIInteraction.objects.filter(user=request.user).order_by('-created_at')[:20]
         serializer = AIInteractionSerializer(interactions, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request, *args, **kwargs):
-        query = request.data.get('query')
+        query = request.data.get('query') or request.data.get('prompt')
         context = request.data.get('context', 'general')
         image_base64 = request.data.get('image_base64')
+        conversation_id = request.data.get('conversation_id')
 
         if query is not None and (not isinstance(query, str) or len(query) > MAX_QUERY_LENGTH):
             return Response({"error": f"La question doit être un texte de {MAX_QUERY_LENGTH} caractères maximum."}, status=status.HTTP_400_BAD_REQUEST)
@@ -60,23 +183,277 @@ class AskAIView(views.APIView):
         if not query and not image_base64:
             return Response({"error": "La requête ou l'image est requise."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Call AI service avec cloisonnement de sécurité
         safe_query = query.strip() if query else "Analyse cette image."
+
+        # Résolution de la session de conversation avec isolation multi-tenant stricte
+        conversation = None
+        if conversation_id:
+            try:
+                conv_uuid = uuid.UUID(str(conversation_id))
+            except (ValueError, TypeError, AttributeError):
+                return Response({"error": "Identifiant de conversation (UUID) invalide."}, status=status.HTTP_400_BAD_REQUEST)
+            conversation = AIConversation.objects.filter(id=conv_uuid, user=request.user).first()
+            if not conversation:
+                return Response({"error": "Conversation introuvable."}, status=status.HTTP_404_NOT_FOUND)
+        else:
+            since = timezone.now() - CONVERSATION_WINDOW
+            conversation = AIConversation.objects.filter(user=request.user, updated_at__gte=since).order_by('-updated_at').first()
+            if not conversation:
+                auto_title = safe_query[:40].strip()
+                if len(safe_query) > 40:
+                    auto_title += "..."
+                conversation = AIConversation.objects.create(
+                    user=request.user,
+                    title=auto_title or "Nouvelle discussion"
+                )
+
+        # 1. L'utilisateur répond-il à une proposition d'opération en attente ?
+        #    Seule une réponse composée uniquement de « oui » / « non » (et politesse) décide ;
+        #    « ok mais mets 5000 » n'exécute rien.
+        intent = None
+        if not image_base64:
+            reply = classify_reply(safe_query)
+            pending = proposals.latest_pending(conversation)
+            if pending and reply in proposals.DECISIONS_BY_REPLY:
+                try:
+                    resolution = resolve_proposal(
+                        request.user, pending.pk, proposals.DECISIONS_BY_REPLY[reply],
+                        query=safe_query, context=context,
+                    )
+                except ProposalUnavailable as exc:
+                    return Response({"error": exc.message, "code": exc.code}, status=status.HTTP_409_CONFLICT)
+                return _resolution_response(resolution)
+
+            intent = detect_action_intent(safe_query, user=request.user)
+            actionable = intent.get('has_intent') or intent.get('note')
+            if pending and reply == 'ambiguous' and not actionable:
+                note = proposals.create_note(
+                    user=request.user, conversation=conversation, query=safe_query, context=context,
+                    text=proposals.CLARIFICATION_TEXT, suggestions=['Oui, valider', 'Non, annuler'],
+                    kind=proposals.CLARIFICATION_KIND,
+                )
+                return Response(AIInteractionSerializer(note).data, status=status.HTTP_201_CREATED)
+
+            if not pending and reply == 'confirm':
+                recent = conversation.interactions.order_by('-created_at').first()
+                if recent and proposals.is_recent_outcome(recent):
+                    note = proposals.create_note(
+                        user=request.user, conversation=conversation, query=safe_query, context=context,
+                        text=proposals.ALREADY_HANDLED_TEXT, suggestions=['Consulter mon solde', 'Vérifier mon stock'],
+                    )
+                    return Response(AIInteractionSerializer(note).data, status=status.HTTP_201_CREATED)
+
+        # 2. Demande d'opération reconnue mais impossible à proposer (rappel introuvable, plusieurs candidats…)
+        if intent and intent.get('note'):
+            note = proposals.create_note(
+                user=request.user, conversation=conversation, query=safe_query, context=context,
+                text=intent['note'], suggestions=intent.get('suggestions') or [],
+            )
+            return Response(AIInteractionSerializer(note).data, status=status.HTTP_201_CREATED)
+
+        # 3. Nouvelle intention d'opération métier : on propose, on n'écrit rien avant confirmation
+        if intent and intent.get('has_intent'):
+            interaction = proposals.create_proposal(
+                user=request.user, conversation=conversation, query=safe_query, context=context, intent=intent,
+            )
+            return Response(AIInteractionSerializer(interaction).data, status=status.HTTP_201_CREATED)
+
+        # 4. Consultation en lecture seule : la réponse vient de la base, sans modèle de langage
+        if not image_base64:
+            query_intent = detect_query_intent(safe_query)
+            if query_intent:
+                answer = answer_query(request.user, query_intent)
+                note = proposals.create_note(
+                    user=request.user, conversation=conversation, query=safe_query, context=context,
+                    text=answer['text'], suggestions=answer['suggestions'], kind='query',
+                )
+                return Response(AIInteractionSerializer(note).data, status=status.HTTP_201_CREATED)
+
+            # 5. Analyse chiffrée (revenus, dépenses, marges, ruptures…) : calculée par le code, jamais par le modèle
+            analysis_intent = detect_analysis_intent(safe_query, request.user)
+            if analysis_intent:
+                answer = answer_analysis(request.user, analysis_intent)
+                note = proposals.create_note(
+                    user=request.user, conversation=conversation, query=safe_query, context=context,
+                    text=answer['text'], suggestions=answer['suggestions'], kind='analysis',
+                )
+                return Response(AIInteractionSerializer(note).data, status=status.HTTP_201_CREATED)
+
+        # Résolution de l'historique conversationnel
         history = clean_history(request.data.get('history'))
         if history is None:
-            history = recent_history(request.user)
-        result = answer_question(safe_query, context, image_base64=image_base64, user=request.user, history=history)
+            conv_hist = conversation_history(conversation) if conversation else []
+            history = conv_hist if conv_hist else recent_history(request.user)
 
-        # Save to DB : la réponse, d'où elle vient (fiches, conseil général) et les sources citées
+        # Appel au service IA avec contexte sécurisé et langue
+        language = request.data.get('language')
+        result = answer_question(
+            safe_query,
+            context,
+            image_base64=image_base64,
+            user=request.user,
+            history=history,
+            language=language
+        )
+
+        action_data = result.get('action_data', {})
+
+        # Sauvegarde en BDD de l'interaction
         interaction = AIInteraction.objects.create(
             user=request.user,
+            conversation=conversation,
             query=safe_query,
             response=result['answer'],
             context_type=context,
             origin=result['origin'],
             sources=result['sources'],
             suggestions=result.get('suggestions', []),
+            action_data=action_data,
         )
+
+        if conversation:
+            if conversation.title in ("Nouvelle conversation", "Nouvelle discussion"):
+                new_title = safe_query[:40].strip()
+                if len(safe_query) > 40:
+                    new_title += "..."
+                conversation.title = new_title or "Discussion"
+            conversation.save()
 
         serializer = AIInteractionSerializer(interaction)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class ExecuteAIActionView(views.APIView):
+    """
+    Confirme ou annule, depuis un bouton de l'interface, une proposition d'opération déjà faite par l'assistant.
+
+    Corps : ``{"interaction_id": "<uuid de la proposition>", "decision": "confirm" | "cancel"}``.
+
+    Le client ne fournit jamais l'opération elle-même : seuls les paramètres enregistrés par le serveur
+    au moment de la proposition sont exécutés. Rappeler l'endpoint pour une proposition déjà traitée
+    renvoie le résultat existant (HTTP 200) sans nouvelle écriture.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'ai'
+
+    def post(self, request, *args, **kwargs):
+        interaction_id = request.data.get('interaction_id')
+        decision = request.data.get('decision')
+
+        if not interaction_id:
+            return Response(
+                {"error": "Une opération doit d'abord être proposée par l'assistant, puis confirmée par son identifiant.",
+                 "code": "proposal_required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            proposal_uuid = uuid.UUID(str(interaction_id))
+        except (ValueError, TypeError, AttributeError):
+            return Response({"error": "Identifiant de proposition invalide.", "code": "invalid_id"}, status=status.HTTP_400_BAD_REQUEST)
+        if decision not in proposals.DECISIONS:
+            return Response({"error": "La décision doit être « confirm » ou « cancel ».", "code": "invalid_decision"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            resolution = resolve_proposal(request.user, proposal_uuid, decision)
+        except ProposalNotFound:
+            return Response({"error": "Proposition introuvable.", "code": "not_found"}, status=status.HTTP_404_NOT_FOUND)
+        except ProposalUnavailable as exc:
+            return Response({"error": exc.message, "code": exc.code}, status=status.HTTP_409_CONFLICT)
+        return _resolution_response(resolution)
+
+
+class AnalyticsAIView(views.APIView):
+    """
+    Synthèse financière déterministe et état des stocks certifié par Naatal Agro.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'ai'
+
+    def get(self, request, *args, **kwargs):
+        period = request.query_params.get('period', 'all')
+        finances = analyze_farmer_finances(request.user, period=period)
+        inventory = analyze_farmer_inventory(request.user)
+        return Response({
+            'finances': finances,
+            'inventory': inventory,
+            'timestamp': timezone.now().isoformat()
+        }, status=status.HTTP_200_OK)
+
+
+class TranscribeAudioView(views.APIView):
+    """
+    Transcription audio en texte (Phase 8 : interaction vocale).
+    Accepte soit un upload de fichier multipart 'audio', soit une chaîne 'audio_base64'.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'ai'
+
+    def post(self, request, *args, **kwargs):
+        import base64
+        from .voice import transcribe_audio_bytes
+
+        audio_bytes = None
+        content_type = "audio/m4a"
+        filename = "audio.m4a"
+
+        if 'audio' in request.FILES:
+            f = request.FILES['audio']
+            audio_bytes = f.read()
+            content_type = f.content_type or "audio/m4a"
+            filename = f.name or "audio.m4a"
+        elif 'audio_base64' in request.data:
+            raw_b64 = request.data.get('audio_base64', '')
+            try:
+                audio_bytes = base64.b64decode(raw_b64)
+            except Exception:
+                return Response({"error": "Format base64 audio invalide."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if not audio_bytes:
+            return Response({"error": "Fichier audio ou audio_base64 requis."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if len(audio_bytes) > 15_000_000:
+            return Response({"error": "Fichier audio trop volumineux (max 15 Mo)."}, status=status.HTTP_400_BAD_REQUEST)
+
+        text = transcribe_audio_bytes(audio_bytes, filename=filename, content_type=content_type)
+        if text is None:
+            return Response({
+                "text": "",
+                "error": "Service de transcription momentanément indisponible."
+            }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+        return Response({"text": text}, status=status.HTTP_200_OK)
+
+
+class SynthesizeSpeechView(views.APIView):
+    """
+    Synthèse vocale (TTS - Phase 8) : convertit un texte agronomique en flux audio MP3.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'ai'
+
+    def post(self, request, *args, **kwargs):
+        import base64
+        from .voice import synthesize_speech_bytes
+
+        text = request.data.get('text', '').strip()
+        lang = request.data.get('lang', 'fr')
+        if not text:
+            return Response({"error": "Le paramètre 'text' est requis."}, status=status.HTTP_400_BAD_REQUEST)
+
+        audio_bytes = synthesize_speech_bytes(text, lang=lang)
+        if not audio_bytes:
+            return Response({"error": "Échec de la génération audio TTS."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        return Response({
+            "audio_base64": base64.b64encode(audio_bytes).decode('ascii'),
+            "content_type": "audio/mp3",
+            "length": len(audio_bytes)
+        }, status=status.HTTP_200_OK)
+
+
+
+

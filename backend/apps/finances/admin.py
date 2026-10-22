@@ -14,8 +14,8 @@ class SaleAdmin(admin.ModelAdmin):
 
 @admin.register(Transaction)
 class TransactionAdmin(admin.ModelAdmin):
-    list_display = ('description', 'transaction_type', 'amount', 'user', 'date')
-    list_filter = ('transaction_type', 'date')
+    list_display = ('description', 'transaction_type', 'category', 'amount', 'user', 'date')
+    list_filter = ('transaction_type', 'category', 'date')
     search_fields = ('description', 'user__username')
     date_hierarchy = 'date'
     list_select_related = ('user',)

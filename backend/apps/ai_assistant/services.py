@@ -7,24 +7,26 @@ from django.conf import settings
 from django.utils import timezone
 import datetime
 
-from .knowledge import MARKER, retrieve
+from .knowledge import MARKER, retrieve, is_wolof_text
 
 logger = logging.getLogger(__name__)
 
-SYSTEM_PROMPT = """Tu es le copilote agronomique intelligent de Naatal Agro, la plateforme agricole de référence au Sénégal.
+SYSTEM_PROMPT = """Tu es le copilote agronomique et financier intelligent de Naatal Agro, la plateforme agricole de référence au Sénégal.
 Ton rôle est d'apporter des conseils agronomiques précis, pratiques, contextualisés et immédiatement applicables par les producteurs sénégalais.
 
 RÈGLES D'OR :
 1. Réponds comme un conseiller de terrain qui discute : phrases courtes, ton chaleureux, en français simple (termes locaux si pertinents, ex: Louma, Niayes, Casamance). Jamais de cours ni de pavé.
 2. Base-toi en priorité sur les données réelles fournies dans le profil et les exploitations de l'utilisateur.
-3. Ne divulgue jamais de données techniques internes ou d'informations d'autres exploitants.
-4. Si une maladie ou un ravageur est détecté, propose en priorité des solutions de lutte intégrée et agroécologiques (purin de neem, savon noir, décoctions) et des produits homologués au Sénégal (SAED/ANCAR/DPV). Ne cite JAMAIS de produits interdits ou retirés (comme le Mancozèbe, l'Endosulfan, le Carbofuran, le Diméthoate, etc.).
+3. VÉRITÉ COMPTABLE ET STOCKS DÉTERMINISTES : Ne calcule JAMAIS de tête et n'invente AUCUN chiffre. Si l'exploitant demande son solde, ses dépenses, ses recettes ou l'état de son magasin, cite STRICTEMENT les montants en FCFA et les quantités de stock répertoriés dans ses données certifiées.
+4. Ne divulgue jamais de données techniques internes ou d'informations d'autres exploitants.
+5. Si une maladie ou un ravageur est détecté, propose en priorité des solutions de lutte intégrée et agroécologiques (purin de neem, savon noir, décoctions) et des produits homologués au Sénégal (SAED/ANCAR/DPV). Ne cite JAMAIS de produits interdits ou retirés (comme le Mancozèbe, l'Endosulfan, le Carbofuran, le Diméthoate, etc.).
 """
 
 def get_farmer_context(user):
     """
     Extrait de manière strictement cloisonnée (ORM Django) le contexte
-    agricole de l'utilisateur authentifié. Aucune fuite multi-tenant possible.
+    agricole, logistique (stocks) et financier de l'utilisateur authentifié.
+    Aucune fuite multi-tenant possible.
     """
     if not user or not user.is_authenticated:
         return {"auth": False, "note": "Utilisateur non connecté (mode invité)"}
@@ -36,6 +38,15 @@ def get_farmer_context(user):
         "location": getattr(user, 'location', 'Sénégal'),
         "main_crops": getattr(user, 'main_crops', []),
         "crops": [],
+        "harvests": [],
+        "inventory": [],
+        "financial_summary": {
+            "total_revenue_fcfa": 0.0,
+            "total_expenses_fcfa": 0.0,
+            "balance_fcfa": 0.0,
+        },
+        "recent_sales": [],
+        "recent_expenses": [],
         "recent_activities": [],
         "market_prices": [],
         "local_pest_alerts": [],
@@ -43,9 +54,12 @@ def get_farmer_context(user):
     }
 
     try:
-        from apps.agriculture.models import Crop, Activity, PestReport
+        from apps.agriculture.models import Crop, Harvest, Activity, PestReport
+        from apps.inventory.models import StockItem
+        from apps.finances.models import Sale, Transaction
         from apps.markets.models import Product, Price
         from apps.weather.models import WeatherData
+        from django.db.models import Sum, ExpressionWrapper, F, FloatField, Q
 
         # 1. Cultures personnelles exclusives de l'utilisateur connecté
         user_crops = Crop.objects.filter(user=user)[:10]
@@ -59,7 +73,74 @@ def get_farmer_context(user):
                 "recolte_prevue": str(c.expected_harvest_date),
             })
 
-        # 2. Activités récentes sur ses propres cultures
+        # 2. Récoltes enregistrées sur ses parcelles
+        user_harvests = Harvest.objects.filter(user=user).select_related('crop').order_by('-date')[:10]
+        for h in user_harvests:
+            context["harvests"].append({
+                "culture": h.crop.name,
+                "quantite": h.quantity,
+                "unite": h.unit,
+                "date": str(h.date),
+                "notes": h.notes or "",
+            })
+
+        # 3. Stocks réels en magasin
+        user_stocks = StockItem.objects.filter(user=user).order_by('name')[:15]
+        for item in user_stocks:
+            context["inventory"].append({
+                "produit": item.name,
+                "quantite": item.quantity,
+                "unite": item.unit,
+                "alerte_seuil_bas": bool(item.alert_status),
+                "conseil_stockage": item.ai_storage_advice or None,
+            })
+
+        # 4. Synthèse financière certifiée déterministe (globale et mois en cours)
+        from .actions import analyze_farmer_finances
+        fin_all = analyze_farmer_finances(user, period='all')
+        fin_month = analyze_farmer_finances(user, period='current_month')
+
+        context["financial_summary"] = {
+            "total_revenue_fcfa": fin_all["total_revenue_fcfa"],
+            "total_expenses_fcfa": fin_all["total_expenses_fcfa"],
+            "balance_fcfa": fin_all["balance_fcfa"],
+            "is_profitable": fin_all["is_profitable"],
+        }
+        # Synthèse chiffrée et certifiée (périodes, comparaison, catégories, produits, marges, ruptures)
+        from . import analysis
+        context["analyses_certifiees"] = analysis.context_digest(user)
+        context["current_month_summary"] = {
+            "total_revenue_fcfa": fin_month["total_revenue_fcfa"],
+            "total_expenses_fcfa": fin_month["total_expenses_fcfa"],
+            "balance_fcfa": fin_month["balance_fcfa"],
+            "is_profitable": fin_month["is_profitable"],
+            "start_date": fin_month["start_date"],
+            "end_date": fin_month["end_date"],
+        }
+
+        # Ventes récentes
+        user_sales = Sale.objects.filter(Q(user=user) | Q(crop__user=user)).order_by('-date')[:5]
+        for s in user_sales:
+            prod_name = s.crop.name if s.crop else (s.product_name or "Produit")
+            context["recent_sales"].append({
+                "produit": prod_name,
+                "quantite": float(s.quantity_sold),
+                "prix_unitaire_fcfa": float(s.price_per_unit),
+                "total_fcfa": float(s.total_revenue),
+                "date": str(s.date),
+                "acheteur": getattr(s, 'buyer', '') or "",
+            })
+
+        # Dépenses récentes
+        user_expenses = Transaction.objects.filter(user=user, transaction_type='expense').order_by('-date')[:5]
+        for e in user_expenses:
+            context["recent_expenses"].append({
+                "description": e.description,
+                "montant_fcfa": float(e.amount),
+                "date": str(e.date),
+            })
+
+        # 5. Activités récentes sur ses propres cultures
         user_activities = Activity.objects.filter(crop__user=user).order_by('-date')[:5]
         for a in user_activities:
             context["recent_activities"].append({
@@ -69,7 +150,7 @@ def get_farmer_context(user):
                 "date": str(a.date)
             })
 
-        # 3. Tendances des marchés (données publiques)
+        # 6. Tendances des marchés (données publiques)
         trending_products = Product.objects.filter(is_trending=True)[:5]
         for p in trending_products:
             context["market_prices"].append({
@@ -79,7 +160,7 @@ def get_farmer_context(user):
                 "tendance": f"{p.trend_percentage}%"
             })
 
-        # 4. Alertes ravageurs dans la région de l'utilisateur (14 derniers jours)
+        # 7. Alertes ravageurs dans la région de l'utilisateur (14 derniers jours)
         if user.location:
             region = user.location.split(',')[0].strip()
             recent_alerts = PestReport.objects.filter(
@@ -93,7 +174,7 @@ def get_farmer_context(user):
                     "date": alert.date_reported.strftime("%Y-%m-%d")
                 })
 
-        # 5. Météo géolocalisée selon la région de l'utilisateur ou données nationales récentes
+        # 8. Météo géolocalisée selon la région de l'utilisateur ou données nationales récentes
         user_region = user.location.split(',')[0].strip() if user.location else ''
         latest_weather = None
         if user_region:
@@ -309,6 +390,12 @@ def call_llm(prompt, image_base64=None):
 CONVERSATION_RULES = """
 STYLE DE CONVERSATION (aussi important que l'exactitude) :
 - Tu es dans une discussion directe avec un producteur ou jardinier : sois concis, chaleureux, bienveillant et pratique (2 à 5 phrases ou 3 puces directes).
+- VÉRACITÉ COMPTABLE & STOCKS (DÉTERMINISME ABSOLU) :
+  Les données de 'DONNÉES CLOISONNÉES DE L'EXPLOITANT' représentent l'état certifié de l'exploitation.
+  Quand l'exploitant te demande ses finances (revenus, dépenses, solde en FCFA), ses stocks ou ses récoltes :
+  1. Utilise STRICTEMENT les chiffres fournis dans son profil ('financial_summary', 'analyses_certifiees', 'inventory', 'harvests'). Ne recalcule jamais un total, une marge ou un écart : cite le chiffre fourni avec sa période. Ne confonds jamais chiffre d'affaires, résultat estimé (recettes - dépenses enregistrées, qui n'est pas un bénéfice) et marge.
+  2. N'invente JAMAIS un montant, un solde, un stock ou un prix.
+  3. Si une information est vide ou inexistante, réponds clairement qu'elle n'est pas encore enregistrée dans son application.
 - MÉMOIRE & CONTINUITÉ CONVERSATIONNELLE :
   Tu as accès à l'historique des échanges récents ('CONVERSATION EN COURS').
   Si le producteur fait référence à un échange passé, à une image de plante analysée précédemment (ex: Monstera, piment, mangue, etc.), à un conseil donné ou demande des explications ('tout à l'heure', 'mon image', 'tu m'as dit', 'pourquoi cette fois-ci...'), réponds avec intelligence et continuité en t'appuyant directement sur cet historique. Ne dis JAMAIS que tu n'as pas de mémoire ou que chaque échange repart de zéro.
@@ -487,13 +574,23 @@ def _retrieve_with_history(query, history):
     return retrieve(f'{previous[-300:]} {query}') if retrieve(previous[-300:]).guides else retrieval
 
 
-def _grounded_prompt(query, retrieval, farmer_context, history=None):
+def _grounded_prompt(query, retrieval, farmer_context, history=None, is_wolof=False):
     sources = "\n".join(_source_line(src) for src in retrieval.sources)
     sheets = "\n\n".join(
         f"Culture : {section.guide.name} | Sujet : {section.label}\n{section.text}" for section in retrieval.sections)
     context_str = json.dumps(farmer_context, ensure_ascii=False, indent=2)
+
+    wolof_directive = ""
+    if is_wolof:
+        wolof_directive = (
+            "### DIRECTIVE LINGUISTIQUE (WOLOF OBLIGATOIRE) :\n"
+            "L'agriculteur s'exprime en wolof. Tu DOIS lui répondre intégralement en WOLOF authentique, fluide et chaleureux (langage agricole sénégalais du quotidien).\n"
+            "Conserve scrupuleusement les faits agronomiques et cite les sources [1], [2]. Termine par SUGGESTIONS: en wolof.\n\n"
+        )
+
     return (
         f"{GROUNDED_RULES}\n\n"
+        f"{wolof_directive}"
         f"### SOURCES\n{sources}\n\n"
         f"### FICHES NAATAL AGRO (données vérifiées)\n{sheets}\n\n"
         f"### PROFIL DE L'EXPLOITANT (données privées, pour adapter la réponse)\n```json\n{context_str}\n```\n\n"
@@ -518,16 +615,14 @@ def _validated_llm_answer(raw, sources):
     return cleaned if MARKER.search(cleaned) else None
 
 
-def answer_question(query, context='general', image_base64=None, user=None, history=None):
+def answer_question(query, context='general', image_base64=None, user=None, history=None, language=None):
     """
     Point d'entrée du copilote IA de Naatal Agro.
+    Supporte le français et le wolof (détection automatique ou forcée par `language`).
     Renvoie ``{'answer', 'origin', 'sources', 'suggestions'}``.
-
-    Ordre de priorité : 1) nos fiches agronomiques (base de données), avec leurs sources ;
-    2) à défaut, un conseil général clairement signalé comme non sourcé.
-    Le diagnostic par image reste un conseil général (pas de fiche pour une photo).
-    ``history`` : derniers échanges de la conversation, ``[{'role': 'user'|'assistant', 'content': str}]``.
     """
+    is_wolof = (language == 'wo') or is_wolof_text(query)
+
     if image_base64:
         vision_prompt = (
             f"Analyse phytosanitaire de cette image agricole transmise par l'exploitant.\n"
@@ -538,6 +633,9 @@ def answer_question(query, context='general', image_base64=None, user=None, hist
             f"Réponds en peu de mots, avec des puces courtes, puis termine par la ligne SUGGESTIONS: "
             f"question 1 | question 2 | question 3."
         )
+        if is_wolof:
+            vision_prompt += "\nL'utilisateur s'exprime en wolof. Formule ta réponse et tes suggestions en wolof clair."
+
         response = call_llm(vision_prompt, image_base64=image_base64)
         if not response:
             retrieval = retrieve(query)
@@ -562,7 +660,7 @@ def answer_question(query, context='general', image_base64=None, user=None, hist
     retrieval = _retrieve_with_history(query, history)
 
     if retrieval.sections:
-        raw = call_llm(_grounded_prompt(query, retrieval, farmer_context, history))
+        raw = call_llm(_grounded_prompt(query, retrieval, farmer_context, history, is_wolof=is_wolof))
         raw_answer, suggestions = split_suggestions(raw)
         answer = _validated_llm_answer(raw_answer, retrieval.sources)
         if answer is None:
@@ -583,8 +681,10 @@ def answer_question(query, context='general', image_base64=None, user=None, hist
         }
 
     context_str = json.dumps(farmer_context, ensure_ascii=False, indent=2)
+    wolof_block = "\n⚠️ DIRECTIVE LINGUISTIQUE : Réponds intégralement en WOLOF clair et chaleureux.\n" if is_wolof else ""
     prompt = (
         f"{CONVERSATION_RULES}\n"
+        f"{wolof_block}"
         f"### DONNÉES CLOISONNÉES DE L'EXPLOITANT (Source certifiée Naatal Agro) :\n"
         f"```json\n{context_str}\n```\n\n"
         f"### CONTEXTE MÉTIER : {context}\n"

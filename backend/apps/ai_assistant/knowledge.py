@@ -12,26 +12,39 @@ from dataclasses import dataclass, field
 from apps.agriculture.models import AgronomicGuide
 
 # (clé, libellé, mots déclencheurs, champs de la fiche à renvoyer)
+# (clé, libellé, mots déclencheurs français et wolof, champs de la fiche à renvoyer)
 TOPICS = [
     ('sowing', 'Semis et calendrier',
      ['semer', 'semis', 'semez', 'semons', 'seme', 'planter', 'plantation', 'repiquage', 'repiquer', 'pepiniere',
-      'calendrier', 'preparation', 'densite', 'ecartement', 'germination'],
+      'calendrier', 'preparation', 'densite', 'ecartement', 'germination',
+      # Déclencheurs Wolof
+      'ji', 'jiw', 'suuxat', 'gunge', 'samp'],
      ['calendar', 'soil_and_sowing']),
     ('fertilization', 'Fertilisation',
-     ['engrais', 'fertilisation', 'fertiliser', 'fumure', 'fumier', 'npk', 'uree', 'dose', 'compost', 'amendement'],
+     ['engrais', 'fertilisation', 'fertiliser', 'fumure', 'fumier', 'npk', 'uree', 'dose', 'compost', 'amendement',
+      # Déclencheurs Wolof
+      'kompoos', 'doolil', 'wanteer'],
      ['fertilization']),
     ('pests', 'Maladies et ravageurs',
      ['maladie', 'maladies', 'ravageur', 'ravageurs', 'parasite', 'insecte', 'traitement', 'traiter', 'pesticide',
-      'mildiou', 'rosette', 'chenille', 'mineuse', 'lutte', 'proteger', 'prevention', 'prevenir', 'aflatoxine'],
+      'mildiou', 'rosette', 'chenille', 'mineuse', 'lutte', 'proteger', 'prevention', 'prevenir', 'aflatoxine',
+      # Déclencheurs Wolof
+      'faj', 'fajee', 'jangoro', 'max', 'doxandeem', 'garab'],
      ['pests_diseases']),
     ('water', 'Eau et irrigation',
-     ['eau', 'irrigation', 'irriguer', 'arroser', 'arrosage', 'pluie', 'pluviometrie', 'secheresse'],
+     ['eau', 'irrigation', 'irriguer', 'arroser', 'arrosage', 'pluie', 'pluviometrie', 'secheresse',
+      # Déclencheurs Wolof
+      'ndox', 'taw', 'suux', 'suuxat', 'roose'],
      ['water_needs']),
     ('harvest', 'Récolte et conservation',
-     ['recolte', 'recolter', 'maturite', 'stockage', 'stocker', 'conservation', 'conserver', 'sechage'],
-     ['harvest', 'calendar']),  # le calendrier donne souvent la période de récolte (mangue, niébé, mil…)
+     ['recolte', 'recolter', 'maturite', 'stockage', 'stocker', 'conservation', 'conserver', 'sechage',
+      # Déclencheurs Wolof
+      'gancax', 'gattal', 'denc', 'watt', 'gobar'],
+     ['harvest', 'calendar']),  # le calendrier donne souvent la période de récolte
     ('yield', 'Rendement',
-     ['rendement', 'rendements', 'production', 'tonnes', 'productivite'],
+     ['rendement', 'rendements', 'production', 'tonnes', 'productivite',
+      # Déclencheurs Wolof
+      'menneef', 'meññeef'],
      ['yield_info']),
     ('cycle', 'Cycle et variétés',
      ['cycle', 'duree', 'variete', 'varietes', 'jours', 'precoce', 'tardive'],
@@ -47,14 +60,36 @@ FIELD_LABELS = {
     'pests_diseases': 'Maladies et ravageurs', 'harvest': 'Récolte et conservation', 'yield_info': 'Rendement',
 }
 
-# Mots agricoles généraux : permettent de savoir qu'une question relève de l'agriculture même sans fiche.
-# (« maïs » est volontairement absent : une fois sans accent il se confond avec la conjonction « mais ».)
+# Dictionnaire de correspondance officiel Wolof <-> Cultures sénégalaises
+WOLOF_CROP_ALIASES = {
+    'arachide': ['guerte', 'gerte', 'guerteh', 'gerteh'],
+    'riz': ['ceeb', 'tieb'],
+    'mais': ['mboq', 'mbokk', 'mbook'],
+    'oignon': ['soble', 'sobleh'],
+    'tomate': ['tomaat', 'tamate', 'tomato'],
+    'manioc': ['nambi', 'gnambi', 'yambi', 'ñambi'],
+    'niebe': ['nebbe', 'niebbe', 'ñebbe'],
+    'mil': ['duggub', 'souna', 'sanio'],
+    'sorgho': ['bassi'],
+    'aubergine': ['batanse', 'jaxatu', 'diakhatou', 'batañse'],
+    'piment': ['kaani', 'kani'],
+    'gombo': ['kanja', 'kandja', 'kañja'],
+    'pasteque': ['xal', 'khal'],
+    'mangue': ['mango', 'màngo'],
+    'patate douce': ['patat'],
+    'chou': ['su'],
+}
+
+# Mots agricoles généraux en français et en wolof
 AGRI_TERMS = {
     'culture', 'cultiver', 'agriculture', 'agriculteur', 'champ', 'parcelle', 'sol', 'recolte', 'semis', 'semer',
     'engrais', 'irrigation', 'maladie', 'ravageur', 'variete', 'rendement', 'plant', 'graine', 'graines',
     'fumure', 'verger', 'maraichage', 'cereale', 'cereales', 'legume', 'legumes', 'fruit', 'fruits', 'betail',
     'niebe', 'sorgho', 'manioc', 'patate', 'pomme de terre', 'carotte', 'chou', 'piment', 'aubergine',
     'pasteque', 'gombo', 'mangue', 'banane', 'papaye', 'sesame', 'coton', 'bissap', 'concombre', 'laitue',
+    # Termes Wolof généraux
+    'ji', 'jiw', 'ceeb', 'soble', 'mboq', 'guerte', 'gerte', 'duggub', 'faj', 'fajee', 'jangoro', 'ndox',
+    'taw', 'suuxat', 'tol', 'tool', 'kompoos', 'jaay', 'jend', 'watt', 'denc', 'baykat', 'bay', 'garab'
 }
 
 MARKER = re.compile(r'\[(\d+)\]')
@@ -76,15 +111,41 @@ def _contains_term(normalized_text, term):
 def guide_terms(guide):
     """
     Termes qui désignent la culture d'une fiche : ses alias, son nom (sans la précision entre parenthèses)
-    et son nom scientifique complet. Le nom n'est jamais découpé en mots : « Pomme de terre » ne doit pas
-    réagir à la seule présence du mot « terre ».
+    et son nom scientifique complet, enrichis automatiquement par le dictionnaire des termes Wolof.
     """
     base_name = re.sub(r'\(.*?\)', ' ', guide.name)
     terms = set(guide.aliases or [])
     terms.add(base_name)
     if guide.scientific_name:
         terms.add(re.sub(r'\(.*?\)', ' ', guide.scientific_name))
+
+    # Enrichissement automatique avec les alias Wolof correspondants
+    norm_base = normalize(base_name)
+    for crop_key, wolof_list in WOLOF_CROP_ALIASES.items():
+        if crop_key in norm_base or any(crop_key in normalize(a) for a in terms):
+            terms.update(wolof_list)
+
     return {normalize(t) for t in terms if normalize(t)}
+
+
+WOLOF_MARKERS = {
+    'naka', 'lanuy', 'fajee', 'faj', 'soble', 'ceeb', 'mboq', 'guerte', 'gerte', 'duggub',
+    'bassi', 'kaani', 'kanja', 'batanse', 'jaxatu', 'tamate', 'tomaat', 'nebbe', 'nambi',
+    'amuma', 'amna', 'baykat', 'tol', 'tool', 'suuxat', 'fattali', 'jend', 'jaay',
+    'waaw', 'deedet', 'baax', 'naa', 'nanu', 'ci', 'sama', 'samay', 'sunu', 'sunuy',
+    'ellek', 'ëllëk', 'suba', 'ngoon', 'doolil', 'wanteer', 'ndox', 'taw'
+}
+
+def is_wolof_text(text):
+    """Détecte avec certitude si une requête est formulée en wolof."""
+    if not text:
+        return False
+    norm = normalize(text)
+    words = set(norm.split())
+    strong_markers = {'naka', 'lanuy', 'fajee', 'baykat', 'fattali', 'suuxat', 'duggub', 'kompoos', 'soble', 'ceeb', 'mboq', 'guerte', 'gerte', 'ellek'}
+    if words & strong_markers:
+        return True
+    return len(words & WOLOF_MARKERS) >= 2
 
 
 # Motifs nominaux prouvant qu'il s'agit de la céréale (Zea mays) et non de la conjonction « mais »
@@ -149,7 +210,19 @@ class Retrieval:
 def _field_text(guide, field_name):
     value = getattr(guide, field_name)
     if field_name == 'pests_diseases':
-        return '\n'.join(f"{item['name']} : {item['advice']}" for item in value)
+        if isinstance(value, list):
+            lines = []
+            for item in value:
+                if isinstance(item, dict):
+                    name = item.get('name', '')
+                    advice = item.get('advice', '')
+                    lines.append(f"{name} : {advice}".strip(' :'))
+                elif isinstance(item, str):
+                    lines.append(item)
+            return '\n'.join(lines)
+        elif isinstance(value, str):
+            return value.strip()
+        return ''
     return (value or '').strip()
 
 

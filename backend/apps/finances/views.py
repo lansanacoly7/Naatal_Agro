@@ -19,18 +19,16 @@ class SaleViewSet(viewsets.ModelViewSet):
             sale = serializer.save(user=self.request.user)
             product_name = sale.crop.name if sale.crop else sale.product_name
 
-            # 1. Décrémenter automatiquement le stock dans apps.inventory si l'article existe
+            # 1. Décrémenter le stock correspondant (journalisé) : une erreur annule toute la vente
             if product_name:
-                try:
-                    from apps.inventory.models import StockItem
-                    stock_item = StockItem.objects.filter(user=self.request.user, name__iexact=product_name).first()
-                    if stock_item:
-                        stock_item.quantity = max(0.0, round(stock_item.quantity - float(sale.quantity_sold), 2))
-                        if stock_item.quantity <= 5:
-                            stock_item.alert_status = True
-                        stock_item.save(update_fields=['quantity', 'alert_status', 'updated_at'])
-                except Exception:
-                    pass
+                from apps.inventory.models import StockItem
+                from apps.inventory.services import change_stock
+                stock_item = StockItem.objects.filter(user=self.request.user, name__iexact=product_name).first()
+                if stock_item:
+                    change_stock(
+                        stock_item, stock_item.quantity - float(sale.quantity_sold),
+                        reason='sale', note=f"Vente du {sale.date}", sale=sale,
+                    )
 
             # 2. Créer automatiquement la Transaction de revenu liée à la vente
             Transaction.objects.update_or_create(
@@ -46,19 +44,17 @@ class SaleViewSet(viewsets.ModelViewSet):
 
     def perform_destroy(self, instance):
         with db_transaction.atomic():
-            # Restituer la quantité dans le stock avant suppression
+            # Restituer la quantité dans le stock (journalisé) avant suppression de la vente
             product_name = instance.crop.name if instance.crop else instance.product_name
             if product_name:
-                try:
-                    from apps.inventory.models import StockItem
-                    stock_item = StockItem.objects.filter(user=self.request.user, name__iexact=product_name).first()
-                    if stock_item:
-                        stock_item.quantity = round(stock_item.quantity + float(instance.quantity_sold), 2)
-                        if stock_item.quantity > 5:
-                            stock_item.alert_status = False
-                        stock_item.save(update_fields=['quantity', 'alert_status', 'updated_at'])
-                except Exception:
-                    pass
+                from apps.inventory.models import StockItem
+                from apps.inventory.services import change_stock
+                stock_item = StockItem.objects.filter(user=self.request.user, name__iexact=product_name).first()
+                if stock_item:
+                    change_stock(
+                        stock_item, stock_item.quantity + float(instance.quantity_sold),
+                        reason='sale_reversal', note=f"Annulation de la vente du {instance.date}",
+                    )
             super().perform_destroy(instance)
 
 class TransactionViewSet(viewsets.ModelViewSet):
