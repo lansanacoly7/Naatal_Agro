@@ -22,7 +22,7 @@ def results(response):
     return data['results'] if isinstance(data, dict) and 'results' in data else data
 
 
-@patch('apps.inventory.views.call_llm', return_value=None)
+@patch('apps.inventory.views.schedule_storage_advice')
 class StockMovementApiTests(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(username='mv1', phone='+221770400001', password='Motdepasse#2026')

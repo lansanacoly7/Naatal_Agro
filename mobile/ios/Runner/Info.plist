@@ -68,6 +68,8 @@
 	</array>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Naatal Agro utilise votre position pour afficher les marchés les plus proches de vous.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Le micro sert à dicter vos messages à l'assistant (par exemple « j'ai vendu dix sacs de mil »).</string>
 	<key>NSCameraUsageDescription</key>
 	<string>La caméra sert à photographier une plante malade pour que l'assistant vous aide à la diagnostiquer.</string>
 	<key>NSPhotoLibraryUsageDescription</key>

@@ -39,15 +39,19 @@ services:
       - API_KEY_OPENWEATHER=${API_KEY_OPENWEATHER:-}
       - API_KEY_GROQ=${API_KEY_GROQ:-}
       - API_KEY_GEMINI=${API_KEY_GEMINI:-}
+      - GEMINI_API_KEYS=${GEMINI_API_KEYS:-}
+      - CACHE_BACKEND=db
       - SECURE_SSL_REDIRECT=False
     volumes:
       - static_volume:/app/staticfiles
     command: >
       sh -c "python manage.py migrate --noinput &&
+             python manage.py createcachetable &&
              python manage.py collectstatic --noinput &&
              gunicorn --bind 0.0.0.0:8000 --workers 3 --timeout 60 core.wsgi:application"
 
-  # Délivre les rappels programmés arrivés à échéance (et envoie le push Firebase si disponible).
+  # Délivre les rappels programmés arrivés à échéance (et envoie le push Firebase si disponible), et rattrape les
+  # conseils de stockage de l'IA restés manquants.
   # Sans ce service, les rappels sont tout de même délivrés quand l'utilisateur ouvre ses notifications.
   scheduler:
     build:
@@ -72,8 +76,12 @@ services:
       - DB_HOST=db
       - DB_PORT=5432
       - FIREBASE_CREDENTIALS_PATH=${FIREBASE_CREDENTIALS_PATH:-}
+      - CACHE_BACKEND=db
+      - API_KEY_GROQ=${API_KEY_GROQ:-}
+      - API_KEY_GEMINI=${API_KEY_GEMINI:-}
+      - GEMINI_API_KEYS=${GEMINI_API_KEYS:-}
     command: >
-      sh -c "while true; do python manage.py send_scheduled_reminders; sleep 60; done"
+      sh -c "while true; do python manage.py send_scheduled_reminders; python manage.py fill_storage_advice --limit 3; sleep 60; done"
     healthcheck:
       disable: true
 

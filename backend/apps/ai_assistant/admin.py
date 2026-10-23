@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import AIConversation, AIInteraction
+from .models import AIConversation, AIInteraction, LLMUsage
 
 
 @admin.register(AIConversation)
@@ -37,3 +37,20 @@ class AIInteractionAdmin(admin.ModelAdmin):
     def has_change_permission(self, request, obj=None):
         return False
 
+
+
+@admin.register(LLMUsage)
+class LLMUsageAdmin(admin.ModelAdmin):
+    """Journal des appels aux modèles de langage (coûts, quotas, pannes) : consultation seule, sans contenu."""
+
+    list_display = ('provider', 'model', 'feature', 'ok', 'error_kind', 'latency_ms', 'prompt_tokens', 'completion_tokens', 'user', 'created_at')
+    list_filter = ('provider', 'feature', 'ok', 'error_kind', 'created_at')
+    search_fields = ('model', 'user__username')
+    date_hierarchy = 'created_at'
+    list_select_related = ('user',)
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False

@@ -86,11 +86,14 @@ class RegisterSerializer(serializers.ModelSerializer):
         if settings.PRIVACY_CONSENT_REQUIRED and not attrs.get('privacy_accepted'):
             raise serializers.ValidationError({'privacy_accepted': ["L'acceptation de la politique de confidentialité est obligatoire."]})
         attrs['otp_token'] = None
-        if attrs.get('otp_code') or settings.OTP_REQUIRED_FOR_REGISTER:
+        if settings.OTP_REQUIRED_FOR_REGISTER:
             token = OTPToken.verify_code(attrs['phone_number'], 'register', attrs.get('otp_code', ''))
             if token is None:
                 raise serializers.ValidationError({'otp_code': ['Code de vérification invalide ou expiré.']})
             attrs['otp_token'] = token
+        elif attrs.get('otp_code'):
+            # Code non exigé : s'il est juste on le consomme, sinon on l'ignore (jamais de blocage à l'inscription)
+            attrs['otp_token'] = OTPToken.verify_code(attrs['phone_number'], 'register', attrs['otp_code'])
         return attrs
 
     def validate_main_crops(self, value):
@@ -336,7 +339,9 @@ class SendOTPView(views.APIView):
             "phone_number": phone,
             "expires_in_minutes": 15
         }
-        if settings.OTP_DEMO_MODE:
+        # Le code n'est renvoyé que s'il n'y a pas de vrai SMS : mode démonstration, ou code d'inscription par défaut
+        shows_code = settings.OTP_DEMO_MODE or (purpose == 'register' and bool(settings.OTP_REGISTER_FIXED_CODE))
+        if shows_code:
             res_data["code"] = token.code
             res_data["demo"] = True
 

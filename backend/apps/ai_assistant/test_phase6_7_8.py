@@ -141,7 +141,7 @@ class Phase678Tests(TestCase):
 
     def test_voice_transcribe_endpoint_phase8(self):
         """Vérifie l'endpoint de transcription vocale (Phase 8)."""
-        dummy_audio = b"RIFF....WAVEfmt ...."
+        dummy_audio = b"RIFF....WAVEfmt ...." + b"\x00" * 4000
         dummy_b64 = base64.b64encode(dummy_audio).decode('ascii')
 
         with patch('apps.ai_assistant.voice.transcribe_audio_bytes', return_value="Comment traiter le mildiou sur la tomate ?"):
@@ -160,20 +160,71 @@ class Phase678Tests(TestCase):
         res_bad_b64 = self.client.post('/api/ai/voice/transcribe/', {'audio_base64': '!!!notb64'}, format='json')
         self.assertEqual(res_bad_b64.status_code, status.HTTP_400_BAD_REQUEST)
 
-    def test_voice_synthesize_endpoint_phase8(self):
-        """Vérifie l'endpoint de synthèse vocale TTS (Phase 8)."""
-        with patch('apps.ai_assistant.voice.synthesize_speech_bytes', return_value=b"ID3...FAKE_MP3_BYTES..."):
-            response = self.client.post('/api/ai/voice/synthesize/', {
-                'text': "Arrosez les oignons tôt le matin pour éviter l'évaporation.",
-                'lang': 'fr'
-            }, format='json')
+    def test_server_side_synthesis_endpoint_is_gone(self):
+        """La lecture vocale se fait sur l'appareil : plus aucun texte n'est envoyé à un serveur pour être lu."""
+        res = self.client.post('/api/ai/voice/synthesize/', {'text': 'Bonjour'}, format='json')
+        self.assertEqual(res.status_code, status.HTTP_404_NOT_FOUND)
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn('audio_base64', response.data)
-        self.assertEqual(response.data['content_type'], 'audio/mp3')
 
-    def test_voice_synthesize_empty_payload(self):
-        """Vérifie le rejet d'un texte vide en synthèse vocale."""
-        res = self.client.post('/api/ai/voice/synthesize/', {'text': '   '}, format='json')
-        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+class VoiceTranscriptionHardeningTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='p7', phone='+221770600077', password='Motdepasse#2026')
+        self.client = APIClient()
+        self.client.force_authenticate(self.user)
 
+    def post(self, audio=b"\x00" * 4000):
+        return self.client.post('/api/ai/voice/transcribe/', {'audio_base64': base64.b64encode(audio).decode('ascii')},
+                                format='json')
+
+    def test_browser_recordings_are_sent_with_their_real_format(self):
+        """Le navigateur enregistre en WebM/Ogg : le service ne doit pas recevoir une étiquette « .m4a »."""
+        cases = [
+            (b'\x1a\x45\xdf\xa3' + b'\x00' * 4000, 'audio.webm', 'audio/webm'),
+            (b'OggS' + b'\x00' * 4000, 'audio.ogg', 'audio/ogg'),
+            (b'\x00\x00\x00\x20ftypM4A ' + b'\x00' * 4000, 'audio.m4a', 'audio/mp4'),
+            (b'\x00' * 4000, 'audio.m4a', 'audio/m4a'),  # format inconnu : comportement d'origine
+        ]
+        for audio, filename, content_type in cases:
+            with patch('apps.ai_assistant.voice.transcribe_audio_bytes', return_value='ok') as service:
+                res = self.post(audio)
+            self.assertEqual(res.status_code, 200)
+            self.assertEqual(service.call_args.kwargs['filename'], filename)
+            self.assertEqual(service.call_args.kwargs['content_type'], content_type)
+
+    def test_too_short_recording_is_rejected_without_calling_the_service(self):
+        with patch('apps.ai_assistant.voice.transcribe_audio_bytes') as service:
+            res = self.post(b"\x00" * 100)
+        service.assert_not_called()
+        self.assertEqual(res.status_code, 422)
+        self.assertEqual(res.data['code'], 'too_short')
+
+    def test_oversized_recording_is_rejected(self):
+        with patch('apps.ai_assistant.voice.MAX_AUDIO_BYTES', 3000), patch('apps.ai_assistant.voice.transcribe_audio_bytes') as service:
+            res = self.post(b"\x00" * 4000)
+        service.assert_not_called()
+        self.assertEqual(res.status_code, 413)
+
+    def test_nothing_audible_is_reported_clearly(self):
+        with patch('apps.ai_assistant.voice.transcribe_audio_bytes', return_value=''):
+            res = self.post()
+        self.assertEqual(res.status_code, 422)
+        self.assertEqual(res.data['code'], 'no_speech')
+
+    def test_service_outage_suggests_typing(self):
+        with patch('apps.ai_assistant.voice.transcribe_audio_bytes', return_value=None):
+            res = self.post()
+        self.assertEqual(res.status_code, 503)
+        self.assertIn("écrire", res.data['error'])
+
+    def test_silence_hallucinations_are_dropped(self):
+        from apps.ai_assistant import voice
+        self.assertTrue(voice.is_silence_hallucination("Sous-titres réalisés par la communauté d'Amara.org"))
+        self.assertFalse(voice.is_silence_hallucination("J'ai vendu dix sacs de mil"))
+
+    def test_service_never_logs_the_provider_body(self):
+        from apps.ai_assistant import voice
+        reply = type('R', (), {'status_code': 500, 'text': 'SECRET-TRANSCRIPT', 'json': lambda self: {}})()
+        with patch('apps.ai_assistant.voice.requests.post', return_value=reply), \
+                self.settings(GROQ_API_KEY='k'), self.assertLogs('apps.ai_assistant.voice', 'ERROR') as logs:
+            self.assertIsNone(voice.transcribe_audio_bytes(b"\x00" * 4000))
+        self.assertNotIn('SECRET-TRANSCRIPT', ''.join(logs.output))

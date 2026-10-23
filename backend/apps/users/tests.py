@@ -199,11 +199,34 @@ class OTPSecurityTests(APITestCase):
     def setUp(self):
         self.phone = '+221779998877'
 
-    @override_settings(OTP_DEMO_MODE=False)
+    @override_settings(OTP_DEMO_MODE=False, OTP_REGISTER_FIXED_CODE='')
     def test_code_hidden_outside_demo_mode(self):
         res = self.client.post(reverse('users:send_otp'), {'phone_number': self.phone, 'purpose': 'register'}, format='json')
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertNotIn('code', res.data)
+
+    @override_settings(OTP_DEMO_MODE=False, OTP_REGISTER_FIXED_CODE='1234')
+    def test_register_uses_fixed_code_by_default(self):
+        res = self.client.post(reverse('users:send_otp'), {'phone_number': self.phone, 'purpose': 'register'}, format='json')
+        self.assertEqual(res.data['code'], '1234')
+        self.assertTrue(res.data['demo'])
+
+    @override_settings(OTP_DEMO_MODE=False, OTP_REGISTER_FIXED_CODE='1234')
+    def test_fixed_code_never_applies_to_password_reset(self):
+        """Un code connu de tous ne doit jamais permettre de réinitialiser un mot de passe."""
+        get_user_model().objects.create_user(username=self.phone, phone=self.phone, password='Sup3r-Secret-2026!')
+        res = self.client.post(reverse('users:send_otp'), {'phone_number': self.phone, 'purpose': 'password_reset'}, format='json')
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertNotIn('code', res.data)
+        reset = self.client.post(reverse('users:reset_password'), {'phone_number': self.phone, 'otp_code': '1234', 'new_password': 'Autre-Secret-2026!'}, format='json')
+        self.assertEqual(reset.status_code, status.HTTP_400_BAD_REQUEST)
+
+    @override_settings(OTP_REQUIRED_FOR_REGISTER=False)
+    def test_register_never_blocks_on_otp_when_not_required(self):
+        payload = {'phone_number': self.phone, 'full_name': 'Test Libre', 'password': 'Sup3r-Secret-2026!', 'language': 'fr'}
+        for code in ('', '0000', '1234'):
+            res = self.client.post(reverse('users:register'), {**payload, 'phone_number': f'+22177999{9000 + len(code) + int(code or 0) % 7:04d}', 'otp_code': code}, format='json')
+            self.assertEqual(res.status_code, status.HTTP_201_CREATED, res.data)
 
     @override_settings(OTP_DEMO_MODE=True)
     def test_code_returned_in_demo_mode(self):

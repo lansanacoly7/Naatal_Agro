@@ -5,7 +5,7 @@
     "start_url": "/",
     "scope": "/",
     "display": "standalone",
-    "background_color": "#F2F4F1",
+    "background_color": "#FBF7F0",
     "theme_color": "#0F4F31",
     "description": "Copilote agricole : cultures, stock, ventes, prix des marchés et conseils sourcés.",
     "lang": "fr",

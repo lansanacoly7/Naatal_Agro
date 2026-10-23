@@ -1,0 +1,15 @@
+{
+  "intro": "Photographies sous licence libre issues de Wikimedia Commons.",
+  "footnote": "Les autres photographies de produits du catalogue ont été générées par intelligence artificielle spécifiquement pour Naatal Agro.",
+  "credits": [
+    { "product": "Patate douce", "author": "Arivumathi", "license": "CC0 1.0 (Domaine public)" },
+    { "product": "Piment", "author": "Arivumathi", "license": "CC0 1.0 (Domaine public)" },
+    { "product": "Laitue", "author": "Rainer Zenz", "license": "GPL / GFDL" },
+    { "product": "Manioc", "author": "Domaine public", "license": "CC0 1.0 (Domaine public)" },
+    { "product": "Melon", "author": "Renee Comet (NCI / USDA)", "license": "Domaine public" },
+    { "product": "Navet", "author": "Tiia Monto", "license": "CC BY-SA 4.0" },
+    { "product": "Orange", "author": "Evan-Amos", "license": "CC BY-SA 3.0" },
+    { "product": "Poivron", "author": "Luc Viatour", "license": "CC BY-SA 3.0" },
+    { "product": "Sorgho", "author": "Roger Culos / MHNT", "license": "CC BY-SA 4.0" }
+  ]
+}

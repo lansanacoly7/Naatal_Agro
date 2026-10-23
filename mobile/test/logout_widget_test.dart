@@ -4,8 +4,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:nataal_agro/features/auth/data/auth_provider.dart';
 import 'package:nataal_agro/features/auth/data/auth_repository.dart';
 import 'package:nataal_agro/features/profile/data/profile_provider.dart';
+import 'package:nataal_agro/core/network/api_client.dart';
+import 'package:nataal_agro/features/profile/data/notifications_provider.dart';
 import 'package:nataal_agro/features/profile/domain/profile_model.dart';
-import 'package:nataal_agro/features/profile/presentation/screens/profile_screen.dart';
+import 'package:nataal_agro/main.dart' show sharedPreferencesProvider;
+import 'package:nataal_agro/screens/profile/profile_screen.dart';
+import 'package:nataal_agro/ui/ui.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Fake AuthRepository pour espionner l'appel réel à logout()
 class _FakeAuthRepository implements AuthRepository {
@@ -72,6 +77,13 @@ class _FakeProfileNotifier extends ProfileNotifier {
   Future<void> loadProfile() async {}
 }
 
+class _FakeNotifications extends NotificationsNotifier {
+  _FakeNotifications() : super(ApiClient());
+
+  @override
+  Future<void> fetchNotifications() async {}
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -87,94 +99,87 @@ void main() {
     isVerified: true,
   );
 
+  Future<void> pumpProfile(WidgetTester tester, _FakeAuthRepository repo, {UserProfile? profile, Object? error}) async {
+    tester.view.physicalSize = const Size(390, 1800) * 2;
+    tester.view.devicePixelRatio = 2;
+    addTearDown(tester.view.reset);
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          authRepositoryProvider.overrideWithValue(repo),
+          notificationsProvider.overrideWith((ref) => _FakeNotifications()),
+          profileNotifierProvider.overrideWith((ref) => _FakeProfileNotifier(
+                ref.watch(profileRepositoryProvider),
+                initialProfile: profile,
+                initialError: error,
+              )),
+        ],
+        child: MaterialApp(
+          theme: NaatalTheme.light,
+          home: const EffectsScope(reduced: true, child: ProfileScreen()),
+        ),
+      ),
+    );
+    // Les animations d'ambiance bouclent : on avance l'horloge sans attendre le repos.
+    for (var i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+  }
+
   testWidgets(
-    'Cliquer sur le bouton Se déconnecter de ProfileScreen déclenche authStateProvider.notifier.logout()',
+    'Se déconnecter (après confirmation) déclenche authStateProvider.notifier.logout()',
     (WidgetTester tester) async {
       final fakeAuthRepo = _FakeAuthRepository();
+      await pumpProfile(tester, fakeAuthRepo, profile: testProfile);
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            authRepositoryProvider.overrideWithValue(fakeAuthRepo),
-            profileNotifierProvider.overrideWith((ref) => _FakeProfileNotifier(
-                  ref.watch(profileRepositoryProvider),
-                  initialProfile: testProfile,
-                )),
-          ],
-          child: const MaterialApp(
-            home: ProfileScreen(),
-          ),
-        ),
-      );
-
-      // Laisser le temps à Riverpod et au rendu
-      await tester.pumpAndSettle();
-
-      // Vérifier que le profil est bien affiché
       expect(find.text('Amadou Diallo'), findsOneWidget);
 
-      // Trouver le bouton "Se déconnecter" principal
-      final logoutButtonFinder = find.widgetWithText(ElevatedButton, 'Se déconnecter');
-      expect(logoutButtonFinder, findsOneWidget);
+      final logoutButton = find.text('Se déconnecter');
+      expect(logoutButton, findsOneWidget);
+      await tester.ensureVisible(logoutButton);
+      await tester.pump(const Duration(milliseconds: 300));
 
-      // Scroller jusqu'au bouton pour s'assurer qu'il est cliquable dans le CustomScrollView
-      await tester.ensureVisible(logoutButtonFinder);
-      await tester.pumpAndSettle();
+      // Première étape : demande de confirmation, aucune déconnexion encore.
+      await tester.tap(logoutButton);
+      for (var i = 0; i < 10; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(find.text('Se déconnecter ?'), findsOneWidget);
+      expect(fakeAuthRepo.wasLogoutCalled, isFalse);
 
-      // Tap sur le bouton de déconnexion
-      await tester.tap(logoutButtonFinder);
-      await tester.pumpAndSettle();
+      // Deuxième étape : confirmation dans la feuille.
+      await tester.tap(find.text('Se déconnecter').last);
+      for (var i = 0; i < 10; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
 
-      // Vérification : le repository a bien été appelé
       expect(fakeAuthRepo.wasLogoutCalled, isTrue);
-
-      // Vérification : le Container Riverpod montre que l'authentification est false
       final container = ProviderScope.containerOf(tester.element(find.byType(ProfileScreen)));
-      final authState = container.read(authStateProvider);
-      expect(authState.value, isFalse);
+      expect(container.read(authStateProvider).value, isFalse);
     },
   );
 
   testWidgets(
-    'Cliquer sur Se déconnecter en état d\'erreur du profil appelle authStateProvider.notifier.logout()',
+    'Se déconnecter en état d\'erreur du profil appelle authStateProvider.notifier.logout() sans confirmation',
     (WidgetTester tester) async {
       final fakeAuthRepo = _FakeAuthRepository();
+      await pumpProfile(tester, fakeAuthRepo, error: 'Impossible de contacter le serveur');
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            authRepositoryProvider.overrideWithValue(fakeAuthRepo),
-            profileNotifierProvider.overrideWith((ref) => _FakeProfileNotifier(
-                  ref.watch(profileRepositoryProvider),
-                  initialError: 'Impossible de contacter le serveur',
-                )),
-          ],
-          child: const MaterialApp(
-            home: ProfileScreen(),
-          ),
-        ),
-      );
+      expect(find.text('Votre profil n\'a pas pu être chargé.'), findsOneWidget);
 
-      await tester.pumpAndSettle();
+      final logoutButton = find.text('Se déconnecter');
+      expect(logoutButton, findsOneWidget);
+      await tester.tap(logoutButton);
+      for (var i = 0; i < 10; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
 
-      // Vérifier l'état d'erreur
-      expect(find.text('Impossible de contacter le serveur'), findsOneWidget);
-      expect(find.text('Réessayer'), findsOneWidget);
-
-      // Trouver le bouton TextButton de déconnexion dans l'écran d'erreur
-      final logoutTextButtonFinder = find.widgetWithText(TextButton, 'Se déconnecter');
-      expect(logoutTextButtonFinder, findsOneWidget);
-
-      // Cliquer sur Se déconnecter
-      await tester.tap(logoutTextButtonFinder);
-      await tester.pumpAndSettle();
-
-      // Vérification
       expect(fakeAuthRepo.wasLogoutCalled, isTrue);
-
       final container = ProviderScope.containerOf(tester.element(find.byType(ProfileScreen)));
-      final authState = container.read(authStateProvider);
-      expect(authState.value, isFalse);
+      expect(container.read(authStateProvider).value, isFalse);
     },
   );
 }

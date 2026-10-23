@@ -22,6 +22,7 @@ import '../../screens/assistant/assistant_screen.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/onboarding_screen.dart';
 import '../../features/auth/presentation/screens/register_screen.dart';
+import '../../screens/onboarding/crop_setup_screen.dart';
 import '../../features/auth/presentation/screens/welcome_loading_screen.dart';
 import '../../features/weather/presentation/screens/weather_screen.dart';
 import '../../features/agriculture/data/agriculture_provider.dart';
@@ -54,6 +55,22 @@ final hasSeenOnboardingProvider = StateProvider<bool>((ref) {
 
 final welcomeStateProvider = StateProvider<bool>((ref) => false);
 
+/// Vrai juste après une inscription : la première chose demandée est la suggestion de culture.
+/// Mémorisé sur le téléphone pour survivre à une fermeture de l'application avant la fin de cette étape.
+final pendingCropSetupProvider = StateProvider<bool>((ref) {
+  final prefs = ref.watch(sharedPreferencesProvider);
+  return prefs.getBool('pending_crop_setup') ?? false;
+});
+
+Future<void> setCropSetupPending(WidgetRef ref, bool pending) async {
+  ref.read(pendingCropSetupProvider.notifier).state = pending;
+  try {
+    await ref.read(sharedPreferencesProvider).setBool('pending_crop_setup', pending);
+  } catch (_) {
+    // Sans stockage local, le drapeau reste valable jusqu'à la fermeture de l'application
+  }
+}
+
 class RouterNotifier extends ChangeNotifier {
   final Ref _ref;
 
@@ -69,6 +86,7 @@ class RouterNotifier extends ChangeNotifier {
     );
     _ref.listen<bool>(hasSeenOnboardingProvider, (previous, next) => notifyListeners());
     _ref.listen<bool>(welcomeStateProvider, (previous, next) => notifyListeners());
+    _ref.listen<bool>(pendingCropSetupProvider, (previous, next) => notifyListeners());
   }
 }
 
@@ -121,6 +139,11 @@ final routerProvider = Provider<GoRouter>((ref) {
           return null;
         }
 
+        // Nouveau compte : la suggestion de culture passe avant tout le reste
+        final pendingCropSetup = ref.read(pendingCropSetupProvider);
+        if (pendingCropSetup) return loc == '/crop-setup' ? null : '/crop-setup';
+        if (loc == '/crop-setup') return '/';
+
         if (isGoingToLogin || isGoingToRegister || isGoingToOnboarding || isGoingToWelcome) {
           return '/';
         }
@@ -159,6 +182,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         parentNavigatorKey: _rootNavigatorKey,
         path: '/welcome',
         builder: (context, state) => const AuthStyle(child: WelcomeLoadingScreen()),
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: '/crop-setup',
+        builder: (context, state) => const CropSetupScreen(),
       ),
       // Cultures : les chemins fixes passent avant « :id ».
       GoRoute(

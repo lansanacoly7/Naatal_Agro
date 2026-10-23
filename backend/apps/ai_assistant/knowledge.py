@@ -137,15 +137,9 @@ WOLOF_MARKERS = {
 }
 
 def is_wolof_text(text):
-    """Détecte avec certitude si une requête est formulée en wolof."""
-    if not text:
-        return False
-    norm = normalize(text)
-    words = set(norm.split())
-    strong_markers = {'naka', 'lanuy', 'fajee', 'baykat', 'fattali', 'suuxat', 'duggub', 'kompoos', 'soble', 'ceeb', 'mboq', 'guerte', 'gerte', 'ellek'}
-    if words & strong_markers:
-        return True
-    return len(words & WOLOF_MARKERS) >= 2
+    """Vrai si la requête est formulée en wolof (détecteur unique : ``language.py``)."""
+    from .language import is_wolof
+    return is_wolof(text)
 
 
 # Motifs nominaux prouvant qu'il s'agit de la céréale (Zea mays) et non de la conjonction « mais »

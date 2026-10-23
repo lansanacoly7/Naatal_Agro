@@ -1,10 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../core/network/api_client.dart';
-import '../../../../core/theme/app_theme.dart';
+
+import '../../../../core/constants/app_constants.dart';
+import '../../../../core/router/app_router.dart';
+import '../../../../ui/ui.dart';
 import '../../data/auth_provider.dart';
 
+/// Inscription en trois gestes : qui je suis, mon mot de passe, mon code.
+///
+/// Pensée pour des producteurs qui lisent peu : une seule chose par écran, de gros boutons, peu de texte,
+/// une phrase à écouter à chaque étape. Aucun champ inutile (ni e-mail, ni date de naissance, ni région :
+/// la région est trouvée toute seule ensuite, avec la suggestion de culture).
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
 
@@ -13,819 +21,714 @@ class RegisterScreen extends ConsumerStatefulWidget {
 }
 
 class _RegisterScreenState extends ConsumerState<RegisterScreen> {
-  final PageController _pageController = PageController();
-  int _currentStep = 1;
+  static const _lastStep = 2;
 
-  // Step 1: Infos
-  final _nameController = TextEditingController();
-  final _phoneController = TextEditingController();
-  final _emailController = TextEditingController();
-  final _dobController = TextEditingController();
+  int _step = 0;
 
-  // Step 2: Security
-  final _passwordController = TextEditingController();
-  final _confirmPasswordController = TextEditingController();
-  bool _obscurePassword = true;
-  bool _obscureConfirm = true;
-  bool _acceptTerms = false;
+  final _name = TextEditingController();
+  final _phone = TextEditingController();
+  final _password = TextEditingController();
+  bool _showPassword = false;
+  bool _accepted = false;
 
-  // Step 3: Profil Agricole
-  String? _selectedRegion;
-  final List<String> _regions = ['Dakar', 'Thiès', 'Saint-Louis', 'Louga', 'Diourbel', 'Fatick', 'Kaolack', 'Kaffrine', 'Tambacounda', 'Kédougou', 'Kolda', 'Sédhiou', 'Ziguinchor', 'Matam'];
-  
-  final List<String> _availableCrops = ['Riz', 'Oignon', 'Arachide', 'Maïs', 'Maraîchage', 'Tomate', 'Mil'];
-  final List<String> _selectedCrops = [];
+  String _code = '';
+  bool _demoCode = false;
+  bool _sendingCode = false;
+  bool _submitting = false;
 
-  // Step 4: OTP
-  final _otpController = TextEditingController();
-  bool _isVerifying = false;
-  bool _isSendingOtp = false;
-  String? _otpFeedback;
+  String? _nameError;
+  String? _phoneError;
+  String? _passwordError;
+  String? _termsError;
+  String? _submitError;
+  String? _codeNote;
 
   @override
   void dispose() {
-    _pageController.dispose();
-    _nameController.dispose();
-    _phoneController.dispose();
-    _emailController.dispose();
-    _dobController.dispose();
-    _passwordController.dispose();
-    _confirmPasswordController.dispose();
-    _otpController.dispose();
+    _name.dispose();
+    _phone.dispose();
+    _password.dispose();
     super.dispose();
   }
 
-  Future<void> _sendRegisterOtp() async {
-    setState(() => _isSendingOtp = true);
+  String get _phoneDigits => _phone.text.replaceAll(RegExp(r'\D'), '');
+
+  bool get _passwordHasLength => _password.text.length >= 8;
+  bool get _passwordHasLetter => RegExp(r'[A-Za-zÀ-ÿ]').hasMatch(_password.text);
+
+  void _goTo(int step) {
+    FocusScope.of(context).unfocus();
+    setState(() => _step = step);
+    if (step == _lastStep) _sendCode();
+  }
+
+  void _back() {
+    if (_step > 0) {
+      _goTo(_step - 1);
+    } else if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go('/login');
+    }
+  }
+
+  void _next() {
+    if (_step == 0) {
+      final nameError = _name.text.trim().length < 2 ? 'Écrivez votre nom.' : null;
+      final phoneError = _phoneDigits.length != 9 ? 'Le numéro a 9 chiffres.' : null;
+      setState(() {
+        _nameError = nameError;
+        _phoneError = phoneError;
+      });
+      if (nameError == null && phoneError == null) _goTo(1);
+    } else if (_step == 1) {
+      final passwordError = !_passwordHasLength || !_passwordHasLetter ? 'Complétez les deux points ci-dessous.' : null;
+      final termsError = _accepted ? null : 'Touchez ici pour accepter.';
+      setState(() {
+        _passwordError = passwordError;
+        _termsError = termsError;
+      });
+      if (passwordError == null && termsError == null) _goTo(2);
+    } else {
+      _submit();
+    }
+  }
+
+  /// Demande le code. En l'absence de SMS réel, le serveur renvoie le code d'essai : on l'écrit à la place de l'utilisateur.
+  Future<void> _sendCode() async {
+    setState(() {
+      _sendingCode = true;
+      _codeNote = null;
+      _submitError = null;
+    });
     try {
-      final res = await ref.read(authRepositoryProvider).sendOtp(
-        _phoneController.text.trim(),
-        purpose: 'register',
-      );
+      final res = await ref.read(authRepositoryProvider).sendOtp(_phoneDigits, purpose: 'register');
       if (!mounted) return;
       setState(() {
-        _isSendingOtp = false;
-        if (res['dev_code'] != null) {
-          _otpFeedback = "Code SMS envoyé (Mode dev: ${res['dev_code']})";
-          _otpController.text = res['dev_code'].toString();
+        final code = res['code']?.toString();
+        _demoCode = code != null && code.isNotEmpty;
+        if (_demoCode) {
+          _code = code!;
         } else {
-          _otpFeedback = "Un code SMS à 4 chiffres a été envoyé au ${_phoneController.text.trim()}";
-        }
-        if (_currentStep < 4) {
-          _currentStep++;
-          _pageController.nextPage(
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeOut,
-          );
+          _code = '';
+          _codeNote = 'Un SMS vous a été envoyé au $_phoneDigits.';
         }
       });
-    } catch (e) {
+    } catch (_) {
       if (!mounted) return;
-      setState(() => _isSendingOtp = false);
-      _showError(e.toString().replaceAll('Exception: ', ''));
+      setState(() => _codeNote = 'Le code n\'est pas arrivé. Touchez « Renvoyer le code ».');
+    } finally {
+      if (mounted) setState(() => _sendingCode = false);
     }
   }
 
-  void _nextStep() {
-    if (_currentStep == 1) {
-      if (_nameController.text.isEmpty || _phoneController.text.isEmpty) {
-        _showError('Veuillez remplir le nom et le numéro de téléphone.');
-        return;
-      }
-    } else if (_currentStep == 2) {
-      if (_passwordController.text.length < 8) {
-        _showError('Le mot de passe doit contenir au moins 8 caractères.');
-        return;
-      }
-      if (_passwordController.text != _confirmPasswordController.text) {
-        _showError('Les mots de passe ne correspondent pas.');
-        return;
-      }
-      if (!_acceptTerms) {
-        _showError('Veuillez accepter les conditions d\'utilisation.');
-        return;
-      }
-    } else if (_currentStep == 3) {
-      if (_selectedRegion == null) {
-        _showError('Veuillez sélectionner une région.');
-        return;
-      }
-      if (_selectedCrops.isEmpty) {
-        _showError('Veuillez sélectionner au moins une culture.');
-        return;
-      }
-      _sendRegisterOtp();
-      return;
-    }
-
-    if (_currentStep < 4) {
-      setState(() => _currentStep++);
-      _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
-    }
-  }
-
-  void _previousStep() {
-    if (_currentStep > 1) {
-      setState(() => _currentStep--);
-      _pageController.previousPage(duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
-    } else {
-      if (context.canPop()) {
-        context.pop();
-      } else {
-        context.go('/login');
-      }
-    }
-  }
-
-  Future<void> _verifyAndRegister() async {
-    final code = _otpController.text.trim();
-    if (code.length < 4) {
-      _showError('Veuillez entrer un code OTP valide.');
-      return;
-    }
-
-    setState(() => _isVerifying = true);
-    
-    // Convert date of birth from dd/mm/yyyy to yyyy-mm-dd if provided
-    String? formattedDob;
-    if (_dobController.text.trim().isNotEmpty) {
-      final parts = _dobController.text.trim().split('/');
-      if (parts.length == 3) {
-        final day = parts[0].padLeft(2, '0');
-        final month = parts[1].padLeft(2, '0');
-        final year = parts[2];
-        formattedDob = '$year-$month-$day';
-      }
-    }
-
-    // Actually register via backend
+  Future<void> _submit() async {
+    setState(() {
+      _submitting = true;
+      _submitError = null;
+    });
+    // La suggestion de culture est la première chose demandée : on le note avant que la connexion ne déclenche la navigation
+    await setCropSetupPending(ref, true);
     await ref.read(authStateProvider.notifier).register(
-      fullName: _nameController.text.trim(),
-      phone: _phoneController.text.trim(),
-      password: _passwordController.text,
-      language: 'fr',
-      location: _selectedRegion ?? 'Sénégal',
-      email: _emailController.text.trim(),
-      dateOfBirth: formattedDob,
-      mainCrops: _selectedCrops,
-      privacyAccepted: _acceptTerms,
-      otpCode: code,
-    );
+          fullName: _name.text.trim(),
+          phone: _phoneDigits,
+          password: _password.text,
+          language: 'fr',
+          privacyAccepted: true,
+          otpCode: _code,
+        );
+    if (!mounted) return; // inscription réussie : le routeur a déjà changé d'écran
+    final auth = ref.read(authStateProvider);
+    if (!auth.hasError) return;
 
-    final authState = ref.read(authStateProvider);
-    if (authState.hasError && mounted) {
-      setState(() => _isVerifying = false);
-      final rawError = authState.error.toString();
-      final cleanError = rawError.replaceAll('Exception: ', '');
-      _showError(cleanError);
-    }
-    // Si succès, le routeur s'en chargera
+    await setCropSetupPending(ref, false);
+    if (!mounted) return;
+    final message = auth.error.toString().replaceFirst('Exception: ', '');
+    final lower = message.toLowerCase();
+    setState(() {
+      _submitting = false;
+      if (lower.contains('mot de passe') || lower.contains('password')) {
+        _passwordError = message;
+        _step = 1;
+      } else if (lower.contains('numéro') || lower.contains('numero') || lower.contains('téléphone') || lower.contains('telephone')) {
+        _phoneError = message;
+        _step = 0;
+      } else {
+        _submitError = message;
+      }
+    });
   }
 
-  void _showError(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg), backgroundColor: AppColors.error));
+  String get _spokenHelp {
+    switch (_step) {
+      case 0:
+        return 'Bienvenue sur Naatal Agro. Écrivez votre nom, puis votre numéro de téléphone. Ensuite, touchez le gros bouton vert.';
+      case 1:
+        return 'Choisissez un mot de passe. Il faut au moins huit signes, avec des lettres. Puis touchez la case pour accepter les règles.';
+      default:
+        return _demoCode
+            ? 'Voici votre code. Il est déjà écrit pour vous. Touchez le gros bouton vert pour créer votre compte.'
+            : 'Écrivez le code reçu par SMS, puis touchez le gros bouton vert pour créer votre compte.';
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final c = context.c;
     return Scaffold(
-      backgroundColor: const Color(0xFFFAF9F6), // Fond légèrement cassé
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
-          onPressed: _previousStep,
-        ),
-        title: const Text('Naatal Agro', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(
-            color: Colors.blue.withValues(alpha: 0.2), // Ligne pointillée (simplifiée par une ligne bleue claire)
-            height: 1,
-          ),
-        ),
-      ),
-      body: Column(
-        children: [
-          _buildProgressBar(),
-          Expanded(
-            child: PageView(
-              controller: _pageController,
-              physics: const NeverScrollableScrollPhysics(),
-              children: [
-                _buildStep1(),
-                _buildStep2(),
-                _buildStep3(),
-                _buildStep4(),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildProgressBar() {
-    String title = '';
-    switch (_currentStep) {
-      case 1: title = 'Informations personnelles'; break;
-      case 2: title = 'Sécurité'; break;
-      case 3: title = 'Profil agricole'; break;
-      case 4: title = 'Vérification'; break;
-    }
-
-    return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('ÉTAPE $_currentStep SUR 4', style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w800, fontSize: 10, letterSpacing: 1.2)),
-              Text(title, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12, fontWeight: FontWeight.bold)),
-            ],
-          ),
-          const SizedBox(height: 8),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: _currentStep / 4,
-              backgroundColor: Colors.grey[200],
-              valueColor: const AlwaysStoppedAnimation<Color>(Colors.orange),
-              minHeight: 6,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHeader(String title, String subtitle) {
-    return Column(
-      children: [
-        const SizedBox(height: 24),
-        Text(title, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: AppColors.primary), textAlign: TextAlign.center),
-        const SizedBox(height: 12),
-        Text(subtitle, style: const TextStyle(fontSize: 14, color: AppColors.textSecondary, height: 1.5), textAlign: TextAlign.center),
-        const SizedBox(height: 32),
-      ],
-    );
-  }
-
-  Widget _buildLabel(String label, {bool isOptional = false}) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textPrimary, fontSize: 13)),
-          if (isOptional)
-            const Text('Optionnel', style: TextStyle(color: Colors.grey, fontSize: 12)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String hint,
-    required IconData icon,
-    TextInputType type = TextInputType.text,
-    bool obscure = false,
-    Widget? suffixIcon,
-  }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
-      ),
-      child: TextField(
-        controller: controller,
-        keyboardType: type,
-        obscureText: obscure,
-        decoration: InputDecoration(
-          hintText: hint,
-          hintStyle: const TextStyle(color: Colors.grey, fontSize: 14),
-          prefixIcon: Icon(icon, color: Colors.grey),
-          suffixIcon: suffixIcon,
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildButton(String text, VoidCallback onPressed, {bool showIcon = true, bool isVerifying = false, bool enabled = true}) {
-    return SizedBox(
-      width: double.infinity,
-      height: 56,
-      child: ElevatedButton(
-        onPressed: (enabled && !isVerifying) ? onPressed : null,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary,
-          foregroundColor: Colors.white,
-          disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.5),
-          disabledForegroundColor: Colors.white70,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-          elevation: 0,
-        ),
-        child: isVerifying 
-          ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-          : Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(text, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                if (showIcon) ...[
-                  const SizedBox(width: 8),
-                  const Icon(Icons.arrow_forward, size: 20),
-                ]
-              ],
-            ),
-      ),
-    );
-  }
-
-  // ==========================================
-  // ETAPE 1: Infos
-  // ==========================================
-  Widget _buildStep1() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildHeader('Faisons connaissance', 'Veuillez renseigner vos informations de base pour commencer à cultiver avec précision.'),
-          
-          _buildLabel('Nom complet'),
-          _buildTextField(controller: _nameController, hint: 'Ex: Moussa Sidibé', icon: Icons.person_outline),
-
-          _buildLabel('Numéro de téléphone'),
-          _buildTextField(controller: _phoneController, hint: '+221 77 123 45 67', icon: Icons.phone_outlined, type: TextInputType.phone),
-          const Padding(
-            padding: EdgeInsets.only(bottom: 8),
-            child: Text('Nous l\'utiliserons pour la connexion et les alertes importantes.', style: TextStyle(fontSize: 11, color: Colors.grey)),
-          ),
-
-          _buildLabel('Adresse e-mail', isOptional: true),
-          _buildTextField(controller: _emailController, hint: 'moussa@exemple.com', icon: Icons.mail_outline, type: TextInputType.emailAddress),
-
-          _buildLabel('Date de naissance'),
-          _buildTextField(controller: _dobController, hint: 'jj/mm/aaaa', icon: Icons.calendar_today_outlined, type: TextInputType.datetime),
-
-          const SizedBox(height: 16),
-          _buildButton('Suivant', _nextStep),
-        ],
-      ),
-    );
-  }
-
-  // ==========================================
-  // ETAPE 2: Sécurité
-  // ==========================================
-  Widget _buildStep2() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildHeader('Protégez votre compte', 'Choisissez un mot de passe robuste pour sécuriser vos données agricoles.'),
-          
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.grey.withValues(alpha: 0.1))),
+      backgroundColor: c.bg,
+      body: SafeArea(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 520),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildLabel('Mot de passe'),
-                _buildTextField(
-                  controller: _passwordController,
-                  hint: '••••••••',
-                  icon: Icons.lock_outline,
-                  obscure: _obscurePassword,
-                  suffixIcon: IconButton(icon: Icon(_obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined, color: Colors.grey), onPressed: () => setState(() => _obscurePassword = !_obscurePassword)),
-                ),
-                const Padding(
-                  padding: EdgeInsets.only(bottom: 8),
-                  child: Text('Minimum 8 caractères, incluant lettres et chiffres.', style: TextStyle(fontSize: 11, color: Colors.grey)),
-                ),
-
-                _buildLabel('Confirmer le mot de passe'),
-                _buildTextField(
-                  controller: _confirmPasswordController,
-                  hint: '••••••••',
-                  icon: Icons.replay_outlined,
-                  obscure: _obscureConfirm,
-                  suffixIcon: IconButton(icon: Icon(_obscureConfirm ? Icons.visibility_off_outlined : Icons.visibility_outlined, color: Colors.grey), onPressed: () => setState(() => _obscureConfirm = !_obscureConfirm)),
-                ),
-
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SizedBox(
-                      height: 24, width: 24,
-                      child: Checkbox(
-                        value: _acceptTerms,
-                        onChanged: (v) => setState(() => _acceptTerms = v ?? false),
-                        activeColor: AppColors.primary,
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(Space.m, Space.s, Space.gutter, 0),
+                  child: Row(
+                    children: [
+                      IconButton(
+                        onPressed: _submitting ? null : _back,
+                        tooltip: 'Retour',
+                        iconSize: 28,
+                        constraints: const BoxConstraints(minWidth: Hit.primary, minHeight: Hit.primary),
+                        icon: Icon(Icons.arrow_back_rounded, color: c.ink),
                       ),
+                      const Spacer(),
+                      ReadAloudButton(key: ValueKey('listen$_step$_demoCode'), text: _spokenHelp),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: SingleChildScrollView(
+                    keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                    padding: const EdgeInsets.fromLTRB(Space.gutter, Space.s, Space.gutter, Space.xl),
+                    child: Column(
+                      children: [
+                        AnimatedSize(
+                          duration: Motion.base,
+                          curve: Motion.out,
+                          child: BrandLogo(height: _step == 0 ? 240 : 170),
+                        ),
+                        const SizedBox(height: Space.xl),
+                        _StepDots(current: _step, total: _lastStep + 1),
+                        const SizedBox(height: Space.xl),
+                        AnimatedSwitcher(
+                          duration: Motion.base,
+                          switchInCurve: Motion.out,
+                          transitionBuilder: (child, animation) => FadeTransition(
+                            opacity: animation,
+                            child: SlideTransition(
+                              position: Tween<Offset>(begin: const Offset(0.06, 0), end: Offset.zero).animate(animation),
+                              child: child,
+                            ),
+                          ),
+                          child: KeyedSubtree(key: ValueKey(_step), child: _stepBody(context)),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text.rich(
-                        TextSpan(
-                          text: 'J\'accepte les ',
-                          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                          children: [
-                            const TextSpan(text: 'conditions d\'utilisation', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
-                            const TextSpan(text: ' et la '),
-                            WidgetSpan(
-                              alignment: PlaceholderAlignment.middle,
-                              child: GestureDetector(
-                                onTap: _showPrivacyPolicyModal,
-                                child: const Text(
-                                  'politique de confidentialité.',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: AppColors.primary,
-                                    fontWeight: FontWeight.bold,
-                                    decoration: TextDecoration.underline,
-                                  ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(Space.gutter, Space.s, Space.gutter, Space.l),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (_submitError != null) _Notice(text: _submitError!, error: true),
+                      PillButton(
+                        label: _step == _lastStep ? 'Créer mon compte' : 'Continuer',
+                        icon: _step == _lastStep ? Icons.check_rounded : Icons.arrow_forward_rounded,
+                        expand: true,
+                        loading: _submitting,
+                        onPressed: _submitting ? null : _next,
+                      ),
+                      if (_step == 0) ...[
+                        const SizedBox(height: Space.s),
+                        PressScale(
+                          onTap: () => context.go('/login'),
+                          child: SizedBox(
+                            height: Hit.primary,
+                            child: Center(
+                              child: Text.rich(
+                                TextSpan(
+                                  text: 'J\'ai déjà un compte  ',
+                                  style: T.body(color: c.ink2),
+                                  children: [TextSpan(text: 'Me connecter', style: T.body(color: c.accent, weight: 700))],
                                 ),
                               ),
                             ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 32),
-                _buildButton('Suivant', _nextStep, enabled: _acceptTerms),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showPrivacyPolicyModal() async {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => DraggableScrollableSheet(
-        initialChildSize: 0.85,
-        minChildSize: 0.5,
-        maxChildSize: 0.95,
-        builder: (context, scrollController) => Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          child: Column(
-            children: [
-              Container(
-                margin: const EdgeInsets.symmetric(vertical: 12),
-                height: 4,
-                width: 40,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                child: Row(
-                  children: [
-                    const Icon(Icons.privacy_tip_outlined, color: AppColors.primary),
-                    const SizedBox(width: 8),
-                    const Expanded(
-                      child: Text(
-                        'Politique de Confidentialité',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ],
-                ),
-              ),
-              const Divider(height: 1),
-              Expanded(
-                child: FutureBuilder(
-                  future: ApiClient().get('/privacy/policy/'),
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
-                    if (snapshot.hasError || !snapshot.hasData) {
-                      return Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(24),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(Icons.error_outline, color: Colors.red, size: 40),
-                              const SizedBox(height: 12),
-                              const Text(
-                                'Impossible de charger la politique de confidentialité en ligne.',
-                                textAlign: TextAlign.center,
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                '${snapshot.error ?? "Erreur réseau"}',
-                                style: const TextStyle(fontSize: 12, color: Colors.grey),
-                                textAlign: TextAlign.center,
-                              ),
-                            ],
                           ),
-                        ),
-                      );
-                    }
-                    final res = snapshot.data;
-                    final data = res?.data;
-                    final content = (data is Map && data['content'] != null)
-                        ? data['content'].toString()
-                        : 'Politique de confidentialité Naatal Agro.';
-                    final version = (data is Map && data['version'] != null)
-                        ? 'Version ${data['version']}'
-                        : '';
-
-                    return ListView(
-                      controller: scrollController,
-                      padding: const EdgeInsets.all(20),
-                      children: [
-                        if (version.isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
-                            child: Text(
-                              version,
-                              style: const TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                        Text(
-                          content,
-                          style: const TextStyle(fontSize: 14, height: 1.5),
-                        ),
-                        const SizedBox(height: 24),
-                        ElevatedButton(
-                          onPressed: () {
-                            setState(() => _acceptTerms = true);
-                            Navigator.pop(context);
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                          ),
-                          child: const Text('J\'accepte la politique de confidentialité'),
                         ),
                       ],
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  // ==========================================
-  // ETAPE 3: Profil Agricole
-  // ==========================================
-  Widget _buildStep3() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildHeader('Profil agricole', 'Aidez-nous à personnaliser vos recommandations en nous en disant plus sur votre exploitation.'),
-          
-          Container(
-            padding: const EdgeInsets.all(24),
-            margin: const EdgeInsets.only(bottom: 16),
-            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.grey.withValues(alpha: 0.1))),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(padding: const EdgeInsets.all(12), decoration: const BoxDecoration(color: Colors.orangeAccent, shape: BoxShape.circle), child: const Icon(Icons.map_outlined, color: Colors.white)),
-                    const SizedBox(width: 16),
-                    const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text('Localisation', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary)),
-                      Text('Région principale d\'activité', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                    ])),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                _buildLabel('Sélectionnez une région'),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  decoration: BoxDecoration(color: Colors.grey[100], borderRadius: BorderRadius.circular(12)),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
-                      isExpanded: true,
-                      value: _selectedRegion,
-                      hint: const Text('Choisir une région...', style: TextStyle(fontSize: 14)),
-                      items: _regions.map((r) => DropdownMenuItem(value: r, child: Text(r))).toList(),
-                      onChanged: (v) => setState(() => _selectedRegion = v),
-                    ),
+                    ],
                   ),
                 ),
               ],
             ),
           ),
-
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.grey.withValues(alpha: 0.1))),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(padding: const EdgeInsets.all(12), decoration: const BoxDecoration(color: AppColors.primary, shape: BoxShape.circle), child: const Icon(Icons.grass_outlined, color: Colors.white)),
-                    const SizedBox(width: 16),
-                    const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text('Cultures', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary)),
-                      Text('Sélectionnez vos cultures principales', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                    ])),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                _buildLabel('Plusieurs choix possibles'),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 12,
-                  children: [
-                    ..._availableCrops.map((crop) {
-                      final isSelected = _selectedCrops.contains(crop);
-                      return InkWell(
-                        onTap: () {
-                          setState(() {
-                            if (isSelected) {
-                              _selectedCrops.remove(crop);
-                            } else {
-                              _selectedCrops.add(crop);
-                            }
-                          });
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                          decoration: BoxDecoration(
-                            color: isSelected ? AppColors.primary.withValues(alpha: 0.1) : Colors.white,
-                            border: Border.all(color: isSelected ? AppColors.primary : Colors.grey.withValues(alpha: 0.3)),
-                            borderRadius: BorderRadius.circular(24),
-                          ),
-                          child: Text(crop, style: TextStyle(color: isSelected ? AppColors.primary : Colors.grey[700], fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
-                        ),
-                      );
-                    }),
-                    InkWell(
-                      onTap: () => _showAddCropDialog(),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          border: Border.all(color: Colors.grey.withValues(alpha: 0.3), style: BorderStyle.solid),
-                          borderRadius: BorderRadius.circular(24),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.add, size: 16, color: Colors.grey),
-                            const SizedBox(width: 4),
-                            Text('Autre', style: TextStyle(color: Colors.grey[700])),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 32),
-                _buildButton('S\'inscrire', _nextStep, showIcon: false, isVerifying: _isSendingOtp),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showAddCropDialog() {
-    final customCropController = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Ajouter une culture', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
-        content: TextField(
-          controller: customCropController,
-          decoration: const InputDecoration(
-            hintText: 'Ex: Coton, Manioc...',
-            border: OutlineInputBorder(),
-          ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Annuler', style: TextStyle(color: Colors.grey)),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              final val = customCropController.text.trim();
-              if (val.isNotEmpty) {
-                setState(() {
-                  if (!_availableCrops.contains(val)) {
-                    _availableCrops.add(val);
-                  }
-                  if (!_selectedCrops.contains(val)) {
-                    _selectedCrops.add(val);
-                  }
-                });
-              }
-              Navigator.pop(context);
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-            child: const Text('Ajouter', style: TextStyle(color: Colors.white)),
-          ),
-        ],
       ),
     );
   }
 
-  // ==========================================
-  // ETAPE 4: OTP
-  // ==========================================
-  Widget _buildStep4() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildHeader('Vérification', 'Un code de vérification à 4 chiffres a été envoyé au ${_phoneController.text}.'),
-          
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.grey.withValues(alpha: 0.1))),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (_otpFeedback != null)
-                  Container(
-                    margin: const EdgeInsets.only(bottom: 20),
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.08),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
-                    ),
+  Widget _stepBody(BuildContext context) {
+    final c = context.c;
+    switch (_step) {
+      case 0:
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const _StepTitle(title: 'Bienvenue', subtitle: 'Dites-nous qui vous êtes'),
+            _Labeled(
+              icon: Icons.person_rounded,
+              color: c.domainCultures,
+              label: 'Votre nom',
+              child: TextField(
+                controller: _name,
+                textCapitalization: TextCapitalization.words,
+                textInputAction: TextInputAction.next,
+                autofillHints: const [AutofillHints.name],
+                style: T.title(color: c.ink),
+                onChanged: (_) {
+                  if (_nameError != null) setState(() => _nameError = null);
+                },
+                decoration: InputDecoration(hintText: 'Ex : Awa Diop', errorText: _nameError, errorMaxLines: 2),
+              ),
+            ),
+            const SizedBox(height: Space.xl),
+            _Labeled(
+              icon: Icons.phone_android_rounded,
+              color: c.domainMeteo,
+              label: 'Votre téléphone',
+              child: TextField(
+                controller: _phone,
+                keyboardType: TextInputType.phone,
+                textInputAction: TextInputAction.done,
+                autofillHints: const [AutofillHints.telephoneNumberNational],
+                inputFormatters: [_SenegalPhoneFormatter()],
+                style: T.title(color: c.ink),
+                onChanged: (_) {
+                  if (_phoneError != null) setState(() => _phoneError = null);
+                },
+                onSubmitted: (_) => _next(),
+                decoration: InputDecoration(
+                  hintText: '77 123 45 67',
+                  errorText: _phoneError,
+                  errorMaxLines: 3,
+                  prefixIcon: Padding(
+                    padding: const EdgeInsets.only(left: 18, right: 10),
                     child: Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.mark_email_read_outlined, color: AppColors.primary, size: 20),
+                        Text('+221', style: T.title(color: c.ink2)),
                         const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            _otpFeedback!,
-                            style: const TextStyle(fontSize: 13, color: AppColors.primary, fontWeight: FontWeight.w600),
-                          ),
-                        ),
+                        Container(width: 1.5, height: 26, color: c.line),
                       ],
                     ),
                   ),
-                _buildLabel('Code OTP'),
-                _buildTextField(
-                  controller: _otpController,
-                  hint: 'Ex: 1234',
-                  icon: Icons.message_outlined,
-                  type: TextInputType.number,
+                  prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
                 ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    TextButton.icon(
-                      onPressed: _isSendingOtp ? null : _sendRegisterOtp,
-                      icon: const Icon(Icons.refresh, size: 16),
-                      label: Text(_isSendingOtp ? 'Envoi...' : 'Renvoyer le code'),
-                    ),
-                  ],
+              ),
+            ),
+          ],
+        );
+      case 1:
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const _StepTitle(title: 'Mot de passe', subtitle: 'Pour garder votre compte à vous'),
+            _Labeled(
+              icon: Icons.lock_rounded,
+              color: c.domainStock,
+              label: 'Votre mot de passe',
+              child: TextField(
+                controller: _password,
+                obscureText: !_showPassword,
+                textInputAction: TextInputAction.done,
+                autofillHints: const [AutofillHints.newPassword],
+                style: T.title(color: c.ink),
+                onChanged: (_) => setState(() => _passwordError = null),
+                decoration: InputDecoration(
+                  hintText: 'Au moins 8 signes',
+                  errorText: _passwordError,
+                  errorMaxLines: 3,
+                  suffixIcon: IconButton(
+                    onPressed: () => setState(() => _showPassword = !_showPassword),
+                    tooltip: _showPassword ? 'Cacher' : 'Voir',
+                    iconSize: 28,
+                    constraints: const BoxConstraints(minWidth: Hit.primary, minHeight: Hit.primary),
+                    icon: Icon(_showPassword ? Icons.visibility_off_rounded : Icons.visibility_rounded, color: c.ink2),
+                  ),
                 ),
-                const SizedBox(height: 16),
-                _buildButton('Valider et Activer mon Compte', _verifyAndRegister, showIcon: false, isVerifying: _isVerifying),
+              ),
+            ),
+            const SizedBox(height: Space.m),
+            _Rule(ok: _passwordHasLength, text: '8 signes ou plus'),
+            _Rule(ok: _passwordHasLetter, text: 'Des lettres (pas que des chiffres)'),
+            const SizedBox(height: Space.xl),
+            _TermsTile(
+              accepted: _accepted,
+              error: _termsError,
+              onToggle: () => setState(() {
+                _accepted = !_accepted;
+                _termsError = null;
+              }),
+              onRead: () => showNaatalSheet<void>(
+                context,
+                builder: (ctx) => _PolicySheet(onAccept: () {
+                  setState(() {
+                    _accepted = true;
+                    _termsError = null;
+                  });
+                  Navigator.pop(ctx);
+                }),
+              ),
+            ),
+          ],
+        );
+      default:
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const _StepTitle(title: 'Votre code', subtitle: 'Dernière étape'),
+            if (_sendingCode)
+              const Padding(
+                padding: EdgeInsets.only(bottom: Space.l),
+                child: Center(child: SizedBox(width: 28, height: 28, child: CircularProgressIndicator(strokeWidth: 3))),
+              )
+            else if (_demoCode)
+              _Notice(text: 'Code d\'essai : ${_code.split('').join(' ')}  (déjà écrit pour vous)')
+            else if (_codeNote != null)
+              _Notice(text: _codeNote!),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                for (var i = 0; i < 4; i++) ...[
+                  if (i > 0) const SizedBox(width: Space.m),
+                  _CodeBox(char: i < _code.length ? _code[i] : '', active: i == _code.length),
+                ],
               ],
             ),
+            const SizedBox(height: Space.xl),
+            NumericKeypad(
+              onDigit: (d) {
+                if (_code.length < 4) setState(() => _code += d);
+              },
+              onDelete: () => setState(() => _code = _code.isEmpty ? '' : _code.substring(0, _code.length - 1)),
+            ),
+            const SizedBox(height: Space.m),
+            Center(
+              child: PressScale(
+                onTap: _sendingCode ? null : _sendCode,
+                child: SizedBox(
+                  height: Hit.primary,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.refresh_rounded, color: c.accent),
+                      const SizedBox(width: Space.s),
+                      Text('Renvoyer le code', style: T.body(color: c.accent, weight: 700)),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+    }
+  }
+}
+
+/// Numéro sénégalais : 9 chiffres au plus, écrits « 77 123 45 67 », sans l'indicatif collé par l'utilisateur.
+class _SenegalPhoneFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
+    var digits = newValue.text.replaceAll(RegExp(r'\D'), '');
+    if (digits.length > 9 && digits.startsWith('221')) digits = digits.substring(3);
+    if (digits.length > 9) digits = digits.substring(0, 9);
+    final buffer = StringBuffer();
+    for (var i = 0; i < digits.length; i++) {
+      if (i == 2 || i == 5 || i == 7) buffer.write(' ');
+      buffer.write(digits[i]);
+    }
+    final text = buffer.toString();
+    return TextEditingValue(text: text, selection: TextSelection.collapsed(offset: text.length));
+  }
+}
+
+class _StepDots extends StatelessWidget {
+  const _StepDots({required this.current, required this.total});
+
+  final int current;
+  final int total;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        for (var i = 0; i < total; i++)
+          AnimatedContainer(
+            duration: Motion.base,
+            curve: Motion.out,
+            margin: const EdgeInsets.symmetric(horizontal: 4),
+            width: i == current ? 36 : 12,
+            height: 12,
+            decoration: BoxDecoration(
+              color: i <= current ? c.accent : c.line,
+              borderRadius: BorderRadius.circular(Radii.pill),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _StepTitle extends StatelessWidget {
+  const _StepTitle({required this.title, required this.subtitle});
+
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: Space.xl),
+      child: Column(
+        children: [
+          Text(title, textAlign: TextAlign.center, style: T.largeTitle(color: c.ink)),
+          const SizedBox(height: Space.xs),
+          Text(subtitle, textAlign: TextAlign.center, style: T.body(color: c.ink2).copyWith(fontSize: 17)),
+        ],
+      ),
+    );
+  }
+}
+
+/// Un champ avec une grande icône de couleur et un libellé de deux ou trois mots.
+class _Labeled extends StatelessWidget {
+  const _Labeled({required this.icon, required this.color, required this.label, required this.child});
+
+  final IconData icon;
+  final Color color;
+  final String label;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(color: color.withValues(alpha: 0.14), borderRadius: BorderRadius.circular(Radii.s)),
+              child: Icon(icon, color: color, size: 24),
+            ),
+            const SizedBox(width: Space.m),
+            Expanded(child: Text(label, maxLines: 2, overflow: TextOverflow.ellipsis, style: T.title(color: c.ink))),
+          ],
+        ),
+        const SizedBox(height: Space.s),
+        child,
+      ],
+    );
+  }
+}
+
+class _Rule extends StatelessWidget {
+  const _Rule({required this.ok, required this.text});
+
+  final bool ok;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        children: [
+          AnimatedSwitcher(
+            duration: Motion.fast,
+            child: Icon(
+              ok ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
+              key: ValueKey(ok),
+              size: 26,
+              color: ok ? c.accent : c.ink2,
+            ),
+          ),
+          const SizedBox(width: Space.m),
+          Expanded(child: Text(text, style: T.body(color: ok ? c.ink : c.ink2, weight: 600))),
+        ],
+      ),
+    );
+  }
+}
+
+class _TermsTile extends StatelessWidget {
+  const _TermsTile({required this.accepted, required this.error, required this.onToggle, required this.onRead});
+
+  final bool accepted;
+  final String? error;
+  final VoidCallback onToggle;
+  final VoidCallback onRead;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final borderColor = error != null ? c.clay : (accepted ? c.accent : c.line);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        PressScale(
+          onTap: onToggle,
+          scale: 0.99,
+          semanticLabel: 'Accepter les règles d\'utilisation',
+          child: AnimatedContainer(
+            duration: Motion.fast,
+            constraints: const BoxConstraints(minHeight: 72),
+            padding: const EdgeInsets.symmetric(horizontal: Space.l, vertical: Space.m),
+            decoration: BoxDecoration(
+              color: accepted ? c.accent.withValues(alpha: 0.08) : c.surface,
+              borderRadius: BorderRadius.circular(Radii.l),
+              border: Border.all(color: borderColor, width: 2),
+            ),
+            child: Row(
+              children: [
+                Icon(accepted ? Icons.check_box_rounded : Icons.check_box_outline_blank_rounded, size: 36, color: accepted ? c.accent : c.ink2),
+                const SizedBox(width: Space.m),
+                Expanded(child: Text('J\'accepte les règles d\'utilisation', style: T.body(color: c.ink, weight: 700))),
+                PressScale(
+                  onTap: onRead,
+                  child: Container(
+                    height: Hit.min,
+                    padding: const EdgeInsets.symmetric(horizontal: Space.l),
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(color: c.accent.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(Radii.pill)),
+                    child: Text('Lire', style: T.body(color: c.accent, weight: 700)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (error != null)
+          Padding(
+            padding: const EdgeInsets.only(top: Space.s, left: Space.s),
+            child: Text(error!, style: T.body(color: c.clay, weight: 700)),
+          ),
+      ],
+    );
+  }
+}
+
+class _Notice extends StatelessWidget {
+  const _Notice({required this.text, this.error = false});
+
+  final String text;
+  final bool error;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final color = error ? c.clay : c.accent;
+    return Container(
+      margin: const EdgeInsets.only(bottom: Space.l),
+      padding: const EdgeInsets.all(Space.l),
+      decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(Radii.m)),
+      child: Row(
+        children: [
+          Icon(error ? Icons.error_rounded : Icons.info_rounded, color: color, size: 26),
+          const SizedBox(width: Space.m),
+          Expanded(child: Text(text, style: T.body(color: c.ink, weight: 700))),
+        ],
+      ),
+    );
+  }
+}
+
+class _CodeBox extends StatelessWidget {
+  const _CodeBox({required this.char, required this.active});
+
+  final String char;
+  final bool active;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    return AnimatedContainer(
+      duration: Motion.fast,
+      width: 64,
+      height: 78,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: c.surface,
+        borderRadius: BorderRadius.circular(Radii.m),
+        border: Border.all(color: active ? c.accent : c.line, width: active ? 2.5 : 1.5),
+      ),
+      child: Text(char, style: T.number(36, color: c.ink)),
+    );
+  }
+}
+
+/// Règles d'utilisation, lues depuis le serveur (jamais recopiées ici).
+class _PolicySheet extends ConsumerStatefulWidget {
+  const _PolicySheet({required this.onAccept});
+
+  final VoidCallback onAccept;
+
+  @override
+  ConsumerState<_PolicySheet> createState() => _PolicySheetState();
+}
+
+class _PolicySheetState extends ConsumerState<_PolicySheet> {
+  late final Future<String> _text = _load();
+
+  Future<String> _load() async {
+    final response = await ref.read(apiClientProvider).get(AppConstants.privacyPolicyEndpoint);
+    final data = response.data;
+    if (data is Map) return '${data['content'] ?? ''}'.replaceAll('#', '').trim();
+    throw Exception('format');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    return SizedBox(
+      height: MediaQuery.sizeOf(context).height * 0.75,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(Space.xxl, Space.xl, Space.xxl, Space.m),
+            child: Text('Règles d\'utilisation', style: T.title(color: c.ink)),
+          ),
+          Expanded(
+            child: FutureBuilder<String>(
+              future: _text,
+              builder: (context, snap) {
+                if (snap.connectionState != ConnectionState.done) {
+                  return const Padding(padding: EdgeInsets.all(Space.xxl), child: Skeleton(height: 200, radius: 16));
+                }
+                if (snap.hasError) {
+                  return const ErrorState(compact: true, message: 'Le texte n\'a pas pu être chargé. Vérifiez votre réseau.');
+                }
+                return SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(Space.xxl, 0, Space.xxl, Space.l),
+                  child: SelectableText(snap.data!, style: T.body(color: c.ink).copyWith(height: 1.5)),
+                );
+              },
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(Space.xxl, Space.s, Space.xxl, Space.l),
+            child: PillButton(label: 'J\'accepte', icon: Icons.check_rounded, expand: true, onPressed: widget.onAccept),
           ),
         ],
       ),

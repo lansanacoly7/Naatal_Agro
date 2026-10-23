@@ -185,10 +185,16 @@ class ReminderCreationTests(AssistantPhase2Base):
         self.assertTrue(action['parameters']['time_defaulted'])
         self.assertIn("Aucune heure précisée", proposal.data['response'])
 
-    def test_no_schedule_at_all_is_declared(self):
-        proposal = self.ask("Rappelle-moi d'arroser les piments")
-        self.assertTrue(proposal.data['action_data']['parameters']['time_defaulted'])
-        self.assertIn("Aucune heure précisée", proposal.data['response'])
+    def test_no_schedule_at_all_triggers_a_question_not_a_guess(self):
+        question = self.ask("Rappelle-moi d'arroser les piments")
+        self.assertEqual(question.data['action_data'], {'kind': 'question'})
+        self.assertIn("Pour quand", question.data['response'])
+        self.assertEqual(Notification.objects.count(), 0)
+        proposal = self.ask("demain à 7h")
+        action = proposal.data['action_data']
+        self.assertEqual(action['status'], 'pending_confirmation')
+        self.assertFalse(action['parameters']['time_defaulted'])
+        self.assertEqual(Notification.objects.count(), 0)
 
     def test_past_time_is_refused_with_an_explanation(self):
         past = (timezone.now() - 3 * HOUR)

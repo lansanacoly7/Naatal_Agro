@@ -15,6 +15,7 @@ import '../../features/profile/data/profile_provider.dart';
 import '../../shared/utils/data_refresh.dart';
 import '../../ui/ui.dart';
 import '../markets/markets_data.dart';
+import 'analysis_visual.dart';
 
 /// Assistant Naatal IA : répond d'abord avec les fiches techniques sourcées, et dit
 /// clairement quand il s'agit d'un conseil général non vérifié.
@@ -759,6 +760,12 @@ class _Bubble extends ConsumerWidget {
                               constraints: const BoxConstraints(),
                               onPressed: () {
                                 final voice = ref.read(voiceServiceProvider);
+                                if (!VoiceService.canSpeak(message.language)) {
+                                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                                    content: Text('La lecture à voix haute n\'est pas disponible en wolof : votre téléphone n\'a pas de voix wolof.'),
+                                  ));
+                                  return;
+                                }
                                 if (voice.isSpeaking) {
                                   voice.stopSpeaking();
                                 } else {
@@ -805,6 +812,8 @@ class _Bubble extends ConsumerWidget {
                       ],
                     ),
                   ],
+                  if (AnalysisVisualCard.isDrawable(message.actionData?.visual))
+                    AnalysisVisualCard(visual: message.actionData!.visual!),
                   if (message.actionData != null)
                     _ActionCard(
                       action: message.actionData!,
@@ -1454,7 +1463,7 @@ class _VoiceRecordSheetState extends ConsumerState<_VoiceRecordSheet> with Singl
       if (!mounted) return;
       setState(() {
         _isTranscribing = false;
-        _error = 'Erreur lors de la transcription : $e';
+        _error = e is VoiceException ? e.message : 'La transcription a échoué. Réessayez ou écrivez votre message.';
       });
     }
   }

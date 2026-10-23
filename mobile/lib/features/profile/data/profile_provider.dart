@@ -36,12 +36,14 @@ class ProfileNotifier extends StateNotifier<AsyncValue<UserProfile>> {
     String? fullName,
     String? location,
     String? language,
+    List<String>? mainCrops,
   }) async {
     try {
       final updated = await _repository.updateProfile(
         fullName: fullName,
         location: location,
         language: language,
+        mainCrops: mainCrops,
       );
       state = AsyncValue.data(updated);
     } catch (e, st) {

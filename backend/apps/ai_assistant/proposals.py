@@ -181,7 +181,7 @@ def create_proposal(*, user, conversation, query, context, intent):
     return interaction
 
 
-def create_note(*, user, conversation, query, context, text, suggestions, kind=None):
+def create_note(*, user, conversation, query, context, text, suggestions, kind=None, extra=None):
     """Message de service lié à une proposition (clarification, doublon) : n'écrit rien dans les données métier."""
     interaction = AIInteraction.objects.create(
         user=user,
@@ -192,7 +192,7 @@ def create_note(*, user, conversation, query, context, text, suggestions, kind=N
         origin='database',
         sources=[],
         suggestions=suggestions,
-        action_data={'kind': kind} if kind else {},
+        action_data={**({'kind': kind} if kind else {}), **(extra or {})},
     )
     _touch(conversation.pk)
     return interaction

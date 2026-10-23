@@ -8,6 +8,15 @@ import '../../auth/data/auth_provider.dart';
 import '../../reminders/data/reminder_sync.dart';
 import 'models/ai_message.dart';
 
+/// Échec de la voix, avec un message que l'on peut montrer tel quel à l'utilisateur.
+class VoiceException implements Exception {
+  final String message;
+  const VoiceException(this.message);
+
+  @override
+  String toString() => message;
+}
+
 class AiRepository {
   final ApiClient _apiClient;
 
@@ -119,33 +128,25 @@ class AiRepository {
     throw Exception('Échec du renommage de la discussion.');
   }
 
-  /// Transcrit un enregistrement audio en texte via Whisper (Phase 8).
+  /// Transcrit un enregistrement audio en texte (la lecture à voix haute, elle, se fait sur l'appareil).
+  ///
+  /// Lève une [VoiceException] dont le message est affichable tel quel (enregistrement trop court, rien d'audible,
+  /// service indisponible…).
   Future<String> transcribeAudio(Uint8List audioBytes) async {
-    final response = await _apiClient.post(
-      AppConstants.aiTranscribeEndpoint,
-      data: {
-        'audio_base64': base64Encode(audioBytes),
-      },
-    );
-    if (response.data is Map && response.data['text'] != null) {
-      return response.data['text'].toString();
+    try {
+      final response = await _apiClient.post(
+        AppConstants.aiTranscribeEndpoint,
+        data: {'audio_base64': base64Encode(audioBytes)},
+      );
+      if (response.data is Map && response.data['text'] != null) {
+        return response.data['text'].toString();
+      }
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      final message = data is Map ? data['error']?.toString() : null;
+      throw VoiceException(message ?? 'Impossible de joindre le service de transcription. Vérifiez votre connexion ou écrivez votre message.');
     }
-    throw Exception('Échec de la transcription audio.');
-  }
-
-  /// Synthétise un texte en audio MP3 via le backend TTS (Phase 8).
-  Future<Uint8List> synthesizeSpeech(String text, {String lang = 'fr'}) async {
-    final response = await _apiClient.post(
-      AppConstants.aiSynthesizeEndpoint,
-      data: {
-        'text': text,
-        'lang': lang,
-      },
-    );
-    if (response.data is Map && response.data['audio_base64'] != null) {
-      return base64Decode(response.data['audio_base64'].toString());
-    }
-    throw Exception('Échec de la synthèse vocale.');
+    throw const VoiceException('La transcription a échoué. Réessayez ou écrivez votre message.');
   }
 
   /// Confirme ou annule une proposition d'opération déjà faite par l'assistant.

@@ -254,7 +254,8 @@ void main() {
 
     testWidgets('Inscription ($tag)', (tester) async {
       await VisualHarness.shoot(tester, 'register_$tag', const AuthStyle(child: RegisterScreen()), dark: dark, overrides: _overrides(), size: const Size(390, 900));
-      expect(find.text('ÉTAPE 1 SUR 4'), findsOneWidget);
+      expect(find.text('Bienvenue'), findsOneWidget);
+      expect(find.byType(BrandLogo), findsOneWidget);
     });
 
     testWidgets('Présentation ($tag)', (tester) async {

@@ -18,9 +18,11 @@ from .actions import (
     analyze_farmer_finances,
     analyze_farmer_inventory
 )
-from . import proposals
+from . import dialogue, proposals
+from .language import detect as detect_language
+from .visuals import visual_for
 from .queries import answer_query, detect_query_intent
-from .analysis_answers import answer_analysis, detect_analysis_intent
+from .analysis_answers import answer_analysis, detect_analysis_intent, memory_of, resolve_followup
 from .proposals import ProposalNotFound, ProposalUnavailable, resolve_proposal
 
 MAX_QUERY_LENGTH = 1000
@@ -222,6 +224,7 @@ class AskAIView(views.APIView):
                     )
                 except ProposalUnavailable as exc:
                     return Response({"error": exc.message, "code": exc.code}, status=status.HTTP_409_CONFLICT)
+                dialogue.remember(conversation, product=dialogue.product_of(pending.action_data))
                 return _resolution_response(resolution)
 
             intent = detect_action_intent(safe_query, user=request.user)
@@ -243,6 +246,13 @@ class AskAIView(views.APIView):
                     )
                     return Response(AIInteractionSerializer(note).data, status=status.HTTP_201_CREATED)
 
+            # 1bis. Demande incomplète (« j'ai vendu du mil ») ou réponse à une question de précision : l'assistant ne devine
+            #       pas, il pose la question qui manque, puis construit la proposition habituelle quand tout est connu
+            turn = dialogue.handle_turn(request.user, conversation, safe_query, intent, context=context)
+            if turn is not None:
+                dialogue.remember(conversation, product=dialogue.product_of(turn.action_data))
+                return Response(AIInteractionSerializer(turn).data, status=status.HTTP_201_CREATED)
+
         # 2. Demande d'opération reconnue mais impossible à proposer (rappel introuvable, plusieurs candidats…)
         if intent and intent.get('note'):
             note = proposals.create_note(
@@ -256,6 +266,7 @@ class AskAIView(views.APIView):
             interaction = proposals.create_proposal(
                 user=request.user, conversation=conversation, query=safe_query, context=context, intent=intent,
             )
+            dialogue.remember(conversation, product=dialogue.product_of(interaction.action_data))
             return Response(AIInteractionSerializer(interaction).data, status=status.HTTP_201_CREATED)
 
         # 4. Consultation en lecture seule : la réponse vient de la base, sans modèle de langage
@@ -270,12 +281,17 @@ class AskAIView(views.APIView):
                 return Response(AIInteractionSerializer(note).data, status=status.HTTP_201_CREATED)
 
             # 5. Analyse chiffrée (revenus, dépenses, marges, ruptures…) : calculée par le code, jamais par le modèle
-            analysis_intent = detect_analysis_intent(safe_query, request.user)
+            #    « ce produit », « et le mois dernier ? », « et la tomate ? » se comprennent grâce à la mémoire de la conversation
+            last = dialogue.last_facts(conversation)
+            analysis_intent = detect_analysis_intent(safe_query, request.user, last=last) or resolve_followup(safe_query, request.user, last)
             if analysis_intent:
                 answer = answer_analysis(request.user, analysis_intent)
+                dialogue.remember(conversation, **memory_of(analysis_intent, answer))
+                visual = visual_for(analysis_intent, answer)
                 note = proposals.create_note(
                     user=request.user, conversation=conversation, query=safe_query, context=context,
                     text=answer['text'], suggestions=answer['suggestions'], kind='analysis',
+                    extra={'visual': visual} if visual else None,
                 )
                 return Response(AIInteractionSerializer(note).data, status=status.HTTP_201_CREATED)
 
@@ -286,7 +302,12 @@ class AskAIView(views.APIView):
             history = conv_hist if conv_hist else recent_history(request.user)
 
         # Appel au service IA avec contexte sécurisé et langue
-        language = request.data.get('language')
+        # Langue : celle demandée par le client, sinon détectée ; un message trop court (« oui », « 15000 ») garde la langue
+        # de l'échange précédent, ce qui conserve le contexte quand la conversation passe du français au wolof.
+        detected = detect_language(safe_query, (dialogue.last_facts(conversation).get('lang') if conversation else None))
+        language = request.data.get('language') or ('wo' if detected.is_wolof else None)
+        if conversation:
+            dialogue.remember(conversation, lang=detected.language)
         result = answer_question(
             safe_query,
             context,
@@ -319,8 +340,9 @@ class AskAIView(views.APIView):
                 conversation.title = new_title or "Discussion"
             conversation.save()
 
-        serializer = AIInteractionSerializer(interaction)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        # Langue de l'échange : le téléphone ne peut pas lire le wolof à voix haute, il doit le savoir
+        payload = dict(AIInteractionSerializer(interaction).data, language=detected.language)
+        return Response(payload, status=status.HTTP_201_CREATED)
 
 
 class ExecuteAIActionView(views.APIView):
@@ -384,8 +406,9 @@ class AnalyticsAIView(views.APIView):
 
 class TranscribeAudioView(views.APIView):
     """
-    Transcription audio en texte (Phase 8 : interaction vocale).
-    Accepte soit un upload de fichier multipart 'audio', soit une chaîne 'audio_base64'.
+    Transcription d'un message vocal en texte. Accepte un fichier multipart ``audio`` ou une chaîne ``audio_base64``.
+    L'audio n'est jamais conservé ; le texte renvoyé est ensuite envoyé par le client dans le circuit normal de
+    l'assistant (rien n'est exécuté sans confirmation).
     """
     permission_classes = [permissions.IsAuthenticated]
     throttle_classes = [ScopedRateThrottle]
@@ -393,7 +416,8 @@ class TranscribeAudioView(views.APIView):
 
     def post(self, request, *args, **kwargs):
         import base64
-        from .voice import transcribe_audio_bytes
+        import binascii
+        from . import voice
 
         audio_bytes = None
         content_type = "audio/m4a"
@@ -402,58 +426,39 @@ class TranscribeAudioView(views.APIView):
         if 'audio' in request.FILES:
             f = request.FILES['audio']
             audio_bytes = f.read()
-            content_type = f.content_type or "audio/m4a"
-            filename = f.name or "audio.m4a"
+            content_type = f.content_type or content_type
+            filename = f.name or filename
         elif 'audio_base64' in request.data:
-            raw_b64 = request.data.get('audio_base64', '')
+            raw_b64 = str(request.data.get('audio_base64') or '')
+            if len(raw_b64) > voice.MAX_AUDIO_BYTES * 4 // 3 + 8:  # on refuse avant de décoder une charge énorme
+                return Response({"error": "Enregistrement trop volumineux (15 Mo maximum).", "code": "too_large"},
+                                status=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE)
             try:
-                audio_bytes = base64.b64decode(raw_b64)
-            except Exception:
-                return Response({"error": "Format base64 audio invalide."}, status=status.HTTP_400_BAD_REQUEST)
+                audio_bytes = base64.b64decode(raw_b64, validate=True)
+            except (binascii.Error, ValueError):
+                return Response({"error": "Format base64 audio invalide.", "code": "bad_audio"},
+                                status=status.HTTP_400_BAD_REQUEST)
 
         if not audio_bytes:
-            return Response({"error": "Fichier audio ou audio_base64 requis."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "Fichier audio ou audio_base64 requis.", "code": "missing_audio"},
+                            status=status.HTTP_400_BAD_REQUEST)
+        if len(audio_bytes) > voice.MAX_AUDIO_BYTES:
+            return Response({"error": "Enregistrement trop volumineux (15 Mo maximum).", "code": "too_large"},
+                            status=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE)
+        if len(audio_bytes) < voice.MIN_AUDIO_BYTES:
+            return Response({"text": "", "error": "Enregistrement trop court : maintenez le micro et parlez.",
+                             "code": "too_short"}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
 
-        if len(audio_bytes) > 15_000_000:
-            return Response({"error": "Fichier audio trop volumineux (max 15 Mo)."}, status=status.HTTP_400_BAD_REQUEST)
+        detected = voice.sniff_audio_format(audio_bytes)
+        if detected:
+            filename, content_type = detected
 
-        text = transcribe_audio_bytes(audio_bytes, filename=filename, content_type=content_type)
+        text = voice.transcribe_audio_bytes(audio_bytes, filename=filename, content_type=content_type)
         if text is None:
-            return Response({
-                "text": "",
-                "error": "Service de transcription momentanément indisponible."
-            }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
-
-        return Response({"text": text}, status=status.HTTP_200_OK)
-
-
-class SynthesizeSpeechView(views.APIView):
-    """
-    Synthèse vocale (TTS - Phase 8) : convertit un texte agronomique en flux audio MP3.
-    """
-    permission_classes = [permissions.IsAuthenticated]
-    throttle_classes = [ScopedRateThrottle]
-    throttle_scope = 'ai'
-
-    def post(self, request, *args, **kwargs):
-        import base64
-        from .voice import synthesize_speech_bytes
-
-        text = request.data.get('text', '').strip()
-        lang = request.data.get('lang', 'fr')
+            return Response({"text": "", "error": "Le service de transcription est momentanément indisponible. "
+                                                  "Vous pouvez écrire votre message.", "code": "unavailable"},
+                            status=status.HTTP_503_SERVICE_UNAVAILABLE)
         if not text:
-            return Response({"error": "Le paramètre 'text' est requis."}, status=status.HTTP_400_BAD_REQUEST)
-
-        audio_bytes = synthesize_speech_bytes(text, lang=lang)
-        if not audio_bytes:
-            return Response({"error": "Échec de la génération audio TTS."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-        return Response({
-            "audio_base64": base64.b64encode(audio_bytes).decode('ascii'),
-            "content_type": "audio/mp3",
-            "length": len(audio_bytes)
-        }, status=status.HTTP_200_OK)
-
-
-
-
+            return Response({"text": "", "error": "Je n'ai rien entendu. Rapprochez-vous du micro et réessayez.",
+                             "code": "no_speech"}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+        return Response({"text": text}, status=status.HTTP_200_OK)

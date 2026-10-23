@@ -10,6 +10,7 @@ class StockItem(models.Model):
     unit = models.CharField(max_length=50) # kg, tonnes, sacs...
     alert_status = models.BooleanField(default=False)
     ai_storage_advice = models.TextField(blank=True, null=True, help_text="Conseils générés par l'IA")
+    advice_attempted_at = models.DateTimeField(null=True, blank=True, help_text="Dernière tentative de génération du conseil de stockage")
     updated_at = models.DateTimeField(auto_now=True)
     created_at = models.DateTimeField(auto_now_add=True)
 

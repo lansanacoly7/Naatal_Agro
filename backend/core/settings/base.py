@@ -23,6 +23,30 @@ GROQ_API_KEY = os.getenv('API_KEY_GROQ') or os.getenv('GROQ_API_KEY')
 GROQ_MODEL = os.getenv('GROQ_MODEL', 'qwen/qwen3.8-27b')
 GEMINI_API_KEY = os.getenv('API_KEY_GEMINI') or os.getenv('GEMINI_API_KEY')
 GEMINI_MODEL = os.getenv('GEMINI_MODEL', 'gemini-3.5-flash')
+GROQ_VISION_MODEL = os.getenv('GROQ_VISION_MODEL', GROQ_MODEL)
+# Plusieurs clés Gemini possibles (rotation automatique quand l'une atteint son quota) : GEMINI_API_KEYS="cle1,cle2"
+
+
+def unique_keys(*raw_values):
+    """Fusionne des listes de clés « a,b » (ou des clés seules) en une liste sans vide ni doublon, ordre conservé."""
+    return list(dict.fromkeys(key.strip() for raw in raw_values for key in (raw or '').split(',') if key.strip()))
+
+
+GEMINI_API_KEYS = unique_keys(os.getenv('GEMINI_API_KEYS'), GEMINI_API_KEY)
+
+# Orchestration des modèles de langage (apps/ai_assistant/llm.py)
+AI_PROVIDER_ORDER = os.getenv('AI_PROVIDER_ORDER', 'groq,gemini')                  # texte : premier = prioritaire
+AI_VISION_PROVIDER_ORDER = os.getenv('AI_VISION_PROVIDER_ORDER', 'groq,gemini')    # analyse de photo
+AI_GROQ_FALLBACK_MODELS = os.getenv('AI_GROQ_FALLBACK_MODELS', 'openai/gpt-oss-120b')
+AI_GEMINI_FALLBACK_MODELS = os.getenv('AI_GEMINI_FALLBACK_MODELS', 'gemini-flash-latest')
+# Budget TOTAL d'une demande, repli entre fournisseurs compris. Il doit rester sous le timeout de gunicorn et de nginx (60 s),
+# sinon le serveur coupe la requête en plein repli et l'utilisateur reçoit une erreur 502 au lieu d'un message clair.
+AI_TOTAL_BUDGET_SECONDS = float(os.getenv('AI_TOTAL_BUDGET_SECONDS', '40'))
+AI_ATTEMPT_TIMEOUT_SECONDS = float(os.getenv('AI_ATTEMPT_TIMEOUT_SECONDS', '14'))
+AI_VISION_ATTEMPT_TIMEOUT_SECONDS = float(os.getenv('AI_VISION_ATTEMPT_TIMEOUT_SECONDS', '20'))
+AI_MAX_ATTEMPTS = int(os.getenv('AI_MAX_ATTEMPTS', '4'))
+AI_DAILY_CALLS_PER_USER = int(os.getenv('AI_DAILY_CALLS_PER_USER', '150'))          # réponses de modèle par utilisateur et par jour
+AI_STORAGE_ADVICE_ASYNC = os.getenv('AI_STORAGE_ADVICE_ASYNC', 'True').lower() in ('true', '1', 't')
 
 # Sites dont les informations peuvent alimenter les fiches agronomiques (sources institutionnelles).
 # Une proposition dont la source n'est pas sur l'un de ces domaines (en https) ne peut pas être approuvée.
@@ -47,7 +71,12 @@ DEBUG = os.getenv('DEBUG', 'False').lower() in ('true', '1', 't')
 OTP_DEMO_MODE = os.getenv('OTP_DEMO_MODE', str(DEBUG)).lower() in ('true', '1', 't')
 OTP_MAX_ATTEMPTS = int(os.getenv('OTP_MAX_ATTEMPTS', '5'))
 # Inscription : exiger un code OTP valide (sinon l'OTP n'est qu'un controle cote application).
+# DESACTIVE jusqu'a decision contraire : l'inscription ne doit jamais bloquer sur le code.
 OTP_REQUIRED_FOR_REGISTER = os.getenv('OTP_REQUIRED_FOR_REGISTER', 'False').lower() in ('true', '1', 't')
+# Code unique utilise a l'inscription tant qu'aucune passerelle SMS n'est branchee (vide = code aleatoire).
+# Ne s'applique JAMAIS a la reinitialisation de mot de passe : un code connu de tous permettrait de
+# prendre le controle de n'importe quel compte.
+OTP_REGISTER_FIXED_CODE = os.getenv('OTP_REGISTER_FIXED_CODE', '1234').strip()
 
 ALLOWED_HOSTS = [h.strip() for h in os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,10.0.2.2').split(',') if h.strip()]
 
@@ -134,6 +163,22 @@ else:
         }
     }
 
+
+def cache_settings(backend):
+    """
+    Cache de l'application. En mémoire par défaut (développement : un seul processus).
+
+    En production, gunicorn lance plusieurs workers : avec un cache en mémoire, chacun compte ses propres tentatives et
+    ses propres pannes (3 workers = 3 fois les limites de débit, et un fournisseur d'IA en panne n'est écarté que par le
+    worker qui l'a constaté). ``CACHE_BACKEND=db`` utilise une table de la base commune, créée par
+    ``manage.py createcachetable`` : limites et disjoncteurs sont alors partagés. Redis conviendrait aussi, mais ajoute un service.
+    """
+    if str(backend).lower() == 'db':
+        return {'default': {'BACKEND': 'django.core.cache.backends.db.DatabaseCache', 'LOCATION': 'naatal_cache'}}
+    return {'default': {'BACKEND': 'django.core.cache.backends.locmem.LocMemCache'}}
+
+
+CACHES = cache_settings(os.getenv('CACHE_BACKEND', 'locmem'))
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
@@ -240,3 +285,9 @@ if 'test' in sys.argv:
     REST_FRAMEWORK['DEFAULT_THROTTLE_CLASSES'] = []
     REST_FRAMEWORK['DEFAULT_THROTTLE_RATES'].update({'auth': '10000/minute', 'ai': '10000/minute'})
 
+    # Les tests ne doivent JAMAIS appeler un vrai service d'IA (les clés du .env sont chargées) : sans clé, les
+    # fournisseurs sont « non configurés ». Un test d'orchestration injecte ses propres faux fournisseurs ou ses clés.
+    GROQ_API_KEY = None
+    GEMINI_API_KEY = None
+    GEMINI_API_KEYS = []
+    AI_STORAGE_ADVICE_ASYNC = False

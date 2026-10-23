@@ -53,11 +53,13 @@ class ProfileRepository {
     String? fullName,
     String? location,
     String? language,
+    List<String>? mainCrops,
   }) async {
     final payload = <String, dynamic>{};
     if (fullName != null) payload['full_name'] = fullName;
     if (location != null) payload['location'] = location;
     if (language != null) payload['language'] = language;
+    if (mainCrops != null) payload['main_crops'] = mainCrops;
 
     final response = await _apiClient.patch(AppConstants.profileEndpoint, data: payload);
     if (response.statusCode == 200 && response.data != null) {

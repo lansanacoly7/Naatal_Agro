@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../core/constants/app_constants.dart';
 import '../../features/auth/data/auth_provider.dart';
@@ -32,7 +33,7 @@ class ProfileScreen extends ConsumerWidget {
       slivers: [
         SliverToBoxAdapter(
           child: profile.when(
-            loading: () => const Padding(padding: EdgeInsets.all(Space.gutter), child: Skeleton(height: 140, radius: 28)),
+            loading: () => const _ProfileSkeleton(),
             error: (e, _) => Column(
               children: [
                 ErrorState(
@@ -40,7 +41,10 @@ class ProfileScreen extends ConsumerWidget {
                   onRetry: () => ref.read(profileNotifierProvider.notifier).loadProfile(),
                 ),
                 // Toujours pouvoir quitter le compte, même si le profil ne charge pas.
-                PillButton(label: 'Se déconnecter', variant: PillVariant.secondary, onPressed: () => ref.read(authStateProvider.notifier).logout()),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: Space.gutter),
+                  child: PillButton(label: 'Se déconnecter', variant: PillVariant.secondary, expand: true, onPressed: () => ref.read(authStateProvider.notifier).logout()),
+                ),
               ],
             ),
             data: (p) => Column(
@@ -93,7 +97,10 @@ class ProfileScreen extends ConsumerWidget {
                       trailing: Switch.adaptive(
                         value: reduced,
                         activeTrackColor: c.accent,
-                        onChanged: (v) => ref.read(effectsReducedProvider.notifier).set(v),
+                        onChanged: (v) {
+                          HapticFeedback.selectionClick();
+                          ref.read(effectsReducedProvider.notifier).set(v);
+                        },
                       ),
                     ),
                     GroupedRow(
@@ -113,13 +120,7 @@ class ProfileScreen extends ConsumerWidget {
                       chevron: true,
                       onTap: () => showNaatalSheet<void>(context, builder: (ctx) => const _ChangePasswordSheet()),
                     ),
-                    GroupedRow(
-                      leading: IconTile(icon: Icons.download_rounded, color: c.slate),
-                      title: 'Récupérer mes données',
-                      subtitle: 'Copie de toutes vos données (JSON)',
-                      chevron: true,
-                      onTap: () => _exportData(context, ref),
-                    ),
+                    const _ExportDataRow(),
                     GroupedRow(
                       leading: IconTile(icon: Icons.policy_rounded, color: c.slate),
                       title: 'Politique de confidentialité',
@@ -176,21 +177,103 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _exportData(BuildContext context, WidgetRef ref) async {
+}
+
+/// Squelette fidèle à la page : carte d'identité puis trois groupes de lignes.
+class _ProfileSkeleton extends StatelessWidget {
+  const _ProfileSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(padding: EdgeInsets.symmetric(horizontal: Space.gutter), child: Skeleton(height: 168, radius: 28)),
+        SizedBox(height: Space.xl),
+        _SkeletonGroup(rows: 3),
+        SizedBox(height: Space.xl),
+        _SkeletonGroup(rows: 3),
+        SizedBox(height: Space.xl),
+        _SkeletonGroup(rows: 5),
+      ],
+    );
+  }
+}
+
+class _SkeletonGroup extends StatelessWidget {
+  const _SkeletonGroup({required this.rows});
+
+  final int rows;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: Space.gutter),
+      child: Column(
+        children: [
+          for (var i = 0; i < rows; i++) ...[
+            if (i > 0) const SizedBox(height: Space.s),
+            const Skeleton(height: 60, radius: Radii.l),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Export des données : la ligne reste inactive pendant la requête (pas de double envoi).
+class _ExportDataRow extends ConsumerStatefulWidget {
+  const _ExportDataRow();
+
+  @override
+  ConsumerState<_ExportDataRow> createState() => _ExportDataRowState();
+}
+
+class _ExportDataRowState extends ConsumerState<_ExportDataRow> {
+  bool _busy = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    return GroupedRow(
+      leading: IconTile(icon: Icons.download_rounded, color: c.slate),
+      title: 'Récupérer mes données',
+      subtitle: _busy ? 'Préparation en cours…' : 'Fichier de toutes vos données (JSON)',
+      trailing: _busy ? SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: c.accent)) : null,
+      chevron: !_busy,
+      onTap: _busy ? null : _exportData,
+    );
+  }
+
+  Future<void> _exportData() async {
     final messenger = ScaffoldMessenger.of(context);
-    messenger.showSnackBar(const SnackBar(content: Text('Préparation de vos données…')));
+    setState(() => _busy = true);
     try {
       final response = await ref.read(apiClientProvider).get(AppConstants.exportDataEndpoint);
       final data = response.data;
       if (data is! Map) throw Exception('format');
       final summary = '${(data['crops'] as List?)?.length ?? 0} culture(s), ${(data['sales'] as List?)?.length ?? 0} vente(s), ${(data['stock_items'] as List?)?.length ?? 0} produit(s) en stock';
       final json = const JsonEncoder.withIndent('  ').convert(Map<String, dynamic>.from(data));
-      await Clipboard.setData(ClipboardData(text: json));
       messenger.hideCurrentSnackBar();
-      messenger.showSnackBar(SnackBar(content: Text('Données copiées ($summary). Collez-les dans une note ou un e-mail.')));
+      try {
+        // Fichier JSON via la feuille de partage système (enregistrer, e-mail, WhatsApp…).
+        const fileName = 'naatal-agro-donnees.json';
+        await SharePlus.instance.share(ShareParams(
+          files: [XFile.fromData(utf8.encode(json), mimeType: 'application/json', name: fileName)],
+          fileNameOverrides: [fileName],
+          subject: 'Mes données Naatal Agro',
+          text: summary,
+        ));
+      } catch (_) {
+        // Partage indisponible sur cet appareil : on retombe sur le presse-papiers.
+        await Clipboard.setData(ClipboardData(text: json));
+        messenger.showSnackBar(SnackBar(content: Text('Données copiées ($summary). Collez-les dans une note ou un e-mail.')));
+      }
     } catch (_) {
       messenger.hideCurrentSnackBar();
       messenger.showSnackBar(const SnackBar(content: Text('Impossible de récupérer vos données. Vérifiez votre réseau.')));
+    } finally {
+      if (mounted) setState(() => _busy = false);
     }
   }
 }
@@ -204,7 +287,11 @@ class _IdentityCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
-    return AuroraBackground(
+    return PressScale(
+      onTap: onEdit,
+      scale: 0.99,
+      semanticLabel: 'Modifier mon profil',
+      child: AuroraBackground(
       borderRadius: BorderRadius.circular(28),
       child: Padding(
         padding: const EdgeInsets.all(Space.xl),
@@ -263,6 +350,7 @@ class _IdentityCard extends StatelessWidget {
             ),
           ],
         ),
+      ),
       ),
     );
   }
@@ -371,6 +459,10 @@ class _ChangePasswordSheetState extends ConsumerState<_ChangePasswordSheet> {
   final _new = TextEditingController();
   final _confirm = TextEditingController();
   bool _busy = false;
+  bool _show = false;
+  String? _oldError;
+  String? _newError;
+  String? _confirmError;
   String? _error;
 
   @override
@@ -382,17 +474,21 @@ class _ChangePasswordSheetState extends ConsumerState<_ChangePasswordSheet> {
   }
 
   Future<void> _save() async {
-    if (_old.text.isEmpty || _new.text.length < 8) {
-      setState(() => _error = 'Saisissez votre mot de passe actuel et un nouveau d\'au moins 8 caractères.');
-      return;
-    }
-    if (_new.text != _confirm.text) {
-      setState(() => _error = 'Les deux nouveaux mots de passe ne correspondent pas.');
+    final oldError = _old.text.isEmpty ? 'Saisissez votre mot de passe actuel.' : null;
+    final newError = _new.text.length < 8 ? 'Au moins 8 caractères.' : null;
+    final confirmError = _new.text != _confirm.text ? 'Les deux mots de passe ne correspondent pas.' : null;
+    if (oldError != null || newError != null || confirmError != null) {
+      setState(() {
+        _oldError = oldError;
+        _newError = newError;
+        _confirmError = newError == null ? confirmError : null;
+        _error = null;
+      });
       return;
     }
     setState(() {
       _busy = true;
-      _error = null;
+      _oldError = _newError = _confirmError = _error = null;
     });
     try {
       await ref.read(apiClientProvider).post(AppConstants.changePasswordEndpoint, data: {'old_password': _old.text, 'new_password': _new.text}, queueWhenOffline: false);
@@ -423,12 +519,51 @@ class _ChangePasswordSheetState extends ConsumerState<_ChangePasswordSheet> {
           const SizedBox(height: Space.xs),
           Text('Vous serez déconnecté de tous vos appareils.', style: T.body(color: c.ink2)),
           const SizedBox(height: Space.l),
-          TextField(controller: _old, obscureText: true, decoration: const InputDecoration(labelText: 'Mot de passe actuel')),
-          const SizedBox(height: Space.m),
-          TextField(controller: _new, obscureText: true, decoration: const InputDecoration(labelText: 'Nouveau mot de passe')),
-          const SizedBox(height: Space.m),
-          TextField(controller: _confirm, obscureText: true, decoration: InputDecoration(labelText: 'Confirmer le nouveau mot de passe', errorText: _error, errorMaxLines: 3)),
-          const SizedBox(height: Space.xl),
+          AutofillGroup(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                TextField(
+                  controller: _old,
+                  obscureText: !_show,
+                  autofillHints: const [AutofillHints.password],
+                  textInputAction: TextInputAction.next,
+                  decoration: InputDecoration(labelText: 'Mot de passe actuel', errorText: _oldError, errorMaxLines: 3),
+                ),
+                const SizedBox(height: Space.m),
+                TextField(
+                  controller: _new,
+                  obscureText: !_show,
+                  autofillHints: const [AutofillHints.newPassword],
+                  textInputAction: TextInputAction.next,
+                  decoration: InputDecoration(labelText: 'Nouveau mot de passe', errorText: _newError, errorMaxLines: 3),
+                ),
+                const SizedBox(height: Space.m),
+                TextField(
+                  controller: _confirm,
+                  obscureText: !_show,
+                  autofillHints: const [AutofillHints.newPassword],
+                  textInputAction: TextInputAction.done,
+                  onSubmitted: (_) => _busy ? null : _save(),
+                  decoration: InputDecoration(labelText: 'Confirmer le nouveau mot de passe', errorText: _confirmError, errorMaxLines: 3),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: Space.xs),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              onPressed: () => setState(() => _show = !_show),
+              icon: Icon(_show ? Icons.visibility_off_rounded : Icons.visibility_rounded, size: 18),
+              label: Text(_show ? 'Masquer les mots de passe' : 'Afficher les mots de passe'),
+            ),
+          ),
+          if (_error != null) ...[
+            const SizedBox(height: Space.xs),
+            Text(_error!, style: T.caption(color: c.clay, weight: 600)),
+          ],
+          const SizedBox(height: Space.l),
           PillButton(label: 'Changer le mot de passe', expand: true, loading: _busy, onPressed: _busy ? null : _save),
         ],
       ),
@@ -459,6 +594,7 @@ class _DeleteAccountSheetState extends ConsumerState<_DeleteAccountSheet> {
       setState(() => _error = 'Saisissez votre mot de passe pour confirmer.');
       return;
     }
+    HapticFeedback.heavyImpact();
     setState(() {
       _busy = true;
       _error = null;
@@ -555,24 +691,33 @@ class _PolicySheetState extends ConsumerState<_PolicySheet> {
   }
 }
 
-class _PhotoCreditsSheet extends StatelessWidget {
+/// Crédits lus dans `assets/data/photo_credits.json` : on met à jour le fichier, pas le code.
+class _PhotoCreditsSheet extends StatefulWidget {
   const _PhotoCreditsSheet();
 
-  static const _credits = [
-    ('Patate douce', 'Arivumathi', 'CC0 1.0 (Domaine public)'),
-    ('Piment', 'Arivumathi', 'CC0 1.0 (Domaine public)'),
-    ('Laitue', 'Rainer Zenz', 'GPL / GFDL'),
-    ('Manioc', 'Domaine public', 'CC0 1.0 (Domaine public)'),
-    ('Melon', 'Renee Comet (NCI / USDA)', 'Domaine public'),
-    ('Navet', 'Tiia Monto', 'CC BY-SA 4.0'),
-    ('Orange', 'Evan-Amos', 'CC BY-SA 3.0'),
-    ('Poivron', 'Luc Viatour', 'CC BY-SA 3.0'),
-    ('Sorgho', 'Roger Culos / MHNT', 'CC BY-SA 4.0'),
-  ];
+  @override
+  State<_PhotoCreditsSheet> createState() => _PhotoCreditsSheetState();
+}
+
+class _PhotoCreditsSheetState extends State<_PhotoCreditsSheet> {
+  late final Future<Map<String, dynamic>> _data = rootBundle.loadString('assets/data/photo_credits.json').then((s) => jsonDecode(s) as Map<String, dynamic>);
 
   @override
   Widget build(BuildContext context) {
     final c = context.c;
+    return FutureBuilder<Map<String, dynamic>>(
+      future: _data,
+      builder: (context, snap) {
+        if (snap.hasError) return const ErrorState(compact: true, message: 'Les crédits n\'ont pas pu être chargés.');
+        if (!snap.hasData) return const SizedBox(height: 240, child: Padding(padding: EdgeInsets.all(Space.xxl), child: Skeleton(height: 200, radius: 16)));
+        final data = snap.data!;
+        final credits = (data['credits'] as List).cast<Map<String, dynamic>>();
+        return _content(context, c, '${data['intro']}', '${data['footnote']}', credits);
+      },
+    );
+  }
+
+  Widget _content(BuildContext context, NaatalColors c, String intro, String footnote, List<Map<String, dynamic>> credits) {
     return SizedBox(
       height: MediaQuery.sizeOf(context).height * 0.75,
       child: Column(
@@ -586,7 +731,7 @@ class _PhotoCreditsSheet extends StatelessWidget {
                 Text('Crédits photos', style: T.title(color: c.ink)),
                 const SizedBox(height: Space.xs),
                 Text(
-                  'Photographies sous licence libre issues de Wikimedia Commons.',
+                  intro,
                   style: T.caption(color: c.ink2),
                 ),
               ],
@@ -595,19 +740,19 @@ class _PhotoCreditsSheet extends StatelessWidget {
           Expanded(
             child: ListView.separated(
               padding: const EdgeInsets.fromLTRB(Space.xxl, 0, Space.xxl, Space.xxl),
-              itemCount: _credits.length + 1,
+              itemCount: credits.length + 1,
               separatorBuilder: (_, __) => Divider(height: 1, color: c.line),
               itemBuilder: (context, i) {
-                if (i == _credits.length) {
+                if (i == credits.length) {
                   return Padding(
                     padding: const EdgeInsets.only(top: Space.l),
                     child: Text(
-                      'Les 13 autres photographies de produits du catalogue ont été générées par intelligence artificielle spécifiquement pour Naatal Agro.',
+                      footnote,
                       style: T.caption(color: c.ink2, weight: 400),
                     ),
                   );
                 }
-                final item = _credits[i];
+                final item = credits[i];
                 return Padding(
                   padding: const EdgeInsets.symmetric(vertical: Space.s),
                   child: Row(
@@ -615,7 +760,7 @@ class _PhotoCreditsSheet extends StatelessWidget {
                     children: [
                       Expanded(
                         flex: 4,
-                        child: Text(item.$1, style: T.body(color: c.ink, weight: 600)),
+                        child: Text('${item['product']}', style: T.body(color: c.ink, weight: 600)),
                       ),
                       const SizedBox(width: Space.s),
                       Expanded(
@@ -623,8 +768,8 @@ class _PhotoCreditsSheet extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(item.$2, style: T.body(color: c.ink, weight: 500)),
-                            Text(item.$3, style: T.caption(color: c.accent, weight: 500)),
+                            Text('${item['author']}', style: T.body(color: c.ink, weight: 500)),
+                            Text('${item['license']}', style: T.caption(color: c.accent, weight: 500)),
                           ],
                         ),
                       ),

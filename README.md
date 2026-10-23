@@ -13,8 +13,9 @@
 5. **Météo Agricole Prédictive** : Alertes climatiques et prévisions de précipitations géolocalisées.
 6. **Naatal IA Décisionnelle** : 
    - Conseils agronomiques contextualisés aux parcelles et terroirs sénégalais.
-   - Diagnostic phytosanitaire par vision artificielle (Gemini).
-   - Analyse décisionnelle sécurisée sans fuite de données inter-exploitations (Groq / Llama-3.1).
+   - Diagnostic phytosanitaire par vision artificielle (Groq vision, avec repli sur Gemini ; jamais de repli vers un modèle sans vision).
+   - Analyses chiffrées (bilan, dépenses par catégorie, produits, marges, ruptures de stock) **calculées par le code**, jamais par le modèle de langage.
+   - Actions par le texte (dépense, vente, correction de stock, rappel ; la voix est en cours de finalisation) avec récapitulatif et confirmation explicite avant toute écriture.
 7. **Profil d'Exploitant Dynamique** : Vue complète de l'exploitation, des cultures suivies et paramètres personnalisés.
 
 ---
@@ -24,7 +25,9 @@
 - **Mobile** : Flutter 3.x, Riverpod (State Management), GoRouter (Navigation), flutter_map (Cartographie OSM), Charte « Images d'abord » (fond sahélien `#FBF7F0`, cibles tactiles ≥ 56 px, 44 photographies studio de produits, composants `PhotoTile` et `BigActionButton`).
 - **Backend** : Python 3.12+, Django 5.x, Django REST Framework, SimpleJWT.
 - **Base de Données** : PostgreSQL (Production) / SQLite (Développement local).
-- **Intelligence Artificielle** : Groq (Llama-3.1-8b-instant) + Google Gemini (modèle configurable via `GEMINI_MODEL`).
+- **Intelligence Artificielle** : Groq (modèle `GROQ_MODEL`, `qwen/qwen3.8-27b` par défaut) + Google Gemini (`GEMINI_MODEL`), pilotés par un orchestrateur
+  (`backend/apps/ai_assistant/llm.py`) : repli automatique, rotation de plusieurs clés Gemini (`GEMINI_API_KEYS`), budget de temps de 40 s par demande,
+  journal d'usage sans contenu (`manage.py ai_usage_report`). Ordre des fournisseurs réglable par `AI_PROVIDER_ORDER`.
 - **Notifications** : Firebase Cloud Messaging (FCM).
 
 ---
@@ -132,11 +135,14 @@ migrations et `check --deploy`, sur chaque push et pull request vers `main`, `de
 - JWT : accès 1 jour, refresh 7 jours avec rotation ; tokens stockés dans le stockage sécurisé du téléphone.
 - Chaque ressource privée (cultures, finances, stock, notifications) est filtrée par utilisateur.
 - L'assistant IA ne reçoit que le contexte de l'utilisateur connecté et n'exécute aucun SQL.
-- Limitation de débit : 10 requêtes/min sur login et inscription, 30/heure sur l'assistant IA.
+- Limitation de débit : 10 requêtes/min sur login et inscription, 60/heure et 150 réponses de modèle par jour et par utilisateur sur l'assistant IA
+  (`AI_DAILY_CALLS_PER_USER`). En production avec plusieurs workers, `CACHE_BACKEND=db` partage ces compteurs entre eux (déjà réglé dans `docker-compose.yml`).
+- Injection de prompt : les données de la base et de l'utilisateur sont neutralisées et encadrées par des balises de données ; le modèle n'a aucun accès en écriture.
 - Ne jamais commiter `.env` ; utiliser `backend/.env.example` comme modèle.
 
 ## 📌 Périmètre actuel
 
 Marketplace B2B, rôle acheteur, paiements Mobile Money et notifications push côté téléphone ne sont **pas**
 implémentés dans cette version (voir `docs/13-Roadmap.md`, phase 3). Le backend sait envoyer des push
-Firebase, mais l'application mobile ne s'enregistre pas encore (pas de `firebase_messaging`).
+Firebase, mais l'application mobile ne s'enregistre pas encore (pas de `firebase_messaging`). Les **rappels** programmés avec l'assistant
+sonnent grâce à des notifications locales sur le téléphone (Android/iOS) ou à une alerte dans l'application (navigateur, tant qu'elle est ouverte).

@@ -20,22 +20,19 @@ class InventoryTests(TestCase):
     def test_requires_authentication(self):
         self.assertEqual(APIClient().get('/api/inventory/').status_code, status.HTTP_401_UNAUTHORIZED)
 
-    @patch('apps.inventory.views.call_llm', return_value='Stockez au sec.')
-    def test_create_stores_ai_advice(self, _llm):
-        response = self.client.post('/api/inventory/', self.payload, format='json')
+    @patch('apps.inventory.views.schedule_storage_advice')
+    def test_create_returns_immediately_and_schedules_the_advice_afterwards(self, schedule):
+        with patch('apps.inventory.advice.call_llm') as llm:
+            response = self.client.post('/api/inventory/', self.payload, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         item = StockItem.objects.get()
         self.assertEqual(item.user, self.ali)
-        self.assertEqual(item.ai_storage_advice, 'Stockez au sec.')
+        schedule.assert_called_once_with(item.pk)
+        llm.assert_not_called()  # aucun appel au modèle pendant la requête
+        self.assertFalse(item.ai_storage_advice)
 
-    @patch('apps.inventory.views.call_llm', return_value=None)
-    def test_create_works_when_ai_is_unavailable(self, _llm):
-        response = self.client.post('/api/inventory/', self.payload, format='json')
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertFalse(StockItem.objects.get().ai_storage_advice)
-
-    @patch('apps.inventory.views.call_llm', return_value=None)
-    def test_ai_fields_are_read_only(self, _llm):
+    @patch('apps.inventory.views.schedule_storage_advice')
+    def test_ai_fields_are_read_only(self, _schedule):
         payload = {**self.payload, 'alert_status': True, 'ai_storage_advice': 'piraté'}
         response = self.client.post('/api/inventory/', payload, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)

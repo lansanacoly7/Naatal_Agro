@@ -625,3 +625,49 @@ def context_digest(user, today=None):
         digest['marge_par_culture'] = [{'culture': c['name'], 'marge_fcfa': c['margin'], 'taux_pct': c['margin_rate_pct']}
                                        for c in profitable]
     return digest
+
+
+# --------------------------------------------------------------------------------------------------------------
+# Un produit en détail, et les dernières opérations (pour « ce produit », « mes dernières ventes »…)
+# --------------------------------------------------------------------------------------------------------------
+def product_summary(user, product, period):
+    """Ventes d'un produit sur une période (quantité, chiffre d'affaires, prix) + son stock actuel et sa rentabilité."""
+    key = normalize_text(product)
+    sales = [s for s in _sales(user, period).select_related('crop') if normalize_text(_product_name(s)) == key]
+    quantity = sum(float(s.quantity_sold) for s in sales)
+    revenue = sum(s.total_revenue for s in sales)
+    prices = [float(s.price_per_unit) for s in sales]
+    last_sale = max(sales, key=lambda s: (s.date, s.created_at), default=None)
+
+    stock = next((i for i in stock_outlook(user)['items'] if normalize_text(i['name']) == key), None)
+    profit = next((c for c in crop_profitability(user)['crops'] if normalize_text(c['name']) == key), None)
+    return {
+        'period': period.as_dict(),
+        'product': product,
+        'sales_count': len(sales),
+        'quantity': round(quantity, 2),
+        'revenue': _round(revenue),
+        'avg_unit_price': _round(revenue / quantity) if quantity else None,
+        'min_unit_price': _round(min(prices)) if prices else None,
+        'max_unit_price': _round(max(prices)) if prices else None,
+        'last_sale': {'date': last_sale.date.isoformat(), 'quantity': float(last_sale.quantity_sold),
+                      'unit_price': _round(last_sale.price_per_unit)} if last_sale else None,
+        'stock': stock,
+        'profitability': profit,
+    }
+
+
+def recent_sales(user, limit=5):
+    """Les dernières ventes enregistrées, de la plus récente à la plus ancienne."""
+    rows = _sales(user).select_related('crop').order_by('-date', '-created_at')[:limit]
+    return {'sales': [{'date': s.date.isoformat(), 'product': _product_name(s), 'quantity': float(s.quantity_sold),
+                       'unit_price': _round(s.price_per_unit), 'total': _round(s.total_revenue), 'buyer': s.buyer or ''}
+                      for s in rows]}
+
+
+def recent_expenses(user, limit=5):
+    """Les dernières dépenses enregistrées, de la plus récente à la plus ancienne."""
+    rows = _transactions(user, 'expense').select_related('crop').order_by('-date', '-created_at')[:limit]
+    return {'expenses': [{'date': t.date.isoformat(), 'description': t.description, 'amount': _round(t.amount),
+                          'category': t.category or 'autre', 'label': category_label(t.category or 'autre'),
+                          'crop': t.crop.name if t.crop_id else ''} for t in rows]}

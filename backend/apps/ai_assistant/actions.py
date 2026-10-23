@@ -35,6 +35,11 @@ RE_EXPENSE_WITH_QTY = re.compile(
 
 # 2. Dépense formulée sous forme d'ordre impératif
 # Ex: "Enregistre une dépense de 15000 FCFA pour l'essence"
+# Achat formulé en wolof, produit avant le montant : « Jënd naa engrais 20000 cfa »
+RE_EXPENSE_WOLOF_BUY = re.compile(
+    r'\bj[ëe]nd\s+(?:naa|na|nga|nañu)\s+([a-zA-ZÀ-ÿ\s]+?)\s+([0-9][0-9\s.,]*)\s*(?:fcfa|cfa|f\b)', re.IGNORECASE
+)
+
 RE_EXPENSE_COMMAND = re.compile(
     r'(?:enregistre|ajoute|note|mets)\s+(?:une\s+)?d[ée]pens[ée]\s+(?:de\s+)?'
     r'([0-9\s.,]+)\s*(?:fcfa|cfa|f\b)?\s*'
@@ -45,7 +50,7 @@ RE_EXPENSE_COMMAND = re.compile(
 # 3. Dépense directe
 # Ex: "J'ai dépensé 15 000 FCFA pour l'achat d'engrais urée" ou "Depaase naa 15000 cfa ci kompoos"
 RE_EXPENSE_DIRECT = re.compile(
-    r'(?:d[ée]pens[ée]|depaase|pay[ée]|co[uû]t|facture)\s+'
+    r'(?:d[ée]pens[ée]|depaase|fey|pay[ée]|co[uû]t|facture)\s+'
     r'(?:naa\s+|na\s+|nga\s+|nañu\s+)?(?:de\s+)?'
     r'([0-9\s.,]+)\s*(?:fcfa|cfa|f\b)?\s*'
     r'(?:pour|sur|de|en|ci)?\s*(.+)?',
@@ -55,7 +60,7 @@ RE_EXPENSE_DIRECT = re.compile(
 # 4. Vente avec montant global ("pour 25000 FCFA", "au total de 25000 FCFA")
 # Ex: "J'ai vendu 50 kg de maïs pour 25000 FCFA"
 RE_SALE_TOTAL = re.compile(
-    r'(?:vendu|vente|jaay)\s+'
+    r'(?:vendu|vente|ja{1,2}y)\s+'
     r'(?:naa\s+|na\s+|nga\s+|nañu\s+)?'
     r'([0-9\s.,]+)\s*'
     r'([a-zA-ZÀ-ÿ]+)?\s+'
@@ -68,12 +73,12 @@ RE_SALE_TOTAL = re.compile(
 # 5. Vente avec prix unitaire ("à 12000 FCFA", "à 12000 FCFA le sac")
 # Ex: "J'ai vendu 25 sacs de riz à 12000 FCFA" ou "Jaay naa 10 sac ceeb à 15000 f"
 RE_SALE_UNIT = re.compile(
-    r'(?:vendu|vente|jaay)\s+'
+    r'(?:vendu|vente|ja{1,2}y)\s+'
     r'(?:naa\s+|na\s+|nga\s+|nañu\s+)?'
     r'([0-9\s.,]+)\s*'
     r'([a-zA-ZÀ-ÿ]+)?\s+'
     r'(?:de\s+|ci\s+)?([a-zA-ZÀ-ÿ\s]+?)\s+'
-    r'(?:[àa]|au\s+prix\s+de)\s+'
+    r'(?:[àa]|au\s+prix\s+de|ci)\s+'
     r'([0-9\s.,]+)\s*(?:fcfa|cfa|f\b)?',
     re.IGNORECASE
 )
@@ -85,7 +90,7 @@ RE_STOCK_ADD = re.compile(
 
 # Création d'un rappel : seulement des formulations explicites (« rappelle-moi », « mets un rappel »…)
 RE_REMINDER = re.compile(
-    r"(?:rappelle[- ]moi|alerte[- ]moi|fattali\s+ma"
+    r"(?:rappelle[- ]moi|alerte[- ]moi|fatt?ali\s+ma"
     r"|(?:mets|programme|cr[ée]e|ajoute|pose)\s+(?:moi\s+)?un\s+(?:rappel|alerte))"
     r"\s*(?:de\s+|d['’]\s*|pour\s+|:\s*)?(.+)",
     re.IGNORECASE
@@ -259,9 +264,21 @@ def _detect_reminder_create(q):
     if not text:
         return None
     schedule = parse_schedule(text)
-    time_defaulted = schedule is None or schedule.time_defaulted
-    when = schedule.when if schedule else parse_schedule("demain matin").when
     message = (strip_time_expressions(text) or text)
+    return build_reminder_intent(message, schedule.when if schedule else None,
+                                 time_defaulted=schedule is None or schedule.time_defaulted)
+
+
+def build_reminder_intent(message, when=None, time_defaulted=False):
+    """
+    Proposition de rappel. Sans échéance du tout (``when`` absent), on retient demain matin ET on le marque
+    (``time_missing``) : le dialogue préfère alors demander l'échéance plutôt que de la deviner.
+    """
+    time_missing = when is None
+    if time_missing:
+        when = parse_schedule("demain matin").when
+        time_defaulted = True
+    message = message.strip()
     return {
         'has_intent': True,
         'action_type': 'create_reminder',
@@ -269,9 +286,48 @@ def _detect_reminder_create(q):
             'message': message[:1].upper() + message[1:],
             'scheduled_for': when.isoformat(),
             'time_defaulted': time_defaulted,
+            'time_missing': time_missing,
         },
         'summary': f"Rappel pour le {_fmt_datetime(when)} : « {message} »",
         'confirm_prompt': f"Voulez-vous que je programme ce rappel pour le {_fmt_datetime(when)} : « {message} » ?",
+    }
+
+
+def build_sale_intent(product, qty, unit, unit_price=None, total_price=None):
+    """Proposition de vente. Le prix peut être donné unitaire OU total ; l'autre s'en déduit."""
+    unit = (unit or "unités").strip()
+    if unit_price is None:
+        unit_price = round(total_price / qty, 2)
+        summary = f"Vente de {qty:g} {unit} de {product} pour {total_price:,.0f} FCFA ({unit_price:,.0f} FCFA/{unit})"
+        prompt = (f"Confirmez-vous l'enregistrement de la vente de {qty:g} {unit} de {product} "
+                  f"pour un montant total de {total_price:,.0f} FCFA ?")
+    else:
+        total = round(qty * unit_price, 2)
+        summary = f"Vente de {qty:g} {unit} de {product} à {unit_price:,.0f} FCFA/u (Total : {total:,.0f} FCFA)"
+        prompt = f"Confirmez-vous l'enregistrement de la vente de {qty:g} {unit} de {product} pour un total de {total:,.0f} FCFA ?"
+    return {
+        'has_intent': True,
+        'action_type': 'record_sale',
+        'params': {
+            'product_name': product.capitalize(),
+            'quantity': qty,
+            'price_per_unit': unit_price,
+            'unit': unit,
+            'date': str(timezone.now().date()),
+        },
+        'summary': summary.replace(',', ' '),
+        'confirm_prompt': prompt.replace(',', ' '),
+    }
+
+
+def build_stock_add_intent(product, qty, unit):
+    unit = (unit or "unités").strip()
+    return {
+        'has_intent': True,
+        'action_type': 'update_stock',
+        'params': {'product_name': product.capitalize(), 'quantity': qty, 'unit': unit, 'operation': 'add'},
+        'summary': f"Ajout au stock : {qty:g} {unit} de {product}",
+        'confirm_prompt': f"Confirmez-vous l'ajout de {qty:g} {unit} de {product} dans votre stock ?",
     }
 
 
@@ -301,13 +357,22 @@ def _expense_intent(amount, description, user):
 
 
 def _stock_set_intent(match, user):
-    from apps.inventory.models import StockItem
     product = match.group(1).strip()
-    quantity = _parse_number(match.group(2))
     if not product or not match.group(2).strip():
         return None
+    return build_stock_set_intent(product, _parse_number(match.group(2)), (match.group(3) or '').strip() or None, user)
+
+
+def build_expense_intent(amount, description, user):
+    """Proposition de dépense (catégorie et culture déduites du libellé)."""
+    return _expense_intent(amount, description, user)
+
+
+def build_stock_set_intent(product, quantity, unit, user):
+    """Proposition de correction de stock : « 50 → 40 » si l'article existe, sinon création."""
+    from apps.inventory.models import StockItem
     current = StockItem.objects.filter(user=user, name__iexact=product).first() if user else None
-    unit = (match.group(3) or (current.unit if current else "unités")).strip()
+    unit = (unit or (current.unit if current else "unités")).strip()
     if current:
         summary = f"Correction du stock de {current.name} : {current.quantity:g} → {quantity:g} {unit}"
     else:
@@ -355,6 +420,10 @@ def detect_action_intent(query, user=None):
             desc = f"Achat {qty_part} de {product}".strip() if qty_part else f"Achat {product}"
             return _expense_intent(amount, desc, user)
 
+    m_buy = RE_EXPENSE_WOLOF_BUY.search(q)
+    if m_buy and _parse_number(m_buy.group(2)) > 0:
+        return _expense_intent(_parse_number(m_buy.group(2)), f"Achat {m_buy.group(1).strip()}", user)
+
     # 2. Détection de Dépense formulée en ordre direct ou montant direct
     # Ex: "J'ai dépensé 15 000 FCFA pour l'achat d'engrais urée" ou "Depaase naa 15000 cfa ci kompoos"
     m_exp = RE_EXPENSE_COMMAND.search(q) or RE_EXPENSE_DIRECT.search(q)
@@ -373,20 +442,7 @@ def detect_action_intent(query, user=None):
         total_price = _parse_number(m_sale_tot.group(4))
 
         if qty > 0 and total_price > 0:
-            unit_price = round(total_price / qty, 2)
-            return {
-                'has_intent': True,
-                'action_type': 'record_sale',
-                'params': {
-                    'product_name': product.capitalize(),
-                    'quantity': qty,
-                    'price_per_unit': unit_price,
-                    'unit': unit,
-                    'date': str(timezone.now().date()),
-                },
-                'summary': f"Vente de {qty:g} {unit} de {product} pour {total_price:,.0f} FCFA ({unit_price:,.0f} FCFA/{unit})".replace(',', ' '),
-                'confirm_prompt': f"Confirmez-vous l'enregistrement de la vente de {qty:g} {unit} de {product} pour un montant total de {total_price:,.0f} FCFA ?".replace(',', ' ')
-            }
+            return build_sale_intent(product, qty, unit, total_price=total_price)
 
     # 4. Détection de Vente avec prix UNITAIRE (ex: "J'ai vendu 25 sacs de riz à 12000 FCFA")
     m_sale_u = RE_SALE_UNIT.search(q)
@@ -396,20 +452,7 @@ def detect_action_intent(query, user=None):
         product = m_sale_u.group(3).strip()
         price = _parse_number(m_sale_u.group(4))
         if qty > 0 and price > 0:
-            total = round(qty * price, 2)
-            return {
-                'has_intent': True,
-                'action_type': 'record_sale',
-                'params': {
-                    'product_name': product.capitalize(),
-                    'quantity': qty,
-                    'price_per_unit': price,
-                    'unit': unit,
-                    'date': str(timezone.now().date()),
-                },
-                'summary': f"Vente de {qty:g} {unit} de {product} à {price:,.0f} FCFA/u (Total : {total:,.0f} FCFA)".replace(',', ' '),
-                'confirm_prompt': f"Confirmez-vous l'enregistrement de la vente de {qty:g} {unit} de {product} pour un total de {total:,.0f} FCFA ?".replace(',', ' ')
-            }
+            return build_sale_intent(product, qty, unit, unit_price=price)
 
     # 5a. Correction d'un stock (« Mets le stock de mil à 40 sacs »)
     m_stock_set = RE_STOCK_SET.search(q)
@@ -426,18 +469,7 @@ def detect_action_intent(query, user=None):
             unit = (m_stock.group(2) or "unités").strip()
             product = m_stock.group(3).strip()
             if qty > 0 and product:
-                return {
-                    'has_intent': True,
-                    'action_type': 'update_stock',
-                    'params': {
-                        'product_name': product.capitalize(),
-                        'quantity': qty,
-                        'unit': unit,
-                        'operation': 'add'
-                    },
-                    'summary': f"Ajout au stock : {qty:g} {unit} de {product}",
-                    'confirm_prompt': f"Confirmez-vous l'ajout de {qty:g} {unit} de {product} dans votre stock ?"
-                }
+                return build_stock_add_intent(product, qty, unit)
 
     return {'has_intent': False}
 

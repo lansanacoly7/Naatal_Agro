@@ -80,18 +80,46 @@ def _mentioned_products(user, n):
 
 
 _STOCK_FILLER = frozenset(
-    'combien me il reste restent restant restants t en stock quantite quelle quel de du des d la le les mon mes j ai '
-    'a dans mon magasin sac sacs kg kilo kilos tonne tonnes caisse caisses litre litres unite unites'.split())
+    'combien me m il elle reste restent restant restants t en stock quantite quelle quel de du des d la le les mon mes j ai '
+    'a dans mon magasin sac sacs kg kilo kilos tonne tonnes caisse caisses litre litres unite unites '
+    'ce cet cette produit culture celui celle ci naata nata laa am amna sama samay'.split())
+
+# « ce produit », « cette culture », « celui-ci » : renvoient au dernier produit dont on a parlé
+_DEMONSTRATIVE = re.compile(r'\b(ce|cet|cette) (produit|legume|culture|stock|article|recolte)\b|\b(celui|celle) ci\b')
+_PRODUCT_TOPIC = re.compile(r'\b(vend\w*|vente|ventes|reste\w*|stock|prix|rapport\w*|marge\w*|rentab\w*|gagn\w*|depens\w*)\b')
 
 
-def detect_analysis_intent(text, user):
-    """``{'kind', 'period_code', 'explicit_period', ...}`` pour une demande d'analyse chiffrée, sinon ``None``."""
+def detect_analysis_intent(text, user, last=None):
+    """``{'kind', 'period_code', 'explicit_period', ...}`` pour une demande d'analyse chiffrée, sinon ``None``.
+
+    ``last`` : ce dont on vient de parler (``dialogue.last_facts``), pour comprendre « ce produit » ou « combien il m'en reste ».
+    """
     n = normalize_text(text)
     if _ADVICE.search(n):
         return None
+    last = last or {}
+    last_product = last.get('product')
 
     def has(pattern):
         return re.search(pattern, n) is not None
+
+    demonstrative = has(_DEMONSTRATIVE.pattern)
+    mentioned = _mentioned_products(user, n)
+    if demonstrative and not mentioned:
+        if not last_product:
+            if _PRODUCT_TOPIC.search(n):
+                return {'kind': 'ask_product'}
+        else:
+            mentioned = [last_product]
+
+    if has(r'\bderniere?s? (vente|depense)s?\b') or has(r'\b(vente|depense)s? recentes?\b'):
+        kind = 'recent_expenses' if has(r'\bdepenses?\b') else 'recent_sales'
+        return {'kind': kind}
+
+    if mentioned and len(mentioned) == 1 and (demonstrative or has(r'\b(vend\w*|ventes?|rapport\w*|gagn\w*)\b')) \
+            and not has(r'\b(reste\w*|restant\w*|en stock)\b') and not has(r'\b(compar\w*|par rapport|evolution|tendance\w*)\b'):
+        code, explicit = _period_code(n, 'all')
+        return {'kind': 'product_summary', 'product': mentioned[0], 'period_code': code, 'explicit_period': explicit}
 
     if has(r'\binvest\w*') or (has(r'\bdevrais\b') and has(r'\b(planter|cultiver|semer)\b')):
         return {'kind': 'investment', 'products': _mentioned_products(user, n)}
@@ -119,8 +147,12 @@ def detect_analysis_intent(text, user):
         code, explicit = _period_code(n, 'all')
         return {'kind': 'top_products', 'period_code': code, 'explicit_period': explicit}
 
-    if has(r'\b(combien|quelle quantite)\b.*\b(reste\w*|restant\w*|en stock|dispose\w*)\b'):
+    # « Ñaata dugub laa am ci sama stock ? » (combien de mil ai-je en stock) : forme wolof de la même question
+    if (has(r'\b(combien|quelle quantite)\b.*\b(reste\w*|restant\w*|en stock|dispose\w*)\b')
+            or has(r'\b(naata|nata)\b.*\b(am|amna)\b.*\bstock\b')):
         query = ' '.join(w for w in n.split() if w not in _STOCK_FILLER)
+        if not query and last_product:
+            query = last_product
         if query:
             return {'kind': 'stock_level', 'product_query': query}
         return {'kind': 'stock_outlook'}
@@ -403,7 +435,64 @@ def _answer_investment(user, intent, today):
     return _result("\n".join(lines), ["Produits les plus rentables", "Vérifie mon stock"], data)
 
 
+def _answer_product_summary(user, intent, today):
+    period = analysis.resolve_period(intent['period_code'], today)
+    data = analysis.product_summary(user, intent['product'], period)
+    name = intent['product']
+    lines = [f"🌾 **{name} — {period.label}**", ""]
+    if data['sales_count']:
+        lines.append(f"• Ventes : {data['sales_count']} · {number(data['quantity'])} vendu(s) · {fcfa(data['revenue'])}")
+        lines.append(f"• Prix unitaire : moyenne {fcfa(data['avg_unit_price'])} (de {fcfa(data['min_unit_price'])} à {fcfa(data['max_unit_price'])})")
+        last = data['last_sale']
+        lines.append(f"• Dernière vente : {last['date']} · {number(last['quantity'])} à {fcfa(last['unit_price'])}")
+    else:
+        lines.append(f"• Aucune vente de {name} enregistrée {period.on}.")
+    stock = data['stock']
+    if stock:
+        lines.append(_stock_line(stock))
+    profit = data['profitability']
+    if profit and profit['status'] == 'ok':
+        lines.append(f"• Marge cumulée : {fcfa(profit['margin'])} (ventes {fcfa(profit['revenue'])} − dépenses rattachées {fcfa(profit['linked_costs'])})")
+    return _result("\n".join(lines), ["Combien il m'en reste ?", "Mes dernières ventes"] + _PERIOD_SUGGESTIONS[:1], data)
+
+
+def _answer_recent_sales(user, intent, today):
+    data = analysis.recent_sales(user)
+    if not data['sales']:
+        return _result("Aucune vente enregistrée pour l'instant.", ["J'ai vendu 10 sacs de mil à 15000"], data)
+    lines = ["🧾 **Vos dernières ventes**", ""]
+    for s in data['sales']:
+        buyer = f" · {s['buyer']}" if s['buyer'] else ""
+        lines.append(f"• {s['date']} : {number(s['quantity'])} {s['product']} à {fcfa(s['unit_price'])} = {fcfa(s['total'])}{buyer}")
+    return _result("\n".join(lines), ["Quel produit rapporte le plus ?", "Mes dernières dépenses"], data)
+
+
+def _answer_recent_expenses(user, intent, today):
+    data = analysis.recent_expenses(user)
+    if not data['expenses']:
+        return _result("Aucune dépense enregistrée pour l'instant.", ["J'ai payé 15000 de carburant"], data)
+    lines = ["🧾 **Vos dernières dépenses**", ""]
+    for e in data['expenses']:
+        crop = f" · {e['crop']}" if e['crop'] else ""
+        lines.append(f"• {e['date']} : {e['description']} — {fcfa(e['amount'])} ({e['label']}){crop}")
+    return _result("\n".join(lines), ["Analyse mes dépenses", "Mes dernières ventes"], data)
+
+
+def _answer_ask_product(user, intent, today):
+    return _result("De quel produit parlez-vous ? Donnez-moi son nom, par exemple « le mil » ou « les tomates ».",
+                   [p for p in _user_product_names(user)[:3]], {})
+
+
+def _user_product_names(user):
+    from . import dialogue
+    return dialogue.user_products(user)
+
+
 _HANDLERS = {
+    'product_summary': _answer_product_summary,
+    'recent_sales': _answer_recent_sales,
+    'recent_expenses': _answer_recent_expenses,
+    'ask_product': _answer_ask_product,
     'finance': _answer_finance,
     'top_products': _answer_top_products,
     'profitability': _answer_profitability,
@@ -420,3 +509,49 @@ _HANDLERS = {
 def answer_analysis(user, intent, today=None):
     """Réponse ``{'text', 'suggestions', 'data'}`` à une demande reconnue par ``detect_analysis_intent``."""
     return _HANDLERS[intent['kind']](user, intent, today or timezone.localdate())
+
+
+# --------------------------------------------------------------------------------------------------------------
+# Mémoire de conversation : « et le mois dernier ? », « et les tomates ? »
+# --------------------------------------------------------------------------------------------------------------
+_PERIOD_FOLLOWUP_KINDS = {'finance', 'top_products', 'expense_increase', 'comparison', 'activity_summary', 'product_summary'}
+_PRODUCT_FOLLOWUP_KINDS = {'stock_level', 'product_summary'}
+_FOLLOWUP_MAX_WORDS = 6
+
+
+def memory_of(intent, answer):
+    """Ce qu'il faut retenir d'une analyse pour comprendre la question suivante (``dialogue.remember(**…)``)."""
+    if not intent or intent.get('kind') in ('ask_product',):
+        return {}
+    facts = {'analysis': {k: intent[k] for k in ('kind', 'period_code', 'explicit_period', 'product', 'product_query') if intent.get(k)}}
+    product = intent.get('product')
+    if not product and intent.get('kind') == 'stock_level':
+        items = (answer or {}).get('data', {}).get('items') or []
+        product = items[0]['name'] if len(items) == 1 else None
+    if product:
+        facts['product'] = product
+    return facts
+
+
+def resolve_followup(text, user, last):
+    """Question de suivi très courte qui ne change que la période ou le produit de l'analyse précédente, sinon ``None``."""
+    previous = (last or {}).get('analysis')
+    if not previous:
+        return None
+    n = normalize_text(text)
+    if len(n.split()) > _FOLLOWUP_MAX_WORDS or _ADVICE.search(n):
+        return None
+    kind = previous.get('kind')
+
+    if kind in _PERIOD_FOLLOWUP_KINDS:
+        code, explicit = _period_code(n, None)
+        if explicit:
+            intent = {**previous, 'period_code': code, 'explicit_period': True}
+            return intent
+    if kind in _PRODUCT_FOLLOWUP_KINDS:
+        products = _mentioned_products(user, n)
+        if len(products) == 1:
+            if kind == 'stock_level':
+                return {'kind': 'stock_level', 'product_query': products[0]}
+            return {**previous, 'product': products[0]}
+    return None

@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_tts/flutter_tts.dart';
@@ -16,6 +17,10 @@ class VoiceService {
   bool _isRecording = false;
   bool _isSpeaking = false;
   String? _currentRecordingPath;
+
+  /// Le moteur de synthèse du téléphone n'a pas de voix wolof : lire du wolof avec une voix française le rendrait
+  /// incompréhensible. Les réponses en français (ou mélangées, répondues en français) sont lisibles.
+  static bool canSpeak(String? language) => language != 'wo';
 
   bool get isRecording => _isRecording;
   bool get isSpeaking => _isSpeaking;
@@ -47,7 +52,8 @@ class VoiceService {
   Future<bool> hasPermission() async {
     try {
       return await _recorder.hasPermission();
-    } catch (_) {
+    } catch (e) {
+      debugPrint('[VoiceService] Autorisation du micro impossible à vérifier: $e');
       return false;
     }
   }
@@ -59,14 +65,22 @@ class VoiceService {
       final hasPerm = await hasPermission();
       if (!hasPerm) return false;
 
-      final tempDir = await getTemporaryDirectory();
-      _currentRecordingPath = '${tempDir.path}/naatal_voice_${DateTime.now().millisecondsSinceEpoch}.m4a';
+      // Navigateur (PWA) : pas de dossier temporaire ; l'enregistrement reste en mémoire et `stop()` renvoie une
+      // adresse « blob: » à relire. Téléphone : fichier temporaire.
+      if (kIsWeb) {
+        _currentRecordingPath = '';
+      } else {
+        final tempDir = await getTemporaryDirectory();
+        _currentRecordingPath = '${tempDir.path}/naatal_voice_${DateTime.now().millisecondsSinceEpoch}.m4a';
+      }
 
-      const config = RecordConfig(
-        encoder: AudioEncoder.aacLc,
-        sampleRate: 44100,
-        bitRate: 128000,
-      );
+      final config = kIsWeb
+          ? RecordConfig(encoder: await _webEncoder())
+          : const RecordConfig(
+              encoder: AudioEncoder.aacLc,
+              sampleRate: 44100,
+              bitRate: 128000,
+            );
 
       await _recorder.start(config, path: _currentRecordingPath!);
       _isRecording = true;
@@ -78,6 +92,16 @@ class VoiceService {
     }
   }
 
+  /// Format d'enregistrement que le navigateur sait produire : WebM/Opus (Chrome, Android), sinon AAC (Safari).
+  Future<AudioEncoder> _webEncoder() async {
+    for (final encoder in [AudioEncoder.opus, AudioEncoder.aacLc, AudioEncoder.wav]) {
+      try {
+        if (await _recorder.isEncoderSupported(encoder)) return encoder;
+      } catch (_) {}
+    }
+    return AudioEncoder.wav;
+  }
+
   /// Arrête l'enregistrement audio et renvoie les octets réels du fichier micro.
   Future<Uint8List?> stopRecording() async {
     try {
@@ -86,7 +110,14 @@ class VoiceService {
       _isRecording = false;
 
       final effectivePath = path ?? _currentRecordingPath;
-      if (effectivePath == null) return null;
+      if (effectivePath == null || effectivePath.isEmpty) return null;
+
+      if (kIsWeb) {
+        // L'adresse « blob: » se relit comme une requête locale (aucun envoi sur le réseau)
+        final response = await Dio().get<List<int>>(effectivePath, options: Options(responseType: ResponseType.bytes));
+        final data = response.data;
+        return data == null ? null : Uint8List.fromList(data);
+      }
 
       final file = File(effectivePath);
       if (await file.exists()) {

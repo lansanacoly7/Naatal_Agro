@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../main.dart';
+import '../../../../ui/ui.dart' show BrandLogo;
 
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
@@ -105,11 +106,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Image.asset(
-                    'assets/images/naatal_agro_logo-removebg-preview.png',
-                    height: 64,
-                    errorBuilder: (context, error, stackTrace) => const SizedBox(height: 64, width: 64),
-                  ),
+                  const BrandLogo(height: 150),
                   if (_currentPage < 2)
                     TextButton(
                       onPressed: _completeOnboarding,

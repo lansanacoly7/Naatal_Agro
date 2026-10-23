@@ -1,7 +1,7 @@
 from django.db import transaction
 from rest_framework import viewsets, permissions
 
-from apps.ai_assistant.services import call_llm
+from .advice import schedule_storage_advice
 from .models import StockItem, StockMovement
 from .serializers import StockItemSerializer, StockMovementSerializer
 from .services import create_stock_item, record_quantity_change, remove_stock_item
@@ -21,13 +21,8 @@ class StockItemViewSet(viewsets.ModelViewSet):
             reason='manual', note="Saisie dans l'application",
         )
         serializer.instance = stock
-        # Generate AI advice asynchronously or synchronously (we'll do sync for simplicity here)
-        query = f"Donne-moi 2 phrases courtes de conseil pour bien stocker : {stock.quantity} {stock.unit} de {stock.name}. Prends en compte la température et l'humidité au Sénégal."
-        # call_llm renvoie None si l'IA est indisponible : aucun conseil n'est alors stocké
-        advice = call_llm(query)
-        if advice:
-            stock.ai_storage_advice = advice
-            stock.save(update_fields=['ai_storage_advice', 'updated_at'])
+        # Le conseil de stockage de l'IA est généré après la réponse : la création ne dépend pas du modèle de langage
+        schedule_storage_advice(stock.pk)
 
     def perform_update(self, serializer):
         with transaction.atomic():

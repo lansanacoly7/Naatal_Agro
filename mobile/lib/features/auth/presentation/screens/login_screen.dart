@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../ui/ui.dart' show BrandLogo;
 import '../../data/auth_provider.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -260,13 +261,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // Logo Naatal Agro
-              Center(
-                child: Image.asset(
-                  'assets/images/naatal_agro_logo-removebg-preview.png',
-                  height: 140,
-                  errorBuilder: (context, error, stackTrace) => const SizedBox(height: 140, width: 140),
-                ),
-              ),
+              const Center(child: BrandLogo(height: 240)),
               const SizedBox(height: 40),
               
               Text(

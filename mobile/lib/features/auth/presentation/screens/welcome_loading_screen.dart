@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/router/app_router.dart';
+import '../../../../ui/ui.dart' show BrandLogo;
 
 class WelcomeLoadingScreen extends ConsumerStatefulWidget {
   const WelcomeLoadingScreen({super.key});
@@ -67,11 +68,7 @@ class _WelcomeLoadingScreenState extends ConsumerState<WelcomeLoadingScreen> wit
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     // Logo Naatal Agro
-                    Image.asset(
-                      'assets/images/naatal_agro_logo-removebg-preview.png',
-                      height: 120,
-                      errorBuilder: (context, error, stackTrace) => const Icon(Icons.eco, size: 120, color: AppColors.primary),
-                    ),
+                    const BrandLogo(height: 230),
                     const SizedBox(height: 40),
                     // Indicateur de chargement personnalisé
                     const SizedBox(

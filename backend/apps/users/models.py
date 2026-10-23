@@ -53,7 +53,12 @@ class OTPToken(models.Model):
         from datetime import timedelta
         from django.utils import timezone
         # 4-digit code (1000 - 9999) pour correspondre au champ 4 chiffres de l'application mobile
+        from django.conf import settings
         code = str(secrets.randbelow(9000) + 1000)
+        # Inscription seulement : code par defaut tant qu'il n'y a pas de SMS reel (jamais pour un mot de passe oublie)
+        fixed = getattr(settings, 'OTP_REGISTER_FIXED_CODE', '')
+        if purpose == 'register' and fixed:
+            code = fixed
         expires_at = timezone.now() + timedelta(minutes=validity_minutes)
         # Invalider les anciens codes non utilisés pour ce numéro et ce motif
         cls.objects.filter(phone=phone, purpose=purpose, is_used=False).update(is_used=True)

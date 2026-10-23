@@ -2,7 +2,8 @@
 
 // Service worker Naatal Agro : met en cache l'interface (fichiers statiques de l'app).
 // Il ne met JAMAIS en cache l'API, les médias, ni aucune requête autre que GET.
-const VERSION = 'naatal-shell-v1';
+const VERSION = 'naatal-shell-v2';
+const APP_CODE = /^\/(main\.dart\.js|flutter_bootstrap\.js|flutter\.js|version\.json|manifest\.json)$/;
 const OFFLINE_URL = '/offline.html';
 const PRECACHE = [
   '/', '/index.html', OFFLINE_URL, '/manifest.json', '/flutter_bootstrap.js', '/flutter.js',
@@ -56,7 +57,25 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Fichiers statiques : cache d'abord, mis à jour en arrière-plan.
+  // Code de l'application : réseau d'abord. Servir une ancienne copie du code après une mise à jour ferait tourner
+  // l'ancienne version (et ses bogues) jusqu'au rechargement suivant.
+  if (APP_CODE.test(url.pathname)) {
+    event.respondWith(
+      (async () => {
+        const cache = await caches.open(VERSION);
+        try {
+          const fresh = await fetch(request);
+          if (fresh && fresh.ok) cache.put(request, fresh.clone());
+          return fresh;
+        } catch (_) {
+          return (await cache.match(request)) || Response.error();
+        }
+      })()
+    );
+    return;
+  }
+
+  // Autres fichiers statiques (images, polices, moteur) : cache d'abord, mis à jour en arrière-plan.
   event.respondWith(
     (async () => {
       const cache = await caches.open(VERSION);

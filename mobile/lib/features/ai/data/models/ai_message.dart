@@ -13,6 +13,9 @@ class AiActionData {
   final List<String> warnings;
   final Map<String, dynamic>? result;
 
+  /// Descripteur de graphique joint à une analyse chiffrée (voir `AnalysisVisualCard`).
+  final Map<String, dynamic>? visual;
+
   const AiActionData({
     required this.status,
     this.actionType,
@@ -20,6 +23,7 @@ class AiActionData {
     this.summary,
     this.warnings = const [],
     this.result,
+    this.visual,
   });
 
   bool get isProposal => actionType != null;
@@ -43,6 +47,7 @@ class AiActionData {
         summary: summary,
         warnings: warnings,
         result: result,
+        visual: visual,
       );
 
   factory AiActionData.fromJson(Map<String, dynamic> json) => AiActionData(
@@ -52,6 +57,7 @@ class AiActionData {
         summary: json['summary']?.toString(),
         warnings: ((json['warnings'] as List<dynamic>?) ?? const []).map((e) => e.toString()).toList(),
         result: json['result'] is Map ? Map<String, dynamic>.from(json['result'] as Map) : null,
+        visual: json['visual'] is Map ? Map<String, dynamic>.from(json['visual'] as Map) : null,
       );
 }
 
@@ -86,6 +92,9 @@ class AiAnswer {
   /// Identifiant de l'interaction côté serveur : sert à confirmer ou annuler une proposition.
   final String? interactionId;
 
+  /// Langue de l'échange détectée par le serveur : `fr`, `wo` ou `mixed` (absente pour les réponses d'actions).
+  final String? language;
+
   const AiAnswer({
     required this.text,
     required this.origin,
@@ -94,10 +103,12 @@ class AiAnswer {
     this.actionData,
     this.conversationId,
     this.interactionId,
+    this.language,
   });
 
   factory AiAnswer.fromJson(Map<String, dynamic> json) => AiAnswer(
         interactionId: json['id']?.toString(),
+        language: json['language']?.toString(),
         text: (json['response'] ?? '').toString(),
         origin: (json['origin'] ?? 'general').toString(),
         sources: ((json['sources'] as List<dynamic>?) ?? const [])
@@ -130,6 +141,9 @@ class AiMessage {
   /// Identifiant serveur de la réponse (absent pour les messages de l'utilisateur et les erreurs locales).
   final String? interactionId;
 
+  /// `fr`, `wo` ou `mixed` ; sert à savoir si la lecture vocale est possible (le téléphone ne lit pas le wolof).
+  final String? language;
+
   const AiMessage({
     required this.text,
     required this.isUser,
@@ -141,6 +155,7 @@ class AiMessage {
     this.actionData,
     this.isError = false,
     this.interactionId,
+    this.language,
   });
 
   bool get isVerified => !isUser && origin == 'database';
@@ -155,6 +170,7 @@ class AiMessage {
         suggestions: answer.suggestions,
         actionData: answer.actionData,
         interactionId: answer.interactionId,
+        language: answer.language,
       );
 
   AiMessage copyWith({AiActionData? actionData}) => AiMessage(
@@ -168,6 +184,7 @@ class AiMessage {
         actionData: actionData ?? this.actionData,
         isError: isError,
         interactionId: interactionId,
+        language: language,
       );
 }
 
