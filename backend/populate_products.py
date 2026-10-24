@@ -1,3 +1,4 @@
+import argparse
 import os
 import django
 
@@ -6,8 +7,10 @@ django.setup()
 
 from apps.markets.models import Product
 
-def populate():
-
+def populate(assume_yes=False):
+    from core.safety import require_safe_to_erase
+    require_safe_to_erase("remise a zero du catalogue de produits (efface tous les produits et leurs cotations liees)",
+                          assume_yes=assume_yes)
     Product.objects.all().delete()
 
     products = [
@@ -38,4 +41,6 @@ def populate():
     print("Produits ajoutés avec succès !")
 
 if __name__ == '__main__':
-    populate()
+    parser = argparse.ArgumentParser(description="Catalogue de produits (developpement uniquement).")
+    parser.add_argument('--yes', action='store_true', help="ne pas demander de confirmation")
+    populate(assume_yes=parser.parse_args().yes)

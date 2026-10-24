@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ==============================================================================
 # Naatal Agro — Script de Restauration de la Base de Données
-# Usage: ./scripts/restore_db.sh <chemin_vers_fichier_backup.gz>
+# Usage: ./scripts/restore_db.sh <chemin_vers_fichier_backup.gz> [--yes]
 # ==============================================================================
 set -euo pipefail
 
@@ -12,11 +12,29 @@ if [ $# -lt 1 ]; then
 fi
 
 BACKUP_FILE="$1"
+ASSUME_YES="${2:-}"
 
 if [ ! -f "${BACKUP_FILE}" ]; then
     echo "❌ Fichier de sauvegarde introuvable : ${BACKUP_FILE}"
     exit 1
 fi
+
+# Une restauration ÉCRASE la base actuelle : confirmation obligatoire et sauvegarde de sécurité avant.
+if [ "${ASSUME_YES}" != "--yes" ]; then
+    if [ ! -t 0 ]; then
+        echo "❌ La restauration écrase la base actuelle et aucun terminal n'est disponible pour confirmer."
+        echo "   Relancez avec : $0 ${BACKUP_FILE} --yes"
+        exit 2
+    fi
+    read -r -p "⚠️  Écraser la base actuelle avec ${BACKUP_FILE} ? Tapez RESTAURER pour continuer : " ANSWER
+    if [ "${ANSWER}" != "RESTAURER" ]; then
+        echo "Annulé : rien n'a été modifié."
+        exit 2
+    fi
+fi
+
+echo "-> Sauvegarde de sécurité de la base actuelle avant restauration..."
+BACKUP_DIR="${BACKUP_DIR:-./database/backups}" "$(dirname "$0")/backup_db.sh"
 
 echo "=== [Naatal Agro] Restauration depuis ${BACKUP_FILE} ==="
 

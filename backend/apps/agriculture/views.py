@@ -48,7 +48,9 @@ class ActivityViewSet(viewsets.ModelViewSet):
 class PestReportViewSet(viewsets.ModelViewSet):
     serializer_class = PestReportSerializer
     permission_classes = [permissions.IsAuthenticated, IsOwnerOrReadOnly]
-    queryset = PestReport.objects.all()
+    def get_queryset(self):
+        # Un signalement contient un lieu et une description : chaque exploitant ne voit que les siens
+        return PestReport.objects.filter(user=self.request.user)
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)

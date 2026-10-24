@@ -1,3 +1,4 @@
+import argparse
 import os
 import django
 import datetime
@@ -17,7 +18,11 @@ from apps.notifications.models import Notification
 
 User = get_user_model()
 
-def run_seed():
+def run_seed(assume_yes=False):
+    from core.safety import require_safe_to_erase
+    require_safe_to_erase(
+        "peuplement de demonstration : efface les cultures, marches, meteo, stocks et notifications du compte de test",
+        assume_yes=assume_yes)
     print("Demarrage du script de seed...")
 
     # 1. Création de l'utilisateur de test Agriculteur
@@ -205,5 +210,7 @@ def run_seed():
     print("=========================================")
 
 if __name__ == '__main__':
-    run_seed()
+    parser = argparse.ArgumentParser(description="Donnees de demonstration (developpement uniquement).")
+    parser.add_argument('--yes', action='store_true', help="ne pas demander de confirmation")
+    run_seed(assume_yes=parser.parse_args().yes)
 

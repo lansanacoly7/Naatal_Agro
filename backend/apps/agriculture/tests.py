@@ -160,14 +160,14 @@ class AgricultureAppTests(TestCase):
         self.client.force_authenticate(user=self.user2)
         url = reverse('agriculture:pest-report-detail', kwargs={'pk': str(report_user1.id)})
         
-        # Test modification interdite (403)
+        # Modification refusée : le signalement d'autrui n'existe pas pour l'utilisateur 2 (404, pas même un 403 qui le confirmerait)
         patch_response = self.client.patch(url, {'description': 'Contrefaçon'}, format='json')
-        self.assertEqual(patch_response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(patch_response.status_code, status.HTTP_404_NOT_FOUND)
         
-        # Test suppression interdite (403)
         delete_response = self.client.delete(url)
-        self.assertEqual(delete_response.status_code, status.HTTP_403_FORBIDDEN)
-        self.assertTrue(PestReport.objects.filter(id=report_user1.id).exists())
+        self.assertEqual(delete_response.status_code, status.HTTP_404_NOT_FOUND)
+        report_user1.refresh_from_db()
+        self.assertEqual(report_user1.description, 'Attaque sur verger')
 
     def test_crop_creation_with_agronomic_guide_autocalculates_harvest_date(self):
         """Vérifie que lier un guide agronomique calcule automatiquement la date prévisionnelle de récolte."""
