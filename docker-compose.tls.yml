@@ -1,0 +1,43 @@
+# ==============================================================================
+# Naatal Agro — surcharge HTTPS pour la production (nginx termine le TLS)
+#
+#   docker compose -f docker-compose.yml -f docker-compose.tls.yml up -d
+#
+# Prérequis : un certificat Let's Encrypt pour naatal-agro.sn dans ./infra/certbot/conf (voir
+# docs/11-DevOps-Deployment.md, « Mise en place du HTTPS »). Si un équipement placé devant l'application (Cloudflare,
+# répartiteur de charge de l'hébergeur) termine déjà le TLS, N'utilisez PAS ce fichier : gardez docker-compose.yml, faites
+# transmettre X-Forwarded-Proto: https par cet équipement et passez SECURE_SSL_REDIRECT à True côté backend.
+#
+# Variables : HSTS_SECONDS (défaut 3600 = 1 heure ; montez à 86400, 2592000 puis 31536000 par paliers une fois HTTPS vérifié).
+# ==============================================================================
+services:
+  backend:
+    environment:
+      - SECURE_SSL_REDIRECT=True
+      - SECURE_HSTS_SECONDS=${HSTS_SECONDS:-3600}
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-https://naatal-agro.sn}
+
+  nginx:
+    image: nginx:alpine
+    # !override : remplace les ports et volumes de docker-compose.yml au lieu de s'y ajouter (Docker Compose >= 2.24)
+    ports: !override
+      - "80:80"
+      - "443:443"
+    environment:
+      - HSTS_SECONDS=${HSTS_SECONDS:-3600}
+    volumes: !override
+      # Les modèles *.template sont traités par l'image nginx (substitution de ${HSTS_SECONDS}) vers /etc/nginx/conf.d/
+      - ./infra/nginx/nginx.tls.conf:/etc/nginx/templates/default.conf.template:ro
+      - ./infra/certbot/conf:/etc/letsencrypt:ro
+      - ./infra/certbot/www:/var/www/certbot:ro
+      - static_volume:/app/staticfiles:ro
+
+  certbot:
+    image: certbot/certbot
+    container_name: naatal_certbot
+    restart: unless-stopped
+    volumes:
+      - ./infra/certbot/conf:/etc/letsencrypt
+      - ./infra/certbot/www:/var/www/certbot
+    # Renouvellement automatique (tentative deux fois par jour, sans effet tant que le certificat est valide)
+    entrypoint: /bin/sh -c "trap exit TERM; while :; do certbot renew --webroot -w /var/www/certbot --quiet; sleep 12h & wait $${!}; done"

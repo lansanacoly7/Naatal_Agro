@@ -67,3 +67,6 @@ backend/staticfiles/
 .coverage
 coverage.xml
 **/coverage/
+
+# Clés privées et certificats Let's Encrypt (jamais dans Git)
+infra/certbot/

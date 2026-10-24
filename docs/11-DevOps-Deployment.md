@@ -214,6 +214,26 @@ Automatisation :
 * aucune clé API dans le code
 * HTTPS obligatoire
 
+## 11.1 Mise en place du HTTPS (nginx + Let's Encrypt)
+
+Le fichier `docker-compose.yml` seul sert nginx **en HTTP** (développement, démonstration). Pour la production, ajoutez la
+surcharge TLS : `docker compose -f docker-compose.yml -f docker-compose.tls.yml up -d` (Docker Compose 2.24 ou plus récent).
+
+1. **Domaine** : `naatal-agro.sn` doit pointer vers le serveur (enregistrement DNS A) ; ports 80 et 443 ouverts.
+2. **Premier certificat** (nginx ne peut pas démarrer sans certificat) :
+   `docker run --rm -p 80:80 -v ./infra/certbot/conf:/etc/letsencrypt certbot/certbot certonly --standalone -d naatal-agro.sn`
+3. **Démarrage** avec la surcharge TLS ; le conteneur `certbot` tente le renouvellement deux fois par jour.
+4. **HSTS progressif** : `HSTS_SECONDS=3600` au départ, puis 86400, 2592000, 31536000 une fois HTTPS vérifié sur tous
+   les sous-domaines (un HSTS trop long est difficile à annuler). L'option `preload` n'est pas activée.
+5. **Vérification** : `curl -I http://naatal-agro.sn` doit répondre `301` vers HTTPS ; `curl -I https://naatal-agro.sn/health/`
+   doit répondre `200` avec l'en-tête `Strict-Transport-Security`.
+
+Si un équipement devant l'application (Cloudflare, répartiteur de charge de l'hébergeur) termine déjà le TLS, n'utilisez pas
+la surcharge : faites transmettre `X-Forwarded-Proto: https` par cet équipement et passez `SECURE_SSL_REDIRECT=True` au backend.
+
+> État de la vérification : cette configuration n'a **pas été exécutée** (aucun démon Docker disponible au moment de
+> l'écriture). Elle doit être testée sur le serveur avec `docker compose ... config` puis `nginx -t` avant la mise en ligne.
+
 ---
 
 # 12. Stratégie de déploiement
