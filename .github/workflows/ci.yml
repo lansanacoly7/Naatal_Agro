@@ -26,6 +26,12 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Audit des dépendances (vulnérabilités connues)
+        run: |
+          cd backend
+          pip install pip-audit
+          pip-audit -r requirements.txt --no-deps --disable-pip
+
       - name: Django System Check
         run: |
           cd backend
