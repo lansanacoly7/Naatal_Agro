@@ -233,3 +233,22 @@ http.createServer((req, res) => {
   fs.createReadStream(f).pipe(res);
 }).listen(port, '127.0.0.1');
 ```
+
+## Mise à jour du 24 octobre 2026
+
+- Images produits à générer : voir `docs/refonte/produits-sans-image.md` (8 fichiers, noms exacts imposés).
+
+## Tâche pour Antigravity : alléger les images produits (24 octobre 2026, relecture de Claude)
+
+**Constat.** Les 8 images générées sont correctes (noms exacts, PNG carrés 1024 × 1024, bien intégrées), mais elles pèsent 1,1 à 1,3 Mo chacune,
+alors que la consigne était **moins de 400 Ko**. Le problème touche en réalité tout le dossier `mobile/assets/images/products/` :
+50 images sur 52 dépassent 400 Ko, soit environ 32 Mo à télécharger sur un réseau mobile. Les dossiers `ui/` et `conseils/` sont conformes.
+
+**À faire (tout le dossier `products/`) :**
+1. Redimensionner chaque image à **512 × 512 px** : elles s'affichent au plus à 150–200 px de large (cartes et listes), 512 px suffit largement, même sur écran haute densité.
+2. Optimiser le PNG (par exemple `oxipng` ou `pngquant`) pour viser **moins de 150 Ko par image** (jamais plus de 400 Ko).
+3. **Ne rien changer d'autre** : mêmes noms de fichiers, même extension `.png` (le code cherche `<nom>.png`), même cadrage serré (le produit remplit le cadre), même rendu visuel. Aucune modification du code Dart.
+4. Vérifier : aucune image de `products/` ne dépasse 400 Ko (`Get-ChildItem mobile/assets/images/products | Where-Object Length -gt 400KB` doit ne rien renvoyer), puis `flutter test` doit rester vert.
+5. Mettre à jour `docs/refonte/produits-sans-image.md` (statut « allégé ») et indiquer dans la réponse le poids total avant/après.
+
+**Règle de contrôle :** Claude relira le résultat (poids, taille, noms, rendu) avant de le considérer terminé.
