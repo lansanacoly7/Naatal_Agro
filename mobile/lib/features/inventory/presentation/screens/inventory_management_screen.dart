@@ -5,6 +5,7 @@ import '../../data/inventory_provider.dart';
 import '../../data/models/stock_item.dart';
 import '../../../../shared/utils/data_refresh.dart';
 
+import '../../../../ui/ui.dart';
 class InventoryManagementScreen extends ConsumerWidget {
   const InventoryManagementScreen({super.key});
 
@@ -13,16 +14,16 @@ class InventoryManagementScreen extends ConsumerWidget {
     final inventoryState = ref.watch(inventoryNotifierProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.c.bg,
       appBar: AppBar(
-        title: const Text('Gestion de Stock', style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold)),
+        title: Text('Gestion de Stock', style: TextStyle(color: context.c.ink, fontWeight: FontWeight.bold)),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: const IconThemeData(color: AppColors.textPrimary),
+        iconTheme: IconThemeData(color: context.c.ink),
       ),
       body: RefreshIndicator(
         onRefresh: () => ref.read(inventoryNotifierProvider.notifier).fetchInventory(),
-        color: AppColors.primary,
+        color: context.c.accent,
         child: inventoryState.when(
           data: (stocks) {
             if (stocks.isEmpty) {
@@ -39,14 +40,14 @@ class InventoryManagementScreen extends ConsumerWidget {
                           color: AppColors.primary.withValues(alpha: 0.1),
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.inventory_2_outlined, size: 64, color: AppColors.primary),
+                        child: Icon(Icons.inventory_2_outlined, size: 64, color: context.c.accent),
                       ),
                       const SizedBox(height: 24),
                       Text(
                         'Aucun stock enregistré',
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
                               fontWeight: FontWeight.bold,
-                              color: AppColors.textPrimary,
+                              color: context.c.ink,
                             ),
                       ),
                       const SizedBox(height: 8),
@@ -54,7 +55,7 @@ class InventoryManagementScreen extends ConsumerWidget {
                         'Ajoutez vos récoltes et intrants en stock avec le bouton +.',
                         textAlign: TextAlign.center,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: AppColors.textSecondary,
+                              color: context.c.ink2,
                             ),
                       ),
                     ],
@@ -72,7 +73,7 @@ class InventoryManagementScreen extends ConsumerWidget {
           },
         );
       },
-      loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+      loading: () => Center(child: CircularProgressIndicator(color: context.c.accent)),
       error: (error, _) => Center(
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -108,7 +109,7 @@ Widget _buildStockCard(BuildContext context, WidgetRef ref, StockItem stock) {
 return Container(
   margin: const EdgeInsets.only(bottom: 16),
   decoration: BoxDecoration(
-    color: Colors.white,
+    color: context.c.surface,
     borderRadius: BorderRadius.circular(20),
     boxShadow: [
       BoxShadow(
@@ -143,7 +144,7 @@ return Container(
                 '${stock.quantity} ${stock.unit}',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  color: stock.alertStatus ? AppColors.error : AppColors.primary,
+                  color: stock.alertStatus ? AppColors.error : context.c.accent,
                 ),
               ),
             ),
@@ -154,22 +155,22 @@ return Container(
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0xFFF0F7F4),
+              color: context.c.surfaceAlt,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.auto_awesome, color: AppColors.primary, size: 20),
+                Icon(Icons.auto_awesome, color: context.c.accent, size: 20),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Conseil Naatal IA', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary, fontSize: 12)),
+                      Text('Conseil Naatal IA', style: TextStyle(fontWeight: FontWeight.bold, color: context.c.accent, fontSize: 12)),
                       const SizedBox(height: 4),
-                      Text(stock.aiStorageAdvice!, style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+                      Text(stock.aiStorageAdvice!, style: TextStyle(fontSize: 13, color: context.c.ink2)),
                     ],
                   ),
                 ),
@@ -226,8 +227,8 @@ showModalBottomSheet(
         padding: EdgeInsets.only(
           bottom: MediaQuery.of(ctx).viewInsets.bottom,
         ),
-        decoration: const BoxDecoration(
-          color: Colors.white,
+        decoration: BoxDecoration(
+          color: context.c.surface,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: Padding(
@@ -260,11 +261,11 @@ showModalBottomSheet(
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.inventory_2_outlined, size: 18, color: AppColors.primary),
+                    Icon(Icons.inventory_2_outlined, size: 18, color: context.c.accent),
                     const SizedBox(width: 8),
                     Text(
                       'Stock disponible : ${stock.quantity} ${stock.unit}',
-                      style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary, fontSize: 13),
+                      style: TextStyle(fontWeight: FontWeight.bold, color: context.c.accent, fontSize: 13),
                     ),
                   ],
                 ),
@@ -305,9 +306,9 @@ showModalBottomSheet(
                 width: double.infinity,
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade50,
+                  color: context.c.surfaceAlt,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey.shade200),
+                  border: Border.all(color: context.c.line),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -315,7 +316,7 @@ showModalBottomSheet(
                     const Text('Total Recette estimée :', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
                     Text(
                       '${totalAmount.toStringAsFixed(0)} FCFA',
-                      style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: AppColors.primary),
+                      style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: context.c.accent),
                     ),
                   ],
                 ),
@@ -396,8 +397,8 @@ showModalBottomSheet(
           padding: EdgeInsets.only(
             bottom: MediaQuery.of(context).viewInsets.bottom,
           ),
-          decoration: const BoxDecoration(
-            color: Colors.white,
+          decoration: BoxDecoration(
+            color: context.c.surface,
             borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           ),
           child: Padding(

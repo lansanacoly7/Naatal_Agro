@@ -9,6 +9,7 @@ import '../../data/models/market.dart';
 import '../../data/models/price.dart';
 import 'market_detail_screen.dart';
 
+import '../../../../ui/ui.dart';
 /// Situation d'un marché par rapport à la moyenne du produit sélectionné.
 enum _Level { high, mid, low, none }
 
@@ -16,7 +17,7 @@ enum _Level { high, mid, low, none }
 enum _PriceFilter { all, high, low }
 
 const _levelColors = {
-  _Level.high: AppColors.primary,
+  _Level.high: Color(0xFF1B5E20),
   _Level.mid: Color(0xFFEF8F00),
   _Level.low: Color(0xFFC62828),
   _Level.none: Color(0xFF546E7A),
@@ -104,27 +105,27 @@ class _MarketsScreenState extends ConsumerState<MarketsScreen> {
     final productsAsync = ref.watch(allProductsProvider);
 
     if (marketsAsync.isLoading || pricesAsync.isLoading) {
-      return const Scaffold(
-        backgroundColor: AppColors.background,
-        body: Center(child: CircularProgressIndicator(color: AppColors.primary)),
+      return Scaffold(
+        backgroundColor: context.c.bg,
+        body: Center(child: CircularProgressIndicator(color: context.c.accent)),
       );
     }
     final error = marketsAsync.error ?? pricesAsync.error;
     if (error != null) {
       return Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: context.c.bg,
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.cloud_off_rounded, size: 44, color: AppColors.textSecondary),
+                Icon(Icons.cloud_off_rounded, size: 44, color: context.c.ink2),
                 const SizedBox(height: 12),
                 const Text('Impossible de charger les marchés', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
                 const SizedBox(height: 4),
                 Text('$error', textAlign: TextAlign.center, maxLines: 3, overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                    style: TextStyle(color: context.c.ink2, fontSize: 12)),
                 const SizedBox(height: 16),
                 FilledButton(
                   onPressed: () {
@@ -160,7 +161,7 @@ class _MarketsScreenState extends ConsumerState<MarketsScreen> {
     final visible = _visibleMarkets(markets, latest, avg);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.c.bg,
       body: SafeArea(
         bottom: false,
         child: Column(
@@ -181,7 +182,7 @@ class _MarketsScreenState extends ConsumerState<MarketsScreen> {
 
   Widget _buildTopBar(List<String> products, int pricedCount, double avg) {
     return Material(
-      color: Colors.white,
+      color: context.c.surface,
       elevation: 1,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
@@ -198,7 +199,7 @@ class _MarketsScreenState extends ConsumerState<MarketsScreen> {
                       textInputAction: TextInputAction.search,
                       decoration: InputDecoration(
                         hintText: 'Rechercher un marché ou une région',
-                        hintStyle: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
+                        hintStyle: TextStyle(fontSize: 14, color: context.c.ink2),
                         prefixIcon: const Icon(Icons.search, size: 20),
                         suffixIcon: _query.isEmpty
                             ? null
@@ -210,7 +211,7 @@ class _MarketsScreenState extends ConsumerState<MarketsScreen> {
                                 }),
                               ),
                         filled: true,
-                        fillColor: AppColors.background,
+                        fillColor: context.c.bg,
                         contentPadding: EdgeInsets.zero,
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
                       ),
@@ -222,7 +223,7 @@ class _MarketsScreenState extends ConsumerState<MarketsScreen> {
                   showSelectedIcon: false,
                   style: SegmentedButton.styleFrom(
                     visualDensity: VisualDensity.compact,
-                    selectedBackgroundColor: AppColors.primary,
+                    selectedBackgroundColor: context.c.accent,
                     selectedForegroundColor: Colors.white,
                   ),
                   segments: const [
@@ -278,7 +279,7 @@ class _MarketsScreenState extends ConsumerState<MarketsScreen> {
                 alignment: Alignment.centerLeft,
                 child: Text(
                   '$_selectedProduct · moyenne ${avg.round()} FCFA/kg sur $pricedCount marchés',
-                  style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                  style: TextStyle(fontSize: 12, color: context.c.ink2),
                 ),
               ),
             ],
@@ -296,12 +297,12 @@ class _MarketsScreenState extends ConsumerState<MarketsScreen> {
     Color? dot,
     IconData? trailing,
   }) {
-    final fg = selected ? Colors.white : AppColors.textPrimary;
+    final fg = selected ? context.c.onAccent : context.c.ink;
     return Padding(
       padding: const EdgeInsets.only(right: 8),
       child: Material(
-        color: selected ? AppColors.primary : Colors.white,
-        shape: StadiumBorder(side: BorderSide(color: selected ? AppColors.primary : const Color(0xFFD0D5DA))),
+        color: selected ? context.c.accent : context.c.surface,
+        shape: StadiumBorder(side: BorderSide(color: selected ? context.c.accent : context.c.line)),
         child: InkWell(
           customBorder: const StadiumBorder(),
           onTap: onTap,
@@ -314,7 +315,7 @@ class _MarketsScreenState extends ConsumerState<MarketsScreen> {
                   Container(
                     width: 8,
                     height: 8,
-                    decoration: BoxDecoration(color: selected ? Colors.white : dot, shape: BoxShape.circle),
+                    decoration: BoxDecoration(color: selected ? context.c.onAccent : dot, shape: BoxShape.circle),
                   ),
                   const SizedBox(width: 6),
                 ],
@@ -399,7 +400,7 @@ class _MarketsScreenState extends ConsumerState<MarketsScreen> {
                         const Expanded(
                           child: Text('Choisir un produit', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
                         ),
-                        Text('${products.length} produits', style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                        Text('${products.length} produits', style: TextStyle(color: context.c.ink2, fontSize: 12)),
                       ],
                     ),
                     const SizedBox(height: 10),
@@ -410,7 +411,7 @@ class _MarketsScreenState extends ConsumerState<MarketsScreen> {
                         hintText: 'Rechercher un produit',
                         prefixIcon: const Icon(Icons.search, size: 20),
                         filled: true,
-                        fillColor: AppColors.background,
+                        fillColor: context.c.bg,
                         isDense: true,
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
                       ),
@@ -418,7 +419,7 @@ class _MarketsScreenState extends ConsumerState<MarketsScreen> {
                     const SizedBox(height: 6),
                     Expanded(
                       child: shown.isEmpty
-                          ? const Center(child: Text('Aucun produit trouvé', style: TextStyle(color: AppColors.textSecondary)))
+                          ? Center(child: Text('Aucun produit trouvé', style: TextStyle(color: context.c.ink2)))
                           : ListView.separated(
                               itemCount: shown.length,
                               separatorBuilder: (_, __) => const Divider(height: 1),
@@ -428,7 +429,7 @@ class _MarketsScreenState extends ConsumerState<MarketsScreen> {
                                 return ListTile(
                                   dense: true,
                                   title: Text(name, style: TextStyle(fontWeight: selected ? FontWeight.w700 : FontWeight.w500)),
-                                  trailing: selected ? const Icon(Icons.check, color: AppColors.primary) : null,
+                                  trailing: selected ? Icon(Icons.check, color: context.c.accent) : null,
                                   onTap: () {
                                     setState(() => _selectedProduct = name);
                                     Navigator.pop(ctx);
@@ -565,13 +566,13 @@ class _MarketsScreenState extends ConsumerState<MarketsScreen> {
 
   Widget _mapButton(IconData icon, VoidCallback onTap) {
     return Material(
-      color: Colors.white,
+      color: context.c.surface,
       elevation: 2,
       borderRadius: BorderRadius.circular(8),
       child: InkWell(
         borderRadius: BorderRadius.circular(8),
         onTap: onTap,
-        child: SizedBox(width: 40, height: 40, child: Icon(icon, size: 20, color: AppColors.textPrimary)),
+        child: SizedBox(width: 40, height: 40, child: Icon(icon, size: 20, color: context.c.ink)),
       ),
     );
   }
@@ -589,7 +590,7 @@ class _MarketsScreenState extends ConsumerState<MarketsScreen> {
           ),
         );
     return Material(
-      color: Colors.white,
+      color: context.c.surface,
       elevation: 2,
       borderRadius: BorderRadius.circular(10),
       child: Padding(
@@ -620,7 +621,7 @@ class _MarketsScreenState extends ConsumerState<MarketsScreen> {
       });
 
     return RefreshIndicator(
-      color: AppColors.primary,
+      color: context.c.accent,
       onRefresh: () async {
         ref.invalidate(marketsListProvider);
         ref.invalidate(pricesListProvider);
@@ -628,9 +629,9 @@ class _MarketsScreenState extends ConsumerState<MarketsScreen> {
       },
       child: items.isEmpty
           ? ListView(
-              children: const [
+              children: [
                 SizedBox(height: 120),
-                Center(child: Text('Aucun marché ne correspond à ces filtres', style: TextStyle(color: AppColors.textSecondary))),
+                Center(child: Text('Aucun marché ne correspond à ces filtres', style: TextStyle(color: context.c.ink2))),
               ],
             )
           : ListView.separated(
@@ -644,7 +645,7 @@ class _MarketsScreenState extends ConsumerState<MarketsScreen> {
                 final color = _levelColors[level]!;
                 final km = _distanceKm(_userLocation, m.latLng!);
                 return Material(
-                  color: Colors.white,
+                  color: context.c.surface,
                   borderRadius: BorderRadius.circular(10),
                   child: InkWell(
                     borderRadius: BorderRadius.circular(10),
@@ -662,7 +663,7 @@ class _MarketsScreenState extends ConsumerState<MarketsScreen> {
                                 Text(m.name, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
                                 const SizedBox(height: 2),
                                 Text('${m.region} · ${km.toStringAsFixed(0)} km',
-                                    style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                                    style: TextStyle(color: context.c.ink2, fontSize: 12)),
                               ],
                             ),
                           ),
@@ -706,7 +707,7 @@ class _MarketsScreenState extends ConsumerState<MarketsScreen> {
             Text(market.name, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
             const SizedBox(height: 2),
             Text('${market.region} · ${km.toStringAsFixed(0)} km de vous',
-                style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+                style: TextStyle(color: context.c.ink2, fontSize: 13)),
             const SizedBox(height: 16),
             Container(
               padding: const EdgeInsets.all(14),
@@ -721,7 +722,7 @@ class _MarketsScreenState extends ConsumerState<MarketsScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(_selectedProduct ?? 'Produit', style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                        Text(_selectedProduct ?? 'Produit', style: TextStyle(fontSize: 12, color: context.c.ink2)),
                         Text(
                           price != null ? '${price.priceValue.round()} FCFA/kg' : 'Non disponible',
                           style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: color),
@@ -735,7 +736,7 @@ class _MarketsScreenState extends ConsumerState<MarketsScreen> {
                       children: [
                         Text('${diff >= 0 ? '+' : ''}${diff.toStringAsFixed(1)} %',
                             style: TextStyle(fontWeight: FontWeight.w700, color: color)),
-                        Text('moy. ${avg.round()} F', style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                        Text('moy. ${avg.round()} F', style: TextStyle(fontSize: 12, color: context.c.ink2)),
                       ],
                     ),
                 ],
@@ -797,7 +798,7 @@ class _MarketPin extends StatelessWidget {
               margin: const EdgeInsets.only(top: 3),
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: context.c.surface,
                 borderRadius: BorderRadius.circular(6),
                 boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 3)],
               ),

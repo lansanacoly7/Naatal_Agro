@@ -6,6 +6,7 @@ import '../../../../core/theme/app_theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/profile_provider.dart';
 
+import '../../../../ui/ui.dart';
 class EditProfileScreen extends ConsumerStatefulWidget {
   const EditProfileScreen({super.key});
 
@@ -127,19 +128,19 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.c.bg,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: context.c.surface,
         elevation: 0,
         centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black87),
+          icon: Icon(Icons.arrow_back_ios_new_rounded, color: context.c.ink),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text(
+        title: Text(
           'Modifier le profil',
           style: TextStyle(
-            color: Colors.black87,
+            color: context.c.ink,
             fontWeight: FontWeight.bold,
             fontSize: 20,
           ),
@@ -166,10 +167,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                       ),
                       child: CircleAvatar(
                         radius: 50,
-                        backgroundColor: Colors.white,
+                        backgroundColor: context.c.surface,
                         backgroundImage: _profileImage != null ? FileImage(_profileImage!) : null,
                         child: _profileImage == null 
-                          ? Text(_nameController.text.isNotEmpty ? _nameController.text.substring(0, 1).toUpperCase() : 'U', style: const TextStyle(color: AppColors.primary, fontSize: 32, fontWeight: FontWeight.bold))
+                          ? Text(_nameController.text.isNotEmpty ? _nameController.text.substring(0, 1).toUpperCase() : 'U', style: TextStyle(color: context.c.accent, fontSize: 32, fontWeight: FontWeight.bold))
                           : null,
                       ),
                     ),
@@ -259,21 +260,21 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       enabled: enabled,
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: TextStyle(color: Colors.grey.shade600),
+        labelStyle: TextStyle(color: context.c.ink2),
         prefixIcon: Icon(icon, color: Colors.grey.shade500),
         filled: true,
-        fillColor: enabled ? Colors.grey.shade50 : Colors.grey.shade200,
+        fillColor: enabled ? context.c.surfaceAlt : context.c.line,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: Colors.grey.shade300),
+          borderSide: BorderSide(color: context.c.line),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: Colors.grey.shade200),
+          borderSide: BorderSide(color: context.c.line),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: AppColors.primary, width: 2),
+          borderSide: BorderSide(color: context.c.accent, width: 2),
         ),
       ),
       validator: validator,

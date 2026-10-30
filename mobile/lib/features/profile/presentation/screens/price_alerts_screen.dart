@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/theme/app_theme.dart';
 
+import '../../../../ui/ui.dart';
 class PriceAlertsScreen extends StatefulWidget {
   const PriceAlertsScreen({super.key});
 
@@ -61,19 +62,19 @@ class _PriceAlertsScreenState extends State<PriceAlertsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.c.bg,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: context.c.surface,
         elevation: 0,
         centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black87),
+          icon: Icon(Icons.arrow_back_ios_new_rounded, color: context.c.ink),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text(
+        title: Text(
           'Mes Alertes Prix',
           style: TextStyle(
-            color: Colors.black87,
+            color: context.c.ink,
             fontWeight: FontWeight.bold,
             fontSize: 20,
           ),
@@ -104,11 +105,11 @@ class _PriceAlertsScreenState extends State<PriceAlertsScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.notifications_off_outlined, size: 80, color: Colors.grey.shade300),
+          Icon(Icons.notifications_off_outlined, size: 80, color: context.c.line),
           const SizedBox(height: 20),
           Text(
             'Aucune alerte configurée',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey.shade700),
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: context.c.ink2),
           ),
           const SizedBox(height: 10),
           Text(
@@ -129,7 +130,7 @@ class _PriceAlertsScreenState extends State<PriceAlertsScreen> {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.c.surface,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
@@ -161,14 +162,14 @@ class _PriceAlertsScreenState extends State<PriceAlertsScreen> {
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 18,
-                      color: isActive ? Colors.black87 : Colors.grey.shade600,
+                      color: isActive ? context.c.ink : context.c.ink2,
                     ),
                   ),
                   const SizedBox(height: 6),
                   Text(
                     alert['condition'],
                     style: TextStyle(
-                      color: isActive ? Colors.grey.shade700 : Colors.grey.shade400,
+                      color: isActive ? context.c.ink2 : Colors.grey.shade400,
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                     ),
@@ -180,9 +181,9 @@ class _PriceAlertsScreenState extends State<PriceAlertsScreen> {
               value: isActive,
               onChanged: (val) => _toggleAlert(index, val),
               activeThumbColor: Colors.white,
-              activeTrackColor: AppColors.primary,
+              activeTrackColor: context.c.accent,
               inactiveThumbColor: Colors.grey.shade400,
-              inactiveTrackColor: Colors.grey.shade200,
+              inactiveTrackColor: context.c.line,
             ),
           ],
         ),
@@ -229,8 +230,8 @@ class _AddAlertBottomSheetState extends State<AddAlertBottomSheet> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration: BoxDecoration(
+        color: context.c.surface,
         borderRadius: BorderRadius.only(
           topLeft: Radius.circular(30),
           topRight: Radius.circular(30),
@@ -253,18 +254,18 @@ class _AddAlertBottomSheetState extends State<AddAlertBottomSheet> {
                 width: 50,
                 height: 5,
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
+                  color: context.c.line,
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
             ),
             const SizedBox(height: 24),
-            const Text(
+            Text(
               'Créer une alerte prix',
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
-                color: Colors.black87,
+                color: context.c.ink,
               ),
             ),
             const SizedBox(height: 24),
@@ -275,9 +276,9 @@ class _AddAlertBottomSheetState extends State<AddAlertBottomSheet> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
-                color: Colors.grey.shade100,
+                color: context.c.surfaceAlt,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.grey.shade200),
+                border: Border.all(color: context.c.line),
               ),
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<String>(
@@ -311,7 +312,7 @@ class _AddAlertBottomSheetState extends State<AddAlertBottomSheet> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       decoration: BoxDecoration(
-                        color: _isUpCondition ? Colors.green.withValues(alpha: 0.1) : Colors.grey.shade100,
+                        color: _isUpCondition ? Colors.green.withValues(alpha: 0.1) : context.c.surfaceAlt,
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
                           color: _isUpCondition ? Colors.green : Colors.transparent,
@@ -324,7 +325,7 @@ class _AddAlertBottomSheetState extends State<AddAlertBottomSheet> {
                           Icon(Icons.trending_up_rounded, color: _isUpCondition ? Colors.green : Colors.grey, size: 20),
                           const SizedBox(width: 8),
                           Text('Supérieur à', style: TextStyle(
-                            color: _isUpCondition ? Colors.green : Colors.grey.shade700,
+                            color: _isUpCondition ? Colors.green : context.c.ink2,
                             fontWeight: FontWeight.bold,
                           )),
                         ],
@@ -339,7 +340,7 @@ class _AddAlertBottomSheetState extends State<AddAlertBottomSheet> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       decoration: BoxDecoration(
-                        color: !_isUpCondition ? Colors.red.withValues(alpha: 0.1) : Colors.grey.shade100,
+                        color: !_isUpCondition ? Colors.red.withValues(alpha: 0.1) : context.c.surfaceAlt,
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
                           color: !_isUpCondition ? Colors.red : Colors.transparent,
@@ -352,7 +353,7 @@ class _AddAlertBottomSheetState extends State<AddAlertBottomSheet> {
                           Icon(Icons.trending_down_rounded, color: !_isUpCondition ? Colors.red : Colors.grey, size: 20),
                           const SizedBox(width: 8),
                           Text('Inférieur à', style: TextStyle(
-                            color: !_isUpCondition ? Colors.red : Colors.grey.shade700,
+                            color: !_isUpCondition ? Colors.red : context.c.ink2,
                             fontWeight: FontWeight.bold,
                           )),
                         ],
@@ -373,7 +374,7 @@ class _AddAlertBottomSheetState extends State<AddAlertBottomSheet> {
               decoration: InputDecoration(
                 hintText: 'Ex: 500',
                 filled: true,
-                fillColor: Colors.grey.shade100,
+                fillColor: context.c.surfaceAlt,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
                   borderSide: BorderSide.none,

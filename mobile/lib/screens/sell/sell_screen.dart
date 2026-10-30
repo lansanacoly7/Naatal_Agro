@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart' show DioException;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -98,9 +99,22 @@ class _SellScreenState extends ConsumerState<SellScreen> {
       if (!mounted) return;
       setState(() {
         _busy = false;
-        _error = 'La vente n\'a pas pu être enregistrée. Vérifiez votre réseau puis réessayez.';
+        _error = _reasonFrom(e) ?? 'La vente n\'a pas pu être enregistrée. Vérifiez votre réseau puis réessayez.';
       });
     }
+  }
+
+  /// La raison donnée par le serveur (« Stock insuffisant… »), quand il en donne une.
+  String? _reasonFrom(Object error) {
+    if (error is! DioException) return null;
+    final data = error.response?.data;
+    if (data is Map) {
+      for (final value in data.values) {
+        final text = value is List && value.isNotEmpty ? value.first.toString() : (value is String ? value : null);
+        if (text != null && text.isNotEmpty) return text;
+      }
+    }
+    return null;
   }
 
   @override
@@ -140,7 +154,8 @@ class _SellScreenState extends ConsumerState<SellScreen> {
               onAction: () => context.pushReplacement('/stock'),
             );
           }
-          final preferred = widget.stockId ?? _selectedId;
+          // Le choix fait dans la liste passe avant le produit présélectionné à l'ouverture
+          final preferred = _selectedId.isNotEmpty ? _selectedId : (widget.stockId ?? '');
           final item = sellable.firstWhere((i) => i.id == preferred, orElse: () => sellable.first);
           return _body(context, item, sellable);
         },
@@ -270,10 +285,10 @@ class _ProductSelector extends StatelessWidget {
               height: 52,
               color: c.surfaceAlt,
               child: Padding(
-                padding: const EdgeInsets.all(4),
+                padding: EdgeInsets.zero,
                 child: Image.asset(
                   img,
-                  fit: BoxFit.contain,
+                  fit: BoxFit.cover,
                   errorBuilder: (_, __, ___) => Icon(Icons.inventory_2_rounded, color: c.accent, size: 28),
                 ),
               ),
@@ -330,10 +345,10 @@ class _StockPicker extends StatelessWidget {
                         height: 44,
                         color: c.surfaceAlt,
                         child: Padding(
-                          padding: const EdgeInsets.all(4),
+                          padding: EdgeInsets.zero,
                           child: Image.asset(
                             productImageForName(i.name),
-                            fit: BoxFit.contain,
+                            fit: BoxFit.cover,
                             errorBuilder: (_, __, ___) => Icon(Icons.inventory_2_rounded, color: c.accent, size: 24),
                           ),
                         ),

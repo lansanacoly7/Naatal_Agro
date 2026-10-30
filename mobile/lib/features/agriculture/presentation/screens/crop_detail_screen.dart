@@ -93,7 +93,7 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
     final isHarvested = _currentStatus.toLowerCase() == 'harvested' || crop.status.toLowerCase() == 'harvested';
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.c.bg,
       body: CustomScrollView(
         slivers: [
           _buildSliverAppBar(crop, isHarvested),
@@ -163,14 +163,7 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
         background: Stack(
           fit: StackFit.expand,
           children: [
-            Image.asset(
-              crop.imageAsset,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(
-                color: AppColors.primary,
-                child: const Icon(Icons.eco_rounded, size: 72, color: Colors.white24),
-              ),
-            ),
+            ProductPhoto(names: crop.imageNames),
             DecoratedBox(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -278,12 +271,12 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Actions de la parcelle',
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w800,
-            color: AppColors.textPrimary,
+            color: context.c.ink,
           ),
         ),
         const SizedBox(height: 10),
@@ -371,8 +364,8 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
           padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
           child: Container(
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-            decoration: const BoxDecoration(
-              color: Colors.white,
+            decoration: BoxDecoration(
+              color: context.c.surface,
               borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
             ),
             child: Column(
@@ -385,7 +378,7 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
                     height: 4,
                     margin: const EdgeInsets.only(bottom: 16),
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade300,
+                      color: context.c.line,
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -399,15 +392,15 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
                         color: AppColors.primary.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: Icon(icon, color: AppColors.primary, size: 24),
+                      child: Icon(icon, color: context.c.accent, size: 24),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Enregistrer $label', style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
-                          Text(crop.name, style: const TextStyle(fontSize: 13, color: AppColors.textSecondary, fontWeight: FontWeight.w500)),
+                          Text('Enregistrer $label', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: context.c.ink)),
+                          Text(crop.name, style: TextStyle(fontSize: 13, color: context.c.ink2, fontWeight: FontWeight.w500)),
                         ],
                       ),
                     ),
@@ -547,7 +540,7 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
       title: 'Cycle cultural',
       trailing: Text(
         isHarvested ? '100%' : (progress == null ? '—' : '$percent%'),
-        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.primary),
+        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: context.c.accent),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -557,8 +550,8 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
             child: LinearProgressIndicator(
               value: progressVal,
               minHeight: 8,
-              backgroundColor: AppColors.surfaceVariant,
-              valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
+              backgroundColor: context.c.surfaceAlt,
+              valueColor: AlwaysStoppedAnimation<Color>(context.c.accent),
             ),
           ),
           const SizedBox(height: 12),
@@ -579,14 +572,14 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
     return Column(
       crossAxisAlignment: align,
       children: [
-        Text(label, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary, fontWeight: FontWeight.w500)),
+        Text(label, style: TextStyle(fontSize: 11, color: context.c.ink2, fontWeight: FontWeight.w500)),
         const SizedBox(height: 2),
         Text(
           value,
           style: TextStyle(
             fontSize: 12,
             fontWeight: isHighlight ? FontWeight.w700 : FontWeight.w600,
-            color: isHighlight ? AppColors.primary : AppColors.textPrimary,
+            color: isHighlight ? context.c.accent : context.c.ink,
           ),
         ),
       ],
@@ -604,8 +597,8 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
       tag: harvests.isNotEmpty ? '${harvests.length}' : null,
       trailing: TextButton.icon(
         onPressed: () => _showHarvestDialog(context),
-        icon: const Icon(Icons.add_rounded, size: 16, color: AppColors.primary),
-        label: const Text('Ajouter', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.primary)),
+        icon: Icon(Icons.add_rounded, size: 16, color: context.c.accent),
+        label: Text('Ajouter', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: context.c.accent)),
         style: TextButton.styleFrom(
           visualDensity: VisualDensity.compact,
           padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -624,12 +617,12 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.agriculture_rounded, size: 20, color: AppColors.primary),
+                  Icon(Icons.agriculture_rounded, size: 20, color: context.c.accent),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
                       'Total récolté : ${totalHarvested.toStringAsFixed(totalHarvested.truncateToDouble() == totalHarvested ? 0 : 1)} $primaryUnit',
-                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.primary),
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: context.c.accent),
                     ),
                   ),
                 ],
@@ -640,7 +633,7 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
                 padding: const EdgeInsets.all(12),
                 margin: const EdgeInsets.only(bottom: 8),
                 decoration: BoxDecoration(
-                  color: AppColors.background,
+                  color: context.c.bg,
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(color: Colors.grey.withValues(alpha: 0.1)),
                 ),
@@ -653,7 +646,7 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
                         color: AppColors.primary.withValues(alpha: 0.12),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.inventory_2_rounded, size: 18, color: AppColors.primary),
+                      child: Icon(Icons.inventory_2_rounded, size: 18, color: context.c.accent),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -665,11 +658,11 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
                             children: [
                               Text(
                                 '${h.quantity.toStringAsFixed(h.quantity.truncateToDouble() == h.quantity ? 0 : 1)} ${h.unit}',
-                                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+                                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: context.c.ink),
                               ),
                               Text(
                                 _formatFrenchDate(h.date, short: true),
-                                style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                                style: TextStyle(fontSize: 11, color: context.c.ink2),
                               ),
                             ],
                           ),
@@ -679,7 +672,7 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
                               h.notes,
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(fontSize: 11.5, color: AppColors.textSecondary),
+                              style: TextStyle(fontSize: 11.5, color: context.c.ink2),
                             ),
                           ],
                         ],
@@ -693,19 +686,19 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: AppColors.background,
+                color: context.c.bg,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.info_outline_rounded, size: 20, color: AppColors.textSecondary),
+                  Icon(Icons.info_outline_rounded, size: 20, color: context.c.ink2),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
                       isHarvested
                           ? 'Cette culture est marquée récoltée, mais aucune pesée détaillée n\'a été enregistrée.'
                           : 'Aucune récolte enregistrée pour le moment. Enregistrez la pesée dès la coupe pour incrémenter le stock.',
-                      style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, height: 1.4),
+                      style: TextStyle(fontSize: 12, color: context.c.ink2, height: 1.4),
                     ),
                   ),
                 ],
@@ -725,8 +718,8 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
       tag: activities.isNotEmpty ? '${activities.length}' : null,
       trailing: TextButton.icon(
         onPressed: () => _showAddActivityDialog(context, crop),
-        icon: const Icon(Icons.add_rounded, size: 16, color: AppColors.primary),
-        label: const Text('Ajouter', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.primary)),
+        icon: Icon(Icons.add_rounded, size: 16, color: context.c.accent),
+        label: Text('Ajouter', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: context.c.accent)),
         style: TextButton.styleFrom(
           visualDensity: VisualDensity.compact,
           padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -741,7 +734,7 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
                 padding: const EdgeInsets.all(12),
                 margin: const EdgeInsets.only(bottom: 8),
                 decoration: BoxDecoration(
-                  color: AppColors.background,
+                  color: context.c.bg,
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(color: Colors.grey.withValues(alpha: 0.1)),
                 ),
@@ -755,7 +748,7 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
                         color: AppColors.primary.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: Icon(_activityIcon(act.activityType), size: 18, color: AppColors.primary),
+                      child: Icon(_activityIcon(act.activityType), size: 18, color: context.c.accent),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -767,11 +760,11 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
                             children: [
                               Text(
                                 _readableActivityType(act.activityType),
-                                style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                                style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: context.c.ink),
                               ),
                               Text(
                                 _formatFrenchDate(act.date, short: true),
-                                style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                                style: TextStyle(fontSize: 11, color: context.c.ink2),
                               ),
                             ],
                           ),
@@ -779,7 +772,7 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
                             const SizedBox(height: 3),
                             Text(
                               act.description,
-                              style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, height: 1.3),
+                              style: TextStyle(fontSize: 12, color: context.c.ink2, height: 1.3),
                             ),
                           ],
                           if (act.cost != null && act.cost! > 0) ...[
@@ -787,12 +780,12 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                               decoration: BoxDecoration(
-                                color: AppColors.surfaceVariant,
+                                color: context.c.surfaceAlt,
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text(
                                 '${_formatFcfa(act.cost!)} F (dépense enregistrée)',
-                                style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+                                style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: context.c.ink),
                               ),
                             ),
                           ],
@@ -807,17 +800,17 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: AppColors.background,
+                color: context.c.bg,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.assignment_outlined, size: 20, color: AppColors.textSecondary),
+                  Icon(Icons.assignment_outlined, size: 20, color: context.c.ink2),
                   const SizedBox(width: 10),
-                  const Expanded(
+                  Expanded(
                     child: Text(
                       'Aucune intervention enregistrée sur cette parcelle. Notez vos arrosages, engrais et traitements pour suivre vos coûts.',
-                      style: TextStyle(fontSize: 12, color: AppColors.textSecondary, height: 1.4),
+                      style: TextStyle(fontSize: 12, color: context.c.ink2, height: 1.4),
                     ),
                   ),
                 ],
@@ -873,18 +866,18 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
                   color: AppColors.primary.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.verified_user_rounded, size: 18, color: AppColors.primary),
+                child: Icon(Icons.verified_user_rounded, size: 18, color: context.c.accent),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Parcelle sous contrôle', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+                    Text('Parcelle sous contrôle', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: context.c.ink)),
                     const SizedBox(height: 2),
                     Text(
                       'Aucune alerte sanitaire ou parasitaire majeure n\'a été signalée pour cette culture à ${crop.location.isNotEmpty ? crop.location : "votre zone"}.',
-                      style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, height: 1.35),
+                      style: TextStyle(fontSize: 12, color: context.c.ink2, height: 1.35),
                     ),
                   ],
                 ),
@@ -899,13 +892,13 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 4),
                 child: Row(
-                  children: const [
+                  children: [
                     Text(
                       'Consulter la fiche technique de référence',
-                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.primary),
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: context.c.accent),
                     ),
                     SizedBox(width: 4),
-                    Icon(Icons.arrow_forward_rounded, size: 14, color: AppColors.primary),
+                    Icon(Icons.arrow_forward_rounded, size: 14, color: context.c.accent),
                   ],
                 ),
               ),
@@ -932,8 +925,8 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
                   icon: const Icon(Icons.storefront_rounded, size: 16),
                   label: const Text('Consulter les marchés'),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.primary,
-                    side: const BorderSide(color: AppColors.primary),
+                    foregroundColor: context.c.accent,
+                    side: BorderSide(color: context.c.accent),
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                     textStyle: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700),
@@ -947,7 +940,7 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
                   icon: const Icon(Icons.notifications_active_rounded, size: 16),
                   label: const Text('Alerte de prix'),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.textPrimary,
+                    foregroundColor: context.c.ink,
                     side: BorderSide(color: Colors.grey.withValues(alpha: 0.3)),
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
@@ -966,7 +959,7 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
 
   Widget _buildAiCard(Crop crop) {
     return Material(
-      color: Colors.white,
+      color: context.c.surface,
       borderRadius: BorderRadius.circular(20),
       child: InkWell(
         borderRadius: BorderRadius.circular(20),
@@ -986,23 +979,23 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
                   color: AppColors.primary.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.auto_awesome_rounded, size: 20, color: AppColors.primary),
+                child: Icon(Icons.auto_awesome_rounded, size: 20, color: context.c.accent),
               ),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Besoin d\'un conseil agronomique ?', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+                    Text('Besoin d\'un conseil agronomique ?', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: context.c.ink)),
                     const SizedBox(height: 2),
                     Text(
                       'Demandez à Naatal IA des recommandations personnalisées pour ${crop.name}.',
-                      style: const TextStyle(fontSize: 11.5, color: AppColors.textSecondary, height: 1.3),
+                      style: TextStyle(fontSize: 11.5, color: context.c.ink2, height: 1.3),
                     ),
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right_rounded, color: AppColors.textSecondary, size: 20),
+              Icon(Icons.chevron_right_rounded, color: context.c.ink2, size: 20),
             ],
           ),
         ),
@@ -1017,7 +1010,7 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
       child: Container(
         padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.c.surface,
           border: Border(top: BorderSide(color: Colors.grey.withValues(alpha: 0.15))),
           boxShadow: [
             BoxShadow(
@@ -1038,8 +1031,8 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
                   icon: const Icon(Icons.post_add_rounded, size: 20),
                   label: const Text('Activité'),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.primary,
-                    side: const BorderSide(color: AppColors.primary, width: 1.5),
+                    foregroundColor: context.c.accent,
+                    side: BorderSide(color: context.c.accent, width: 1.5),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
                   ),
@@ -1078,7 +1071,7 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.c.surface,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Colors.grey.withValues(alpha: 0.1)),
       ),
@@ -1090,7 +1083,7 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
             children: [
               Row(
                 children: [
-                  Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
+                  Text(title, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: context.c.ink)),
                   if (tag != null) ...[
                     const SizedBox(width: 6),
                     Container(
@@ -1099,7 +1092,7 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
                         color: AppColors.primary.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(6),
                       ),
-                      child: Text(tag, style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: AppColors.primary)),
+                      child: Text(tag, style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: context.c.accent)),
                     ),
                   ],
                 ],
@@ -1142,8 +1135,8 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
           padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
           child: Container(
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-            decoration: const BoxDecoration(
-              color: Colors.white,
+            decoration: BoxDecoration(
+              color: context.c.surface,
               borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
             ),
             child: Column(
@@ -1156,7 +1149,7 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
                     height: 4,
                     margin: const EdgeInsets.only(bottom: 16),
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade300,
+                      color: context.c.line,
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -1164,7 +1157,7 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('Nouvelle activité', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
+                    Text('Nouvelle activité', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: context.c.ink)),
                     IconButton(
                       icon: const Icon(Icons.close_rounded, size: 20),
                       onPressed: () => Navigator.pop(ctx),
@@ -1225,7 +1218,7 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
                     labelText: 'Description ou observations',
                     labelStyle: const TextStyle(fontSize: 13),
                     hintText: 'Ex: 2 sacs de NPK, désherbage manuel...',
-                    hintStyle: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                    hintStyle: TextStyle(fontSize: 12, color: context.c.ink2),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
                   ),
@@ -1351,8 +1344,8 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
           padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
           child: Container(
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-            decoration: const BoxDecoration(
-              color: Colors.white,
+            decoration: BoxDecoration(
+              color: context.c.surface,
               borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
             ),
             child: Column(
@@ -1365,7 +1358,7 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
                     height: 4,
                     margin: const EdgeInsets.only(bottom: 16),
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade300,
+                      color: context.c.line,
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -1373,7 +1366,7 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Pesée de récolte : ${widget.crop.name}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
+                    Text('Pesée de récolte : ${widget.crop.name}', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: context.c.ink)),
                     IconButton(
                       icon: const Icon(Icons.close_rounded, size: 20),
                       onPressed: () => Navigator.pop(ctx),
@@ -1382,9 +1375,9 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
                   ],
                 ),
                 const SizedBox(height: 6),
-                const Text(
+                Text(
                   'Cette pesée enregistre la production récoltée et l\'ajoute automatiquement à votre inventaire de stock.',
-                  style: TextStyle(color: AppColors.textSecondary, fontSize: 12, height: 1.35),
+                  style: TextStyle(color: context.c.ink2, fontSize: 12, height: 1.35),
                 ),
                 const SizedBox(height: 14),
                 Row(
@@ -1434,7 +1427,7 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
                     labelText: 'Observations (optionnel)',
                     labelStyle: const TextStyle(fontSize: 13),
                     hintText: 'Ex: Qualité supérieure, première passe...',
-                    hintStyle: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                    hintStyle: TextStyle(fontSize: 12, color: context.c.ink2),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
                   ),
@@ -1538,8 +1531,8 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
           padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
           child: Container(
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-            decoration: const BoxDecoration(
-              color: Colors.white,
+            decoration: BoxDecoration(
+              color: context.c.surface,
               borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
             ),
             child: Column(
@@ -1552,7 +1545,7 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
                     height: 4,
                     margin: const EdgeInsets.only(bottom: 16),
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade300,
+                      color: context.c.line,
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -1560,7 +1553,7 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Alerte de cours : ${crop.name}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
+                    Text('Alerte de cours : ${crop.name}', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: context.c.ink)),
                     IconButton(
                       icon: const Icon(Icons.close_rounded, size: 20),
                       onPressed: () => Navigator.pop(ctx),

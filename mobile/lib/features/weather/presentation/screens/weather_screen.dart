@@ -1,289 +1,342 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/location/senegal_regions.dart';
+import '../../../../screens/markets/markets_data.dart' show userLocationProvider;
 import '../../../../ui/ui.dart';
+import '../../data/models/weather_report.dart';
 import '../../data/weather_provider.dart';
+import '../../domain/weather_words.dart';
+import '../widgets/weather_widgets.dart';
 
+/// Météo agricole : mesures et prévisions réelles du lieu où se trouve la personne (ou de la région choisie).
 class WeatherScreen extends ConsumerWidget {
   const WeatherScreen({super.key});
 
-  static const regions = [
-    'Dakar',
-    'Thiès',
-    'Kaolack',
-    'Saint-Louis',
-    'Touba',
-    'Ziguinchor',
-    'Kolda',
-    'Tambacounda',
-  ];
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final c = context.c;
-    final selectedRegion = ref.watch(selectedWeatherLocationProvider);
-    final weatherAsync = ref.watch(weatherForecastProvider);
+    final query = ref.watch(weatherQueryProvider);
+    final manual = ref.watch(manualWeatherQueryProvider);
 
     return LargeTitleScaffold(
-      title: 'Météo agricole',
-      eyebrow: selectedRegion,
+      title: 'Météo',
+      eyebrow: query?.label,
       reserveNav: false,
-      onRefresh: () async => ref.invalidate(weatherForecastProvider),
+      onRefresh: () async {
+        if (query != null) ref.invalidate(weatherReportProvider(query));
+      },
       slivers: [
         SliverToBoxAdapter(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Sélecteur de région en pilules
+              // « Ma position » d'abord, puis les régions
               SizedBox(
                 height: 52,
-                child: ListView.separated(
+                child: ListView(
                   padding: const EdgeInsets.symmetric(horizontal: Space.gutter),
                   scrollDirection: Axis.horizontal,
-                  itemCount: regions.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: Space.s),
-                  itemBuilder: (context, i) {
-                    final region = regions[i];
-                    final isSelected = region == selectedRegion;
-                    return PressScale(
-                      onTap: () {
-                        ref.read(selectedWeatherLocationProvider.notifier).state = region;
-                      },
-                      child: AnimatedContainer(
-                        duration: Motion.base,
-                        curve: Motion.out,
-                        padding: const EdgeInsets.symmetric(horizontal: Space.l),
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: isSelected ? c.accent : c.surface,
-                          borderRadius: BorderRadius.circular(Radii.pill),
-                          border: Border.all(color: isSelected ? c.accent : c.line),
-                        ),
-                        child: Text(
-                          region,
-                          style: T.caption(
-                            color: isSelected ? c.onAccent : c.ink,
-                            weight: isSelected ? 800 : 600,
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(height: Space.m),
-
-              // Contenu principal
-              weatherAsync.when(
-                loading: () => const Padding(
-                  padding: EdgeInsets.all(Space.gutter),
-                  child: Skeleton(height: 280, radius: 24),
-                ),
-                error: (err, _) => ErrorState(
-                  message: 'Impossible de charger la météo pour $selectedRegion.',
-                  onRetry: () => ref.invalidate(weatherForecastProvider),
-                ),
-                data: (data) => Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Grande carte hero météo avec photo
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: Space.gutter),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(Radii.xl),
-                          image: const DecorationImage(
-                            image: AssetImage('assets/images/ui/ui_meteo.jpg'),
-                            fit: BoxFit.cover,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: c.isDark ? 0.35 : 0.08),
-                              blurRadius: 16,
-                              offset: const Offset(0, 5),
-                            ),
-                          ],
-                        ),
-                        child: Container(
-                          padding: const EdgeInsets.all(Space.xl),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(Radii.xl),
-                            gradient: LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: [
-                                Colors.black.withValues(alpha: 0.3),
-                                Colors.black.withValues(alpha: 0.88),
-                              ],
-                            ),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Row(
-                                    children: [
-                                      const Icon(Icons.location_on_rounded, color: Colors.white70, size: 16),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        data.location,
-                                        style: T.caption(color: Colors.white, weight: 700),
-                                      ),
-                                    ],
-                                  ),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withValues(alpha: 0.2),
-                                      borderRadius: BorderRadius.circular(Radii.pill),
-                                    ),
-                                    child: Text(
-                                      'Aujourd\'hui',
-                                      style: T.caption(color: Colors.white, weight: 700),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: Space.l),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  Text(
-                                    '${data.currentTemp.round()}°C',
-                                    style: const TextStyle(
-                                      fontSize: 48,
-                                      fontWeight: FontWeight.w900,
-                                      color: Colors.white,
-                                      height: 1.0,
-                                      letterSpacing: -1,
-                                    ),
-                                  ),
-                                  const Icon(Icons.wb_sunny_rounded, color: Color(0xFFFFD54F), size: 48),
-                                ],
-                              ),
-                              const SizedBox(height: Space.l),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: Space.m, vertical: Space.s),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.12),
-                                  borderRadius: BorderRadius.circular(Radii.m),
-                                ),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                                  children: [
-                                    _Stat(icon: Icons.water_drop_rounded, value: '${data.currentHumidity}%', label: 'Humidité'),
-                                    _Stat(icon: Icons.grain_rounded, value: '${data.currentRainfall} mm', label: 'Pluie'),
-                                    _Stat(icon: Icons.air_rounded, value: '14 km/h', label: 'Vent'),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
+                    _Chip(
+                      label: 'Ma position',
+                      icon: Icons.my_location_rounded,
+                      selected: manual == null,
+                      onTap: () {
+                        ref.read(manualWeatherQueryProvider.notifier).state = null;
+                        if (ref.read(userLocationProvider).position == null) ref.read(userLocationProvider.notifier).locate();
+                      },
                     ),
-
-                    // Recommandations agronomiques
-                    if (data.agriculturalAdvice.isNotEmpty) ...[
-                      const SectionHeader('Impact sur vos travaux'),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: Space.gutter),
-                        child: Column(
-                          children: [
-                            for (var i = 0; i < data.agriculturalAdvice.length; i++) ...[
-                              AppCard(
-                                color: c.surface,
-                                padding: const EdgeInsets.all(Space.l),
-                                child: Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Container(
-                                      width: 40,
-                                      height: 40,
-                                      decoration: BoxDecoration(
-                                        color: c.accent.withValues(alpha: c.isDark ? 0.25 : 0.1),
-                                        borderRadius: BorderRadius.circular(Radii.m),
-                                      ),
-                                      child: Icon(Icons.eco_rounded, color: c.accent, size: 20),
-                                    ),
-                                    const SizedBox(width: Space.m),
-                                    Expanded(
-                                      child: Text(
-                                        data.agriculturalAdvice[i],
-                                        style: T.body(color: c.ink),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: Space.s),
-                            ],
-                          ],
-                        ),
+                    for (final region in SenegalRegions.all) ...[
+                      const SizedBox(width: Space.s),
+                      _Chip(
+                        label: region.name,
+                        selected: manual?.label == region.name,
+                        onTap: () => ref.read(manualWeatherQueryProvider.notifier).state =
+                            WeatherQuery(lat: region.lat, lon: region.lon, label: region.name),
                       ),
                     ],
-
-                    // Prévisions sur 5 jours
-                    if (data.forecast.isNotEmpty) ...[
-                      const SectionHeader('Prévisions sur 5 jours'),
-                      GroupedList(
-                        children: [
-                          for (var i = 0; i < data.forecast.length; i++)
-                            Reveal(
-                              index: i,
-                              child: GroupedRow(
-                                leading: IconTile(
-                                  icon: _weatherIcon(data.forecast[i].description),
-                                  color: c.slate,
-                                ),
-                                title: data.forecast[i].date,
-                                subtitle: data.forecast[i].description,
-                                value: '${data.forecast[i].tempMax.round()}° / ${data.forecast[i].tempMin.round()}°',
-                              ),
-                            ),
-                        ],
-                      ),
-                    ],
-                    const SizedBox(height: Space.xxl),
                   ],
                 ),
               ),
+              const SizedBox(height: Space.m),
+              if (query == null)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: Space.gutter),
+                  child: EmptyState(
+                    icon: Icons.location_searching_rounded,
+                    title: 'Où êtes-vous ?',
+                    message: 'Touchez « Ma position » ou choisissez votre région.',
+                  ),
+                )
+              else
+                ref.watch(weatherReportProvider(query)).when(
+                      loading: () => const Padding(padding: EdgeInsets.all(Space.gutter), child: Skeleton(height: 280, radius: 24)),
+                      error: (error, _) {
+                        if (error is AmbiguousWeatherPlace) {
+                          return Padding(padding: const EdgeInsets.symmetric(horizontal: Space.gutter), child: AmbiguousPlaceChooser(error: error));
+                        }
+                        return ErrorState(
+                          message: error is WeatherUnavailable ? error.message : 'Impossible de charger la météo.',
+                          onRetry: () => ref.invalidate(weatherReportProvider(query)),
+                        );
+                      },
+                      data: (report) => _Report(report: report),
+                    ),
             ],
           ),
         ),
       ],
     );
   }
-
-  static IconData _weatherIcon(String desc) {
-    final d = desc.toLowerCase();
-    if (d.contains('pluie') || d.contains('averse')) return Icons.grain_rounded;
-    if (d.contains('nuag') || d.contains('couvert')) return Icons.wb_cloudy_rounded;
-    if (d.contains('orage')) return Icons.thunderstorm_rounded;
-    return Icons.wb_sunny_rounded;
-  }
 }
 
-class _Stat extends StatelessWidget {
-  const _Stat({required this.icon, required this.value, required this.label});
+class _Chip extends StatelessWidget {
+  const _Chip({required this.label, required this.selected, required this.onTap, this.icon});
 
-  final IconData icon;
-  final String value;
   final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  final IconData? icon;
 
   @override
   Widget build(BuildContext context) {
+    final c = context.c;
+    return PressScale(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: Motion.base,
+        curve: Motion.out,
+        padding: const EdgeInsets.symmetric(horizontal: Space.l),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: selected ? c.accent : c.surface,
+          borderRadius: BorderRadius.circular(Radii.pill),
+          border: Border.all(color: selected ? c.accent : c.line),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (icon != null) ...[Icon(icon, size: 16, color: selected ? c.onAccent : c.ink), const SizedBox(width: 6)],
+            Text(label, style: T.caption(color: selected ? c.onAccent : c.ink, weight: selected ? 800 : 600)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _Report extends StatelessWidget {
+  const _Report({required this.report});
+
+  final WeatherReport report;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final current = report.current;
+    final time = measuredAt(current.observedAt);
+    final today = DateTime.now();
     return Column(
-      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, color: Colors.white70, size: 16),
-        const SizedBox(height: 3),
-        Text(value, style: T.caption(color: Colors.white, weight: 800)),
-        Text(label, style: T.caption(color: Colors.white70, weight: 500)),
+        // Aujourd'hui : le ciel, la chaleur et la pluie en une phrase. La photo est derrière, jamais devant le texte.
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: Space.gutter),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(Radii.xl),
+            child: Stack(
+              children: [
+                Positioned.fill(child: Image.asset('assets/images/ui/ui_meteo.jpg', fit: BoxFit.cover)),
+                Positioned.fill(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [Colors.black.withValues(alpha: 0.45), Colors.black.withValues(alpha: 0.82)],
+                      ),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(Space.xl),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.location_on_rounded, color: Colors.white, size: 18),
+                          const SizedBox(width: 4),
+                          Expanded(child: Text(report.placeName, maxLines: 1, overflow: TextOverflow.ellipsis, style: T.body(color: Colors.white, weight: 700))),
+                        ],
+                      ),
+                      const SizedBox(height: Space.l),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Icon(weatherIconFor(current.icon), color: const Color(0xFFFFD54F), size: 76),
+                          const SizedBox(width: Space.l),
+                          Text('${current.temperature.round()}°', style: T.number(64, color: Colors.white)),
+                        ],
+                      ),
+                      const SizedBox(height: Space.m),
+                      Text(heatSentence(current.temperature), style: T.largeTitle(color: Colors.white).copyWith(fontSize: 28)),
+                      const SizedBox(height: Space.xs),
+                      Text(skyWords(current.icon), style: T.title(color: Colors.white)),
+                      const SizedBox(height: Space.xs),
+                      Text(todayRainSentence(current), style: T.body(color: Colors.white, weight: 600)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(Space.gutter, Space.m, Space.gutter, 0),
+          child: Align(alignment: Alignment.centerLeft, child: ReadAloudButton(key: ValueKey('weather-listen-${report.placeName}'), text: weatherSpoken(report, today))),
+        ),
+
+        // Que faire : le plus utile, tout de suite sous la météo du jour
+        const SectionHeader('Que faire ?'),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: Space.gutter),
+          child: report.advice.isEmpty
+              ? _AdviceCard(icon: Icons.check_circle_rounded, color: c.accent, text: 'Rien de spécial. Vous pouvez travailler.')
+              : Column(
+                  children: [
+                    for (final line in report.advice) ...[
+                      _AdviceCard(icon: Icons.lightbulb_rounded, color: c.gold, text: line),
+                      const SizedBox(height: Space.s),
+                    ],
+                  ],
+                ),
+        ),
+
+        // Vent et pluie des derniers jours, en mots
+        const SizedBox(height: Space.l),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: Space.gutter),
+          child: Row(
+            children: [
+              Expanded(child: _FactCard(icon: Icons.air_rounded, color: c.slate, title: 'Le vent', text: windWords(current.windSpeed))),
+              const SizedBox(width: Space.s),
+              Expanded(child: _FactCard(icon: Icons.water_drop_rounded, color: c.domainMeteo, title: 'Ces 7 jours', text: recentRainWords(report.rainLast7Days))),
+            ],
+          ),
+        ),
+
+        // Les jours qui viennent
+        if (report.forecast.isNotEmpty) ...[
+          const SectionHeader('Les jours qui viennent'),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: Space.gutter),
+            child: Column(
+              children: [
+                for (var i = 0; i < report.forecast.length; i++) ...[
+                  Reveal(index: i, child: _ForecastRow(day: report.forecast[i], today: today)),
+                  const SizedBox(height: Space.s),
+                ],
+              ],
+            ),
+          ),
+        ],
+
+        // Provenance de la mesure : dite, jamais cachée
+        Padding(
+          padding: const EdgeInsets.fromLTRB(Space.gutter, Space.l, Space.gutter, Space.xxl),
+          child: Text(
+            '${time.isEmpty ? '' : 'Mesuré à $time. '}Source : ${report.sourceName}.',
+            style: T.caption(color: c.ink2, weight: 500),
+          ),
+        ),
       ],
+    );
+  }
+}
+
+class _AdviceCard extends StatelessWidget {
+  const _AdviceCard({required this.icon, required this.color, required this.text});
+
+  final IconData icon;
+  final Color color;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    return AppCard(
+      color: c.surface,
+      padding: const EdgeInsets.all(Space.l),
+      child: Row(
+        children: [
+          IconTile(icon: icon, color: color),
+          const SizedBox(width: Space.m),
+          Expanded(child: Text(text, style: T.body(color: c.ink, weight: 700))),
+        ],
+      ),
+    );
+  }
+}
+
+class _FactCard extends StatelessWidget {
+  const _FactCard({required this.icon, required this.color, required this.title, required this.text});
+
+  final IconData icon;
+  final Color color;
+  final String title;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    return AppCard(
+      color: c.surface,
+      padding: const EdgeInsets.all(Space.l),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          IconTile(icon: icon, color: color),
+          const SizedBox(height: Space.m),
+          Text(title, style: T.caption(color: c.ink2, weight: 700)),
+          const SizedBox(height: 2),
+          Text(text, style: T.body(color: c.ink, weight: 800)),
+        ],
+      ),
+    );
+  }
+}
+
+class _ForecastRow extends StatelessWidget {
+  const _ForecastRow({required this.day, required this.today});
+
+  final ForecastDay day;
+  final DateTime today;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final wet = bringsWater(day.icon);
+    final high = day.temperatureMax?.round();
+    return AppCard(
+      color: c.surface,
+      padding: const EdgeInsets.all(Space.l),
+      child: Row(
+        children: [
+          Icon(weatherIconFor(day.icon), size: 40, color: wet ? c.domainMeteo : c.gold),
+          const SizedBox(width: Space.m),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(dayName(day.date, today), style: T.body(color: c.ink, weight: 800)),
+                Text(skyWords(day.icon), style: T.caption(color: c.ink2, weight: 600)),
+              ],
+            ),
+          ),
+          if (high != null) Text('$high°', style: T.figure(color: c.ink)),
+        ],
+      ),
     );
   }
 }

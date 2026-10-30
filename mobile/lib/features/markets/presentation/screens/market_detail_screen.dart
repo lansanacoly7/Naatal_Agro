@@ -6,6 +6,7 @@ import '../../data/models/market.dart';
 import '../../data/models/price.dart';
 import '../../data/markets_provider.dart';
 
+import '../../../../ui/ui.dart';
 class MarketDetailScreen extends ConsumerStatefulWidget {
   final Market market;
 
@@ -24,11 +25,11 @@ class _MarketDetailScreenState extends ConsumerState<MarketDetailScreen> {
     final pricesAsync = ref.watch(pricesListProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.c.bg,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        foregroundColor: Colors.black87,
+        foregroundColor: context.c.ink,
         title: Text(market.name, style: const TextStyle(fontWeight: FontWeight.bold)),
         actions: [
           IconButton(
@@ -47,7 +48,7 @@ class _MarketDetailScreenState extends ConsumerState<MarketDetailScreen> {
       ),
       body: RefreshIndicator(
         onRefresh: () async => ref.invalidate(pricesListProvider),
-        color: AppColors.primary,
+        color: context.c.accent,
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           child: Column(
@@ -73,9 +74,9 @@ class _MarketDetailScreenState extends ConsumerState<MarketDetailScreen> {
                 },
                 loading: () => Column(
                   children: [
-                    const Center(child: Padding(
+                    Center(child: Padding(
                       padding: EdgeInsets.all(32.0),
-                      child: CircularProgressIndicator(color: AppColors.primary),
+                      child: CircularProgressIndicator(color: context.c.accent),
                     )),
                     const SizedBox(height: 24),
                     _buildMarketInfo([]),
@@ -126,9 +127,9 @@ class _MarketDetailScreenState extends ConsumerState<MarketDetailScreen> {
         children: [
           Row(
             children: [
-              const Icon(Icons.location_on, color: AppColors.primary, size: 20),
+              Icon(Icons.location_on, color: context.c.accent, size: 20),
               const SizedBox(width: 8),
-              Text(market.region, style: TextStyle(fontSize: 16, color: Colors.grey.shade700)),
+              Text(market.region, style: TextStyle(fontSize: 16, color: context.c.ink2)),
               const Spacer(),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -203,7 +204,7 @@ class _MarketDetailScreenState extends ConsumerState<MarketDetailScreen> {
               },
               child: Text(
                 _showAllPrices ? 'Réduire' : 'Voir tous les prix (${marketPrices.length})',
-                style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary),
+                style: TextStyle(fontWeight: FontWeight.bold, color: context.c.accent),
               ),
             ),
           ),
@@ -213,7 +214,7 @@ class _MarketDetailScreenState extends ConsumerState<MarketDetailScreen> {
 
   Widget _buildPriceRow(Price price) {
     IconData productIcon = Icons.eco_rounded;
-    Color productIconColor = AppColors.primary;
+    Color productIconColor = context.c.accent;
     final nameLower = price.productName.toLowerCase();
     if (nameLower.contains("oignon")) {
       productIcon = Icons.circle_outlined;
@@ -245,9 +246,9 @@ class _MarketDetailScreenState extends ConsumerState<MarketDetailScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.c.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: context.c.line),
       ),
       child: Row(
         children: [
@@ -275,18 +276,18 @@ class _MarketDetailScreenState extends ConsumerState<MarketDetailScreen> {
         margin: const EdgeInsets.symmetric(horizontal: 24),
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.c.surface,
           borderRadius: BorderRadius.circular(24),
           boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 15, offset: const Offset(0, 5))],
         ),
-        child: const Column(
+        child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('Évolution du marché', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             SizedBox(height: 12),
             Text(
               'Aucune cotation enregistrée pour ce marché.',
-              style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+              style: TextStyle(color: context.c.ink2, fontSize: 13),
             ),
           ],
         ),
@@ -303,7 +304,7 @@ class _MarketDetailScreenState extends ConsumerState<MarketDetailScreen> {
       margin: const EdgeInsets.symmetric(horizontal: 24),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.c.surface,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 15, offset: const Offset(0, 5))],
       ),
@@ -331,7 +332,7 @@ class _MarketDetailScreenState extends ConsumerState<MarketDetailScreen> {
                     const SizedBox(height: 4),
                     Text(
                       'Relevé indicatif du ${featuredPrice.date}',
-                      style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                      style: TextStyle(color: context.c.ink2, fontSize: 12),
                     ),
                   ],
                 ),
@@ -357,12 +358,12 @@ class _MarketDetailScreenState extends ConsumerState<MarketDetailScreen> {
           const Divider(height: 32),
           Row(
             children: [
-              const Icon(Icons.info_outline, size: 18, color: AppColors.primary),
+              Icon(Icons.info_outline, size: 18, color: context.c.accent),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   'Tendance observée sur ${market.name} selon les derniers relevés.',
-                  style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                  style: TextStyle(color: context.c.ink2, fontSize: 12),
                 ),
               ),
             ],
@@ -407,7 +408,7 @@ class _MarketDetailScreenState extends ConsumerState<MarketDetailScreen> {
         children: [
           Expanded(
             flex: 2,
-            child: Text(label, style: TextStyle(color: Colors.grey.shade600)),
+            child: Text(label, style: TextStyle(color: context.c.ink2)),
           ),
           Expanded(
             flex: 3,
@@ -429,7 +430,7 @@ class _MarketDetailScreenState extends ConsumerState<MarketDetailScreen> {
               onPressed: () {
                 showModalBottomSheet(
                   context: context,
-                  backgroundColor: Colors.white,
+                  backgroundColor: context.c.surface,
                   shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
                   builder: (ctx) => Padding(
                     padding: const EdgeInsets.all(24.0),
@@ -438,7 +439,7 @@ class _MarketDetailScreenState extends ConsumerState<MarketDetailScreen> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         Center(
-                          child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2))),
+                          child: Container(width: 40, height: 4, decoration: BoxDecoration(color: context.c.line, borderRadius: BorderRadius.circular(2))),
                         ),
                         const SizedBox(height: 20),
                         Row(
@@ -446,7 +447,7 @@ class _MarketDetailScreenState extends ConsumerState<MarketDetailScreen> {
                             Container(
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(12)),
-                              child: const Icon(Icons.directions_car_rounded, color: Colors.black87),
+                              child: Icon(Icons.directions_car_rounded, color: context.c.ink),
                             ),
                             const SizedBox(width: 12),
                             Expanded(
@@ -454,7 +455,7 @@ class _MarketDetailScreenState extends ConsumerState<MarketDetailScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text('Itinéraire vers ${market.name}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                                  Text(market.region, style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
+                                  Text(market.region, style: TextStyle(color: context.c.ink2, fontSize: 13)),
                                 ],
                               ),
                             ),
@@ -463,18 +464,18 @@ class _MarketDetailScreenState extends ConsumerState<MarketDetailScreen> {
                         const SizedBox(height: 20),
                         Container(
                           padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(color: Colors.grey.shade50, borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.grey.shade200)),
+                          decoration: BoxDecoration(color: context.c.surfaceAlt, borderRadius: BorderRadius.circular(16), border: Border.all(color: context.c.line)),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Row(
                                 children: [
-                                  Icon(Icons.location_off_outlined, color: Colors.grey.shade600, size: 20),
+                                  Icon(Icons.location_off_outlined, color: context.c.ink2, size: 20),
                                   const SizedBox(width: 8),
-                                  const Expanded(
+                                  Expanded(
                                     child: Text(
                                       "Calcul d'itinéraire non disponible (nécessite la géolocalisation active)",
-                                      style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                                      style: TextStyle(color: context.c.ink2, fontSize: 13),
                                     ),
                                   ),
                                 ],
@@ -513,7 +514,7 @@ class _MarketDetailScreenState extends ConsumerState<MarketDetailScreen> {
               icon: const Icon(Icons.directions_car, color: Colors.white),
               label: const Text('Voir l\'itinéraire', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.black87,
+                backgroundColor: context.c.ink,
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               ),
@@ -528,7 +529,7 @@ class _MarketDetailScreenState extends ConsumerState<MarketDetailScreen> {
                 showModalBottomSheet(
                   context: context,
                   isScrollControlled: true,
-                  backgroundColor: Colors.white,
+                  backgroundColor: context.c.surface,
                   shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
                   builder: (ctx) => Padding(
                     padding: EdgeInsets.only(
@@ -542,7 +543,7 @@ class _MarketDetailScreenState extends ConsumerState<MarketDetailScreen> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         Center(
-                          child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2))),
+                          child: Container(width: 40, height: 4, decoration: BoxDecoration(color: context.c.line, borderRadius: BorderRadius.circular(2))),
                         ),
                         const SizedBox(height: 20),
                         Row(
@@ -550,7 +551,7 @@ class _MarketDetailScreenState extends ConsumerState<MarketDetailScreen> {
                             Container(
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
-                              child: const Icon(Icons.notifications_active_rounded, color: AppColors.primary),
+                              child: Icon(Icons.notifications_active_rounded, color: context.c.accent),
                             ),
                             const SizedBox(width: 12),
                             Expanded(
@@ -558,7 +559,7 @@ class _MarketDetailScreenState extends ConsumerState<MarketDetailScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   const Text('Créer une alerte de prix', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                                  Text(market.name, style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
+                                  Text(market.name, style: TextStyle(color: context.c.ink2, fontSize: 13)),
                                 ],
                               ),
                             ),
@@ -567,7 +568,7 @@ class _MarketDetailScreenState extends ConsumerState<MarketDetailScreen> {
                         const SizedBox(height: 16),
                         Text(
                           'Soyez alerté dès que le cours moyen sur ${market.name} évolue selon votre seuil fixé.',
-                          style: TextStyle(color: Colors.grey.shade600, fontSize: 14, height: 1.3),
+                          style: TextStyle(color: context.c.ink2, fontSize: 14, height: 1.3),
                         ),
                         const SizedBox(height: 20),
                         TextField(
@@ -576,7 +577,7 @@ class _MarketDetailScreenState extends ConsumerState<MarketDetailScreen> {
                           decoration: InputDecoration(
                             labelText: 'Seuil de prix souhaité (FCFA/kg)',
                             suffixText: 'FCFA/kg',
-                            prefixIcon: const Icon(Icons.price_change_outlined, color: AppColors.primary),
+                            prefixIcon: Icon(Icons.price_change_outlined, color: context.c.accent),
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                           ),
                         ),
@@ -604,12 +605,12 @@ class _MarketDetailScreenState extends ConsumerState<MarketDetailScreen> {
                   ),
                 );
               },
-              icon: const Icon(Icons.notifications_active_rounded, color: AppColors.primary),
-              label: const Text('Créer une alerte de prix', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 16)),
+              icon: Icon(Icons.notifications_active_rounded, color: context.c.accent),
+              label: Text('Créer une alerte de prix', style: TextStyle(color: context.c.accent, fontWeight: FontWeight.bold, fontSize: 16)),
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                side: const BorderSide(color: AppColors.primary),
+                side: BorderSide(color: context.c.accent),
               ),
             ),
           ),

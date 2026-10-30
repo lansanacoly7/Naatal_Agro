@@ -4,10 +4,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../ui/appearance.dart';
+import '../../ui/map_tiles.dart';
 import 'package:latlong2/latlong.dart';
 
+import '../../core/location/senegal_regions.dart';
 import '../../features/dashboard/data/dashboard_provider.dart';
 import '../../features/markets/data/markets_provider.dart';
+import '../../features/profile/data/profile_provider.dart';
+import '../../ui/map_cluster.dart';
+import '../../ui/senegal_map.dart';
 import '../../ui/ui.dart';
 import 'market_sheet.dart';
 import 'markets_data.dart';
@@ -46,6 +52,36 @@ class _MarketsScreenState extends ConsumerState<MarketsScreen> {
   String? _product;
   _Sort _sort = _Sort.priceDesc;
   String? _fittedFor;
+  bool _locateStarted = false;
+  double _zoom = 7.2;
+
+  /// Marchés montrés autour de la personne : ceux à moins de 50 km, les 6 plus proches au plus.
+  static const _nearbyKm = 50.0;
+  static const _nearbyMax = 6;
+
+  @override
+  void initState() {
+    super.initState();
+    // Dès l'ouverture, on cherche où se trouve la personne pour zoomer sur sa localité
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final location = ref.read(userLocationProvider);
+      if (location.position == null && !location.loading) ref.read(userLocationProvider.notifier).locate();
+      setState(() => _locateStarted = true);
+    });
+  }
+
+  @override
+  void dispose() {
+    _map.dispose();
+    super.dispose();
+  }
+
+  /// Région du profil (repli quand la position n'est pas connue), si elle est reconnue.
+  SenegalRegion? _profileRegion() {
+    final text = ref.read(profileNotifierProvider).valueOrNull?.location;
+    return text == null || text.trim().isEmpty ? null : SenegalRegions.fromName(text);
+  }
 
   String? _defaultProduct(List<String> catalog) {
     if (catalog.isEmpty) return null;
@@ -64,10 +100,26 @@ class _MarketsScreenState extends ConsumerState<MarketsScreen> {
     if (chosen != null) setState(() => _product = chosen);
   }
 
-  void _fit(List<MarketQuote> quotes, LatLng? me) {
-    final key = '$_product-${quotes.length}';
+  /// Cadre la carte sur la personne et les marchés autour d'elle. Sans position : sur sa région si on la connaît,
+  /// sinon sur l'ensemble des marchés.
+  void _fit(List<MarketQuote> quotes, UserLocation location) {
+    final me = location.position != null && isInSenegal(location.position!) ? location.position : null;
+    if (me == null && (!_locateStarted || location.loading)) return; // on attend la position
+    final key = '$_product-${quotes.length}-${me != null}';
     if (_fittedFor == key) return;
-    final points = [for (final q in quotes) if (q.position != null) q.position!, ?me];
+
+    final List<LatLng> points;
+    if (me != null) {
+      final near = [
+        for (final q in quotes)
+          if (q.position != null && _km(me, q.position)! <= _nearbyKm) q,
+      ]..sort((a, b) => _km(me, a.position)!.compareTo(_km(me, b.position)!));
+      points = [me, for (final q in near.take(_nearbyMax)) q.position!];
+    } else if (_profileRegion() != null) {
+      return; // la carte est déjà ouverte sur la région du profil
+    } else {
+      points = [for (final q in quotes) if (q.position != null) q.position!];
+    }
     if (points.isEmpty) return;
     _fittedFor = key;
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -76,7 +128,7 @@ class _MarketsScreenState extends ConsumerState<MarketsScreen> {
         _map.fitCamera(CameraFit.coordinates(
           coordinates: points,
           padding: const EdgeInsets.fromLTRB(48, 130, 48, 360),
-          maxZoom: 11,
+          maxZoom: points.length == 1 ? 12 : 13,
         ));
       } catch (_) {
         // La carte n'est pas encore prête : le cadrage se refera au prochain affichage.
@@ -103,7 +155,10 @@ class _MarketsScreenState extends ConsumerState<MarketsScreen> {
     final quotesAsync = product == null ? const AsyncValue<List<MarketQuote>>.data([]) : ref.watch(marketQuotesProvider(product));
     final quotes = quotesAsync.valueOrNull ?? const <MarketQuote>[];
     final average = quotes.isEmpty ? 0.0 : quotes.map((q) => q.price).reduce((a, b) => a + b) / quotes.length;
-    if (quotes.isNotEmpty) _fit(quotes, location.position);
+    if (quotes.isNotEmpty) _fit(quotes, location);
+    final me = location.position != null && isInSenegal(location.position!) ? location.position : null;
+    final region = _profileRegion();
+    final initials = ref.watch(profileNotifierProvider).valueOrNull?.initials;
 
     final sorted = [...quotes]..sort((a, b) {
         switch (_sort) {
@@ -123,54 +178,78 @@ class _MarketsScreenState extends ConsumerState<MarketsScreen> {
       body: Stack(
         children: [
           Positioned.fill(
-            child: FlutterMap(
+            child: LayoutBuilder(builder: (context, box) {
+              // Dézoom limité : l'écran ne peut jamais montrer autre chose que le Sénégal
+              final minZoom = senegalFitZoom(box.biggest);
+              return LightOnly(child: FlutterMap(
               mapController: _map,
-              options: const MapOptions(
-                initialCenter: LatLng(14.5, -14.5),
-                initialZoom: 6.3,
-                minZoom: 5,
+              options: MapOptions(
+                // Ouverte sur la région de la personne si on la connaît, puis recadrée sur sa position
+                initialCenter: region != null ? LatLng(region.lat, region.lon) : const LatLng(14.5, -14.5),
+                initialZoom: math.max(region != null ? 10 : 7.2, minZoom),
+                minZoom: minZoom,
+                // La carte ne tourne jamais : on zoome et on se déplace, c'est tout
+                interactionOptions: const InteractionOptions(flags: InteractiveFlag.all & ~InteractiveFlag.rotate),
                 maxZoom: 17,
+                cameraConstraint: senegalCameraConstraint,
+                onPositionChanged: (camera, _) {
+                  if ((camera.zoom - _zoom).abs() >= 0.1) setState(() => _zoom = camera.zoom);
+                },
               ),
               children: [
-                TileLayer(
-                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                  userAgentPackageName: 'com.nataalagro.nataal_agro',
-                  tileBuilder: c.isDark ? darkModeTileBuilder : null,
-                ),
+                const NaatalTileLayer(),
+                // Voile : rien n'est visible hors du Sénégal
+                const SenegalMask(),
                 MarkerLayer(
                   markers: [
-                    if (location.position != null)
-                      Marker(
-                        point: location.position!,
-                        width: 24,
-                        height: 24,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF1565C0),
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white, width: 3),
-                            boxShadow: const [BoxShadow(color: Colors.black38, blurRadius: 6)],
-                          ),
-                        ),
-                      ),
-                    for (final q in quotes)
-                      if (q.position != null)
+                    // Les marchés qui se chevaucheraient sont comptés dans une bulle ; en zoomant, ils se séparent
+                    for (final cluster in clusterByGrid(
+                      [for (final q in quotes) if (q.position != null) q],
+                      (q) => q.position!,
+                      _zoom,
+                    ))
+                      if (cluster.isSingle)
                         Marker(
-                          point: q.position!,
+                          point: cluster.center, // position exacte du marché
                           width: 92,
-                          height: 64,
-                          alignment: Alignment.topCenter,
+                          height: _Pin.height,
+                          alignment: Alignment.topCenter, // la pointe de la balise est sur le marché
                           child: _Pin(
-                            label: '${Fmt.grouped(q.price)} F',
-                            color: levelColor(context, levelOf(q.price, average)),
-                            onTap: () => showMarketSheet(context, quote: q, average: average, distanceKm: _km(location.position, q.position)),
+                            label: '${Fmt.grouped(cluster.items.first.price)} F',
+                            color: levelColor(context, levelOf(cluster.items.first.price, average)),
+                            onTap: () => showMarketSheet(context,
+                                quote: cluster.items.first, average: average, distanceKm: _km(location.position, cluster.items.first.position)),
+                          ),
+                        )
+                      else
+                        Marker(
+                          point: cluster.center,
+                          width: 60,
+                          height: 60,
+                          child: _ClusterBubble(
+                            count: cluster.items.length,
+                            onTap: () => _map.fitCamera(CameraFit.coordinates(
+                              coordinates: [for (final q in cluster.items) q.position!],
+                              padding: const EdgeInsets.all(80),
+                              maxZoom: 15,
+                            )),
                           ),
                         ),
+                    // Avatar de la personne, au-dessus des marchés
+                    if (me != null)
+                      Marker(
+                        point: me,
+                        width: UserAvatarPin.markerWidth,
+                        height: UserAvatarPin.markerHeight,
+                        alignment: Alignment.topCenter,
+                        child: UserAvatarPin(initials: initials),
+                      ),
                   ],
                 ),
-                const SimpleAttributionWidget(source: Text('© OpenStreetMap')),
+                SimpleAttributionWidget(source: Text(NaatalTileLayer.attribution)),
               ],
-            ),
+              ));
+            }),
           ),
           // En-tête en verre : produit, localisation
           Positioned(
@@ -220,10 +299,10 @@ class _MarketsScreenState extends ConsumerState<MarketsScreen> {
                   onTap: location.loading
                       ? null
                       : () {
-                          if (location.position == null) {
+                          if (me == null) {
                             ref.read(userLocationProvider.notifier).locate();
                           } else {
-                            ref.read(userLocationProvider.notifier).clear();
+                            _map.move(me, 13); // revient sur la personne
                           }
                         },
                   semanticLabel: 'Autour de moi',
@@ -235,7 +314,7 @@ class _MarketsScreenState extends ConsumerState<MarketsScreen> {
                       height: 56,
                       child: location.loading
                           ? const Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator(strokeWidth: 2.5))
-                          : Icon(location.position == null ? Icons.near_me_outlined : Icons.near_me_rounded, color: location.position == null ? c.ink : c.accent),
+                          : Icon(me == null ? Icons.my_location_outlined : Icons.my_location_rounded, color: me == null ? c.ink : c.accent),
                     ),
                   ),
                 ),
@@ -298,11 +377,11 @@ class _MarketsScreenState extends ConsumerState<MarketsScreen> {
   }
 }
 
-class _Pin extends StatelessWidget {
-  const _Pin({required this.label, required this.color, required this.onTap});
+/// Bulle qui compte les marchés regroupés au zoom courant ; toucher la bulle zoome pour les séparer.
+class _ClusterBubble extends StatelessWidget {
+  const _ClusterBubble({required this.count, required this.onTap});
 
-  final String label;
-  final Color color;
+  final int count;
   final VoidCallback onTap;
 
   @override
@@ -311,8 +390,45 @@ class _Pin extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
+      child: Center(
+        child: Container(
+          width: 52,
+          height: 52,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: c.accent,
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.white, width: 3),
+            boxShadow: const [BoxShadow(color: Colors.black38, blurRadius: 8, offset: Offset(0, 3))],
+          ),
+          child: Text('$count', style: T.number(20, color: c.onAccent)),
+        ),
+      ),
+    );
+  }
+}
+
+/// Balise d'un marché : le prix dans une étiquette, au-dessus d'une punaise dont la pointe est sur le marché.
+class _Pin extends StatelessWidget {
+  const _Pin({required this.label, required this.color, required this.onTap});
+
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  static const double _pinSize = 36;
+
+  /// Hauteur du `Marker` : étiquette, espace et punaise.
+  static final double height = 26 + 3 + MapPin.heightFor(_pinSize);
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
       child: Column(
-        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.end,
         children: [
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -324,16 +440,10 @@ class _Pin extends StatelessWidget {
             child: Text(label, style: T.caption(color: c.ink, weight: 800).copyWith(fontSize: 12)),
           ),
           const SizedBox(height: 3),
-          Container(
-            width: 26,
-            height: 26,
-            decoration: BoxDecoration(
-              color: color,
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.white, width: 3),
-              boxShadow: const [BoxShadow(color: Colors.black38, blurRadius: 5, offset: Offset(0, 2))],
-            ),
-            child: const Icon(Icons.storefront_rounded, size: 12, color: Colors.white),
+          MapPin(
+            color: color,
+            size: _pinSize,
+            child: const Icon(Icons.storefront_rounded, size: 18, color: Colors.white),
           ),
         ],
       ),

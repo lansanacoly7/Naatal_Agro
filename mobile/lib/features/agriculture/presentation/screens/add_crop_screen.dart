@@ -155,7 +155,7 @@ class _AddCropScreenState extends ConsumerState<AddCropScreen> {
       firstDate: DateTime(2020),
       lastDate: DateTime(2035),
       builder: (context, child) => Theme(
-        data: Theme.of(context).copyWith(colorScheme: const ColorScheme.light(primary: AppColors.primary)),
+        data: Theme.of(context).copyWith(colorScheme: ColorScheme.light(primary: context.c.accent)),
         child: child!,
       ),
     );
@@ -175,7 +175,7 @@ class _AddCropScreenState extends ConsumerState<AddCropScreen> {
     final picked = await showModalBottomSheet<_Choice>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: context.c.surface,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (_) => const _CropPicker(),
     );
@@ -248,7 +248,7 @@ class _AddCropScreenState extends ConsumerState<AddCropScreen> {
     final products = productsAsync.valueOrNull ?? const <Product>[];
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.c.bg,
       appBar: AppBar(
         title: Text(_choice == null ? 'Choisir une culture' : 'Nouvelle culture', style: const TextStyle(fontWeight: FontWeight.w800)),
         centerTitle: false,
@@ -256,7 +256,7 @@ class _AddCropScreenState extends ConsumerState<AddCropScreen> {
           if (_choice != null)
             TextButton(
               onPressed: () => setState(() => _choice = null),
-              child: const Text('Changer', style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.primary)),
+              child: Text('Changer', style: TextStyle(fontWeight: FontWeight.w700, color: context.c.accent)),
             ),
         ],
       ),
@@ -317,7 +317,7 @@ class _AddCropScreenState extends ConsumerState<AddCropScreen> {
         // Recherche rapide directe
         Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: context.c.surface,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
             boxShadow: [
@@ -332,8 +332,8 @@ class _AddCropScreenState extends ConsumerState<AddCropScreen> {
             onChanged: (v) => setState(() => _searchQuery = v),
             decoration: InputDecoration(
               hintText: 'Rechercher : arachide, oignon, maïs, tomate...',
-              hintStyle: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
-              prefixIcon: const Icon(Icons.search_rounded, color: AppColors.primary),
+              hintStyle: TextStyle(fontSize: 13, color: context.c.ink2),
+              prefixIcon: Icon(Icons.search_rounded, color: context.c.accent),
               suffixIcon: _searchQuery.isNotEmpty
                   ? IconButton(
                       icon: const Icon(Icons.clear_rounded, size: 18),
@@ -346,20 +346,20 @@ class _AddCropScreenState extends ConsumerState<AddCropScreen> {
           ),
         ),
         const SizedBox(height: 18),
-        const Text(
+        Text(
           'Touchez votre culture',
           style: TextStyle(
             fontSize: 17,
             fontWeight: FontWeight.w800,
-            color: AppColors.textPrimary,
+            color: context.c.ink,
           ),
         ),
         const SizedBox(height: 4),
-        const Text(
+        Text(
           'Le cycle ISRA et les dates recommandées seront préremplis automatiquement.',
           style: TextStyle(
             fontSize: 12.5,
-            color: AppColors.textSecondary,
+            color: context.c.ink2,
           ),
         ),
         const SizedBox(height: 14),
@@ -368,12 +368,12 @@ class _AddCropScreenState extends ConsumerState<AddCropScreen> {
             padding: const EdgeInsets.all(28),
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: context.c.surface,
               borderRadius: BorderRadius.circular(16),
             ),
-            child: const Text(
+            child: Text(
               'Aucune culture trouvée avec ce nom.',
-              style: TextStyle(color: AppColors.textSecondary),
+              style: TextStyle(color: context.c.ink2),
             ),
           )
         else
@@ -397,7 +397,7 @@ class _AddCropScreenState extends ConsumerState<AddCropScreen> {
                 borderRadius: BorderRadius.circular(18),
                 child: Container(
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: context.c.surface,
                     borderRadius: BorderRadius.circular(18),
                     border: Border.all(
                       color: hasGuide ? AppColors.primary.withValues(alpha: 0.35) : Colors.grey.withValues(alpha: 0.15),
@@ -421,13 +421,13 @@ class _AddCropScreenState extends ConsumerState<AddCropScreen> {
                           fit: BoxFit.cover,
                           errorBuilder: (_, __, ___) => Container(
                             color: AppColors.primary.withValues(alpha: 0.08),
-                            child: const Icon(Icons.eco_rounded, color: AppColors.primary, size: 36),
+                            child: Icon(Icons.eco_rounded, color: context.c.accent, size: 36),
                           ),
                         )
                       else
                         Container(
                           color: AppColors.primary.withValues(alpha: 0.08),
-                          child: const Icon(Icons.eco_rounded, color: AppColors.primary, size: 36),
+                          child: Icon(Icons.eco_rounded, color: context.c.accent, size: 36),
                         ),
                       DecoratedBox(
                         decoration: BoxDecoration(
@@ -585,10 +585,10 @@ class _AddCropScreenState extends ConsumerState<AddCropScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(display != null ? 'Cycle officiel ISRA' : 'Cycle non documenté', style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                Text(display != null ? 'Cycle officiel ISRA' : 'Cycle non documenté', style: TextStyle(color: context.c.ink2, fontSize: 12)),
                 const SizedBox(height: 2),
-                Text(display ?? 'À renseigner par vous', style: const TextStyle(color: AppColors.primary, fontSize: 20, fontWeight: FontWeight.w800)),
-                if (g != null) Text('${g.categoryLabel} · du semis à la récolte', style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                Text(display ?? 'À renseigner par vous', style: TextStyle(color: context.c.accent, fontSize: 20, fontWeight: FontWeight.w800)),
+                if (g != null) Text('${g.categoryLabel} · du semis à la récolte', style: TextStyle(color: context.c.ink2, fontSize: 12)),
               ],
             ),
           ),
@@ -618,12 +618,12 @@ class _AddCropScreenState extends ConsumerState<AddCropScreen> {
           if (min != null && max != null && min != max)
             Text(
               'Remplie automatiquement d\'après le cycle officiel : récolte entre le ${_fmt(_planting.add(Duration(days: min)))} et le ${_fmt(_planting.add(Duration(days: max)))}. Touchez une date pour la modifier.',
-              style: TextStyle(color: Colors.grey.shade600, fontSize: 12, height: 1.35),
+              style: TextStyle(color: context.c.ink2, fontSize: 12, height: 1.35),
             )
           else if (min != null)
-            Text('Remplie automatiquement d\'après le cycle officiel. Touchez une date pour la modifier.', style: TextStyle(color: Colors.grey.shade600, fontSize: 12))
+            Text('Remplie automatiquement d\'après le cycle officiel. Touchez une date pour la modifier.', style: TextStyle(color: context.c.ink2, fontSize: 12))
           else
-            Text('Pas de cycle documenté pour cette culture : choisissez vous-même la date de récolte.', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+            Text('Pas de cycle documenté pour cette culture : choisissez vous-même la date de récolte.', style: TextStyle(color: context.c.ink2, fontSize: 12)),
         ],
       ),
     );
@@ -635,17 +635,17 @@ class _AddCropScreenState extends ConsumerState<AddCropScreen> {
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(color: AppColors.background, borderRadius: BorderRadius.circular(14)),
+        decoration: BoxDecoration(color: context.c.bg, borderRadius: BorderRadius.circular(14)),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(label, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+            Text(label, style: TextStyle(color: context.c.ink2, fontSize: 12)),
             const SizedBox(height: 4),
             Row(
               children: [
-                const Icon(Icons.calendar_month_rounded, size: 16, color: AppColors.primary),
+                Icon(Icons.calendar_month_rounded, size: 16, color: context.c.accent),
                 const SizedBox(width: 6),
-                Text(date == null ? 'À choisir' : _fmt(date), style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14.5, color: date == null ? AppColors.textSecondary : AppColors.textPrimary)),
+                Text(date == null ? 'À choisir' : _fmt(date), style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14.5, color: date == null ? context.c.ink2 : context.c.ink)),
               ],
             ),
           ],
@@ -667,9 +667,9 @@ class _AddCropScreenState extends ConsumerState<AddCropScreen> {
             validator: (v) => (v == null || v.trim().isEmpty) ? 'Donnez un nom à la parcelle' : null,
           ),
           const SizedBox(height: 14),
-          const Text(
+          Text(
             'Surface de la parcelle',
-            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: context.c.ink),
           ),
           const SizedBox(height: 8),
           Row(
@@ -685,7 +685,7 @@ class _AddCropScreenState extends ConsumerState<AddCropScreen> {
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
                   ),
-                  child: const Icon(Icons.remove_rounded, color: AppColors.primary, size: 28),
+                  child: Icon(Icons.remove_rounded, color: context.c.accent, size: 28),
                 ),
               ),
               const SizedBox(width: 10),
@@ -697,11 +697,11 @@ class _AddCropScreenState extends ConsumerState<AddCropScreen> {
                     textAlign: TextAlign.center,
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
                     inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]'))],
-                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: AppColors.primary),
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: context.c.accent),
                     decoration: InputDecoration(
                       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
                       suffixText: 'ha',
-                      suffixStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textSecondary),
+                      suffixStyle: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: context.c.ink2),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
                         borderSide: BorderSide(color: Colors.grey.withValues(alpha: 0.3)),
@@ -710,9 +710,9 @@ class _AddCropScreenState extends ConsumerState<AddCropScreen> {
                         borderRadius: BorderRadius.circular(16),
                         borderSide: BorderSide(color: Colors.grey.withValues(alpha: 0.3)),
                       ),
-                      focusedBorder: const OutlineInputBorder(
+                      focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.all(Radius.circular(16)),
-                        borderSide: BorderSide(color: AppColors.primary, width: 2),
+                        borderSide: BorderSide(color: context.c.accent, width: 2),
                       ),
                     ),
                     validator: (v) {
@@ -734,7 +734,7 @@ class _AddCropScreenState extends ConsumerState<AddCropScreen> {
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
                   ),
-                  child: const Icon(Icons.add_rounded, color: AppColors.primary, size: 28),
+                  child: Icon(Icons.add_rounded, color: context.c.accent, size: 28),
                 ),
               ),
             ],
@@ -753,14 +753,14 @@ class _AddCropScreenState extends ConsumerState<AddCropScreen> {
   Widget _card({required String title, required IconData icon, required Widget child}) {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.grey.withValues(alpha: 0.1))),
+      decoration: BoxDecoration(color: context.c.surface, borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.grey.withValues(alpha: 0.1))),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(children: [
-            Icon(icon, size: 18, color: AppColors.primary),
+            Icon(icon, size: 18, color: context.c.accent),
             const SizedBox(width: 8),
-            Text(title, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: AppColors.textPrimary)),
+            Text(title, style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: context.c.ink)),
           ]),
           const SizedBox(height: 12),
           child,
@@ -818,7 +818,7 @@ class _CropPickerState extends ConsumerState<_CropPicker> {
         child: Column(
           children: [
             const SizedBox(height: 10),
-            Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2))),
+            Container(width: 40, height: 4, decoration: BoxDecoration(color: context.c.line, borderRadius: BorderRadius.circular(2))),
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 14, 20, 8),
               child: TextField(
@@ -829,13 +829,13 @@ class _CropPickerState extends ConsumerState<_CropPicker> {
             ),
             Expanded(
               child: loading
-                  ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+                  ? Center(child: CircularProgressIndicator(color: context.c.accent))
                   : shown.isEmpty
                       ? Center(
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Text(choices.isEmpty ? 'La liste des cultures n\'a pas pu être chargée.' : 'Aucune culture ne correspond.', style: const TextStyle(color: AppColors.textSecondary)),
+                              Text(choices.isEmpty ? 'La liste des cultures n\'a pas pu être chargée.' : 'Aucune culture ne correspond.', style: TextStyle(color: context.c.ink2)),
                               if (choices.isEmpty)
                                 TextButton(
                                   onPressed: () {
@@ -863,16 +863,16 @@ class _CropPickerState extends ConsumerState<_CropPicker> {
                                   width: 52,
                                   height: 52,
                                   child: c.image.isEmpty
-                                      ? Container(color: AppColors.primary.withValues(alpha: 0.08), child: const Icon(Icons.eco_rounded, color: AppColors.primary))
-                                      : Image.asset(c.image, fit: BoxFit.cover, errorBuilder: (_, __, ___) => Container(color: AppColors.primary.withValues(alpha: 0.08), child: const Icon(Icons.eco_rounded, color: AppColors.primary))),
+                                      ? Container(color: AppColors.primary.withValues(alpha: 0.08), child: Icon(Icons.eco_rounded, color: context.c.accent))
+                                      : Image.asset(c.image, fit: BoxFit.cover, errorBuilder: (_, __, ___) => Container(color: AppColors.primary.withValues(alpha: 0.08), child: Icon(Icons.eco_rounded, color: context.c.accent))),
                                 ),
                               ),
-                              title: Text(c.name, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: AppColors.textPrimary)),
+                              title: Text(c.name, style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: context.c.ink)),
                               subtitle: Text(
                                 [if (c.category.isNotEmpty) c.category, cycle ?? 'cycle non documenté'].join(' · '),
-                                style: TextStyle(color: cycle != null ? AppColors.primary : AppColors.textSecondary, fontSize: 12.5, fontWeight: cycle != null ? FontWeight.w700 : FontWeight.w500),
+                                style: TextStyle(color: cycle != null ? context.c.accent : context.c.ink2, fontSize: 12.5, fontWeight: cycle != null ? FontWeight.w700 : FontWeight.w500),
                               ),
-                              trailing: const Icon(Icons.chevron_right_rounded, color: AppColors.textSecondary),
+                              trailing: Icon(Icons.chevron_right_rounded, color: context.c.ink2),
                             );
                           },
                         ),

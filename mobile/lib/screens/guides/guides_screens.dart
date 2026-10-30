@@ -158,10 +158,10 @@ class _GuidePhotoCard extends StatelessWidget {
             Expanded(
               child: Container(
                 color: c.surfaceAlt,
-                padding: const EdgeInsets.all(Space.m),
+                padding: EdgeInsets.zero,
                 child: Image.asset(
                   img,
-                  fit: BoxFit.contain,
+                  fit: BoxFit.cover,
                   errorBuilder: (_, __, ___) => Center(
                     child: Icon(Icons.eco_rounded, size: 40, color: c.accent),
                   ),
@@ -277,10 +277,10 @@ class GuideDetailScreen extends ConsumerWidget {
                         Container(
                           height: 160,
                           color: c.surfaceAlt,
-                          padding: const EdgeInsets.all(Space.l),
+                          padding: EdgeInsets.zero,
                           child: Image.asset(
                             img,
-                            fit: BoxFit.contain,
+                            fit: BoxFit.cover,
                             errorBuilder: (_, __, ___) => Icon(Icons.eco_rounded, size: 64, color: c.accent),
                           ),
                         ),

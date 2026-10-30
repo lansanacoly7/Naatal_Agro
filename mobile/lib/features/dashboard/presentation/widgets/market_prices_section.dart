@@ -10,6 +10,7 @@ import '../../../markets/data/models/price.dart';
 import '../../../../screens/markets/market_sheet.dart' show PriceChart;
 import '../../../../screens/markets/markets_data.dart' show PricePoint;
 
+import '../../../../ui/ui.dart';
 class MarketPricesSection extends ConsumerStatefulWidget {
   final List<MarketPrice> markets;
   final List<StockItem> stocks;
@@ -78,22 +79,8 @@ class _MarketPricesSectionState extends ConsumerState<MarketPricesSection> {
     return null;
   }
 
-  String _getImageForProduct(String productName) {
-    final nameLower = productName.toLowerCase();
-    if (nameLower.contains('oignon')) return 'assets/images/products/oignon.png';
-    if (nameLower.contains('tomate')) return 'assets/images/products/tomate.png';
-    if (nameLower.contains('mil')) return 'assets/images/products/mil.png';
-    if (nameLower.contains('arachide')) return 'assets/images/products/arachide.png';
-    if (nameLower.contains('maïs') || nameLower.contains('mais')) return 'assets/images/products/mais.jpg';
-    if (nameLower.contains('riz')) return 'assets/images/products/riz.jpg';
-    if (nameLower.contains('pomme de terre')) return 'assets/images/products/pomme_de_terre.png';
-    if (nameLower.contains('pasteque') || nameLower.contains('pastèque')) return 'assets/images/products/pasteque.png';
-    if (nameLower.contains('papaye')) return 'assets/images/products/papaye.png';
-    if (nameLower.contains('mangue')) return 'assets/images/products/mangue.png';
-    if (nameLower.contains('fraise')) return 'assets/images/products/fraise.jpg';
-    if (nameLower.contains('pomme')) return 'assets/images/products/pomme.jpg';
-    return 'assets/images/naatal_agro_logo-removebg-preview.png';
-  }
+  /// Image du produit (même règle partout) : jamais le logo de l'application à la place d'un produit.
+  String _getImageForProduct(String productName) => productImageForName(productName);
 
   @override
   Widget build(BuildContext context) {
@@ -101,10 +88,10 @@ class _MarketPricesSectionState extends ConsumerState<MarketPricesSection> {
       return Container(
         width: double.infinity,
         padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24), border: Border.all(color: Colors.grey.withValues(alpha: 0.1))),
-        child: const Text(
+        decoration: BoxDecoration(color: context.c.surface, borderRadius: BorderRadius.circular(24), border: Border.all(color: Colors.grey.withValues(alpha: 0.1))),
+        child: Text(
           'Aucun prix pour vos cultures. Ajoutez une culture : ses prix relevés sur les marchés apparaîtront ici.',
-          style: TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.4),
+          style: TextStyle(color: context.c.ink2, fontSize: 13, height: 1.4),
         ),
       );
     }
@@ -113,7 +100,7 @@ class _MarketPricesSectionState extends ConsumerState<MarketPricesSection> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.c.surface,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
@@ -127,9 +114,9 @@ class _MarketPricesSectionState extends ConsumerState<MarketPricesSection> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (_availableProducts.isEmpty)
-            const Text(
+            Text(
               'Aucun prix pour vos cultures. Ajoutez une culture : ses prix relevés sur les marchés apparaîtront ici.',
-              style: TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.4),
+              style: TextStyle(color: context.c.ink2, fontSize: 13, height: 1.4),
             )
           else
             _buildProductCards(),
@@ -144,8 +131,8 @@ class _MarketPricesSectionState extends ConsumerState<MarketPricesSection> {
             height: 190,
             child: historyAsync.when(
               data: (history) => _buildChart(history),
-              loading: () => const Center(
-                child: CircularProgressIndicator(color: AppColors.primary),
+              loading: () => Center(
+                child: CircularProgressIndicator(color: context.c.accent),
               ),
               error: (_, __) => _buildFallbackChart(),
             ),
@@ -194,10 +181,10 @@ class _MarketPricesSectionState extends ConsumerState<MarketPricesSection> {
               margin: const EdgeInsets.only(right: 10),
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: isSelected ? AppColors.primary.withValues(alpha: 0.05) : Colors.white,
+                color: isSelected ? AppColors.primary.withValues(alpha: 0.05) : context.c.surface,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: isSelected ? AppColors.primary : Colors.grey.withValues(alpha: 0.1),
+                  color: isSelected ? context.c.accent : Colors.grey.withValues(alpha: 0.1),
                   width: isSelected ? 2 : 1,
                 ),
                 boxShadow: isSelected ? [] : [
@@ -228,7 +215,7 @@ class _MarketPricesSectionState extends ConsumerState<MarketPricesSection> {
                         _getImageForProduct(product),
                         fit: BoxFit.cover,
                         errorBuilder: (context, error, stackTrace) => Container(
-                          color: Colors.white,
+                          color: context.c.surface,
                           child: const Icon(Icons.shopping_basket, color: Colors.grey, size: 24),
                         ),
                       ),
@@ -245,7 +232,7 @@ class _MarketPricesSectionState extends ConsumerState<MarketPricesSection> {
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
-                            color: isSelected ? AppColors.primary : AppColors.textPrimary,
+                            color: isSelected ? context.c.accent : context.c.ink,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -258,7 +245,7 @@ class _MarketPricesSectionState extends ConsumerState<MarketPricesSection> {
                               style: TextStyle(
                                 fontWeight: FontWeight.w900,
                                 fontSize: currentPrice != null ? 13 : 11,
-                                color: currentPrice != null ? AppColors.textPrimary : AppColors.textSecondary,
+                                color: currentPrice != null ? context.c.ink : context.c.ink2,
                               ),
                             ),
                             const Spacer(),
@@ -314,12 +301,12 @@ class _MarketPricesSectionState extends ConsumerState<MarketPricesSection> {
                 style: TextStyle(color: Colors.grey.shade500, fontSize: 13),
               ),
               const SizedBox(height: 4),
-              const Text(
+              Text(
                 'Prix non renseigné',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.textSecondary,
+                  color: context.c.ink2,
                 ),
               ),
             ],
@@ -357,10 +344,10 @@ class _MarketPricesSectionState extends ConsumerState<MarketPricesSection> {
                   alignment: Alignment.centerLeft,
                   child: Text(
                   '${currentPrice.toInt()} FCFA / kg',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
+                    color: context.c.ink,
                   ),
                 ),
                  ),
@@ -428,13 +415,13 @@ class _MarketPricesSectionState extends ConsumerState<MarketPricesSection> {
   Widget _buildChart(List<Price> history) {
     final daily = _daily(history);
     if (daily.length >= 2) {
-      return Align(alignment: Alignment.bottomCenter, child: PriceChart(points: daily, color: AppColors.primary));
+      return Align(alignment: Alignment.bottomCenter, child: PriceChart(points: daily, color: context.c.accent));
     }
-    return const Center(
+    return Center(
       child: Text(
         'Pas encore assez de relevés pour tracer une courbe.',
         textAlign: TextAlign.center,
-        style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+        style: TextStyle(color: context.c.ink2, fontSize: 13),
       ),
     );
   }
@@ -506,8 +493,8 @@ class _MarketPricesSectionState extends ConsumerState<MarketPricesSection> {
                     padding: const EdgeInsets.only(top: 10.0),
                     child: Text(
                       dayLabels[index],
-                      style: const TextStyle(
-                        color: AppColors.textSecondary,
+                      style: TextStyle(
+                        color: context.c.ink2,
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
                       ),
@@ -532,7 +519,7 @@ class _MarketPricesSectionState extends ConsumerState<MarketPricesSection> {
                   child: Text(
                     '${value.toInt()} F',
                     style: TextStyle(
-                      color: Colors.grey.shade600,
+                      color: context.c.ink2,
                       fontSize: 11,
                       fontWeight: FontWeight.w500,
                     ),
@@ -552,7 +539,7 @@ class _MarketPricesSectionState extends ConsumerState<MarketPricesSection> {
           LineChartBarData(
             spots: spots,
             isCurved: false,
-            color: AppColors.primary,
+            color: context.c.accent,
             barWidth: 2.5,
             isStrokeCapRound: true,
             dotData: const FlDotData(show: false),
@@ -571,7 +558,7 @@ class _MarketPricesSectionState extends ConsumerState<MarketPricesSection> {
         ],
         lineTouchData: LineTouchData(
           touchTooltipData: LineTouchTooltipData(
-            getTooltipColor: (touchedSpot) => AppColors.primary,
+            getTooltipColor: (touchedSpot) => context.c.accent,
             getTooltipItems: (touchedSpots) {
               return touchedSpots.map((touchedSpot) {
                 final idx = touchedSpot.x.toInt();
@@ -600,13 +587,13 @@ class _MarketPricesSectionState extends ConsumerState<MarketPricesSection> {
   }
 
   Widget _buildFallbackChart() {
-    return const Center(
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(Icons.show_chart_rounded, size: 40, color: Colors.grey),
           SizedBox(height: 8),
-          Text('Historique des prix indisponible', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+          Text('Historique des prix indisponible', style: TextStyle(color: context.c.ink2, fontSize: 13)),
         ],
       ),
     );

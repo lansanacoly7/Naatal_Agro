@@ -16,6 +16,7 @@ import '../../shared/utils/data_refresh.dart';
 import '../../ui/ui.dart';
 import '../markets/markets_data.dart';
 import 'analysis_visual.dart';
+import 'voice_sheet.dart';
 
 /// Assistant Naatal IA : répond d'abord avec les fiches techniques sourcées, et dit
 /// clairement quand il s'agit d'un conseil général non vérifié.
@@ -31,6 +32,12 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
   final _scroll = ScrollController();
   final _picker = ImagePicker();
   Uint8List? _image;
+
+  @override
+  void initState() {
+    super.initState();
+    _toBottom(jump: true); // on arrive toujours en bas de la discussion, là où on s'était arrêté
+  }
 
   @override
   void dispose() {
@@ -112,12 +119,23 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
     );
   }
 
-  void _toBottom() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scroll.hasClients) {
-        _scroll.animateTo(_scroll.position.maxScrollExtent, duration: Motion.slow, curve: Motion.out);
-      }
-    });
+  /// Descend en bas de la discussion. `jump` : sans animation (ouverture de l'écran) ; la liste se construit au fil du
+  /// défilement, donc on recommence sur quelques images pour atteindre le vrai bas.
+  void _toBottom({bool jump = false}) {
+    void go(int left) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || !_scroll.hasClients) return;
+        final end = _scroll.position.maxScrollExtent;
+        if (jump) {
+          _scroll.jumpTo(end);
+          if (left > 0) go(left - 1);
+        } else {
+          _scroll.animateTo(end, duration: Motion.slow, curve: Motion.out);
+        }
+      });
+    }
+
+    go(jump ? 3 : 0);
   }
 
   void _retry() {
@@ -205,15 +223,7 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
   void _micSheet() {
     showNaatalSheet<void>(
       context,
-      builder: (ctx) => _VoiceRecordSheet(
-        onTranscribed: (text) {
-          _controller.text = text;
-          _controller.selection = TextSelection.fromPosition(TextPosition(offset: text.length));
-        },
-        onDirectSend: (text) {
-          _send(text);
-        },
-      ),
+      builder: (ctx) => VoiceSheet(onSend: _send),
     );
   }
 
@@ -222,7 +232,12 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
     final c = context.c;
     final chat = ref.watch(chatProvider);
     ref.listen<ChatState>(chatProvider, (prev, next) {
-      if (prev == null || prev.messages.length != next.messages.length || prev.isLoading != next.isLoading) _toBottom();
+      final historyJustLoaded = prev != null && prev.isLoadingHistory && !next.isLoadingHistory;
+      if (historyJustLoaded) {
+        _toBottom(jump: true);
+      } else if (prev == null || prev.messages.length != next.messages.length || prev.isLoading != next.isLoading) {
+        _toBottom();
+      }
     });
     final empty = chat.messages.isEmpty && !chat.isLoading;
     final bottomInset = MediaQuery.paddingOf(context).bottom;
@@ -462,10 +477,10 @@ class _Welcome extends ConsumerWidget {
                         height: 44,
                         color: c.surfaceAlt,
                         child: Padding(
-                          padding: const EdgeInsets.all(4),
+                          padding: EdgeInsets.zero,
                           child: Image.asset(
                             productImageForName(q.$1),
-                            fit: BoxFit.contain,
+                            fit: BoxFit.cover,
                             errorBuilder: (_, __, ___) => Icon(Icons.eco_rounded, color: c.accent, size: 24),
                           ),
                         ),
@@ -1358,288 +1373,3 @@ class _ConversationsSheet extends ConsumerWidget {
     );
   }
 }
-
-class _VoiceRecordSheet extends ConsumerStatefulWidget {
-  const _VoiceRecordSheet({
-    required this.onTranscribed,
-    required this.onDirectSend,
-  });
-
-  final ValueChanged<String> onTranscribed;
-  final ValueChanged<String> onDirectSend;
-
-  @override
-  ConsumerState<_VoiceRecordSheet> createState() => _VoiceRecordSheetState();
-}
-
-class _VoiceRecordSheetState extends ConsumerState<_VoiceRecordSheet> with SingleTickerProviderStateMixin {
-  late final AnimationController _pulseController = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 1200),
-  )..repeat(reverse: true);
-
-  Timer? _timer;
-  int _seconds = 0;
-  bool _isRecording = false;
-  bool _isTranscribing = false;
-  String? _error;
-
-  @override
-  void initState() {
-    super.initState();
-    _startRecording();
-  }
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    _pulseController.dispose();
-    ref.read(voiceServiceProvider).stopRecording();
-    super.dispose();
-  }
-
-  Future<void> _startRecording() async {
-    setState(() {
-      _error = null;
-      _seconds = 0;
-    });
-    final voice = ref.read(voiceServiceProvider);
-    final ok = await voice.startRecording();
-    if (!mounted) return;
-    if (ok) {
-      setState(() {
-        _isRecording = true;
-      });
-      _timer?.cancel();
-      _timer = Timer.periodic(const Duration(seconds: 1), (t) {
-        if (!mounted) return;
-        setState(() {
-          _seconds++;
-        });
-      });
-    } else {
-      setState(() {
-        _isRecording = false;
-        _error = 'Impossible d\'activer le microphone. Vérifiez les autorisations de l\'appareil.';
-      });
-    }
-  }
-
-  Future<void> _stopAndTranscribe() async {
-    _timer?.cancel();
-    final voice = ref.read(voiceServiceProvider);
-    setState(() {
-      _isRecording = false;
-      _isTranscribing = true;
-      _error = null;
-    });
-
-    try {
-      final audioBytes = await voice.stopRecording();
-      if (!mounted) return;
-      if (audioBytes == null || audioBytes.isEmpty) {
-        setState(() {
-          _isTranscribing = false;
-          _error = 'Aucun signal audio enregistré. Réessayez.';
-        });
-        return;
-      }
-
-      final text = await ref.read(aiRepositoryProvider).transcribeAudio(audioBytes);
-      if (!mounted) return;
-
-      final trimmed = text.trim();
-      if (trimmed.isEmpty) {
-        setState(() {
-          _isTranscribing = false;
-          _error = 'Aucune parole détectée dans l\'enregistrement.';
-        });
-        return;
-      }
-
-      Navigator.pop(context);
-      widget.onDirectSend(trimmed);
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _isTranscribing = false;
-        _error = e is VoiceException ? e.message : 'La transcription a échoué. Réessayez ou écrivez votre message.';
-      });
-    }
-  }
-
-  Future<void> _cancel() async {
-    _timer?.cancel();
-    await ref.read(voiceServiceProvider).stopRecording();
-    if (mounted) Navigator.pop(context);
-  }
-
-  String _formatDuration(int seconds) {
-    final m = (seconds ~/ 60).toString().padLeft(2, '0');
-    final s = (seconds % 60).toString().padLeft(2, '0');
-    return '$m:$s';
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.c;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(Space.xxl, Space.xl, Space.xxl, Space.xl),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.mic_rounded, color: c.accent, size: 28),
-              const SizedBox(width: Space.m),
-              Expanded(
-                child: Text('Entrée vocale Naatal IA', style: T.title(color: c.ink)),
-              ),
-              IconButton(
-                icon: const Icon(Icons.close_rounded),
-                onPressed: _cancel,
-              ),
-            ],
-          ),
-          const SizedBox(height: Space.s),
-          Text(
-            'Parlez en français ou en wolof. Votre voix sera transcrite automatiquement par Whisper.',
-            style: T.body(color: c.ink2),
-          ),
-          const SizedBox(height: Space.xl),
-          Center(
-            child: AnimatedBuilder(
-              animation: _pulseController,
-              builder: (ctx, child) {
-                final scale = _isRecording ? 1.0 + (_pulseController.value * 0.15) : 1.0;
-                final ringAlpha = _isRecording ? (0.35 - _pulseController.value * 0.25).clamp(0.05, 0.4) : 0.0;
-                return Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    if (_isRecording)
-                      Container(
-                        width: 110 * scale,
-                        height: 110 * scale,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: c.accent.withValues(alpha: ringAlpha),
-                        ),
-                      ),
-                    Container(
-                      width: 80,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        color: _isRecording ? c.accent : (_isTranscribing ? c.ink2 : c.surfaceAlt),
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          if (_isRecording)
-                            BoxShadow(
-                              color: c.accent.withValues(alpha: 0.4),
-                              blurRadius: 16,
-                              spreadRadius: 2,
-                            ),
-                        ],
-                      ),
-                      child: Center(
-                        child: _isTranscribing
-                            ? const SizedBox(
-                                width: 28,
-                                height: 28,
-                                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
-                              )
-                            : Icon(
-                                _isRecording ? Icons.mic_rounded : Icons.mic_none_rounded,
-                                color: _isRecording ? c.onAccent : c.ink,
-                                size: 36,
-                              ),
-                      ),
-                    ),
-                  ],
-                );
-              },
-            ),
-          ),
-          const SizedBox(height: Space.m),
-          Center(
-            child: Text(
-              _isTranscribing
-                  ? 'Transcription en cours...'
-                  : _isRecording
-                      ? 'Écoute en cours : ${_formatDuration(_seconds)}'
-                      : 'Prêt',
-              style: T.caption(color: _isRecording ? c.accent : c.ink2, weight: 700),
-            ),
-          ),
-          if (_error != null) ...[
-            const SizedBox(height: Space.m),
-            Container(
-              padding: const EdgeInsets.all(Space.m),
-              decoration: BoxDecoration(
-                color: c.clay.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(Radii.m),
-                border: Border.all(color: c.clay.withValues(alpha: 0.3)),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.error_outline_rounded, color: c.clay, size: 20),
-                  const SizedBox(width: Space.s),
-                  Expanded(
-                    child: Text(_error!, style: T.caption(color: c.clay, weight: 600)),
-                  ),
-                ],
-              ),
-            ),
-          ],
-          const SizedBox(height: Space.xl),
-          if (_isRecording)
-            PillButton(
-              label: 'Arrêter et envoyer',
-              icon: Icons.send_rounded,
-              expand: true,
-              onPressed: _stopAndTranscribe,
-            )
-          else if (!_isTranscribing)
-            PillButton(
-              label: 'Commencer l\'enregistrement',
-              icon: Icons.mic_rounded,
-              expand: true,
-              onPressed: _startRecording,
-            ),
-          const SizedBox(height: Space.m),
-          Divider(color: c.line),
-          const SizedBox(height: Space.m),
-          Text(
-            'Ou utilisez un modèle d\'action rapide :',
-            style: T.caption(color: c.ink2, weight: 600),
-          ),
-          const SizedBox(height: Space.s),
-          PillButton(
-            label: '« Analyse mes finances »',
-            icon: Icons.account_balance_wallet_outlined,
-            variant: PillVariant.secondary,
-            expand: true,
-            compact: true,
-            onPressed: () {
-              Navigator.pop(context);
-              widget.onDirectSend('Analyse mes revenus et dépenses');
-            },
-          ),
-          const SizedBox(height: Space.xs),
-          PillButton(
-            label: '« J\'ai acheté 3 sacs d\'engrais à 15000 FCFA »',
-            icon: Icons.receipt_long_outlined,
-            variant: PillVariant.secondary,
-            expand: true,
-            compact: true,
-            onPressed: () {
-              Navigator.pop(context);
-              widget.onDirectSend('J\'ai acheté 3 sacs d\'engrais à 15000 FCFA');
-            },
-          ),
-        ],
-      ),
-    );
-  }
-}
-

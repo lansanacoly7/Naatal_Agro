@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../calendar/presentation/season_banner.dart';
+import '../../../weather/presentation/widgets/weather_widgets.dart';
 import '../../../../ui/ui.dart';
 import '../../data/dashboard_provider.dart';
 import '../widgets/advice_carousel.dart';
@@ -50,14 +52,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     final dashboardAsync = ref.watch(dashboardDataProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.c.bg,
       body: dashboardAsync.when(
         data: (data) => FadeTransition(
           opacity: _fadeAnimation,
           child: _buildContent(context, data),
         ),
-        loading: () => const Center(
-          child: CircularProgressIndicator(color: AppColors.primary),
+        loading: () => Center(
+          child: CircularProgressIndicator(color: context.c.accent),
         ),
         error: (error, stack) => _buildErrorState(error),
       ),
@@ -75,7 +77,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
         ref.invalidate(dashboardDataProvider);
         await ref.read(profileNotifierProvider.notifier).loadProfile();
       },
-      color: AppColors.primary,
+      color: context.c.accent,
       child: CustomScrollView(
         physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
         slivers: [
@@ -91,24 +93,25 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                   const SizedBox(height: 24),
                   Text(
                     firstName.isEmpty ? 'Bonjour' : 'Bonjour, $firstName',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
+                      color: context.c.ink,
                     ),
                   ),
                   const SizedBox(height: 20),
-                  _buildWeatherCard(data.weather),
+                  const LiveWeatherCard(),
+                  const SeasonBanner(),
                   const SizedBox(height: 32),
-                  _buildSectionTitle('Actions Rapides', domainColor: AppColors.primary),
+                  _buildSectionTitle('Actions Rapides', domainColor: context.c.accent),
                   const SizedBox(height: 16),
                   _buildQuickActions(context),
                   const SizedBox(height: 32),
-                  _buildSectionTitle('Aujourd\'hui', domainColor: AppColors.domainCultures),
+                  _buildSectionTitle('Aujourd\'hui', domainColor: context.c.domainCultures),
                   const SizedBox(height: 16),
                   _buildTodayTasks(data.calendarEvents),
                   const SizedBox(height: 32),
-                  _buildSectionTitle('Conseils Naatal IA', badgeText: 'POUR VOUS', domainColor: AppColors.domainIa),
+                  _buildSectionTitle('Conseils Naatal IA', badgeText: 'POUR VOUS', domainColor: context.c.domainIa),
                   const SizedBox(height: 16),
                   AdviceCarousel(
                     tips: buildAdvice(
@@ -116,7 +119,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                       stock: data.stockItems,
                       finances: ref.watch(financialSummaryProvider).valueOrNull,
                       prices: data.markets,
-                      weather: data.weather,
+                      weather: ref.watch(liveWeatherSummaryProvider),
                       alerts: data.alerts,
                     ),
                   ),
@@ -125,7 +128,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                     'Prix du Marché',
                     actionLabel: 'Tous les prix >',
                     onActionTap: () => context.go('/markets'),
-                    domainColor: AppColors.domainMarches,
+                    domainColor: context.c.domainMarches,
                   ),
                   const SizedBox(height: 16),
                   MarketPricesSection(markets: data.markets, stocks: data.stockItems),
@@ -134,18 +137,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                     'Produits en Vedette',
                     actionLabel: 'Voir >',
                     onActionTap: () => context.go('/agriculture'),
-                    domainColor: AppColors.domainCultures,
+                    domainColor: context.c.domainCultures,
                   ),
                   const SizedBox(height: 16),
                   _buildFeaturedProducts(data.featuredProducts),
                   const SizedBox(height: 32),
-                  _buildSectionTitle('Calendrier Agricole', badgeText: _currentMonthLabel(), domainColor: AppColors.domainCultures),
+                  _buildSectionTitle('Calendrier Agricole', badgeText: _currentMonthLabel(), domainColor: context.c.domainCultures),
                   const SizedBox(height: 16),
                   _buildAgriculturalCalendar(data.calendarEvents),
                   const SizedBox(height: 32),
                   _buildSectionTitle(
                     'Mon Dashboard',
-                    domainColor: AppColors.domainFinances,
+                    domainColor: context.c.domainFinances,
                   ),
                   const SizedBox(height: 16),
                   MyDashboardSection(stock: data.stockItems, prices: data.markets),
@@ -169,31 +172,27 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
       children: [
         Row(
           children: [
-            const CircleAvatar(
-              radius: 24,
-              backgroundColor: Colors.grey,
-              backgroundImage: AssetImage('assets/images/naatal_agro_logo-removebg-preview.png'), // Placeholder
-            ),
+            _buildProfileButton(),
             const SizedBox(width: 12),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Naatal Agro',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
-                    color: AppColors.textPrimary,
+                    color: context.c.ink,
                   ),
                 ),
                 Row(
                   children: [
-                    Icon(Icons.location_on, size: 12, color: AppColors.primary),
+                    Icon(Icons.location_on, size: 12, color: context.c.accent),
                     const SizedBox(width: 4),
                     Text(
                       location,
-                      style: const TextStyle(
-                        color: AppColors.textSecondary,
+                      style: TextStyle(
+                        color: context.c.ink2,
                         fontSize: 12,
                       ),
                     ),
@@ -213,13 +212,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: context.c.surface,
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4)),
                   ],
                 ),
-                child: const Icon(Icons.map_outlined, color: AppColors.primary, size: 20),
+                child: Icon(Icons.map_outlined, color: context.c.accent, size: 20),
               ),
             ),
             const SizedBox(width: 12),
@@ -234,13 +233,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                     width: 40,
                     height: 40,
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: context.c.surface,
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4)),
                       ],
                     ),
-                    child: const Icon(Icons.notifications_outlined, color: AppColors.textPrimary, size: 20),
+                    child: Icon(Icons.notifications_outlined, color: context.c.ink, size: 20),
                   ),
                   if (unreadAlertsCount > 0)
                     Positioned(
@@ -272,255 +271,25 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     );
   }
 
-  // ─────────────────────────────────────────────
-  // WEATHER CARD
-  // ─────────────────────────────────────────────
-  String _weatherDateLabel(WeatherSummary w) {
-    final d = w.date;
-    if (d == null) return 'RELEVÉ';
-    final days = DateTime.now().difference(d).inDays;
-    final label = '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}';
-    return days >= 2 ? 'RELEVÉ ANCIEN · $label' : 'RELEVÉ DU $label';
-  }
-
-  Widget _buildWeatherCard(WeatherSummary weather) {
-    if (!weather.isAvailable) {
-      return Container(
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(gradient: AppColors.weatherGradient, borderRadius: BorderRadius.circular(24)),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Icon(Icons.cloud_off_rounded, color: Colors.white70, size: 28),
-            const SizedBox(height: 12),
-            const Text('Météo non disponible', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 6),
-            Text('Aucun relevé météo pour votre région. Vérifiez la région de votre profil.', style: TextStyle(color: Colors.white.withValues(alpha: 0.85), fontSize: 14, height: 1.4)),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () => context.go('/profile'),
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.white, foregroundColor: AppColors.primary, minimumSize: const Size(150, 44)),
-              child: const Text('Modifier ma région', style: TextStyle(fontWeight: FontWeight.bold)),
-            ),
-          ],
-        ),
-      );
-    }
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF0284C7).withValues(alpha: 0.22),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
+  /// Le profil s'ouvre depuis ce bouton, en haut à gauche de l'accueil, à la place du logo (il n'est plus dans la barre du bas).
+  Widget _buildProfileButton() {
+    final initials = ref.watch(profileNotifierProvider).valueOrNull?.initials;
+    return Semantics(
+      button: true,
+      label: 'Mon profil',
+      child: GestureDetector(
+        onTap: () => context.push('/profile'),
+        child: Container(
+          width: 48,
+          height: 48,
+          alignment: Alignment.center,
+          decoration: const BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: LinearGradient(colors: [Color(0xFFE9B949), Color(0xFFF08A6A)]),
           ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: Stack(
-          children: [
-            Positioned.fill(
-              child: Image.asset(
-                'assets/images/ui/ui_meteo.jpg',
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => Container(
-                  decoration: const BoxDecoration(gradient: AppColors.weatherGradient),
-                ),
-              ),
-            ),
-            Positioned.fill(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      const Color(0xFF0284C7).withValues(alpha: 0.88),
-                      const Color(0xFF0369A1).withValues(alpha: 0.82),
-                      const Color(0xFF0F1A14).withValues(alpha: 0.90),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          const Icon(Icons.location_on_rounded, color: Colors.white70, size: 14),
-                          const SizedBox(width: 4),
-                          Text(
-                            weather.location,
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.95),
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.schedule_rounded, color: Colors.white, size: 11),
-                            const SizedBox(width: 4),
-                            Text(_weatherDateLabel(weather), style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 0.3)),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        '${weather.temp.toInt()}°C',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 56,
-                          fontWeight: FontWeight.bold,
-                          height: 1,
-                        ),
-                      ),
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.only(left: 16.0),
-                          child: Text(
-                            weather.rainfall > 0
-                                ? 'Pluie : ${weather.rainfall.toStringAsFixed(1)} mm'
-                                : 'Aucune pluie relevée',
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.95),
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  ElevatedButton(
-                    onPressed: () => _showWeatherDetails(context, weather),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: const Color(0xFF0284C7),
-                      minimumSize: const Size(150, 48),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-                      elevation: 0,
-                    ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text('Voir les détails', style: TextStyle(fontWeight: FontWeight.bold)),
-                        SizedBox(width: 8),
-                        Icon(Icons.arrow_forward, size: 16),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showWeatherDetails(BuildContext context, WeatherSummary weather) {
-    showNaatalSheet<void>(
-      context,
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.fromLTRB(Space.xxl, Space.xl, Space.xxl, Space.xxl),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Bulletin météo', style: T.title(color: ctx.c.ink)),
-                    const SizedBox(height: 2),
-                    Text(weather.location, style: T.caption(color: ctx.c.ink2, weight: 600)),
-                  ],
-                ),
-                Text('${weather.temp.toInt()}°C', style: T.largeTitle(color: ctx.c.accent)),
-              ],
-            ),
-            const SizedBox(height: Space.xl),
-            Row(
-              children: [
-                _buildWeatherStat(Icons.water_drop_outlined, 'Humidité', '${weather.humidity.toInt()}%', const Color(0xFF0284C7)),
-                const SizedBox(width: Space.m),
-                _buildWeatherStat(Icons.cloud_outlined, 'Précipitations', '${weather.rainfall.toStringAsFixed(1)} mm', const Color(0xFF3A5670)),
-              ],
-            ),
-            if (weather.rainfall > 5 || weather.temp >= 32) ...[
-              const SizedBox(height: Space.l),
-              Container(
-                padding: const EdgeInsets.all(Space.m),
-                decoration: BoxDecoration(
-                  color: ctx.c.accent.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(Radii.m),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.tips_and_updates_rounded, color: ctx.c.accent),
-                    const SizedBox(width: Space.m),
-                    Expanded(
-                      child: Text(
-                        weather.rainfall > 5
-                            ? 'Fortes pluies : reportez les pulvérisations pour éviter le lessivage des intrants.'
-                            : 'Forte chaleur : irriguez de préférence tôt le matin ou après 17h.',
-                        style: T.caption(color: ctx.c.ink, weight: 600),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildWeatherStat(IconData icon, String label, String value, Color color) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: Space.m, horizontal: Space.s),
-        decoration: BoxDecoration(
-          color: Colors.grey.shade50,
-          borderRadius: BorderRadius.circular(Radii.m),
-          border: Border.all(color: Colors.grey.shade200),
-        ),
-        child: Column(
-          children: [
-            Icon(icon, color: color, size: 22),
-            const SizedBox(height: 6),
-            Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-            const SizedBox(height: 2),
-            Text(label, style: TextStyle(color: Colors.grey.shade500, fontSize: 11)),
-          ],
+          child: initials == null || initials.isEmpty
+              ? const Icon(Icons.person_rounded, color: Color(0xFF2B1700), size: 22)
+              : Text(initials, style: const TextStyle(color: Color(0xFF2B1700), fontWeight: FontWeight.w800, fontSize: 14)),
         ),
       ),
     );
@@ -539,7 +308,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                 imageAsset: 'assets/images/ui/ui_vendre.jpg',
                 label: 'Vendre',
                 icon: Icons.point_of_sale_rounded,
-                domainColor: AppColors.domainMarches,
+                domainColor: context.c.domainMarches,
                 height: 125,
                 onTap: () => context.push('/sell'),
               ),
@@ -550,7 +319,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                 imageAsset: 'assets/images/ui/ui_recolter.jpg',
                 label: 'Récolter',
                 icon: Icons.agriculture_rounded,
-                domainColor: AppColors.domainCultures,
+                domainColor: context.c.domainCultures,
                 height: 125,
                 onTap: () => context.go('/agriculture'),
               ),
@@ -565,7 +334,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                 imageAsset: 'assets/images/ui/ui_stock.jpg',
                 label: 'Stock',
                 icon: Icons.inventory_2_rounded,
-                domainColor: AppColors.domainStock,
+                domainColor: context.c.domainStock,
                 height: 125,
                 onTap: () => context.push('/stock'),
               ),
@@ -576,7 +345,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                 imageAsset: 'assets/images/ui/ui_depenses.jpg',
                 label: 'Dépenses',
                 icon: Icons.account_balance_wallet_rounded,
-                domainColor: AppColors.domainFinances,
+                domainColor: context.c.domainFinances,
                 height: 125,
                 onTap: () => context.push('/finances'),
               ),
@@ -591,7 +360,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                 imageAsset: 'assets/images/ui/ui_marches.jpg',
                 label: 'Marchés',
                 icon: Icons.storefront_rounded,
-                domainColor: AppColors.domainMarches,
+                domainColor: context.c.domainMarches,
                 height: 125,
                 onTap: () => context.go('/markets'),
               ),
@@ -602,7 +371,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                 imageAsset: 'assets/images/ui/ui_ia.jpg',
                 label: 'Aide IA',
                 icon: Icons.auto_awesome_rounded,
-                domainColor: AppColors.domainIa,
+                domainColor: context.c.domainIa,
                 height: 125,
                 onTap: () => context.go('/ai'),
               ),
@@ -635,13 +404,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
         width: double.infinity,
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.c.surface,
           borderRadius: BorderRadius.circular(24),
           border: Border.all(color: Colors.grey.withValues(alpha: 0.1)),
         ),
-        child: const Text(
+        child: Text(
           'Aucune activité planifiée. Ajoutez une culture pour alimenter votre calendrier agricole.',
-          style: TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.4),
+          style: TextStyle(color: context.c.ink2, fontSize: 13, height: 1.4),
         ),
       );
     }
@@ -651,7 +420,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.c.surface,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: Colors.grey.withValues(alpha: 0.1)),
         boxShadow: [
@@ -671,7 +440,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
               Container(
                 width: 70,
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: context.c.surface,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
                   boxShadow: [
@@ -691,7 +460,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                     ),
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 12),
-                      child: Text(event.date.split('\n').first, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: AppColors.textPrimary)),
+                      child: Text(event.date.split('\n').first, style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: context.c.ink)),
                     ),
                   ],
                 ),
@@ -708,15 +477,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
-                          child: Text(event.phase, style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 10, letterSpacing: 0.5)),
+                          child: Text(event.phase, style: TextStyle(color: context.c.accent, fontWeight: FontWeight.bold, fontSize: 10, letterSpacing: 0.5)),
                         ),
                         const Icon(Icons.more_horiz, color: Colors.grey, size: 20),
                       ],
                     ),
                     const SizedBox(height: 10),
-                    Text(event.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.textPrimary)),
+                    Text(event.title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: context.c.ink)),
                     const SizedBox(height: 6),
-                    Text(event.description, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.4), maxLines: 2, overflow: TextOverflow.ellipsis),
+                    Text(event.description, style: TextStyle(color: context.c.ink2, fontSize: 13, height: 1.4), maxLines: 2, overflow: TextOverflow.ellipsis),
                   ],
                 ),
               ),
@@ -730,8 +499,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Progression', style: TextStyle(color: AppColors.textSecondary, fontSize: 12, fontWeight: FontWeight.w600)),
-                  Text('75%', style: TextStyle(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.bold)),
+                  Text('Progression', style: TextStyle(color: context.c.ink2, fontSize: 12, fontWeight: FontWeight.w600)),
+                  Text('75%', style: TextStyle(color: context.c.accent, fontSize: 12, fontWeight: FontWeight.bold)),
                 ],
               ),
               const SizedBox(height: 8),
@@ -739,15 +508,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                 borderRadius: BorderRadius.circular(4),
                 child: LinearProgressIndicator(
                   value: 0.75,
-                  backgroundColor: Colors.grey.shade200,
-                  valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
+                  backgroundColor: context.c.line,
+                  valueColor: AlwaysStoppedAnimation<Color>(context.c.accent),
                   minHeight: 6,
                 ),
               ),
             ],
           ),
           const SizedBox(height: 20),
-          const Divider(height: 1, color: Color(0xFFEEEEEE)),
+          Divider(height: 1, color: context.c.line),
           const SizedBox(height: 16),
           // Action Buttons
           Row(
@@ -758,10 +527,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     minimumSize: const Size(0, 48),
-                    side: BorderSide(color: Colors.grey.shade300),
+                    side: BorderSide(color: context.c.line),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
-                  child: const Text('Voir calendrier', style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold)),
+                  child: Text('Voir calendrier', style: TextStyle(color: context.c.ink, fontWeight: FontWeight.bold)),
                 ),
               ),
               const SizedBox(width: 12),
@@ -801,7 +570,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
       return Container(
         width: double.infinity,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.c.surface,
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
@@ -859,7 +628,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
               width: 215,
               margin: const EdgeInsets.only(right: 16),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: context.c.surface,
                 borderRadius: BorderRadius.circular(24),
                 border: Border.all(color: Colors.grey.withValues(alpha: 0.1)),
                 boxShadow: [
@@ -902,12 +671,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(product.name, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: AppColors.textPrimary)),
+                              Text(product.name, style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: context.c.ink)),
                               const SizedBox(height: 4),
-                              Text(product.variety, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13, fontWeight: FontWeight.w500)),
+                              Text(product.variety, style: TextStyle(color: context.c.ink2, fontSize: 13, fontWeight: FontWeight.w500)),
                             ],
                           ),
-                          const Divider(height: 1, color: Color(0xFFEEEEEE)),
+                          Divider(height: 1, color: context.c.line),
                           if (product.price.isNotEmpty || effectiveCycle.isNotEmpty)
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -955,14 +724,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
   Widget _buildProductInfoItem(IconData icon, String text) {
     return Row(
       children: [
-        Icon(icon, size: 14, color: AppColors.primary),
+        Icon(icon, size: 14, color: context.c.accent),
         const SizedBox(width: 4),
         Text(
           text,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
+            color: context.c.ink,
           ),
         ),
       ],
@@ -997,10 +766,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
               Flexible(
                 child: Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
-                    color: AppColors.textPrimary,
+                    color: context.c.ink,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -1018,7 +787,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
-                  color: domainColor ?? AppColors.primary,
+                  color: domainColor ?? context.c.accent,
                 ),
               ),
             ),
@@ -1027,15 +796,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: const Color(0xFFF4F6F8),
+              color: context.c.surfaceAlt,
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
               badgeText,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
-                color: AppColors.textSecondary,
+                color: context.c.ink2,
               ),
             ),
           ),
@@ -1051,7 +820,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
       return Container(
         width: double.infinity,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.c.surface,
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
@@ -1093,7 +862,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
       color = Colors.blueAccent;
     } else if (lowerTitle.contains('semis') || lowerTitle.contains('plant')) {
       icon = Icons.grass;
-      color = AppColors.primary;
+      color = context.c.accent;
     } else if (lowerTitle.contains('récolte') || lowerTitle.contains('recolte')) {
       icon = Icons.agriculture;
       color = Colors.amber.shade800;
@@ -1102,7 +871,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
       color = Colors.purple;
     } else {
       icon = Icons.eco;
-      color = AppColors.primary;
+      color = context.c.accent;
     }
 
     final dateDisplay = event.date.replaceAll('\n', ' ').trim();
@@ -1129,7 +898,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.c.surface,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
@@ -1147,7 +916,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
             Container(
               width: 6,
               decoration: BoxDecoration(
-                color: isCompleted ? Colors.grey.shade300 : color,
+                color: isCompleted ? context.c.line : color,
                 borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(20),
                   bottomLeft: Radius.circular(20),
@@ -1182,30 +951,30 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 15,
-                              color: isCompleted ? Colors.grey : AppColors.textPrimary,
+                              color: isCompleted ? Colors.grey : context.c.ink,
                               decoration: isCompleted ? TextDecoration.lineThrough : null,
                             ),
                           ),
                           const SizedBox(height: 6),
                           Row(
                             children: [
-                              Icon(Icons.schedule, size: 12, color: isCompleted ? Colors.grey : AppColors.textSecondary),
+                              Icon(Icons.schedule, size: 12, color: isCompleted ? Colors.grey : context.c.ink2),
                               const SizedBox(width: 4),
                               Text(
                                 time,
                                 style: TextStyle(
-                                  color: isCompleted ? Colors.grey : AppColors.textSecondary,
+                                  color: isCompleted ? Colors.grey : context.c.ink2,
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
                               const SizedBox(width: 12),
-                              Icon(Icons.location_on, size: 12, color: isCompleted ? Colors.grey : AppColors.textSecondary),
+                              Icon(Icons.location_on, size: 12, color: isCompleted ? Colors.grey : context.c.ink2),
                               const SizedBox(width: 4),
                               Text(
                                 location,
                                 style: TextStyle(
-                                  color: isCompleted ? Colors.grey : AppColors.textSecondary,
+                                  color: isCompleted ? Colors.grey : context.c.ink2,
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -1218,7 +987,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                     const SizedBox(width: 12),
                     Icon(
                       isCompleted ? Icons.check_circle : Icons.radio_button_unchecked,
-                      color: isCompleted ? AppColors.primary : Colors.grey.shade300,
+                      color: isCompleted ? context.c.accent : context.c.line,
                       size: 28,
                     ),
                   ],

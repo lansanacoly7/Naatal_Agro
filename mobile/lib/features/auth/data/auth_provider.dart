@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/network/api_client.dart';
+import '../../../../core/session/session_root.dart';
 import 'auth_repository.dart';
 
 // Provider global pour le ApiClient
@@ -89,6 +90,8 @@ class AuthNotifier extends StateNotifier<AsyncValue<bool>> {
     try {
       await _repository.logout();
       state = const AsyncValue.data(false);
+      // Le compte suivant repart d'un état vide : rien du compte qui vient de se déconnecter ne reste en mémoire
+      SessionReset.bump();
     } catch (e, st) {
       state = AsyncValue.error(e, st);
     }

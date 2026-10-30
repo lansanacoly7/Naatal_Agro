@@ -354,7 +354,7 @@ class _StockProductRow extends StatelessWidget {
               height: 38,
               child: Image.asset(
                 img,
-                fit: BoxFit.contain,
+                fit: BoxFit.cover,
                 errorBuilder: (_, __, ___) => Icon(Icons.eco_rounded, size: 22, color: c.accent),
               ),
             ),
@@ -414,7 +414,7 @@ class _MarketOpportunityRow extends StatelessWidget {
               height: 36,
               child: Image.asset(
                 img,
-                fit: BoxFit.contain,
+                fit: BoxFit.cover,
                 errorBuilder: (_, __, ___) => Icon(Icons.store_rounded, size: 20, color: c.slate),
               ),
             ),

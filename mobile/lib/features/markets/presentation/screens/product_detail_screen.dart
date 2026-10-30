@@ -10,6 +10,7 @@ import '../../data/models/price.dart';
 import '../../../agriculture/data/guides_provider.dart';
 import '../../../agriculture/data/models/agronomic_guide.dart';
 
+import '../../../../ui/ui.dart';
 class ProductDetailScreen extends ConsumerStatefulWidget {
   final String productName;
   final String imageAsset;
@@ -32,21 +33,10 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     return double.tryParse(cleaned) ?? 0.0;
   }
 
+  /// Image fournie, sinon celle du produit (même règle partout) : jamais le logo de l'application à la place d'un produit.
   String _resolveImageAsset(String name, String providedAsset) {
-    if (providedAsset.isNotEmpty && !providedAsset.contains('placeholder')) {
-      return providedAsset;
-    }
-    final lower = name.toLowerCase();
-    if (lower.contains('tomate')) return 'assets/images/products/tomate.png';
-    if (lower.contains('oignon')) return 'assets/images/products/oignon_local.png';
-    if (lower.contains('riz')) return 'assets/images/products/riz.jpg';
-    if (lower.contains('mais') || lower.contains('maïs')) return 'assets/images/products/mais.jpg';
-    if (lower.contains('arachide')) return 'assets/images/products/arachide.png';
-    if (lower.contains('pomme de terre')) return 'assets/images/products/pomme_de_terre.png';
-    if (lower.contains('chou')) return 'assets/images/products/chou.png';
-    if (lower.contains('mil')) return 'assets/images/products/mil.jpg';
-    if (lower.contains('mangue')) return 'assets/images/products/mangue.png';
-    return 'assets/images/naatal_agro_logo-removebg-preview.png';
+    if (providedAsset.isNotEmpty && !providedAsset.contains('placeholder')) return providedAsset;
+    return productImageForName(name);
   }
 
   AgronomicGuide? _findMatchingGuide(List<AgronomicGuide> guides, String name) {
@@ -72,7 +62,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     final matchingGuide = _findMatchingGuide(guidesState.guides, widget.productName);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.c.bg,
       body: priceHistoryAsync.when(
         data: (prices) {
           // Tri chronologique des relevés de prix
@@ -128,8 +118,8 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
             ],
           );
         },
-        loading: () => const Center(
-          child: CircularProgressIndicator(color: AppColors.primary),
+        loading: () => Center(
+          child: CircularProgressIndicator(color: context.c.accent),
         ),
         error: (error, stack) => Center(
           child: Padding(
@@ -323,7 +313,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
         }),
         _buildActionButton(Icons.notifications_active, 'Alerte', Colors.amber.shade700, () => context.push('/price-alerts')),
         _buildActionButton(Icons.inventory_2, 'Stock', Colors.brown.shade400, () => context.push('/inventory')),
-        _buildActionButton(Icons.auto_awesome, 'Naatal IA', AppColors.primary, () => context.push('/ai')),
+        _buildActionButton(Icons.auto_awesome, 'Naatal IA', context.c.accent, () => context.push('/ai')),
       ],
     );
   }
@@ -337,7 +327,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
             width: 58,
             height: 58,
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: context.c.surface,
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
@@ -352,8 +342,8 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
           const SizedBox(height: 8),
           Text(
             label,
-            style: const TextStyle(
-              color: AppColors.textPrimary,
+            style: TextStyle(
+              color: context.c.ink,
               fontSize: 12,
               fontWeight: FontWeight.w600,
             ),
@@ -411,7 +401,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
           const SizedBox(height: 8),
           Text(
             advice,
-            style: const TextStyle(fontSize: 13, height: 1.45, color: AppColors.textPrimary),
+            style: TextStyle(fontSize: 13, height: 1.45, color: context.c.ink),
           ),
         ],
       ),
@@ -428,7 +418,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.c.surface,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
@@ -444,27 +434,27 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Fiche Descriptive', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+              Text('Fiche Descriptive', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: context.c.ink)),
               if (guide != null)
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
-                  child: const Text('ISRA / ANCAR', style: TextStyle(color: AppColors.primary, fontSize: 10, fontWeight: FontWeight.bold)),
+                  child: Text('ISRA / ANCAR', style: TextStyle(color: context.c.accent, fontSize: 10, fontWeight: FontWeight.bold)),
                 ),
             ],
           ),
           const SizedBox(height: 12),
           Text(
             text,
-            style: const TextStyle(color: AppColors.textSecondary, height: 1.5, fontSize: 13),
+            style: TextStyle(color: context.c.ink2, height: 1.5, fontSize: 13),
           ),
           if (guide != null) ...[
             const SizedBox(height: 12),
             GestureDetector(
               onTap: () => context.push('/agriculture/guides/${guide.slug}'),
-              child: const Text(
+              child: Text(
                 'Consulter le guide agronomique complet >',
-                style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 13),
+                style: TextStyle(color: context.c.accent, fontWeight: FontWeight.bold, fontSize: 13),
               ),
             ),
           ],
@@ -479,7 +469,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
         width: double.infinity,
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.c.surface,
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
@@ -489,19 +479,19 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
             ),
           ],
         ),
-        child: const Column(
+        child: Column(
           children: [
             Icon(Icons.show_chart_rounded, size: 40, color: Colors.grey),
             SizedBox(height: 12),
             Text(
               'Aucun relevé de cotation disponible',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppColors.textPrimary),
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: context.c.ink),
             ),
             SizedBox(height: 6),
             Text(
               'Les cotations historiques seront affichées dès leur enregistrement.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+              style: TextStyle(color: context.c.ink2, fontSize: 12),
             ),
           ],
         ),
@@ -539,7 +529,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.c.surface,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
@@ -555,13 +545,13 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Expanded(
-                child: Text('Évolution des cours réels', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+              Expanded(
+                child: Text('Évolution des cours réels', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: context.c.ink)),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(6)),
-                child: Text('${prices.length} relevés', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.textSecondary)),
+                decoration: BoxDecoration(color: context.c.surfaceAlt, borderRadius: BorderRadius.circular(6)),
+                child: Text('${prices.length} relevés', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: context.c.ink2)),
               ),
             ],
           ),
@@ -580,7 +570,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                       showTitles: true,
                       reservedSize: 40,
                       getTitlesWidget: (value, meta) {
-                        return Text('${value.toInt()}', style: const TextStyle(color: AppColors.textSecondary, fontSize: 10));
+                        return Text('${value.toInt()}', style: TextStyle(color: context.c.ink2, fontSize: 10));
                       },
                     ),
                   ),
@@ -596,7 +586,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                           if (dateParts.length == 3) {
                             return Padding(
                               padding: const EdgeInsets.only(top: 6.0),
-                              child: Text('${dateParts[2]}/${dateParts[1]}', style: const TextStyle(color: AppColors.textSecondary, fontSize: 9)),
+                              child: Text('${dateParts[2]}/${dateParts[1]}', style: TextStyle(color: context.c.ink2, fontSize: 9)),
                             );
                           }
                         }
@@ -614,13 +604,13 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                   LineChartBarData(
                     spots: spots,
                     isCurved: true,
-                    color: AppColors.primary,
+                    color: context.c.accent,
                     barWidth: 3,
                     isStrokeCapRound: true,
                     dotData: FlDotData(
                       show: spots.length <= 10,
                       getDotPainter: (spot, percent, barData, index) {
-                        return FlDotCirclePainter(radius: 3, color: AppColors.primary, strokeWidth: 0);
+                        return FlDotCirclePainter(radius: 3, color: context.c.accent, strokeWidth: 0);
                       },
                     ),
                     belowBarData: BarAreaData(
@@ -652,7 +642,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.c.surface,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
@@ -665,14 +655,14 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Données du Marché', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+          Text('Données du Marché', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: context.c.ink)),
           const SizedBox(height: 16),
           _buildInfoRow(Icons.calendar_today, 'Dernier relevé', latestDate),
-          const Divider(color: Color(0xFFF0F0F0), height: 24),
+          Divider(color: context.c.line, height: 24),
           _buildInfoRow(Icons.category, 'Catégorie', guide?.category ?? 'Agricole'),
-          const Divider(color: Color(0xFFF0F0F0), height: 24),
+          Divider(color: context.c.line, height: 24),
           _buildInfoRow(Icons.scale, 'Unité de vente', 'Kilogramme (Kg)'),
-          const Divider(color: Color(0xFFF0F0F0), height: 24),
+          Divider(color: context.c.line, height: 24),
           _buildInfoRow(Icons.storefront_outlined, 'Source', 'Relevés indicatifs de marché'),
         ],
       ),
@@ -685,12 +675,12 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
       children: [
         Row(
           children: [
-            Icon(icon, size: 16, color: AppColors.textSecondary),
+            Icon(icon, size: 16, color: context.c.ink2),
             const SizedBox(width: 8),
-            Text(label, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+            Text(label, style: TextStyle(color: context.c.ink2, fontSize: 13)),
           ],
         ),
-        Text(value, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: AppColors.textPrimary)),
+        Text(value, style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: context.c.ink)),
       ],
     );
   }
@@ -700,7 +690,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.c.surface,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
@@ -713,11 +703,11 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Comparaison inter-marchés', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+          Text('Comparaison inter-marchés', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: context.c.ink)),
           const SizedBox(height: 10),
-          const Text(
+          Text(
             'Comparez les cotations réelles relevées pour ce produit sur les différents marchés régionaux (Dakar, Thiès, Kaolack, etc.).',
-            style: TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.45),
+            style: TextStyle(color: context.c.ink2, fontSize: 13, height: 1.45),
           ),
           const SizedBox(height: 16),
           SizedBox(

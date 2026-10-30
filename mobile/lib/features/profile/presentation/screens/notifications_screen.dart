@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../data/notifications_provider.dart';
 
+import '../../../../ui/ui.dart';
 class NotificationsScreen extends ConsumerWidget {
   const NotificationsScreen({super.key});
 
@@ -11,19 +12,19 @@ class NotificationsScreen extends ConsumerWidget {
     final notifState = ref.watch(notificationsProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.c.bg,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: context.c.surface,
         elevation: 0,
         centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black87),
+          icon: Icon(Icons.arrow_back_ios_new_rounded, color: context.c.ink),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text(
+        title: Text(
           'Notifications',
           style: TextStyle(
-            color: Colors.black87,
+            color: context.c.ink,
             fontWeight: FontWeight.bold,
             fontSize: 20,
           ),
@@ -31,7 +32,7 @@ class NotificationsScreen extends ConsumerWidget {
         actions: [
           if (notifState.items.any((n) => !n.isRead))
             IconButton(
-              icon: const Icon(Icons.done_all_rounded, color: AppColors.primary),
+              icon: Icon(Icons.done_all_rounded, color: context.c.accent),
               tooltip: 'Tout marquer comme lu',
               onPressed: () {
                 ref.read(notificationsProvider.notifier).markAllAsRead();
@@ -47,10 +48,10 @@ class NotificationsScreen extends ConsumerWidget {
         ],
       ),
       body: RefreshIndicator(
-        color: AppColors.primary,
+        color: context.c.accent,
         onRefresh: () => ref.read(notificationsProvider.notifier).fetchNotifications(),
         child: notifState.isLoading && notifState.items.isEmpty
-            ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+            ? Center(child: CircularProgressIndicator(color: context.c.accent))
             : notifState.items.isEmpty
                 ? _buildEmptyState(context, ref)
                 : ListView.separated(
@@ -79,7 +80,7 @@ class NotificationsScreen extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
+                  color: context.c.surfaceAlt,
                   shape: BoxShape.circle,
                 ),
                 child: Icon(Icons.notifications_none_rounded, size: 64, color: Colors.grey.shade400),
@@ -87,7 +88,7 @@ class NotificationsScreen extends ConsumerWidget {
               const SizedBox(height: 20),
               Text(
                 'Aucune notification pour le moment',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.grey.shade700),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: context.c.ink2),
               ),
               const SizedBox(height: 8),
               Text(
@@ -119,7 +120,7 @@ class NotificationsScreen extends ConsumerWidget {
           color: isRead ? Colors.white : meta.color.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isRead ? Colors.grey.shade200 : meta.color.withValues(alpha: 0.3),
+            color: isRead ? context.c.line : meta.color.withValues(alpha: 0.3),
             width: isRead ? 1 : 1.5,
           ),
           boxShadow: isRead
@@ -153,7 +154,7 @@ class NotificationsScreen extends ConsumerWidget {
                             style: TextStyle(
                               fontWeight: isRead ? FontWeight.w600 : FontWeight.w800,
                               fontSize: 15,
-                              color: Colors.black87,
+                              color: context.c.ink,
                             ),
                           ),
                         ),
@@ -171,7 +172,7 @@ class NotificationsScreen extends ConsumerWidget {
                     Text(
                       notif.message,
                       style: TextStyle(
-                        color: Colors.grey.shade700,
+                        color: context.c.ink2,
                         fontSize: 13.5,
                         height: 1.35,
                       ),

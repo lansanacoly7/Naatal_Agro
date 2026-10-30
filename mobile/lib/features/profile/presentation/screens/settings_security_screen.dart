@@ -5,44 +5,45 @@ import '../../../../core/constants/app_constants.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../auth/data/auth_provider.dart';
 
+import '../../../../ui/ui.dart';
 class SettingsSecurityScreen extends ConsumerWidget {
   const SettingsSecurityScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.c.bg,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: context.c.surface,
         elevation: 0,
         centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black87),
+          icon: Icon(Icons.arrow_back_ios_new_rounded, color: context.c.ink),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text(
+        title: Text(
           'Sécurité & Confidentialité',
-          style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 20),
+          style: TextStyle(color: context.c.ink, fontWeight: FontWeight.bold, fontSize: 20),
         ),
       ),
       body: ListView(
         padding: const EdgeInsets.all(24),
         children: [
-          _buildActionTile(
+          _buildActionTile(context, 
             Icons.lock_rounded,
             'Changer de mot de passe',
             'Modifier votre mot de passe de connexion',
             onTap: () => _showChangePasswordDialog(context, ref),
           ),
           const SizedBox(height: 16),
-          _buildActionTile(
+          _buildActionTile(context, 
             Icons.download_rounded,
             'Télécharger mes données',
             'Exporter l\'ensemble de vos données (Loi CDP)',
             onTap: () => _exportUserData(context, ref),
           ),
           const SizedBox(height: 16),
-          _buildActionTile(
+          _buildActionTile(context, 
             Icons.delete_forever_rounded,
             'Supprimer mon compte',
             'Suppression définitive et irréversible',
@@ -54,19 +55,20 @@ class SettingsSecurityScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildActionTile(
+  Widget _buildActionTile(BuildContext context, 
     IconData icon,
     String title,
     String subtitle, {
-    Color color = Colors.black87,
+    Color? color,
     required VoidCallback onTap,
   }) {
     final bool isDanger = color == Colors.red;
+    color ??= context.c.ink;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.c.surface,
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
@@ -81,10 +83,10 @@ class SettingsSecurityScreen extends ConsumerWidget {
           leading: Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: isDanger ? Colors.red.withValues(alpha: 0.1) : Colors.grey.shade100,
+              color: isDanger ? Colors.red.withValues(alpha: 0.1) : context.c.surfaceAlt,
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(icon, color: isDanger ? Colors.red : AppColors.primary),
+            child: Icon(icon, color: isDanger ? Colors.red : context.c.accent),
           ),
           title: Text(title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: color)),
           subtitle: Padding(

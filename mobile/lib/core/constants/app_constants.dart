@@ -64,6 +64,7 @@ class AppConstants {
   static const String aiConversationsEndpoint = '/ai/conversations/';
   static const String aiResolveActionEndpoint = '/ai/actions/execute/';
   static const String aiTranscribeEndpoint = '/ai/voice/transcribe/';
+  static const String aiVoiceLiveEndpoint = '/ai/voice/live/';
 
   static String aiConversationEndpoint(String id) => '$aiConversationsEndpoint$id/';
 

@@ -75,11 +75,15 @@ class VoiceService {
       }
 
       final config = kIsWeb
-          ? RecordConfig(encoder: await _webEncoder())
+          ? RecordConfig(encoder: await _webEncoder(), numChannels: 1, autoGain: true, echoCancel: true, noiseSuppress: true)
           : const RecordConfig(
               encoder: AudioEncoder.aacLc,
               sampleRate: 44100,
               bitRate: 128000,
+              numChannels: 1,
+              autoGain: true,
+              echoCancel: true,
+              noiseSuppress: true,
             );
 
       await _recorder.start(config, path: _currentRecordingPath!);
@@ -100,6 +104,40 @@ class VoiceService {
       } catch (_) {}
     }
     return AudioEncoder.wav;
+  }
+
+  /// Démarre le micro en flux continu (son brut 16 kHz, mono) : le texte peut s'afficher pendant que la personne parle.
+  /// `null` si le micro n'est pas utilisable.
+  Future<Stream<Uint8List>?> startLive() async {
+    try {
+      if (_isRecording) await _recorder.stop();
+      if (!await hasPermission()) return null;
+      final stream = await _recorder.startStream(const RecordConfig(
+        encoder: AudioEncoder.pcm16bits,
+        sampleRate: 16000,
+        numChannels: 1,
+        autoGain: true,
+        echoCancel: true,
+        noiseSuppress: true,
+      ));
+      _isRecording = true;
+      return stream;
+    } catch (e) {
+      debugPrint('[VoiceService] Micro en direct impossible: $e');
+      _isRecording = false;
+      return null;
+    }
+  }
+
+  /// Arrête le micro en flux continu.
+  Future<void> stopLive() async {
+    try {
+      if (_isRecording) await _recorder.stop();
+    } catch (e) {
+      debugPrint('[VoiceService] Arrêt du micro en direct: $e');
+    } finally {
+      _isRecording = false;
+    }
   }
 
   /// Arrête l'enregistrement audio et renvoie les octets réels du fichier micro.

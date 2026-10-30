@@ -6,6 +6,7 @@ import '../../../../core/widgets/offline_cache_banner.dart';
 import '../../data/guides_provider.dart';
 import '../../data/models/agronomic_guide.dart';
 
+import '../../../../ui/ui.dart';
 class GuidesListScreen extends ConsumerStatefulWidget {
   const GuidesListScreen({super.key});
 
@@ -51,18 +52,18 @@ class _GuidesListScreenState extends ConsumerState<GuidesListScreen> {
     final state = ref.watch(guidesNotifierProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.c.bg,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: context.c.surface,
         elevation: 0,
         centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black87),
+          icon: Icon(Icons.arrow_back_ios_new_rounded, color: context.c.ink),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text(
+        title: Text(
           'Fiches Agronomiques',
-          style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 19),
+          style: TextStyle(color: context.c.ink, fontWeight: FontWeight.bold, fontSize: 19),
         ),
       ),
       body: Column(
@@ -70,7 +71,7 @@ class _GuidesListScreenState extends ConsumerState<GuidesListScreen> {
           if (state.isFromCache && state.cachedAt != null)
             OfflineCacheBanner(cachedAt: state.cachedAt!),
           Container(
-            color: Colors.white,
+            color: context.c.surface,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Column(
               children: [
@@ -80,7 +81,7 @@ class _GuidesListScreenState extends ConsumerState<GuidesListScreen> {
                   decoration: InputDecoration(
                     hintText: 'Rechercher une culture (ex. Niébé, Mil, Oignon)...',
                     hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
-                    prefixIcon: const Icon(Icons.search, color: AppColors.primary),
+                    prefixIcon: Icon(Icons.search, color: context.c.accent),
                     suffixIcon: _searchCtrl.text.isNotEmpty
                         ? IconButton(
                             icon: const Icon(Icons.clear, size: 18),
@@ -91,15 +92,15 @@ class _GuidesListScreenState extends ConsumerState<GuidesListScreen> {
                           )
                         : null,
                     filled: true,
-                    fillColor: Colors.grey.shade50,
+                    fillColor: context.c.surfaceAlt,
                     contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide(color: Colors.grey.shade200),
+                      borderSide: BorderSide(color: context.c.line),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide(color: Colors.grey.shade200),
+                      borderSide: BorderSide(color: context.c.line),
                     ),
                   ),
                 ),
@@ -118,9 +119,9 @@ class _GuidesListScreenState extends ConsumerState<GuidesListScreen> {
                         selected: isSelected,
                         onSelected: (_) => _onCategorySelected(cat['id']!),
                         selectedColor: AppColors.primary,
-                        backgroundColor: Colors.grey.shade100,
+                        backgroundColor: context.c.surfaceAlt,
                         labelStyle: TextStyle(
-                          color: isSelected ? Colors.white : Colors.black87,
+                          color: isSelected ? Colors.white : context.c.ink,
                           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                           fontSize: 12,
                         ),
@@ -140,7 +141,7 @@ class _GuidesListScreenState extends ConsumerState<GuidesListScreen> {
                       search: _searchCtrl.text,
                     );
               },
-              color: AppColors.primary,
+              color: context.c.accent,
               child: _buildBody(state),
             ),
           ),
@@ -151,7 +152,7 @@ class _GuidesListScreenState extends ConsumerState<GuidesListScreen> {
 
   Widget _buildBody(GuidesListState state) {
     if (state.isLoading && state.guides.isEmpty) {
-      return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+      return Center(child: CircularProgressIndicator(color: context.c.accent));
     }
 
     if (state.error != null && state.guides.isEmpty) {
@@ -194,7 +195,7 @@ class _GuidesListScreenState extends ConsumerState<GuidesListScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.search_off_rounded, size: 64, color: Colors.grey.shade300),
+              Icon(Icons.search_off_rounded, size: 64, color: context.c.line),
               const SizedBox(height: 16),
               const Text(
                 'Aucune fiche agronomique trouvée',
@@ -225,7 +226,7 @@ class _GuidesListScreenState extends ConsumerState<GuidesListScreen> {
 
   Widget _buildGuideCard(BuildContext context, AgronomicGuide guide) {
     IconData iconData = Icons.eco;
-    Color iconColor = AppColors.primary;
+    Color iconColor = context.c.accent;
     if (guide.category == 'cereale') {
       iconData = Icons.grass;
       iconColor = Colors.amber.shade800;
@@ -242,7 +243,7 @@ class _GuidesListScreenState extends ConsumerState<GuidesListScreen> {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.c.surface,
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
@@ -284,8 +285,8 @@ class _GuidesListScreenState extends ConsumerState<GuidesListScreen> {
                         ),
                         child: Text(
                           guide.categoryLabel,
-                          style: const TextStyle(
-                            color: AppColors.primary,
+                          style: TextStyle(
+                            color: context.c.accent,
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
                           ),
@@ -299,7 +300,7 @@ class _GuidesListScreenState extends ConsumerState<GuidesListScreen> {
                       guide.scientificName,
                       style: TextStyle(
                         fontStyle: FontStyle.italic,
-                        color: Colors.grey.shade600,
+                        color: context.c.ink2,
                         fontSize: 12,
                       ),
                     ),
@@ -309,7 +310,7 @@ class _GuidesListScreenState extends ConsumerState<GuidesListScreen> {
                     guide.summary,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(color: Colors.grey.shade700, fontSize: 13, height: 1.3),
+                    style: TextStyle(color: context.c.ink2, fontSize: 13, height: 1.3),
                   ),
                   const SizedBox(height: 10),
                   Wrap(
@@ -338,11 +339,11 @@ class _GuidesListScreenState extends ConsumerState<GuidesListScreen> {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 12, color: Colors.grey.shade600),
+        Icon(icon, size: 12, color: context.c.ink2),
         const SizedBox(width: 4),
         Text(
           text,
-          style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+          style: TextStyle(fontSize: 11, color: context.c.ink2),
         ),
       ],
     );

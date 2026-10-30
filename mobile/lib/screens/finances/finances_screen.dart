@@ -297,10 +297,10 @@ class _TransactionRow extends StatelessWidget {
           height: 44,
           color: (income ? c.accent : c.clay).withValues(alpha: c.isDark ? 0.2 : 0.1),
           child: Padding(
-            padding: const EdgeInsets.all(4),
+            padding: EdgeInsets.zero,
             child: Image.asset(
               productImageForName(matchedCrop),
-              fit: BoxFit.contain,
+              fit: BoxFit.cover,
               errorBuilder: (_, __, ___) => IconTile(
                 icon: income ? Icons.south_west_rounded : Icons.north_east_rounded,
                 color: income ? c.accent : c.clay,

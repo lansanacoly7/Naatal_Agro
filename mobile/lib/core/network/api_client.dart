@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../constants/app_constants.dart';
 import 'sync_service.dart';
+import '../session/session_root.dart';
 
 /// Client HTTP centralisé pour communiquer avec le backend Django.
 /// Stocke les tokens JWT de façon chiffrée (Android Keystore / iOS Keychain)
@@ -93,6 +94,7 @@ class ApiClient {
             } else {
               // Si le refresh échoue, déconnexion propre et purge du coffre-fort
               await clearTokens();
+              Future.microtask(SessionReset.bump); // session expirée : l'écran suivant ne doit rien montrer de ce compte
             }
           }
           return handler.next(error);
@@ -237,6 +239,9 @@ class ApiClient {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('user_role');
     await prefs.remove('user_location');
+    // Données de ce compte gardées sur l'appareil : alertes de prix, suggestion de cultures en attente
+    await prefs.remove('price_alerts');
+    await prefs.remove('pending_crop_setup');
     // Profils mis en cache : aucun ne doit survivre à la session (y compris l'ancienne clé unique)
     for (final key in prefs.getKeys().where((k) => k.startsWith('cached_user_profile')).toList()) {
       await prefs.remove(key);

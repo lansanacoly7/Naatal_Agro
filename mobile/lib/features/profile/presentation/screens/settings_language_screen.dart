@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/localization/locale_provider.dart';
 
+import '../../../../ui/ui.dart';
 class SettingsLanguageScreen extends ConsumerStatefulWidget {
   const SettingsLanguageScreen({super.key});
 
@@ -22,18 +23,18 @@ class _SettingsLanguageScreenState extends ConsumerState<SettingsLanguageScreen>
     final tr = ref.watch(stringsProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.c.bg,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: context.c.surface,
         elevation: 0,
         centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black87),
+          icon: Icon(Icons.arrow_back_ios_new_rounded, color: context.c.ink),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
           tr('language_title'),
-          style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 20),
+          style: TextStyle(color: context.c.ink, fontWeight: FontWeight.bold, fontSize: 20),
         ),
       ),
       body: ListView.builder(
@@ -47,10 +48,10 @@ class _SettingsLanguageScreenState extends ConsumerState<SettingsLanguageScreen>
             padding: const EdgeInsets.only(bottom: 16.0),
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: context.c.surface,
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: isSelected ? AppColors.primary : Colors.transparent,
+                  color: isSelected ? context.c.accent : Colors.transparent,
                   width: 2,
                 ),
                 boxShadow: [
@@ -72,7 +73,7 @@ class _SettingsLanguageScreenState extends ConsumerState<SettingsLanguageScreen>
                   ),
                   child: Icon(
                     lang['code'] == 'wo' ? Icons.record_voice_over_rounded : Icons.language_rounded,
-                    color: isSelected ? AppColors.primary : Colors.grey,
+                    color: isSelected ? context.c.accent : Colors.grey,
                     size: 22,
                   ),
                 ),
@@ -81,7 +82,7 @@ class _SettingsLanguageScreenState extends ConsumerState<SettingsLanguageScreen>
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
-                    color: isSelected ? AppColors.primary : Colors.black87,
+                    color: isSelected ? context.c.accent : context.c.ink,
                   ),
                 ),
                 subtitle: Text(
@@ -89,7 +90,7 @@ class _SettingsLanguageScreenState extends ConsumerState<SettingsLanguageScreen>
                   style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                 ),
                 trailing: isSelected
-                    ? const Icon(Icons.check_circle_rounded, color: AppColors.primary)
+                    ? Icon(Icons.check_circle_rounded, color: context.c.accent)
                     : null,
                 contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),

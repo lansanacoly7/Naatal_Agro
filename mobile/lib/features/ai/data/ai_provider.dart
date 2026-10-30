@@ -5,10 +5,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../auth/data/auth_provider.dart';
+import '../../../shared/utils/data_refresh.dart';
 import '../../reminders/data/reminder_sync.dart';
 import 'models/ai_message.dart';
 
 /// Échec de la voix, avec un message que l'on peut montrer tel quel à l'utilisateur.
+/// Texte compris par la transcription en direct (`text` : remis d'équerre à la fin, `rawText` : tel qu'entendu).
+class LiveVoiceResult {
+  const LiveVoiceResult({required this.text, required this.rawText});
+
+  final String text;
+  final String rawText;
+}
+
 class VoiceException implements Exception {
   final String message;
   const VoiceException(this.message);
@@ -132,14 +141,41 @@ class AiRepository {
   ///
   /// Lève une [VoiceException] dont le message est affichable tel quel (enregistrement trop court, rien d'audible,
   /// service indisponible…).
-  Future<String> transcribeAudio(Uint8List audioBytes) async {
+  Future<String> transcribeAudio(Uint8List audioBytes, {String language = 'fr'}) async {
     try {
       final response = await _apiClient.post(
         AppConstants.aiTranscribeEndpoint,
-        data: {'audio_base64': base64Encode(audioBytes)},
+        data: {'audio_base64': base64Encode(audioBytes), 'language': language},
       );
       if (response.data is Map && response.data['text'] != null) {
         return response.data['text'].toString();
+      }
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      final message = data is Map ? data['error']?.toString() : null;
+      throw VoiceException(message ?? 'Impossible de joindre le service de transcription. Vérifiez votre connexion ou écrivez votre message.');
+    }
+    throw const VoiceException('La transcription a échoué. Réessayez ou écrivez votre message.');
+  }
+
+  /// Envoie un morceau de son (PCM 16 bits, 16 kHz, mono) et reçoit le texte compris depuis le début de l'enregistrement.
+  /// Avec [isFinal], le texte est calculé sur tout l'enregistrement puis remis d'équerre.
+  Future<LiveVoiceResult> sendLiveChunk({
+    required String session,
+    required int seq,
+    required Uint8List pcm,
+    String language = 'fr',
+    bool isFinal = false,
+  }) async {
+    try {
+      final response = await _apiClient.post(
+        AppConstants.aiVoiceLiveEndpoint,
+        data: {'session': session, 'seq': seq, 'pcm_base64': base64Encode(pcm), 'final': isFinal, 'language': language},
+        queueWhenOffline: false,
+      );
+      final data = response.data;
+      if (data is Map) {
+        return LiveVoiceResult(text: '${data['text'] ?? ''}', rawText: '${data['raw_text'] ?? data['text'] ?? ''}');
       }
     } on DioException catch (e) {
       final data = e.response?.data;
@@ -224,8 +260,13 @@ class ChatNotifier extends StateNotifier<ChatState> {
   /// doivent alors être resynchronisées avec le serveur.
   final void Function()? _onReminderChanged;
 
-  ChatNotifier(this._repository, {void Function()? onReminderChanged})
+  /// Appelé quand l'assistant vient d'enregistrer une opération (vente, activité, récolte, culture…) : les écrans de
+  /// l'application doivent recharger leurs données.
+  final void Function()? _onDataChanged;
+
+  ChatNotifier(this._repository, {void Function()? onReminderChanged, void Function()? onDataChanged})
       : _onReminderChanged = onReminderChanged,
+        _onDataChanged = onDataChanged,
         super(const ChatState(isLoadingHistory: true)) {
     initChatSession();
   }
@@ -452,6 +493,7 @@ class ChatNotifier extends StateNotifier<ChatState> {
         isLoading: false,
       );
       _notifyIfReminderChanged(answer);
+      if (finalStatus == 'executed') _onDataChanged?.call();
       loadConversations();
     } on DioException catch (e) {
       if (!mounted) return;
@@ -496,7 +538,11 @@ final chatProvider = StateNotifierProvider<ChatNotifier, ChatState>((ref) {
   final repository = ref.watch(aiRepositoryProvider);
   // Une conversation par compte : elle est recréée à chaque connexion ou déconnexion
   ref.watch(authStateProvider);
-  return ChatNotifier(repository, onReminderChanged: () => ref.read(reminderSyncProvider).syncQuietly());
+  return ChatNotifier(
+    repository,
+    onReminderChanged: () => ref.read(reminderSyncProvider).syncQuietly(),
+    onDataChanged: () => invalidateExploitationData(ref.invalidate),
+  );
 });
 
 // NAATAL_IA_IMPROVEMENT : Provider pour la langue

@@ -5,6 +5,7 @@ import '../constants/app_constants.dart';
 import '../network/paginated_response.dart';
 import '../../features/auth/data/auth_provider.dart';
 
+import '../../ui/ui.dart';
 /// Modèle local pour les notifications
 class AppNotification {
   final String id;
@@ -37,7 +38,7 @@ void showNotificationsSheet(BuildContext context, WidgetRef ref) {
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
-    backgroundColor: Colors.white,
+    backgroundColor: context.c.surface,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
     ),
@@ -207,9 +208,9 @@ class _NotificationsContentState extends State<_NotificationsContent> {
       case 'market':
         return Colors.orange;
       case 'crop':
-        return AppColors.primary;
+        return context.c.accent;
       default:
-        return AppColors.primary;
+        return context.c.accent;
     }
   }
 
@@ -228,7 +229,7 @@ class _NotificationsContentState extends State<_NotificationsContent> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.grey.shade300,
+                color: context.c.line,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -245,12 +246,12 @@ class _NotificationsContentState extends State<_NotificationsContent> {
                       color: AppColors.primary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Icon(Icons.notifications_active_rounded, color: AppColors.primary, size: 20),
+                    child: Icon(Icons.notifications_active_rounded, color: context.c.accent, size: 20),
                   ),
                   const SizedBox(width: 10),
-                  const Text(
+                  Text(
                     'Notifications & Alertes',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: context.c.ink),
                   ),
                 ],
               ),
@@ -272,7 +273,7 @@ class _NotificationsContentState extends State<_NotificationsContent> {
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Text(_error!, style: TextStyle(color: Colors.grey.shade600), textAlign: TextAlign.center),
+                            Text(_error!, style: TextStyle(color: context.c.ink2), textAlign: TextAlign.center),
                             const SizedBox(height: 8),
                             ElevatedButton(
                               onPressed: () => _fetchNotifications(),
@@ -292,7 +293,7 @@ class _NotificationsContentState extends State<_NotificationsContent> {
                                   const SizedBox(height: 12),
                                   Text(
                                     'Aucune notification pour le moment',
-                                    style: TextStyle(color: Colors.grey.shade600, fontSize: 15),
+                                    style: TextStyle(color: context.c.ink2, fontSize: 15),
                                   ),
                                 ],
                               ),
@@ -300,18 +301,18 @@ class _NotificationsContentState extends State<_NotificationsContent> {
                           )
                         : RefreshIndicator(
                             onRefresh: () => _fetchNotifications(),
-                            color: AppColors.primary,
+                            color: context.c.accent,
                             child: ListView.separated(
                               physics: const AlwaysScrollableScrollPhysics(),
                               itemCount: _notifications.length + (_hasMore || _isLoadingMore ? 1 : 0),
-                              separatorBuilder: (_, __) => Divider(height: 1, color: Colors.grey.shade100),
+                              separatorBuilder: (_, __) => Divider(height: 1, color: context.c.surfaceAlt),
                               itemBuilder: (ctx, index) {
                                 if (index == _notifications.length) {
                                   if (_isLoadingMore) {
-                                    return const Padding(
+                                    return Padding(
                                       padding: EdgeInsets.symmetric(vertical: 16),
                                       child: Center(
-                                        child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+                                        child: CircularProgressIndicator(strokeWidth: 2, color: context.c.accent),
                                       ),
                                     );
                                   }
@@ -320,10 +321,10 @@ class _NotificationsContentState extends State<_NotificationsContent> {
                                     child: Center(
                                       child: TextButton.icon(
                                         onPressed: () => _fetchNotifications(loadMore: true),
-                                        icon: const Icon(Icons.arrow_downward, size: 16, color: AppColors.primary),
-                                        label: const Text(
+                                        icon: Icon(Icons.arrow_downward, size: 16, color: context.c.accent),
+                                        label: Text(
                                           'Charger plus',
-                                          style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
+                                          style: TextStyle(color: context.c.accent, fontWeight: FontWeight.bold),
                                         ),
                                       ),
                                     ),
@@ -346,7 +347,7 @@ class _NotificationsContentState extends State<_NotificationsContent> {
                                     style: TextStyle(
                                       fontSize: 14,
                                       fontWeight: notif.isRead ? FontWeight.normal : FontWeight.w600,
-                                      color: notif.isRead ? AppColors.textSecondary : AppColors.textPrimary,
+                                      color: notif.isRead ? context.c.ink2 : context.c.ink,
                                       height: 1.3,
                                     ),
                                   ),

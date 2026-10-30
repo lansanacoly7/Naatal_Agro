@@ -35,6 +35,7 @@ import 'package:nataal_agro/features/dashboard/presentation/screens/dashboard_sc
 import 'package:nataal_agro/features/dashboard/presentation/screens/mon_dashboard_screen.dart';
 import 'package:nataal_agro/screens/sell/sell_screen.dart';
 import 'package:nataal_agro/screens/stock/stock_screen.dart';
+import 'package:nataal_agro/features/weather/data/weather_provider.dart';
 import 'package:nataal_agro/ui/ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -111,6 +112,8 @@ List<Override> _overrides({bool empty = false}) {
   FakeInventory.seed = empty ? [] : _stock;
   FakeProfile.seed = _profile;
   return [
+    weatherQueryProvider.overrideWithValue(null),
+    weatherLocateAskedProvider.overrideWith((ref) => true),
     dashboardDataProvider.overrideWith((ref) async => empty
         ? DashboardData(
             agriculture: AgricultureSummary(activeCropsCount: 0, totalAreaSize: 0),
@@ -172,7 +175,7 @@ void main() {
 
     testWidgets('Accueil sans donnée ($tag)', (tester) async {
       await VisualHarness.shoot(tester, 'home_empty_$tag', const DashboardScreen(), dark: dark, overrides: _overrides(empty: true), size: const Size(390, 1900));
-      expect(find.text('Météo non disponible'), findsOneWidget);
+      expect(find.text('Où êtes-vous ?'), findsOneWidget);
       expect(find.textContaining('Aucun prix pour vos cultures'), findsOneWidget);
     });
 

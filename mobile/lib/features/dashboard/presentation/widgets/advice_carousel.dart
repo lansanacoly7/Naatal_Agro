@@ -10,6 +10,7 @@ import '../../../finances/data/models/financial_summary.dart';
 import '../../../inventory/data/models/stock_item.dart';
 import '../../data/models/dashboard_data.dart';
 
+import '../../../../ui/ui.dart';
 const _imgField = 'assets/images/onboarding_agriculture_1784459495811.png';
 const _imgMarket = 'assets/images/onboarding_market_1784459514097.png';
 const _imgTech = 'assets/images/onboarding_tech_1784459505530.png';
@@ -321,7 +322,7 @@ class _AdviceCarouselState extends State<AdviceCarousel> {
                   height: 6,
                   width: i == _index ? 20 : 6,
                   decoration: BoxDecoration(
-                    color: i == _index ? AppColors.primary : AppColors.primary.withValues(alpha: 0.2),
+                    color: i == _index ? context.c.accent : AppColors.primary.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(3),
                   ),
                 ),

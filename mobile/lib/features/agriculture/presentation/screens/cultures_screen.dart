@@ -1,3 +1,4 @@
+import '../../../../screens/markets/markets_data.dart' show productImageForName;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -39,8 +40,7 @@ AgronomicGuide? guideForProduct(String productName, List<AgronomicGuide> guides)
 /// (nom en minuscules, sans accent, espaces remplacés par « _ »). Un fichier absent affiche l'icône feuille.
 String productImagePath(Product p) {
   if (p.imageAsset.isNotEmpty) return p.imageAsset;
-  final slug = _plain(p.name).trim().replaceAll(RegExp(r'[^a-z0-9]+'), '_').replaceAll(RegExp(r'^_+|_+$'), '');
-  return slug.isEmpty ? '' : 'assets/images/products/$slug.png';
+  return p.name.trim().isEmpty ? '' : productImageForName(p.name);
 }
 
 /// Page Cultures : « Mon exploitation » (mes cultures) et « Découvrir » (catalogue).
@@ -57,7 +57,7 @@ class _CulturesScreenState extends ConsumerState<CulturesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.c.bg,
       body: SafeArea(
         bottom: false,
         child: Column(
@@ -66,12 +66,12 @@ class _CulturesScreenState extends ConsumerState<CulturesScreen> {
               padding: const EdgeInsets.fromLTRB(20, 12, 12, 0),
               child: Row(
                 children: [
-                  const Expanded(
-                    child: Text('Cultures', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
+                  Expanded(
+                    child: Text('Cultures', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: context.c.ink)),
                   ),
                   IconButton(
                     tooltip: 'Fiches techniques',
-                    icon: const Icon(Icons.menu_book_rounded, color: AppColors.primary),
+                    icon: Icon(Icons.menu_book_rounded, color: context.c.accent),
                     onPressed: () => context.push('/agriculture/guides'),
                   ),
                   IconButton(
@@ -87,7 +87,7 @@ class _CulturesScreenState extends ConsumerState<CulturesScreen> {
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
               child: Container(
                 padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(color: AppColors.surfaceVariant.withValues(alpha: 0.7), borderRadius: BorderRadius.circular(16)),
+                decoration: BoxDecoration(color: context.c.surfaceAlt.withValues(alpha: 0.7), borderRadius: BorderRadius.circular(16)),
                 child: Row(
                   children: [
                     _segment('Mon exploitation', 0),
@@ -120,11 +120,11 @@ class _CulturesScreenState extends ConsumerState<CulturesScreen> {
           padding: const EdgeInsets.symmetric(vertical: 11),
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: selected ? Colors.white : Colors.transparent,
+            color: selected ? context.c.surface : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
             boxShadow: selected ? [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 8, offset: const Offset(0, 2))] : null,
           ),
-          child: Text(label, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: selected ? AppColors.primary : AppColors.textSecondary)),
+          child: Text(label, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: selected ? context.c.accent : context.c.ink2)),
         ),
       ),
     );
@@ -149,17 +149,17 @@ class _MyFarmState extends ConsumerState<_MyFarm> {
   Widget build(BuildContext context) {
     final async = ref.watch(cropsProvider);
     return RefreshIndicator(
-      color: AppColors.primary,
+      color: context.c.accent,
       onRefresh: () async => ref.invalidate(cropsProvider),
       child: async.when(
-        loading: () => ListView(children: const [SizedBox(height: 120), Center(child: CircularProgressIndicator(color: AppColors.primary))]),
+        loading: () => ListView(children: [SizedBox(height: 120), Center(child: CircularProgressIndicator(color: context.c.accent))]),
         error: (e, _) => ListView(
           padding: const EdgeInsets.all(24),
           children: [
             const SizedBox(height: 60),
-            const Icon(Icons.cloud_off_rounded, size: 40, color: AppColors.textSecondary),
+            Icon(Icons.cloud_off_rounded, size: 40, color: context.c.ink2),
             const SizedBox(height: 12),
-            const Text('Vos cultures n\'ont pas pu être chargées.', textAlign: TextAlign.center, style: TextStyle(color: AppColors.textSecondary)),
+            Text('Vos cultures n\'ont pas pu être chargées.', textAlign: TextAlign.center, style: TextStyle(color: context.c.ink2)),
             const SizedBox(height: 12),
             Center(child: ElevatedButton(onPressed: () => ref.invalidate(cropsProvider), style: ElevatedButton.styleFrom(minimumSize: const Size(160, 48)), child: const Text('Réessayer'))),
           ],
@@ -176,7 +176,7 @@ class _MyFarmState extends ConsumerState<_MyFarm> {
         Container(
           width: double.infinity,
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: context.c.surface,
             borderRadius: BorderRadius.circular(24),
             border: Border.all(color: Colors.grey.withValues(alpha: 0.1)),
             boxShadow: [
@@ -241,7 +241,7 @@ class _MyFarmState extends ConsumerState<_MyFarm> {
         ),
         const SizedBox(height: 14),
         if (shown.isEmpty)
-          const Padding(padding: EdgeInsets.all(24), child: Text('Aucune culture dans cette catégorie.', textAlign: TextAlign.center, style: TextStyle(color: AppColors.textSecondary)))
+          Padding(padding: EdgeInsets.all(24), child: Text('Aucune culture dans cette catégorie.', textAlign: TextAlign.center, style: TextStyle(color: context.c.ink2)))
         else
           for (final c in shown) ...[
             _CropCard(crop: c),
@@ -253,8 +253,8 @@ class _MyFarmState extends ConsumerState<_MyFarm> {
           icon: const Icon(Icons.add_rounded),
           label: const Text('Ajouter une culture'),
           style: OutlinedButton.styleFrom(
-            foregroundColor: AppColors.primary,
-            side: const BorderSide(color: AppColors.primary, width: 1.5),
+            foregroundColor: context.c.accent,
+            side: BorderSide(color: context.c.accent, width: 1.5),
             minimumSize: const Size.fromHeight(56),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           ),
@@ -286,9 +286,9 @@ class _MyFarmState extends ConsumerState<_MyFarm> {
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: selected ? AppColors.primary : Colors.white,
+            color: selected ? context.c.accent : context.c.surface,
             borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: selected ? AppColors.primary : Colors.grey.withValues(alpha: 0.2)),
+            border: Border.all(color: selected ? context.c.accent : Colors.grey.withValues(alpha: 0.2)),
             boxShadow: selected
                 ? [BoxShadow(color: AppColors.primary.withValues(alpha: 0.25), blurRadius: 8, offset: const Offset(0, 3))]
                 : null,
@@ -296,14 +296,14 @@ class _MyFarmState extends ConsumerState<_MyFarm> {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 16, color: selected ? Colors.white : AppColors.textPrimary),
+              Icon(icon, size: 16, color: selected ? context.c.onAccent : context.c.ink),
               const SizedBox(width: 6),
               Text(
                 '$label ($count)',
                 style: TextStyle(
                   fontWeight: FontWeight.w800,
                   fontSize: 12.5,
-                  color: selected ? Colors.white : AppColors.textPrimary,
+                  color: selected ? context.c.onAccent : context.c.ink,
                 ),
               ),
             ],
@@ -326,7 +326,7 @@ class _CropCard extends StatelessWidget {
     final progress = harvested ? 1.0 : (crop.progressOrNull ?? 0.0);
 
     return Material(
-      color: Colors.white,
+      color: context.c.surface,
       borderRadius: BorderRadius.circular(22),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -354,16 +354,7 @@ class _CropCard extends StatelessWidget {
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
-                    Image.asset(
-                      crop.imageAsset,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Container(
-                        color: AppColors.primary.withValues(alpha: 0.1),
-                        child: const Center(
-                          child: Icon(Icons.eco_rounded, color: AppColors.primary, size: 48),
-                        ),
-                      ),
-                    ),
+                    ProductPhoto(names: crop.imageNames),
                     DecoratedBox(
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
@@ -447,7 +438,7 @@ class _CropCard extends StatelessWidget {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
                               decoration: BoxDecoration(
-                                color: Colors.white,
+                                color: context.c.surface,
                                 borderRadius: BorderRadius.circular(12),
                                 boxShadow: [
                                   BoxShadow(
@@ -459,7 +450,7 @@ class _CropCard extends StatelessWidget {
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  const Icon(Icons.timer_outlined, size: 15, color: AppColors.primary),
+                                  Icon(Icons.timer_outlined, size: 15, color: context.c.accent),
                                   const SizedBox(width: 5),
                                   Text(
                                     days == null
@@ -469,8 +460,8 @@ class _CropCard extends StatelessWidget {
                                             : days == 0
                                                 ? 'Aujourd\'hui'
                                                 : '$days j',
-                                    style: const TextStyle(
-                                      color: AppColors.primary,
+                                    style: TextStyle(
+                                      color: context.c.accent,
                                       fontWeight: FontWeight.w900,
                                       fontSize: 15,
                                     ),
@@ -506,15 +497,15 @@ class _CropCard extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 12.5,
                             fontWeight: FontWeight.w700,
-                            color: harvested ? AppColors.textSecondary : AppColors.primary,
+                            color: harvested ? context.c.ink2 : context.c.accent,
                           ),
                         ),
                         Text(
                           '${(progress * 100).round()} %',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12.5,
                             fontWeight: FontWeight.w800,
-                            color: AppColors.textPrimary,
+                            color: context.c.ink,
                           ),
                         ),
                       ],
@@ -525,9 +516,9 @@ class _CropCard extends StatelessWidget {
                       child: LinearProgressIndicator(
                         value: progress.clamp(0.0, 1.0),
                         minHeight: 8,
-                        backgroundColor: Colors.grey.shade200,
+                        backgroundColor: context.c.line,
                         valueColor: AlwaysStoppedAnimation<Color>(
-                          harvested ? const Color(0xFF6FD3A0) : AppColors.primary,
+                          harvested ? const Color(0xFF6FD3A0) : context.c.accent,
                         ),
                       ),
                     ),
@@ -597,11 +588,11 @@ class _DiscoverState extends ConsumerState<_Discover> {
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: selected ? AppColors.primary : Colors.white,
+                    color: selected ? context.c.accent : context.c.surface,
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: selected ? AppColors.primary : Colors.grey.withValues(alpha: 0.2)),
+                    border: Border.all(color: selected ? context.c.accent : Colors.grey.withValues(alpha: 0.2)),
                   ),
-                  child: Text(_categories[i], style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: selected ? Colors.white : AppColors.textPrimary)),
+                  child: Text(_categories[i], style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: selected ? context.c.onAccent : context.c.ink)),
                 ),
               );
             },
@@ -609,12 +600,12 @@ class _DiscoverState extends ConsumerState<_Discover> {
         ),
         Expanded(
           child: async.when(
-            loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+            loading: () => Center(child: CircularProgressIndicator(color: context.c.accent)),
             error: (e, _) => Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text('Le catalogue n\'a pas pu être chargé.', style: TextStyle(color: AppColors.textSecondary)),
+                  Text('Le catalogue n\'a pas pu être chargé.', style: TextStyle(color: context.c.ink2)),
                   TextButton(onPressed: () => ref.invalidate(allProductsProvider), child: const Text('Réessayer')),
                 ],
               ),
@@ -629,7 +620,7 @@ class _DiscoverState extends ConsumerState<_Discover> {
                 return byScore != 0 ? byScore : a.name.compareTo(b.name);
               });
               if (shown.isEmpty) {
-                return const Center(child: Text('Aucune culture ne correspond.', style: TextStyle(color: AppColors.textSecondary)));
+                return Center(child: Text('Aucune culture ne correspond.', style: TextStyle(color: context.c.ink2)));
               }
               return GridView.builder(
                 padding: const EdgeInsets.fromLTRB(20, 4, 20, 40),
@@ -655,7 +646,7 @@ class _ProductCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final trend = product.trendPercentage;
     return Material(
-      color: Colors.white,
+      color: context.c.surface,
       borderRadius: BorderRadius.circular(20),
       child: InkWell(
         borderRadius: BorderRadius.circular(20),
@@ -673,8 +664,8 @@ class _ProductCard extends StatelessWidget {
                     ClipRRect(
                       borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
                       child: productImagePath(product).isEmpty
-                          ? _placeholder()
-                          : Image.asset(productImagePath(product), fit: BoxFit.cover, errorBuilder: (_, __, ___) => _placeholder()),
+                          ? _placeholder(context)
+                          : Image.asset(productImagePath(product), fit: BoxFit.cover, errorBuilder: (_, __, ___) => _placeholder(context)),
                     ),
                     if (trend != 0)
                       Positioned(
@@ -683,7 +674,7 @@ class _ProductCard extends StatelessWidget {
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                           decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.95), borderRadius: BorderRadius.circular(10)),
-                          child: Text('${trend > 0 ? '+' : '−'}${trend.abs().toStringAsFixed(1)} %', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: trend > 0 ? AppColors.primary : AppColors.error)),
+                          child: Text('${trend > 0 ? '+' : '−'}${trend.abs().toStringAsFixed(1)} %', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: trend > 0 ? context.c.accent : AppColors.error)),
                         ),
                       ),
                   ],
@@ -701,20 +692,20 @@ class _ProductCard extends StatelessWidget {
                         product.name.split(RegExp(r'\s+')).first,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: AppColors.textPrimary),
+                        style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: context.c.ink),
                       ),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('${product.currentPrice.round()} F/kg', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: AppColors.primary)),
-                          const Text('prix indicatif', style: TextStyle(fontSize: 10.5, color: AppColors.textSecondary)),
+                          Text('${product.currentPrice.round()} F/kg', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: context.c.accent)),
+                          Text('prix indicatif', style: TextStyle(fontSize: 10.5, color: context.c.ink2)),
                         ],
                       ),
                       Text(
                         guide?.cycleDisplay != null ? 'Cycle ${guide!.cycleDisplay}' : 'Cycle non documenté',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                        style: TextStyle(fontSize: 11, color: context.c.ink2),
                       ),
                     ],
                   ),
@@ -727,8 +718,8 @@ class _ProductCard extends StatelessWidget {
     );
   }
 
-  Widget _placeholder() => Container(
+  Widget _placeholder(BuildContext context) => Container(
         color: AppColors.primary.withValues(alpha: 0.08),
-        child: const Center(child: Icon(Icons.eco_rounded, color: AppColors.primary, size: 36)),
+        child: Center(child: Icon(Icons.eco_rounded, color: context.c.accent, size: 36)),
       );
 }

@@ -7,6 +7,7 @@ import '../../../markets/data/markets_provider.dart';
 import '../../../markets/data/models/price.dart';
 import 'dart:math' as math;
 
+import '../../../../ui/ui.dart';
 class PriceAnalysisScreen extends ConsumerStatefulWidget {
   final String productName;
   final double currentPrice;
@@ -152,7 +153,7 @@ class _PriceAnalysisScreenState extends ConsumerState<PriceAnalysisScreen> {
     final estimatedRevenue = _calculateRevenue(predicted);
 
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
+      backgroundColor: context.c.surfaceAlt,
       body: Column(
         children: [
           Expanded(
@@ -171,7 +172,7 @@ class _PriceAnalysisScreenState extends ConsumerState<PriceAnalysisScreen> {
                         errorBuilder: (context, error, stackTrace) => Container(
                           height: 220,
                           width: double.infinity,
-                          color: Colors.grey.shade300,
+                          color: context.c.line,
                           child: const Icon(Icons.image, size: 50, color: Colors.grey),
                         ),
                       ),
@@ -306,7 +307,7 @@ class _PriceAnalysisScreenState extends ConsumerState<PriceAnalysisScreen> {
                                 const SizedBox(height: 4),
                                 Text(
                                   '${predicted.toInt()} FCFA',
-                                  style: const TextStyle(color: AppColors.textPrimary, fontSize: 28, fontWeight: FontWeight.bold),
+                                  style: TextStyle(color: context.c.ink, fontSize: 28, fontWeight: FontWeight.bold),
                                 ),
                               ],
                             ),
@@ -360,9 +361,9 @@ class _PriceAnalysisScreenState extends ConsumerState<PriceAnalysisScreen> {
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: context.c.surface,
                       borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: Colors.grey.shade200),
+                      border: Border.all(color: context.c.line),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withValues(alpha: 0.03),
@@ -397,14 +398,14 @@ class _PriceAnalysisScreenState extends ConsumerState<PriceAnalysisScreen> {
                                   labelText: 'Quantité en stock',
                                   suffixText: 'kg',
                                   filled: true,
-                                  fillColor: Colors.grey.shade50,
+                                  fillColor: context.c.surfaceAlt,
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(16),
-                                    borderSide: BorderSide(color: Colors.grey.shade200),
+                                    borderSide: BorderSide(color: context.c.line),
                                   ),
                                   enabledBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(16),
-                                    borderSide: BorderSide(color: Colors.grey.shade200),
+                                    borderSide: BorderSide(color: context.c.line),
                                   ),
                                   focusedBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(16),
@@ -467,14 +468,14 @@ class _PriceAnalysisScreenState extends ConsumerState<PriceAnalysisScreen> {
                           padding: const EdgeInsets.all(12),
                           constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
                           decoration: BoxDecoration(
-                            color: isUser ? AppColors.primary : Colors.white,
+                            color: isUser ? context.c.accent : context.c.surface,
                             borderRadius: BorderRadius.circular(16),
-                            border: isUser ? null : Border.all(color: Colors.grey.shade200),
+                            border: isUser ? null : Border.all(color: context.c.line),
                           ),
                           child: Text(
                             msg['text']!,
                             style: TextStyle(
-                              color: isUser ? Colors.white : AppColors.textPrimary,
+                              color: isUser ? context.c.onAccent : context.c.ink,
                               fontSize: 14,
                             ),
                           ),
@@ -487,10 +488,10 @@ class _PriceAnalysisScreenState extends ConsumerState<PriceAnalysisScreen> {
                       padding: const EdgeInsets.only(top: 12.0),
                       child: Row(
                         children: [
-                          const SizedBox(
+                          SizedBox(
                             width: 16,
                             height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+                            child: CircularProgressIndicator(strokeWidth: 2, color: context.c.accent),
                           ),
                           const SizedBox(width: 12),
                           Text('Naatal IA réfléchit...', style: TextStyle(color: Colors.grey.shade500, fontStyle: FontStyle.italic, fontSize: 13)),
@@ -514,7 +515,7 @@ class _PriceAnalysisScreenState extends ConsumerState<PriceAnalysisScreen> {
               bottom: MediaQuery.of(context).padding.bottom + 12,
             ),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: context.c.surface,
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.05),
@@ -532,7 +533,7 @@ class _PriceAnalysisScreenState extends ConsumerState<PriceAnalysisScreen> {
                       hintText: 'Posez une question...',
                       hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
                       filled: true,
-                      fillColor: Colors.grey.shade100,
+                      fillColor: context.c.surfaceAlt,
                       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(24),
@@ -575,10 +576,10 @@ class _PriceAnalysisScreenState extends ConsumerState<PriceAnalysisScreen> {
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
-            color: isSelected ? AppColors.primary : Colors.white,
+            color: isSelected ? context.c.accent : context.c.surface,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: isSelected ? AppColors.primary : Colors.grey.shade300,
+              color: isSelected ? context.c.accent : context.c.line,
             ),
             boxShadow: isSelected
                 ? [
@@ -594,7 +595,7 @@ class _PriceAnalysisScreenState extends ConsumerState<PriceAnalysisScreen> {
             child: Text(
               label,
               style: TextStyle(
-                color: isSelected ? Colors.white : AppColors.textSecondary,
+                color: isSelected ? Colors.white : context.c.ink2,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
               ),
             ),

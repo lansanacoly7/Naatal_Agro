@@ -174,10 +174,10 @@ class _CropCalendarCard extends StatelessWidget {
                   width: 52,
                   height: 52,
                   color: c.surfaceAlt,
-                  padding: const EdgeInsets.all(4),
+                  padding: EdgeInsets.zero,
                   child: Image.asset(
                     img,
-                    fit: BoxFit.contain,
+                    fit: BoxFit.cover,
                     errorBuilder: (_, __, ___) => Icon(Icons.eco_rounded, size: 28, color: c.accent),
                   ),
                 ),

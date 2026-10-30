@@ -12,6 +12,7 @@ import '../../features/auth/data/auth_provider.dart';
 import '../../features/profile/data/notifications_provider.dart';
 import '../../features/profile/data/profile_provider.dart';
 import '../../features/profile/domain/profile_model.dart';
+import '../../ui/appearance.dart';
 import '../../ui/ui.dart';
 
 /// Profil : identité, exploitation, préférences, sécurité et données personnelles.
@@ -102,6 +103,14 @@ class ProfileScreen extends ConsumerWidget {
                           ref.read(effectsReducedProvider.notifier).set(v);
                         },
                       ),
+                    ),
+                    GroupedRow(
+                      leading: IconTile(icon: Icons.contrast_rounded, color: c.slate),
+                      title: 'Apparence',
+                      subtitle: 'Clair, sombre, ou comme votre téléphone',
+                      value: appearanceLabel(ref.watch(themeModeProvider)),
+                      chevron: true,
+                      onTap: () => showNaatalSheet<void>(context, builder: (ctx) => const _AppearanceSheet()),
                     ),
                     GroupedRow(
                       leading: IconTile(icon: Icons.language_rounded, color: c.slate),
@@ -275,6 +284,61 @@ class _ExportDataRowState extends ConsumerState<_ExportDataRow> {
     } finally {
       if (mounted) setState(() => _busy = false);
     }
+  }
+}
+
+/// Choix de l'apparence : trois grands choix, avec une icône chacun.
+class _AppearanceSheet extends ConsumerWidget {
+  const _AppearanceSheet();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.c;
+    final current = ref.watch(themeModeProvider);
+    const options = [
+      (ThemeMode.light, Icons.light_mode_rounded, 'Clair'),
+      (ThemeMode.dark, Icons.dark_mode_rounded, 'Sombre'),
+      (ThemeMode.system, Icons.brightness_auto_rounded, 'Automatique'),
+    ];
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(Space.xxl, Space.xl, Space.xxl, Space.xl),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text('Apparence', style: T.title(color: c.ink)),
+          const SizedBox(height: Space.s),
+          Text('Le mode sombre repose les yeux le soir. Certains écrans anciens restent clairs pour l\'instant.', style: T.body(color: c.ink2)),
+          const SizedBox(height: Space.l),
+          for (final (mode, icon, label) in options) ...[
+            PressScale(
+              onTap: () {
+                HapticFeedback.selectionClick();
+                ref.read(themeModeProvider.notifier).set(mode);
+              },
+              child: Container(
+                constraints: const BoxConstraints(minHeight: 64),
+                padding: const EdgeInsets.symmetric(horizontal: Space.l),
+                decoration: BoxDecoration(
+                  color: mode == current ? c.accent.withValues(alpha: 0.12) : c.surface,
+                  borderRadius: BorderRadius.circular(Radii.l),
+                  border: Border.all(color: mode == current ? c.accent : c.line, width: 2),
+                ),
+                child: Row(
+                  children: [
+                    Icon(icon, size: 28, color: mode == current ? c.accent : c.ink2),
+                    const SizedBox(width: Space.m),
+                    Expanded(child: Text(label, style: T.body(color: c.ink, weight: 700))),
+                    if (mode == current) Icon(Icons.check_circle_rounded, color: c.accent),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: Space.s),
+          ],
+        ],
+      ),
+    );
   }
 }
 

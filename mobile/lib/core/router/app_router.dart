@@ -8,7 +8,6 @@ import '../../features/auth/data/auth_provider.dart';
 import '../../features/agriculture/data/models/crop.dart';
 import '../../features/map/presentation/screens/map_screen.dart';
 import '../../features/markets/data/models/market.dart';
-import '../../features/markets/presentation/screens/market_detail_screen.dart';
 import '../../features/markets/presentation/screens/product_detail_screen.dart';
 import '../../features/markets/presentation/screens/market_comparison_screen.dart';
 import '../../features/profile/presentation/screens/price_alerts_screen.dart';
@@ -22,6 +21,7 @@ import '../../screens/assistant/assistant_screen.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/onboarding_screen.dart';
 import '../../features/auth/presentation/screens/register_screen.dart';
+import '../../features/calendar/presentation/agricultural_calendar_screen.dart';
 import '../../screens/onboarding/crop_setup_screen.dart';
 import '../../features/auth/presentation/screens/welcome_loading_screen.dart';
 import '../../features/weather/presentation/screens/weather_screen.dart';
@@ -32,6 +32,7 @@ import '../../features/agriculture/presentation/screens/culture_fiche_screen.dar
 import '../../features/agriculture/presentation/screens/cultures_screen.dart';
 import '../../features/markets/data/models/product.dart';
 import '../../screens/finances/finances_screen.dart';
+import '../../screens/markets/market_page.dart';
 import '../../screens/guides/guides_screens.dart';
 import '../../screens/notifications/notifications_screen.dart';
 import '../../screens/profile/profile_screen.dart';
@@ -43,6 +44,7 @@ import '../../screens/markets/markets_screen.dart';
 import '../../screens/sell/sell_screen.dart';
 import '../../screens/shell/main_shell.dart';
 import '../../screens/stock/stock_screen.dart';
+import '../../ui/appearance.dart' show LightOnly;
 import '../../ui/ui.dart' show AuthStyle;
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
@@ -157,21 +159,31 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state, child) => MainShell(child: child),
         routes: [
           GoRoute(path: '/', builder: (context, state) => const DashboardScreen()),
-          GoRoute(path: '/profile', builder: (context, state) => const ProfileScreen()),
           GoRoute(path: '/agriculture', builder: (context, state) => const CulturesScreen()),
+          // Mon dashboard est au centre de la barre : il réunit trésorerie, stock et prix ; les finances s'y ouvrent en détail
+          GoRoute(path: '/mon_dashboard', builder: (context, state) => const MonDashboardScreen()),
+          GoRoute(
+            path: '/finances',
+            builder: (context, state) {
+              final extra = state.extra;
+              return FinancesScreen(openAdd: extra is Map ? extra['add'] as String? : null);
+            },
+          ),
           GoRoute(path: '/markets', builder: (context, state) => const MarketsScreen()),
           GoRoute(path: '/ai', builder: (context, state) => const AssistantScreen()),
         ],
       ),
+      // Le profil s'ouvre depuis le haut de l'accueil, avec un retour : il n'est plus dans la barre
+      GoRoute(parentNavigatorKey: _rootNavigatorKey, path: '/profile', builder: (context, state) => const ProfileScreen()),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
         path: '/onboarding',
-        builder: (context, state) => const AuthStyle(child: OnboardingScreen()),
+        builder: (context, state) => const LightOnly(child: AuthStyle(child: OnboardingScreen())),
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
         path: '/login',
-        builder: (context, state) => const AuthStyle(child: LoginScreen()),
+        builder: (context, state) => const LightOnly(child: AuthStyle(child: LoginScreen())),
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
@@ -181,7 +193,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
         path: '/welcome',
-        builder: (context, state) => const AuthStyle(child: WelcomeLoadingScreen()),
+        builder: (context, state) => const LightOnly(child: AuthStyle(child: WelcomeLoadingScreen())),
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
@@ -248,14 +260,6 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
-        path: '/finances',
-        builder: (context, state) {
-          final extra = state.extra;
-          return FinancesScreen(openAdd: extra is Map ? extra['add'] as String? : null);
-        },
-      ),
-      GoRoute(
-        parentNavigatorKey: _rootNavigatorKey,
         path: '/performances',
         builder: (context, state) => const FinancesScreen(),
       ),
@@ -295,8 +299,8 @@ final routerProvider = Provider<GoRouter>((ref) {
           );
         },
       ),
-      GoRoute(parentNavigatorKey: _rootNavigatorKey, path: '/calendar', builder: (context, state) => const CalendarScreen()),
-      GoRoute(parentNavigatorKey: _rootNavigatorKey, path: '/mon_dashboard', builder: (context, state) => const MonDashboardScreen()),
+      GoRoute(parentNavigatorKey: _rootNavigatorKey, path: '/calendar', builder: (context, state) => const AgriculturalCalendarScreen()),
+      GoRoute(parentNavigatorKey: _rootNavigatorKey, path: '/calendar/mine', builder: (context, state) => const CalendarScreen()),
       GoRoute(parentNavigatorKey: _rootNavigatorKey, path: '/weather', builder: (context, state) => const WeatherScreen()),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
@@ -306,13 +310,19 @@ final routerProvider = Provider<GoRouter>((ref) {
           return MapScreen(initialMarket: extra is Market ? extra : null);
         },
       ),
+      // Page d'un marché : un seul chemin, que l'on arrive depuis la liste, la carte ou la fiche d'un produit
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: '/market/:id',
+        builder: (context, state) => MarketPage(marketId: state.pathParameters['id'] ?? ''),
+      ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
         path: '/market-detail',
         builder: (context, state) {
           final extra = state.extra;
           return extra is Market
-              ? MarketDetailScreen(market: extra)
+              ? MarketPage(marketId: extra.id)
               : const Scaffold(body: Center(child: Text('Marché introuvable.')));
         },
       ),

@@ -5,6 +5,7 @@ import '../../data/finances_provider.dart';
 import '../../data/models/financial_summary.dart';
 import '../../../../shared/utils/data_refresh.dart';
 
+import '../../../../ui/ui.dart';
 class FinancialPerformanceScreen extends ConsumerWidget {
   const FinancialPerformanceScreen({super.key});
 
@@ -14,19 +15,19 @@ class FinancialPerformanceScreen extends ConsumerWidget {
     final transactionsState = ref.watch(transactionsNotifierProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.c.bg,
       appBar: AppBar(
-        title: const Text('Performances Financières', style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold)),
+        title: Text('Performances Financières', style: TextStyle(color: context.c.ink, fontWeight: FontWeight.bold)),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: const IconThemeData(color: AppColors.textPrimary),
+        iconTheme: IconThemeData(color: context.c.ink),
       ),
       body: RefreshIndicator(
         onRefresh: () async {
           ref.invalidate(financialSummaryProvider);
           ref.invalidate(transactionsNotifierProvider);
         },
-        color: AppColors.primary,
+        color: context.c.accent,
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.all(20),
@@ -34,10 +35,10 @@ class FinancialPerformanceScreen extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               summaryAsync.when(
-                data: (summary) => _buildSummaryCards(summary),
-                loading: () => const Center(child: Padding(
+                data: (summary) => _buildSummaryCards(context, summary),
+                loading: () => Center(child: Padding(
                   padding: EdgeInsets.all(32.0),
-                  child: CircularProgressIndicator(color: AppColors.primary),
+                  child: CircularProgressIndicator(color: context.c.accent),
                 )),
                 error: (e, _) => Center(
                   child: Padding(
@@ -58,7 +59,7 @@ class FinancialPerformanceScreen extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: 32),
-              const Text('Historique des Transactions', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+              Text('Historique des Transactions', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: context.c.ink)),
               const SizedBox(height: 16),
               transactionsState.when(
                 data: (transactions) {
@@ -67,36 +68,36 @@ class FinancialPerformanceScreen extends ConsumerWidget {
                       width: double.infinity,
                       padding: const EdgeInsets.all(32),
                       decoration: BoxDecoration(
-                        color: Colors.grey.shade50,
+                        color: context.c.surfaceAlt,
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.grey.shade200),
+                        border: Border.all(color: context.c.line),
                       ),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(Icons.receipt_long_outlined, size: 48, color: Colors.grey.shade400),
                           const SizedBox(height: 12),
-                          const Text(
+                          Text(
                             'Aucune transaction enregistrée',
-                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.textPrimary),
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: context.c.ink),
                           ),
                           const SizedBox(height: 6),
                           Text(
                             'Ajoutez vos revenus ou dépenses avec le bouton + ci-dessous.',
                             textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                            style: TextStyle(color: context.c.ink2, fontSize: 13),
                           ),
                         ],
                       ),
                     );
                   }
                   return Column(
-                    children: transactions.map((t) => _buildTransactionCard(t)).toList(),
+                    children: transactions.map((t) => _buildTransactionCard(context, t)).toList(),
                   );
                 },
-                loading: () => const Center(child: Padding(
+                loading: () => Center(child: Padding(
                   padding: EdgeInsets.all(32.0),
-                  child: CircularProgressIndicator(color: AppColors.primary),
+                  child: CircularProgressIndicator(color: context.c.accent),
                 )),
                 error: (e, _) => Center(
                   child: Padding(
@@ -128,7 +129,7 @@ class FinancialPerformanceScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildSummaryCards(FinancialSummary summary) {
+  Widget _buildSummaryCards(BuildContext context, FinancialSummary summary) {
     return Column(
       children: [
         Container(
@@ -153,14 +154,14 @@ class FinancialPerformanceScreen extends ConsumerWidget {
             Expanded(
               child: Container(
                 padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
+                decoration: BoxDecoration(color: context.c.surface, borderRadius: BorderRadius.circular(16)),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Icon(Icons.arrow_downward, color: Colors.green),
                     const SizedBox(height: 8),
-                    const Text('REVENUS', style: TextStyle(color: AppColors.textSecondary, fontSize: 10, fontWeight: FontWeight.bold)),
-                    Text('${summary.totalRevenue.toStringAsFixed(0)} CFA', style: const TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.bold)),
+                    Text('REVENUS', style: TextStyle(color: context.c.ink2, fontSize: 10, fontWeight: FontWeight.bold)),
+                    Text('${summary.totalRevenue.toStringAsFixed(0)} CFA', style: TextStyle(color: context.c.ink, fontSize: 16, fontWeight: FontWeight.bold)),
                   ],
                 ),
               ),
@@ -169,14 +170,14 @@ class FinancialPerformanceScreen extends ConsumerWidget {
             Expanded(
               child: Container(
                 padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
+                decoration: BoxDecoration(color: context.c.surface, borderRadius: BorderRadius.circular(16)),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Icon(Icons.arrow_upward, color: Colors.red),
                     const SizedBox(height: 8),
-                    const Text('DÉPENSES', style: TextStyle(color: AppColors.textSecondary, fontSize: 10, fontWeight: FontWeight.bold)),
-                    Text('${summary.totalExpenses.toStringAsFixed(0)} CFA', style: const TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.bold)),
+                    Text('DÉPENSES', style: TextStyle(color: context.c.ink2, fontSize: 10, fontWeight: FontWeight.bold)),
+                    Text('${summary.totalExpenses.toStringAsFixed(0)} CFA', style: TextStyle(color: context.c.ink, fontSize: 16, fontWeight: FontWeight.bold)),
                   ],
                 ),
               ),
@@ -187,13 +188,13 @@ class FinancialPerformanceScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildTransactionCard(TransactionItem t) {
+  Widget _buildTransactionCard(BuildContext context, TransactionItem t) {
     final isIncome = t.type == 'income';
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.c.surface,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
@@ -212,7 +213,7 @@ class FinancialPerformanceScreen extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(t.description, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                Text(t.date, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                Text(t.date, style: TextStyle(color: context.c.ink2, fontSize: 12)),
               ],
             ),
           ),
@@ -239,11 +240,11 @@ class FinancialPerformanceScreen extends ConsumerWidget {
         return StatefulBuilder(
           builder: (context, setSheetState) {
             final isIncome = type == 'income';
-            final accent = isIncome ? AppColors.primary : AppColors.error;
+            final accent = isIncome ? context.c.accent : AppColors.error;
 
             Widget typeButton(String value, String label, IconData icon) {
               final selected = type == value;
-              final color = value == 'income' ? AppColors.primary : AppColors.error;
+              final color = value == 'income' ? context.c.accent : AppColors.error;
               return Expanded(
                 child: GestureDetector(
                   onTap: () => setSheetState(() => type = value),
@@ -251,19 +252,19 @@ class FinancialPerformanceScreen extends ConsumerWidget {
                     duration: const Duration(milliseconds: 180),
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     decoration: BoxDecoration(
-                      color: selected ? color : AppColors.background,
+                      color: selected ? color : context.c.bg,
                       borderRadius: BorderRadius.circular(14),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(icon, size: 20, color: selected ? Colors.white : AppColors.textSecondary),
+                        Icon(icon, size: 20, color: selected ? Colors.white : context.c.ink2),
                         const SizedBox(width: 8),
                         Text(
                           label,
                           style: TextStyle(
                             fontWeight: FontWeight.w700,
-                            color: selected ? Colors.white : AppColors.textSecondary,
+                            color: selected ? Colors.white : context.c.ink2,
                           ),
                         ),
                       ],
@@ -285,9 +286,9 @@ class FinancialPerformanceScreen extends ConsumerWidget {
                       style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
                     ),
                     const SizedBox(height: 4),
-                    const Text(
+                    Text(
                       'Enregistrez une recette ou une dépense.',
-                      style: TextStyle(color: AppColors.textSecondary),
+                      style: TextStyle(color: context.c.ink2),
                     ),
                     const SizedBox(height: 20),
                     Row(
@@ -306,17 +307,17 @@ class FinancialPerformanceScreen extends ConsumerWidget {
                         hintText: '0',
                         suffixText: 'CFA',
                         errorText: errorText,
-                        fillColor: AppColors.background,
+                        fillColor: context.c.bg,
                       ),
                     ),
                     const SizedBox(height: 12),
                     TextField(
                       controller: descController,
                       textCapitalization: TextCapitalization.sentences,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         hintText: 'Description (ex : vente de tomates)',
                         prefixIcon: Icon(Icons.notes_rounded),
-                        fillColor: AppColors.background,
+                        fillColor: context.c.bg,
                       ),
                     ),
                     const SizedBox(height: 24),

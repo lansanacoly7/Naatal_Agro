@@ -15,6 +15,7 @@ import '../../../markets/data/markets_provider.dart';
 import '../../../markets/data/models/product.dart';
 import '../../../../shared/utils/data_refresh.dart';
 
+import '../../../../ui/ui.dart';
 class CropsListScreen extends ConsumerStatefulWidget {
   const CropsListScreen({super.key});
 
@@ -46,12 +47,12 @@ class _CropsListScreenState extends ConsumerState<CropsListScreen> with SingleTi
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.c.bg,
       appBar: AppBar(
         title: Row(
           children: [
             CircleAvatar(
-              backgroundColor: Colors.grey.shade200,
+              backgroundColor: context.c.line,
               backgroundImage: const AssetImage('assets/images/naatal_agro_logo-removebg-preview.png'),
               radius: 18,
             ),
@@ -59,24 +60,24 @@ class _CropsListScreenState extends ConsumerState<CropsListScreen> with SingleTi
             const Text('Naatal Agro', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
           ],
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: context.c.surface,
         elevation: 0,
         actions: [
           IconButton(
             tooltip: 'Fiches agronomiques officielles',
-            icon: const Icon(Icons.menu_book_rounded, color: AppColors.primary),
+            icon: Icon(Icons.menu_book_rounded, color: context.c.accent),
             onPressed: () => context.push('/agriculture/guides'),
           ),
           IconButton(
-            icon: const Icon(Icons.notifications_outlined, color: Colors.black87),
+            icon: Icon(Icons.notifications_outlined, color: context.c.ink),
             onPressed: () => showNotificationsSheet(context, ref),
           ),
         ],
         bottom: TabBar(
           controller: _tabController,
-          labelColor: AppColors.primary,
-          unselectedLabelColor: Colors.grey.shade600,
-          indicatorColor: AppColors.primary,
+          labelColor: context.c.accent,
+          unselectedLabelColor: context.c.ink2,
+          indicatorColor: context.c.accent,
           tabs: const [
             Tab(text: 'Mes Cultures'),
             Tab(text: 'Catalogue'),
@@ -115,9 +116,9 @@ class _CropsListScreenState extends ConsumerState<CropsListScreen> with SingleTi
       onRefresh: () async {
         await ref.read(cropsPaginationNotifierProvider.notifier).refresh();
       },
-      color: AppColors.primary,
+      color: context.c.accent,
       child: paginatedState.isLoading && paginatedState.items.isEmpty
-          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+          ? Center(child: CircularProgressIndicator(color: context.c.accent))
           : paginatedState.error != null && paginatedState.items.isEmpty
               ? Center(
                   child: Padding(
@@ -168,12 +169,12 @@ class _CropsListScreenState extends ConsumerState<CropsListScreen> with SingleTi
               const SizedBox(height: 24),
               Text(
                 'Aucune culture enregistrée',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: context.c.ink),
               ),
               const SizedBox(height: 8),
               Text(
                 'Commencez par ajouter votre première parcelle.',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: context.c.ink2),
               ),
             ],
           ),
@@ -191,10 +192,10 @@ class _CropsListScreenState extends ConsumerState<CropsListScreen> with SingleTi
       itemBuilder: (context, index) {
         if (index == state.items.length) {
           if (state.isLoadingMore) {
-            return const Padding(
+            return Padding(
               padding: EdgeInsets.symmetric(vertical: 20),
               child: Center(
-                child: CircularProgressIndicator(color: AppColors.primary),
+                child: CircularProgressIndicator(color: context.c.accent),
               ),
             );
           }
@@ -202,13 +203,13 @@ class _CropsListScreenState extends ConsumerState<CropsListScreen> with SingleTi
             padding: const EdgeInsets.symmetric(vertical: 16),
             child: Center(
               child: OutlinedButton.icon(
-                icon: const Icon(Icons.arrow_downward, color: AppColors.primary),
-                label: const Text(
+                icon: Icon(Icons.arrow_downward, color: context.c.accent),
+                label: Text(
                   'Charger plus de cultures',
-                  style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
+                  style: TextStyle(color: context.c.accent, fontWeight: FontWeight.bold),
                 ),
                 style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: AppColors.primary),
+                  side: BorderSide(color: context.c.accent),
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
@@ -260,14 +261,7 @@ class _CropsListScreenState extends ConsumerState<CropsListScreen> with SingleTi
           // Image de fond avec fallback
           ClipRRect(
             borderRadius: BorderRadius.circular(24),
-            child: Image.asset(
-              crop.imageAsset,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) => Container(
-                color: Colors.grey.shade200,
-                child: const Icon(Icons.image_not_supported, size: 50, color: Colors.grey),
-              ),
-            ),
+            child: ProductPhoto(names: crop.imageNames),
           ),
           // Dégradé sombre
           Container(
@@ -386,10 +380,10 @@ class _CropsListScreenState extends ConsumerState<CropsListScreen> with SingleTi
                           }
                         },
                         itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-                          const PopupMenuItem<String>(
+                          PopupMenuItem<String>(
                             value: 'details',
                             child: ListTile(
-                              leading: Icon(Icons.info_outline, color: AppColors.primary),
+                              leading: Icon(Icons.info_outline, color: context.c.accent),
                               title: Text('Détails'),
                               contentPadding: EdgeInsets.zero,
                             ),
@@ -505,7 +499,7 @@ class _CropsListScreenState extends ConsumerState<CropsListScreen> with SingleTi
           child: LinearProgressIndicator(
             value: progress,
             backgroundColor: Colors.white.withValues(alpha: 0.2),
-            valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
+            valueColor: AlwaysStoppedAnimation<Color>(context.c.accent),
             minHeight: 6,
           ),
         ),
@@ -523,7 +517,7 @@ class _CropsListScreenState extends ConsumerState<CropsListScreen> with SingleTi
         ref.invalidate(trendingProductsProvider);
         ref.invalidate(filteredProductsProvider);
       },
-      color: AppColors.primary,
+      color: context.c.accent,
       child: CustomScrollView(
         slivers: [
           SliverToBoxAdapter(child: _buildSearchBar()),
@@ -601,9 +595,9 @@ class _CropsListScreenState extends ConsumerState<CropsListScreen> with SingleTi
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: context.c.surface,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey.shade200),
+                border: Border.all(color: context.c.line),
               ),
               child: Row(
                 children: [
@@ -676,17 +670,17 @@ class _CropsListScreenState extends ConsumerState<CropsListScreen> with SingleTi
               margin: const EdgeInsets.only(right: 8),
               padding: const EdgeInsets.symmetric(horizontal: 20),
               decoration: BoxDecoration(
-                color: isSelected ? AppColors.primary : Colors.white,
+                color: isSelected ? context.c.accent : context.c.surface,
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: isSelected ? AppColors.primary : Colors.grey.shade200,
+                  color: isSelected ? context.c.accent : context.c.line,
                 ),
               ),
               alignment: Alignment.center,
               child: Text(
                 category,
                 style: TextStyle(
-                  color: isSelected ? Colors.white : Colors.grey.shade600,
+                  color: isSelected ? context.c.onAccent : context.c.ink2,
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                 ),
               ),
@@ -709,14 +703,14 @@ class _CropsListScreenState extends ConsumerState<CropsListScreen> with SingleTi
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(
+        Padding(
           padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
           child: Text(
             'Tendances du jour',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Colors.black87,
+              color: context.c.ink,
             ),
           ),
         ),
@@ -736,7 +730,7 @@ class _CropsListScreenState extends ConsumerState<CropsListScreen> with SingleTi
                 },
               );
             },
-            loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+            loading: () => Center(child: CircularProgressIndicator(color: context.c.accent)),
             error: (err, stack) => Center(child: Text('Erreur: $err')),
           ),
         ),
@@ -751,7 +745,7 @@ class _CropsListScreenState extends ConsumerState<CropsListScreen> with SingleTi
       width: 140,
       margin: const EdgeInsets.only(right: 12, bottom: 8),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.c.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -772,12 +766,12 @@ class _CropsListScreenState extends ConsumerState<CropsListScreen> with SingleTi
                 fit: StackFit.expand,
                 children: [
                   Container(
-                    color: Colors.grey.shade50,
+                    color: context.c.surfaceAlt,
                     child: Image.asset(
                       product.imageAsset,
                       fit: BoxFit.cover,
-                      errorBuilder: (ctx, err, stack) => const Center(
-                        child: Icon(Icons.eco, color: AppColors.primary, size: 36),
+                      errorBuilder: (ctx, err, stack) => Center(
+                        child: Icon(Icons.eco, color: context.c.accent, size: 36),
                       ),
                     ),
                   ),
@@ -787,7 +781,7 @@ class _CropsListScreenState extends ConsumerState<CropsListScreen> with SingleTi
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: context.c.surface,
                         borderRadius: BorderRadius.circular(12),
                         boxShadow: [
                           BoxShadow(
@@ -840,8 +834,8 @@ class _CropsListScreenState extends ConsumerState<CropsListScreen> with SingleTi
                   ),
                   Text(
                     '${product.currentPrice.toInt()} FCFA / kg',
-                    style: const TextStyle(
-                      color: AppColors.primary,
+                    style: TextStyle(
+                      color: context.c.accent,
                       fontWeight: FontWeight.w900,
                       fontSize: 14,
                     ),
@@ -856,7 +850,7 @@ class _CropsListScreenState extends ConsumerState<CropsListScreen> with SingleTi
   }
 
   Widget _buildAllProductsHeader() {
-    return const SliverToBoxAdapter(
+    return SliverToBoxAdapter(
       child: Padding(
         padding: EdgeInsets.only(left: 16.0, right: 16.0, top: 16.0, bottom: 8.0),
         child: Row(
@@ -867,7 +861,7 @@ class _CropsListScreenState extends ConsumerState<CropsListScreen> with SingleTi
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: Colors.black87,
+                color: context.c.ink,
               ),
             ),
           ],
@@ -910,10 +904,10 @@ class _CropsListScreenState extends ConsumerState<CropsListScreen> with SingleTi
           ),
         );
       },
-      loading: () => const SliverToBoxAdapter(
+      loading: () => SliverToBoxAdapter(
         child: Padding(
           padding: EdgeInsets.all(32.0),
-          child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
+          child: Center(child: CircularProgressIndicator(color: context.c.accent)),
         ),
       ),
       error: (err, stack) => SliverToBoxAdapter(
@@ -927,7 +921,7 @@ class _CropsListScreenState extends ConsumerState<CropsListScreen> with SingleTi
       if (cat == 'LÉGUME') return Colors.green.shade600;
       if (cat == 'FRUIT') return Colors.orange.shade600;
       if (cat == 'CÉRÉALE') return Colors.amber.shade700;
-      return AppColors.primary;
+      return context.c.accent;
     }
 
     return GestureDetector(
@@ -941,7 +935,7 @@ class _CropsListScreenState extends ConsumerState<CropsListScreen> with SingleTi
       ),
       child: Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.c.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -962,12 +956,12 @@ class _CropsListScreenState extends ConsumerState<CropsListScreen> with SingleTi
                 fit: StackFit.expand,
                 children: [
                   Container(
-                    color: Colors.grey.shade100,
+                    color: context.c.surfaceAlt,
                     child: Image.asset(
                       product.imageAsset,
                       fit: BoxFit.cover,
-                      errorBuilder: (ctx, err, stack) => const Center(
-                        child: Icon(Icons.eco, color: AppColors.primary, size: 36),
+                      errorBuilder: (ctx, err, stack) => Center(
+                        child: Icon(Icons.eco, color: context.c.accent, size: 36),
                       ),
                     ),
                   ),
@@ -1019,8 +1013,8 @@ class _CropsListScreenState extends ConsumerState<CropsListScreen> with SingleTi
                         children: [
                           Text(
                             '${product.currentPrice.toInt()} F',
-                            style: const TextStyle(
-                              color: AppColors.primary,
+                            style: TextStyle(
+                              color: context.c.accent,
                               fontWeight: FontWeight.w900,
                               fontSize: 15,
                             ),
@@ -1084,8 +1078,8 @@ class _CropsListScreenState extends ConsumerState<CropsListScreen> with SingleTi
           padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
           child: Container(
             padding: const EdgeInsets.all(24),
-            decoration: const BoxDecoration(
-              color: Colors.white,
+            decoration: BoxDecoration(
+              color: context.c.surface,
               borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
             ),
             child: Column(
@@ -1215,8 +1209,8 @@ class _CropsListScreenState extends ConsumerState<CropsListScreen> with SingleTi
           padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
           child: Container(
             padding: const EdgeInsets.all(24),
-            decoration: const BoxDecoration(
-              color: Colors.white,
+            decoration: BoxDecoration(
+              color: context.c.surface,
               borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
             ),
             child: Column(
@@ -1241,7 +1235,7 @@ class _CropsListScreenState extends ConsumerState<CropsListScreen> with SingleTi
                 const SizedBox(height: 8),
                 Text(
                   'Cette action clôture la culture et transfère automatiquement la quantité récoltée dans votre stock.',
-                  style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                  style: TextStyle(color: context.c.ink2, fontSize: 13),
                 ),
                 const SizedBox(height: 18),
                 Row(
@@ -1254,7 +1248,7 @@ class _CropsListScreenState extends ConsumerState<CropsListScreen> with SingleTi
                         decoration: InputDecoration(
                           labelText: 'Quantité récoltée',
                           hintText: 'ex : 500',
-                          prefixIcon: const Icon(Icons.scale_rounded, color: AppColors.primary),
+                          prefixIcon: Icon(Icons.scale_rounded, color: context.c.accent),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
                         ),
                       ),
@@ -1290,7 +1284,7 @@ class _CropsListScreenState extends ConsumerState<CropsListScreen> with SingleTi
                   decoration: InputDecoration(
                     labelText: 'Observations / Notes (facultatif)',
                     hintText: 'Qualité du calibre, météo lors de la récolte...',
-                    prefixIcon: const Icon(Icons.notes_rounded, color: AppColors.primary),
+                    prefixIcon: Icon(Icons.notes_rounded, color: context.c.accent),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
                   ),
                 ),

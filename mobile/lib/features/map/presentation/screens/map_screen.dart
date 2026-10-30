@@ -1,12 +1,19 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../ui/appearance.dart';
+import '../../../../ui/map_tiles.dart';
 import 'package:latlong2/latlong.dart';
 
+import '../../../../core/location/senegal_regions.dart';
+import '../../../../screens/markets/markets_data.dart' show userLocationProvider;
+import '../../../../ui/senegal_map.dart';
 import '../../../../ui/ui.dart';
 import '../../../markets/data/models/market.dart';
+import '../../../profile/data/profile_provider.dart';
 import '../../data/map_provider.dart';
 import '../../data/models/map_marker_item.dart';
 
@@ -30,7 +37,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
   MapMarkerItem? _selectedItem;
   String _searchQuery = '';
-  bool _isLocating = false;
 
   @override
   void initState() {
@@ -53,6 +59,17 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           });
         }
       });
+    } else {
+      // Dès l'ouverture, on cherche où se trouve la personne pour zoomer sur sa localité
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        final location = ref.read(userLocationProvider);
+        if (location.position != null && isInSenegal(location.position!)) {
+          _mapController.move(location.position!, 12.5);
+        } else if (!location.loading) {
+          ref.read(userLocationProvider.notifier).locate();
+        }
+      });
     }
   }
 
@@ -63,51 +80,12 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     super.dispose();
   }
 
-  Future<void> _locateUser() async {
-    setState(() => _isLocating = true);
-    try {
-      LocationPermission permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Autorisation de géolocalisation refusée.')),
-            );
-          }
-          return;
-        }
-      }
-      if (permission == LocationPermission.deniedForever) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Veuillez activer la localisation dans les paramètres.')),
-          );
-        }
-        return;
-      }
-
-      final pos = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(accuracy: LocationAccuracy.medium),
-      );
-      final userLatLng = LatLng(pos.latitude, pos.longitude);
-      _mapController.move(userLatLng, 13.5);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Position actuelle localisée avec succès.'),
-            duration: Duration(seconds: 2),
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Impossible d\'obtenir la position : $e')),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isLocating = false);
+  /// Revient sur la personne, ou la cherche si on ne sait pas encore où elle est.
+  void _goToMe(LatLng? me) {
+    if (me == null) {
+      ref.read(userLocationProvider.notifier).locate();
+    } else {
+      _mapController.move(me, 13.5);
     }
   }
 
@@ -116,11 +94,51 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     setState(() => _selectedItem = null);
   }
 
+  MapOptions? _cachedOptions;
+  String? _cachedOptionsKey;
+
+  /// Les mêmes options tant que l'écran et la région ne changent pas : flutter_map refuse qu'on les remplace caméra en cours.
+  MapOptions _optionsFor(double minZoom, SenegalRegion? region, BoxConstraints box) {
+    final key = '${box.biggest.width.round()}x${box.biggest.height.round()}-${region?.name}';
+    if (_cachedOptions != null && _cachedOptionsKey == key) return _cachedOptions!;
+    _cachedOptionsKey = key;
+    return _cachedOptions = MapOptions(
+                // Ouverte sur la région de la personne si on la connaît, puis recadrée sur sa position
+                initialCenter: region != null ? LatLng(region.lat, region.lon) : _senegalCenter,
+                initialZoom: math.max(region != null ? 10 : _defaultZoom, minZoom),
+                minZoom: minZoom,
+                // La carte ne tourne jamais : on zoome et on se déplace, c'est tout
+                interactionOptions: const InteractionOptions(flags: InteractiveFlag.all & ~InteractiveFlag.rotate),
+                maxZoom: 18.0,
+                cameraConstraint: senegalCameraConstraint,
+                onTap: (_, __) {
+                  if (_selectedItem != null) {
+                    setState(() => _selectedItem = null);
+                  }
+                },
+              );
+  }
+
   @override
   Widget build(BuildContext context) {
     final c = context.c;
     final markersAsync = ref.watch(mapMarkersProvider);
     final activeFilter = ref.watch(mapFilterProvider);
+    final location = ref.watch(userLocationProvider);
+    final me = location.position != null && isInSenegal(location.position!) ? location.position : null;
+    final initials = ref.watch(profileNotifierProvider).valueOrNull?.initials;
+    final regionText = ref.watch(profileNotifierProvider).valueOrNull?.location;
+    final region = regionText == null || regionText.trim().isEmpty ? null : SenegalRegions.fromName(regionText);
+
+    // Quand la position arrive, la carte zoome sur la localité de la personne
+    ref.listen(userLocationProvider, (previous, next) {
+      final position = next.position;
+      if (position != null && position != previous?.position && isInSenegal(position) && _selectedItem == null) {
+        _mapController.move(position, 12.5);
+      } else if (next.error != null && next.error != previous?.error && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(next.error!)));
+      }
+    });
 
     return Scaffold(
       backgroundColor: c.bg,
@@ -141,25 +159,16 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         children: [
           // 1. Fond de Carte OpenStreetMap
           Positioned.fill(
-            child: FlutterMap(
+            child: LayoutBuilder(builder: (context, box) {
+              // Dézoom limité : l'écran ne peut jamais montrer autre chose que le Sénégal
+              final minZoom = senegalFitZoom(box.biggest);
+              return LightOnly(child: FlutterMap(
               mapController: _mapController,
-              options: MapOptions(
-                initialCenter: _senegalCenter,
-                initialZoom: _defaultZoom,
-                minZoom: 6.0,
-                maxZoom: 18.0,
-                onTap: (_, __) {
-                  if (_selectedItem != null) {
-                    setState(() => _selectedItem = null);
-                  }
-                },
-              ),
+              options: _optionsFor(minZoom, region, box),
               children: [
-                TileLayer(
-                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                  userAgentPackageName: 'sn.isep.naatal_agro',
-                  maxZoom: 19,
-                ),
+                const NaatalTileLayer(),
+                // Voile : rien n'est visible hors du Sénégal
+                const SenegalMask(),
                 // Layer des Marqueurs
                 markersAsync.when(
                   data: (markers) {
@@ -170,52 +179,59 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     }).toList();
 
                     return MarkerLayer(
-                      markers: filtered.map((item) {
-                        final isSelected = _selectedItem?.id == item.id;
-                        final isMarket = item.isMarket;
-                        final color = isMarket ? const Color(0xFF1B5E20) : const Color(0xFFE65100);
-
-                        return Marker(
-                          point: item.position,
-                          width: isSelected ? 56 : 44,
-                          height: isSelected ? 56 : 44,
-                          child: GestureDetector(
-                            onTap: () {
-                              setState(() => _selectedItem = item);
-                              _mapController.move(item.position, 12.0);
-                            },
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 250),
-                              decoration: BoxDecoration(
-                                color: color,
-                                shape: BoxShape.circle,
-                                border: Border.all(color: Colors.white, width: isSelected ? 3 : 2),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: color.withValues(alpha: 0.45),
-                                    blurRadius: isSelected ? 12 : 6,
-                                    offset: const Offset(0, 3),
-                                  ),
-                                ],
-                              ),
-                              child: Center(
-                                child: Icon(
-                                  isMarket ? Icons.storefront_rounded : Icons.grass_rounded,
-                                  color: Colors.white,
-                                  size: isSelected ? 28 : 20,
+                      markers: [
+                        for (final item in filtered)
+                          Marker(
+                            point: item.position,
+                            width: 56,
+                            height: MapPin.heightFor(44) * 1.2,
+                            alignment: Alignment.topCenter,
+                            child: GestureDetector(
+                              behavior: HitTestBehavior.opaque,
+                              onTap: () {
+                                setState(() => _selectedItem = item);
+                                _mapController.move(item.position, 12.0);
+                              },
+                              child: Align(
+                                alignment: Alignment.bottomCenter,
+                                child: MapPin(
+                                  color: item.isMarket ? const Color(0xFF1B5E20) : const Color(0xFFE65100),
+                                  size: 44,
+                                  selected: _selectedItem?.id == item.id,
+                                  child: Icon(item.isMarket ? Icons.storefront_rounded : Icons.grass_rounded, color: Colors.white, size: 22),
                                 ),
                               ),
                             ),
                           ),
-                        );
-                      }).toList(),
+                        // Avatar de la personne, au-dessus des balises
+                        if (me != null)
+                          Marker(
+                            point: me,
+                            width: UserAvatarPin.markerWidth,
+                            height: UserAvatarPin.markerHeight,
+                            alignment: Alignment.topCenter,
+                            child: UserAvatarPin(initials: initials),
+                          ),
+                      ],
                     );
                   },
-                  loading: () => const SizedBox.shrink(),
+                  // Pendant le chargement, on montre déjà la personne
+                  loading: () => MarkerLayer(markers: [
+                    if (me != null)
+                      Marker(
+                        point: me,
+                        width: UserAvatarPin.markerWidth,
+                        height: UserAvatarPin.markerHeight,
+                        alignment: Alignment.topCenter,
+                        child: UserAvatarPin(initials: initials),
+                      ),
+                  ]),
                   error: (_, __) => const SizedBox.shrink(),
                 ),
+                SimpleAttributionWidget(source: Text(NaatalTileLayer.attribution)),
               ],
-            ),
+              ));
+            }),
           ),
 
           // 2. Barre de Recherche et Filtres Flottants
@@ -289,14 +305,14 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               backgroundColor: c.surface,
               foregroundColor: c.accent,
               elevation: 4,
-              onPressed: _isLocating ? null : _locateUser,
-              child: _isLocating
+              onPressed: location.loading ? null : () => _goToMe(me),
+              child: location.loading
                   ? const SizedBox(
                       width: 20,
                       height: 20,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Icon(Icons.my_location_rounded),
+                  : Icon(me == null ? Icons.my_location_outlined : Icons.my_location_rounded),
             ),
           ),
 

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../data/markets_provider.dart';
 
+import '../../../../ui/ui.dart';
 class MarketComparisonScreen extends ConsumerStatefulWidget {
   final String productName;
   final String imageAsset;
@@ -28,20 +29,10 @@ class _MarketComparisonScreenState extends ConsumerState<MarketComparisonScreen>
     return double.tryParse(cleaned) ?? 0.0;
   }
 
+  /// Image fournie, sinon celle du produit (même règle partout) : jamais le logo de l'application à la place d'un produit.
   String _resolveImageAsset(String name, String providedAsset) {
-    if (providedAsset.isNotEmpty && !providedAsset.contains('placeholder')) {
-      return providedAsset;
-    }
-    final lower = name.toLowerCase();
-    if (lower.contains('tomate')) return 'assets/images/products/tomate.png';
-    if (lower.contains('oignon')) return 'assets/images/products/oignon_local.png';
-    if (lower.contains('riz')) return 'assets/images/products/riz.jpg';
-    if (lower.contains('mais') || lower.contains('maïs')) return 'assets/images/products/mais.jpg';
-    if (lower.contains('arachide')) return 'assets/images/products/arachide.png';
-    if (lower.contains('pomme de terre')) return 'assets/images/products/pomme_de_terre.png';
-    if (lower.contains('chou')) return 'assets/images/products/chou.png';
-    if (lower.contains('mil')) return 'assets/images/products/mil.jpg';
-    return 'assets/images/naatal_agro_logo-removebg-preview.png';
+    if (providedAsset.isNotEmpty && !providedAsset.contains('placeholder')) return providedAsset;
+    return productImageForName(name);
   }
 
   @override
@@ -53,7 +44,7 @@ class _MarketComparisonScreenState extends ConsumerState<MarketComparisonScreen>
     final pricesAsync = ref.watch(productPriceHistoryProvider(widget.productName));
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.c.bg,
       body: marketsAsync.when(
         data: (markets) {
           return pricesAsync.when(
@@ -102,35 +93,35 @@ class _MarketComparisonScreenState extends ConsumerState<MarketComparisonScreen>
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Text('Marchés réels à comparer', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
-                              Text('${realMarketPrices.length} marchés', style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, fontWeight: FontWeight.bold)),
+                              Text('Marchés réels à comparer', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: context.c.ink)),
+                              Text('${realMarketPrices.length} marchés', style: TextStyle(fontSize: 12, color: context.c.ink2, fontWeight: FontWeight.bold)),
                             ],
                           ),
                           const SizedBox(height: 12),
                           _buildMarketChips(realMarketPrices.keys.toList()),
                           const SizedBox(height: 24),
                           if (realMarketPrices.isEmpty) ...[
-                            const Center(
+                            Center(
                               child: Padding(
                                 padding: EdgeInsets.all(32.0),
                                 child: Text(
                                   "Aucun relevé disponible pour ce produit sur les marchés répertoriés.",
                                   textAlign: TextAlign.center,
-                                  style: TextStyle(color: AppColors.textSecondary),
+                                  style: TextStyle(color: context.c.ink2),
                                 ),
                               ),
                             ),
                           ] else if (_selectedMarkets.isNotEmpty) ...[
                             _buildBestMarketAdvice(realMarketPrices, avgPrice),
                             const SizedBox(height: 24),
-                            const Text('Détails des cotations par marché', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+                            Text('Détails des cotations par marché', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: context.c.ink)),
                             const SizedBox(height: 12),
                             _buildMarketList(realMarketPrices, avgPrice),
                           ] else ...[
-                            const Center(
+                            Center(
                               child: Padding(
                                 padding: EdgeInsets.all(32.0),
-                                child: Text("Sélectionnez au moins un marché pour voir la comparaison.", textAlign: TextAlign.center, style: TextStyle(color: AppColors.textSecondary)),
+                                child: Text("Sélectionnez au moins un marché pour voir la comparaison.", textAlign: TextAlign.center, style: TextStyle(color: context.c.ink2)),
                               ),
                             ),
                           ],
@@ -142,11 +133,11 @@ class _MarketComparisonScreenState extends ConsumerState<MarketComparisonScreen>
                 ],
               );
             },
-            loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+            loading: () => Center(child: CircularProgressIndicator(color: context.c.accent)),
             error: (err, _) => Center(child: Text('Erreur cotations : $err')),
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+        loading: () => Center(child: CircularProgressIndicator(color: context.c.accent)),
         error: (err, _) => Center(child: Text('Erreur marchés : $err')),
       ),
     );
@@ -253,8 +244,8 @@ class _MarketComparisonScreenState extends ConsumerState<MarketComparisonScreen>
           icon: const Icon(Icons.tune_rounded, size: 18),
           label: Text(selected.isEmpty ? 'Choisir les marchés' : 'Modifier les marchés (${selected.length} sur ${marketNames.length})'),
           style: OutlinedButton.styleFrom(
-            foregroundColor: AppColors.primary,
-            side: const BorderSide(color: AppColors.primary),
+            foregroundColor: context.c.accent,
+            side: BorderSide(color: context.c.accent),
             minimumSize: const Size(0, 44),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
           ),
@@ -267,7 +258,7 @@ class _MarketComparisonScreenState extends ConsumerState<MarketComparisonScreen>
     return showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: context.c.surface,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) {
         var query = '';
@@ -282,12 +273,12 @@ class _MarketComparisonScreenState extends ConsumerState<MarketComparisonScreen>
                 child: Column(
                   children: [
                     const SizedBox(height: 10),
-                    Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2))),
+                    Container(width: 40, height: 4, decoration: BoxDecoration(color: context.c.line, borderRadius: BorderRadius.circular(2))),
                     Padding(
                       padding: const EdgeInsets.fromLTRB(20, 14, 20, 6),
                       child: Row(
                         children: [
-                          const Expanded(child: Text('Marchés à comparer', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary))),
+                          Expanded(child: Text('Marchés à comparer', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: context.c.ink))),
                           TextButton(
                             onPressed: () {
                               setState(() => _selectedMarkets
@@ -390,14 +381,14 @@ class _MarketComparisonScreenState extends ConsumerState<MarketComparisonScreen>
           const SizedBox(height: 14),
           Text(
             'Meilleur cours : $bestMarket (${maxPrice.toInt()} FCFA/kg)',
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppColors.textPrimary),
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: context.c.ink),
           ),
           const SizedBox(height: 6),
           Text(
             priceDiff > 0
                 ? "Le marché de $bestMarket offre la meilleure valorisation actuelle avec +${priceDiff.toInt()} FCFA/kg au-dessus de la moyenne. Privilégiez ce débouché pour vos livraisons."
                 : "Les cours sont homogènes sur les marchés sélectionnés. $bestMarket reste un choix solide pour votre écoulement.",
-            style: const TextStyle(color: AppColors.textSecondary, height: 1.45, fontSize: 13),
+            style: TextStyle(color: context.c.ink2, height: 1.45, fontSize: 13),
           ),
         ],
       ),
@@ -418,9 +409,9 @@ class _MarketComparisonScreenState extends ConsumerState<MarketComparisonScreen>
           margin: const EdgeInsets.only(bottom: 12),
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: context.c.surface,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: isBest ? AppColors.primary : Colors.grey.shade200, width: isBest ? 1.5 : 1.0),
+            border: Border.all(color: isBest ? context.c.accent : context.c.line, width: isBest ? 1.5 : 1.0),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.02),
@@ -434,20 +425,20 @@ class _MarketComparisonScreenState extends ConsumerState<MarketComparisonScreen>
             children: [
               Row(
                 children: [
-                  Icon(Icons.storefront, color: isBest ? AppColors.primary : AppColors.textSecondary),
+                  Icon(Icons.storefront, color: isBest ? context.c.accent : context.c.ink2),
                   const SizedBox(width: 12),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
                         children: [
-                          Text(market, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: isBest ? AppColors.primary : AppColors.textPrimary)),
+                          Text(market, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: isBest ? context.c.accent : context.c.ink)),
                           if (isBest) ...[
                             const SizedBox(width: 6),
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                               decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
-                              child: const Text('MAX', style: TextStyle(color: AppColors.primary, fontSize: 9, fontWeight: FontWeight.w900)),
+                              child: Text('MAX', style: TextStyle(color: context.c.accent, fontSize: 9, fontWeight: FontWeight.w900)),
                             ),
                           ],
                         ],
@@ -463,7 +454,7 @@ class _MarketComparisonScreenState extends ConsumerState<MarketComparisonScreen>
                   ),
                 ],
               ),
-              Text('${price.toInt()} FCFA', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.textPrimary)),
+              Text('${price.toInt()} FCFA', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: context.c.ink)),
             ],
           ),
         );

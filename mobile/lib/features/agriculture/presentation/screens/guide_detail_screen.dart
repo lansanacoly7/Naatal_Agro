@@ -5,6 +5,7 @@ import '../../../../core/widgets/offline_cache_banner.dart';
 import '../../data/guides_provider.dart';
 import '../../data/models/agronomic_guide.dart';
 
+import '../../../../ui/ui.dart';
 class GuideDetailScreen extends ConsumerWidget {
   final String slug;
 
@@ -15,18 +16,18 @@ class GuideDetailScreen extends ConsumerWidget {
     final state = ref.watch(guideDetailProvider(slug));
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.c.bg,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: context.c.surface,
         elevation: 0,
         centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black87),
+          icon: Icon(Icons.arrow_back_ios_new_rounded, color: context.c.ink),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
           state.guide?.name ?? 'Fiche Technique',
-          style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 18),
+          style: TextStyle(color: context.c.ink, fontWeight: FontWeight.bold, fontSize: 18),
         ),
       ),
       body: _buildBody(context, ref, state),
@@ -35,7 +36,7 @@ class GuideDetailScreen extends ConsumerWidget {
 
   Widget _buildBody(BuildContext context, WidgetRef ref, GuideDetailState state) {
     if (state.isLoading && state.guide == null) {
-      return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+      return Center(child: CircularProgressIndicator(color: context.c.accent));
     }
 
     if (state.error != null && state.guide == null) {
@@ -74,7 +75,7 @@ class GuideDetailScreen extends ConsumerWidget {
       onRefresh: () async {
         await ref.read(guideDetailProvider(slug).notifier).loadGuide();
       },
-      color: AppColors.primary,
+      color: context.c.accent,
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         child: Column(
@@ -82,65 +83,65 @@ class GuideDetailScreen extends ConsumerWidget {
           children: [
             if (state.isFromCache && state.cachedAt != null)
               OfflineCacheBanner(cachedAt: state.cachedAt!),
-            _buildHeader(guide),
+            _buildHeader(context, guide),
             Padding(
               padding: const EdgeInsets.all(20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildSection(
+                  _buildSection(context, 
                     icon: Icons.info_outline,
                     title: 'Présentation & Description',
                     content: guide.summary,
                   ),
                   if (guide.zones.isNotEmpty)
-                    _buildSection(
+                    _buildSection(context, 
                       icon: Icons.map_outlined,
                       title: 'Zones de culture au Sénégal',
                       content: guide.zones,
                     ),
                   if (guide.calendar.isNotEmpty)
-                    _buildSection(
+                    _buildSection(context, 
                       icon: Icons.calendar_today_outlined,
                       title: 'Calendrier & Cycle de culture',
                       content: guide.calendar,
                     ),
                   if (guide.soilAndSowing.isNotEmpty)
-                    _buildSection(
+                    _buildSection(context, 
                       icon: Icons.grass,
                       title: 'Sol, préparation et semis',
                       content: guide.soilAndSowing,
                     ),
                   if (guide.waterNeeds.isNotEmpty)
-                    _buildSection(
+                    _buildSection(context, 
                       icon: Icons.water_drop_outlined,
                       title: 'Besoins en eau & Irrigation',
                       content: guide.waterNeeds,
                     ),
                   if (guide.fertilization.isNotEmpty)
-                    _buildSection(
+                    _buildSection(context, 
                       icon: Icons.science_outlined,
                       title: 'Fertilisation & Fumure',
                       content: guide.fertilization,
                     ),
                   if (guide.pestsDiseases.isNotEmpty)
-                    _buildPestsSection(guide.pestsDiseases),
+                    _buildPestsSection(context, guide.pestsDiseases),
                   if (guide.harvest.isNotEmpty)
-                    _buildSection(
+                    _buildSection(context, 
                       icon: Icons.agriculture_outlined,
                       title: 'Récolte & Conservation',
                       content: guide.harvest,
                     ),
                   if (guide.yieldInfo.isNotEmpty)
-                    _buildSection(
+                    _buildSection(context, 
                       icon: Icons.trending_up,
                       title: 'Rendements observés',
                       content: guide.yieldInfo,
                     ),
                   if (guide.limitations.isNotEmpty)
-                    _buildLimitationsCard(guide.limitations),
+                    _buildLimitationsCard(context, guide.limitations),
                   const SizedBox(height: 8),
-                  _buildSourcesSection(guide.sources),
+                  _buildSourcesSection(context, guide.sources),
                   const SizedBox(height: 32),
                 ],
               ),
@@ -151,10 +152,10 @@ class GuideDetailScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildHeader(AgronomicGuide guide) {
+  Widget _buildHeader(BuildContext context, AgronomicGuide guide) {
     return Container(
       width: double.infinity,
-      color: Colors.white,
+      color: context.c.surface,
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -169,8 +170,8 @@ class GuideDetailScreen extends ConsumerWidget {
                 ),
                 child: Text(
                   guide.categoryLabel,
-                  style: const TextStyle(
-                    color: AppColors.primary,
+                  style: TextStyle(
+                    color: context.c.accent,
                     fontWeight: FontWeight.bold,
                     fontSize: 12,
                   ),
@@ -198,7 +199,7 @@ class GuideDetailScreen extends ConsumerWidget {
           const SizedBox(height: 12),
           Text(
             guide.name,
-            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: context.c.ink),
           ),
           if (guide.scientificName.isNotEmpty) ...[
             const SizedBox(height: 4),
@@ -206,7 +207,7 @@ class GuideDetailScreen extends ConsumerWidget {
               guide.scientificName,
               style: TextStyle(
                 fontStyle: FontStyle.italic,
-                color: Colors.grey.shade600,
+                color: context.c.ink2,
                 fontSize: 15,
               ),
             ),
@@ -216,7 +217,7 @@ class GuideDetailScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildSection({
+  Widget _buildSection(BuildContext context, {
     required IconData icon,
     required String title,
     required String content,
@@ -225,7 +226,7 @@ class GuideDetailScreen extends ConsumerWidget {
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.c.surface,
         borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
@@ -240,12 +241,12 @@ class GuideDetailScreen extends ConsumerWidget {
         children: [
           Row(
             children: [
-              Icon(icon, color: AppColors.primary, size: 20),
+              Icon(icon, color: context.c.accent, size: 20),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   title,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.primary),
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: context.c.accent),
                 ),
               ),
             ],
@@ -253,19 +254,19 @@ class GuideDetailScreen extends ConsumerWidget {
           const SizedBox(height: 12),
           Text(
             content,
-            style: const TextStyle(fontSize: 14, height: 1.5, color: Colors.black87),
+            style: TextStyle(fontSize: 14, height: 1.5, color: context.c.ink),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildPestsSection(List<PestDiseaseItem> items) {
+  Widget _buildPestsSection(BuildContext context, List<PestDiseaseItem> items) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.c.surface,
         borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
@@ -304,7 +305,7 @@ class GuideDetailScreen extends ConsumerWidget {
                     padding: const EdgeInsets.only(left: 12),
                     child: Text(
                       p.advice,
-                      style: const TextStyle(fontSize: 13, height: 1.4, color: Colors.black87),
+                      style: TextStyle(fontSize: 13, height: 1.4, color: context.c.ink),
                     ),
                   ),
                 ],
@@ -316,12 +317,12 @@ class GuideDetailScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildLimitationsCard(String limitations) {
+  Widget _buildLimitationsCard(BuildContext context, String limitations) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFF8E1),
+        color: context.c.gold.withValues(alpha: 0.16),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.amber.shade300),
       ),
@@ -351,20 +352,20 @@ class GuideDetailScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildSourcesSection(List<GuideSource> sources) {
+  Widget _buildSourcesSection(BuildContext context, List<GuideSource> sources) {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
+        color: context.c.surfaceAlt,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: context.c.line),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.menu_book, color: AppColors.primary, size: 20),
+              Icon(Icons.menu_book, color: context.c.accent, size: 20),
               SizedBox(width: 8),
               Text(
                 'Sources Scientifiques & Institutionnelles',
@@ -374,7 +375,7 @@ class GuideDetailScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 12),
           if (sources.isEmpty)
-            Text('Aucune source spécifiée.', style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
+            Text('Aucune source spécifiée.', style: TextStyle(color: context.c.ink2, fontSize: 13)),
           ...sources.asMap().entries.map((entry) {
             final idx = entry.key + 1;
             final src = entry.value;
@@ -400,7 +401,7 @@ class GuideDetailScreen extends ConsumerWidget {
                       padding: const EdgeInsets.only(left: 20, top: 2),
                       child: Text(
                         '${src.publisher}${src.year.isNotEmpty ? ' (${src.year})' : ''}',
-                        style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                        style: TextStyle(color: context.c.ink2, fontSize: 12),
                       ),
                     ),
                   Padding(

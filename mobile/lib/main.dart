@@ -5,11 +5,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'core/network/connectivity_provider.dart';
+import 'ui/appearance.dart';
 import 'ui/ui.dart';
 import 'core/router/app_router.dart';
 import 'core/network/api_client.dart';
 import 'core/network/sync_service.dart';
 import 'features/auth/data/auth_provider.dart';
+import 'core/session/session_root.dart';
 import 'features/reminders/data/reminder_alarms.dart';
 import 'features/reminders/data/reminder_sync.dart';
 
@@ -22,7 +24,7 @@ void main() async {
   final prefs = await SharedPreferences.getInstance();
 
   runApp(
-    ProviderScope(
+    SessionRoot(
       overrides: [
         sharedPreferencesProvider.overrideWithValue(prefs),
       ],
@@ -132,7 +134,8 @@ class _NataalAgroAppState extends ConsumerState<NataalAgroApp> with WidgetsBindi
       title: 'Naatal Agro',
       debugShowCheckedModeBanner: false,
       theme: NaatalTheme.light,
-      themeMode: ThemeMode.light, // mode sombre désactivé : thème clair uniquement
+      darkTheme: NaatalTheme.dark,
+      themeMode: ref.watch(themeModeProvider), // Clair, Sombre ou Automatique (choisi dans le profil)
       routerConfig: _router,
       scaffoldMessengerKey: _messengerKey,
       builder: (context, child) {

@@ -4,6 +4,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../ui/ui.dart';
 import 'markets_data.dart';
@@ -80,10 +81,10 @@ class _MarketSheet extends ConsumerWidget {
                           height: 52,
                           color: c.surface,
                           child: Padding(
-                            padding: const EdgeInsets.all(4),
+                            padding: EdgeInsets.zero,
                             child: Image.asset(
                               productImg,
-                              fit: BoxFit.contain,
+                              fit: BoxFit.cover,
                               errorBuilder: (_, __, ___) => Icon(Icons.eco_rounded, size: 28, color: c.accent),
                             ),
                           ),
@@ -159,8 +160,20 @@ class _MarketSheet extends ConsumerWidget {
               return PriceChart(points: points, color: color);
             },
           ),
-          if (quote.position != null) ...[
+          if (quote.marketId.isNotEmpty) ...[
             const SizedBox(height: Space.xl),
+            PillButton(
+              label: 'Voir tout le marché',
+              icon: Icons.storefront_rounded,
+              expand: true,
+              onPressed: () {
+                Navigator.of(context).pop();
+                context.push('/market/${quote.marketId}');
+              },
+            ),
+          ],
+          if (quote.position != null) ...[
+            const SizedBox(height: Space.m),
             PillButton(
               label: 'Copier les coordonnées GPS',
               icon: Icons.copy_rounded,

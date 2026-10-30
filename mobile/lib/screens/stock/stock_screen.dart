@@ -102,10 +102,10 @@ class _StockRow extends ConsumerWidget {
               ? c.clay.withValues(alpha: c.isDark ? 0.2 : 0.1)
               : c.surfaceAlt,
           child: Padding(
-            padding: const EdgeInsets.all(4),
+            padding: EdgeInsets.zero,
             child: Image.asset(
               img,
-              fit: BoxFit.contain,
+              fit: BoxFit.cover,
               errorBuilder: (_, __, ___) => Icon(
                 Icons.inventory_2_rounded,
                 color: item.alertStatus ? c.clay : c.accent,
@@ -149,10 +149,10 @@ class _StockActions extends ConsumerWidget {
                   height: 60,
                   color: c.surfaceAlt,
                   child: Padding(
-                    padding: const EdgeInsets.all(6),
+                    padding: EdgeInsets.zero,
                     child: Image.asset(
                       img,
-                      fit: BoxFit.contain,
+                      fit: BoxFit.cover,
                       errorBuilder: (_, __, ___) => Icon(Icons.inventory_2_rounded, color: c.accent, size: 30),
                     ),
                   ),
@@ -430,7 +430,7 @@ class _AddStockSheetState extends ConsumerState<_AddStockSheet> {
                               height: 28,
                               child: Image.asset(
                                 productImageForName(crop),
-                                fit: BoxFit.contain,
+                                fit: BoxFit.cover,
                                 errorBuilder: (_, __, ___) => Icon(Icons.eco_rounded, size: 18, color: c.accent),
                               ),
                             ),

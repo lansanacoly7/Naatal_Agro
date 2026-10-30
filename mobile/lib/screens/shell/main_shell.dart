@@ -9,13 +9,14 @@ class MainShell extends StatelessWidget {
 
   final Widget child;
 
-  static const _paths = ['/', '/agriculture', '/markets', '/ai', '/profile'];
+  /// Accueil, Cultures, Mon dashboard au centre, Marchés, puis Naatal IA tout au bout.
+  static const _paths = ['/', '/agriculture', '/mon_dashboard', '/markets', '/ai'];
 
   int _indexFor(String location) {
     if (location.startsWith('/agriculture')) return 1;
-    if (location.startsWith('/markets')) return 2;
-    if (location.startsWith('/ai')) return 3;
-    if (location.startsWith('/profile')) return 4;
+    if (location.startsWith('/mon_dashboard') || location.startsWith('/finances')) return 2;
+    if (location.startsWith('/markets')) return 3;
+    if (location.startsWith('/ai')) return 4;
     return 0;
   }
 
@@ -35,9 +36,9 @@ class MainShell extends StatelessWidget {
           destinations: const [
             NavigationDestination(icon: Icon(Icons.dashboard_outlined), selectedIcon: Icon(Icons.dashboard_rounded), label: 'Accueil'),
             NavigationDestination(icon: Icon(Icons.eco_outlined), selectedIcon: Icon(Icons.eco_rounded), label: 'Cultures'),
+            NavigationDestination(icon: Icon(Icons.insights_outlined), selectedIcon: Icon(Icons.insights_rounded), label: 'Dashboard'),
             NavigationDestination(icon: Icon(Icons.storefront_outlined), selectedIcon: Icon(Icons.storefront_rounded), label: 'Marchés'),
             NavigationDestination(icon: Icon(Icons.auto_awesome_outlined), selectedIcon: Icon(Icons.auto_awesome_rounded), label: 'Naatal IA'),
-            NavigationDestination(icon: Icon(Icons.person_outline_rounded), selectedIcon: Icon(Icons.person_rounded), label: 'Profil'),
           ],
         ),
       ),
