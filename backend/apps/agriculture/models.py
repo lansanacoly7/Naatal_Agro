@@ -246,3 +246,56 @@ class KnowledgeProposal(models.Model):
 
     def __str__(self):
         return f"{self.guide.name} · {self.get_field_display()} ({self.get_status_display()})"
+
+
+class CropCalendarEntry(models.Model):
+    """
+    Une période du calendrier agricole d'une culture dans une zone du Sénégal : quand semer, quand récolter.
+
+    Chaque ligne vient d'une source citée (``source_key``, voir ``crop_calendar_sources``). Les dates sont
+    annuelles (mois et jour) : la même période revient chaque année. Un champ vide veut dire « non documenté ».
+    """
+    CATEGORY_CHOICES = [
+        ('cereale', 'Céréale'), ('legume', 'Légume'), ('legumineuse', 'Légumineuse'), ('tubercule', 'Tubercule'),
+        ('fruit', 'Fruit'), ('industrielle', 'Culture industrielle'),
+    ]
+    ZONE_CHOICES = [
+        ('niayes', 'Niayes'), ('vallee', 'Vallée du fleuve'), ('sylvopastorale', 'Zone sylvo-pastorale'),
+        ('bassin', 'Bassin arachidier'), ('centre-est', 'Centre-Est et Sud-Est'), ('casamance', 'Casamance'),
+        ('all', 'Toutes les zones'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    crop_key = models.SlugField(max_length=60)
+    crop_name = models.CharField(max_length=120)
+    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES)
+    zone = models.CharField(max_length=20, choices=ZONE_CHOICES)
+    label = models.CharField(max_length=120, blank=True, help_text="Variante de la période : culture hâtive, contre-saison…")
+    all_year = models.BooleanField(default=False, help_text="Semis possible toute l'année")
+
+    sow_start_month = models.PositiveSmallIntegerField(null=True, blank=True)
+    sow_start_day = models.PositiveSmallIntegerField(null=True, blank=True)
+    sow_end_month = models.PositiveSmallIntegerField(null=True, blank=True)
+    sow_end_day = models.PositiveSmallIntegerField(null=True, blank=True)
+    harvest_start_month = models.PositiveSmallIntegerField(null=True, blank=True)
+    harvest_start_day = models.PositiveSmallIntegerField(null=True, blank=True)
+    harvest_end_month = models.PositiveSmallIntegerField(null=True, blank=True)
+    harvest_end_day = models.PositiveSmallIntegerField(null=True, blank=True)
+    cycle_days_min = models.PositiveSmallIntegerField(null=True, blank=True)
+    cycle_days_max = models.PositiveSmallIntegerField(null=True, blank=True)
+
+    period_text = models.CharField(max_length=160, blank=True, help_text="Période en toutes lettres quand la source la donne ainsi")
+    notes = models.TextField(blank=True)
+    source_key = models.CharField(max_length=40)
+    source_note = models.CharField(max_length=255, blank=True)
+    source_updated = models.CharField(max_length=10, blank=True)
+    locally_edited = models.BooleanField(default=False, help_text="Corrigée à la main : le rechargement ne l'écrase pas")
+
+    class Meta:
+        ordering = ['crop_name', 'zone', 'sow_start_month', 'harvest_start_month']
+        verbose_name = "période du calendrier agricole"
+        verbose_name_plural = "calendrier agricole"
+        indexes = [models.Index(fields=['zone', 'crop_key'])]
+
+    def __str__(self):
+        return f"{self.crop_name} · {self.get_zone_display()}{' · ' + self.label if self.label else ''}"

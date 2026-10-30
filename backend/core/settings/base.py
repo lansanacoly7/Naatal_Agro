@@ -18,7 +18,6 @@ load_dotenv(BASE_DIR / '.env')
 # Valeur de repli réservée au développement/CI : prod.py refuse de démarrer sans SECRET_KEY.
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-dev-only-do-not-use-in-production')
 
-OPENWEATHER_API_KEY = os.getenv('API_KEY_OPENWEATHER')
 GROQ_API_KEY = os.getenv('API_KEY_GROQ') or os.getenv('GROQ_API_KEY')
 GROQ_MODEL = os.getenv('GROQ_MODEL', 'qwen/qwen3.8-27b')
 GEMINI_API_KEY = os.getenv('API_KEY_GEMINI') or os.getenv('GEMINI_API_KEY')
@@ -219,6 +218,8 @@ REST_FRAMEWORK = {
         # Limites dédiées (vues avec throttle_scope)
         'auth': '10/minute',
         'ai': '60/hour',
+        # Transcription en direct : un morceau toutes les ~2 secondes pendant que la personne parle
+        'voice_live': '1500/hour',
     }
 }
 
@@ -283,7 +284,7 @@ if 'test' in sys.argv:
         'django.contrib.auth.hashers.MD5PasswordHasher',
     ]
     REST_FRAMEWORK['DEFAULT_THROTTLE_CLASSES'] = []
-    REST_FRAMEWORK['DEFAULT_THROTTLE_RATES'].update({'auth': '10000/minute', 'ai': '10000/minute'})
+    REST_FRAMEWORK['DEFAULT_THROTTLE_RATES'].update({'auth': '10000/minute', 'ai': '10000/minute', 'voice_live': '10000/minute'})
 
     # Les tests ne doivent JAMAIS appeler un vrai service d'IA (les clés du .env sont chargées) : sans clé, les
     # fournisseurs sont « non configurés ». Un test d'orchestration injecte ses propres faux fournisseurs ou ses clés.
@@ -291,3 +292,4 @@ if 'test' in sys.argv:
     GEMINI_API_KEY = None
     GEMINI_API_KEYS = []
     AI_STORAGE_ADVICE_ASYNC = False
+    AI_LIVE_WEATHER = False  # les tests n'appellent jamais la source météo ; un test dédié la simule

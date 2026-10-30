@@ -1,7 +1,7 @@
 from django.contrib import admin, messages
 
 from .knowledge_review import ProposalError, approve_proposal, is_trusted_url, reject_proposal
-from .models import Activity, AgronomicGuide, Crop, Harvest, KnowledgeProposal, PestReport
+from .models import Activity, AgronomicGuide, Crop, CropCalendarEntry, Harvest, KnowledgeProposal, PestReport
 
 
 class ActivityInline(admin.TabularInline):
@@ -99,3 +99,14 @@ class KnowledgeProposalAdmin(admin.ModelAdmin):
                 self.message_user(request, f'{proposal} : {error}', messages.ERROR)
         if rejected:
             self.message_user(request, f'{rejected} proposition(s) rejetée(s).', messages.SUCCESS)
+
+
+@admin.register(CropCalendarEntry)
+class CropCalendarEntryAdmin(admin.ModelAdmin):
+    list_display = ('crop_name', 'zone', 'label', 'period_text', 'source_key', 'locally_edited')
+    list_filter = ('zone', 'category', 'source_key', 'locally_edited')
+    search_fields = ('crop_name', 'crop_key', 'label', 'notes')
+
+    def save_model(self, request, obj, form, change):
+        obj.locally_edited = True  # une correction faite ici est protégée contre le rechargement du fichier
+        super().save_model(request, obj, form, change)

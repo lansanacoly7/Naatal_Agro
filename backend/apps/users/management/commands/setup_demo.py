@@ -7,7 +7,6 @@ from django.utils import timezone
 from apps.agriculture.models import Crop, Activity, Harvest, AgronomicGuide
 from apps.inventory.models import StockItem
 from apps.finances.models import Sale, Transaction
-from apps.weather.models import WeatherData
 from apps.notifications.models import Notification
 from apps.markets.models import Market, Price
 
@@ -241,17 +240,7 @@ class Command(BaseCommand):
         )
         self.stdout.write(self.style.SUCCESS("  [OK] Transactions financieres creees (Recettes: 240 000 F, Depenses: 75 000 F, Solde: +165 000 F)."))
 
-        # 8. Données Météo pour le Pôle de Diamniadio
-        WeatherData.objects.update_or_create(
-            location="Diamniadio",
-            forecast_date=today,
-            defaults={
-                "temperature": 29.5,
-                "humidity": 65.0,
-                "rainfall": 0.0
-            }
-        )
-        self.stdout.write(self.style.SUCCESS("  [OK] Meteo geolocalisee a jour pour Diamniadio (29.5 C, 65% humidite)."))
+        # 8. Météo : jamais de valeur codée en dur. La météo réelle du lieu vient d'Open-Meteo à l'ouverture de l'application.
 
         # 9. Notifications contextuelles
         Notification.objects.create(

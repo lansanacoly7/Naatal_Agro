@@ -6,7 +6,9 @@ from rest_framework import viewsets, permissions
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
+from .market_overview import build_overview
 from .models import Market, Price, Product
+from .routing import route_to_market
 from .serializers import MarketSerializer, PriceSerializer, ProductSerializer
 
 class ProductViewSet(viewsets.ReadOnlyModelViewSet):
@@ -35,6 +37,28 @@ class MarketViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Market.objects.all()
     serializer_class = MarketSerializer
     permission_classes = [permissions.AllowAny]
+
+    @action(detail=True, methods=['get'], url_path='overview')
+    def overview(self, request, pk=None):
+        """Page détail du marché : horaires, dernière mise à jour, produits, évolution des prix et prévision."""
+        return Response(build_overview(self.get_object()))
+
+    @action(detail=True, methods=['get'], url_path='route')
+    def route(self, request, pk=None):
+        """Itinéraire depuis la position de la personne (``?lat=&lon=``) : durée en voiture et à pied, distance, tracé."""
+        market = self.get_object()
+        try:
+            origin = (float(request.query_params['lat']), float(request.query_params['lon']))
+        except (KeyError, ValueError):
+            raise ValidationError({'detail': "Les paramètres 'lat' et 'lon' sont requis."})
+        if not (-90 <= origin[0] <= 90 and -180 <= origin[1] <= 180):
+            raise ValidationError({'detail': 'Position invalide.'})
+        gps = [part.strip() for part in (market.location_gps or '').split(',')]
+        try:
+            destination = (float(gps[0]), float(gps[1]))
+        except (IndexError, ValueError):
+            raise ValidationError({'detail': "Ce marché n'a pas de position enregistrée."})
+        return Response({'destination': {'lat': destination[0], 'lon': destination[1]}, **route_to_market(origin, destination)})
 
 from rest_framework.pagination import PageNumberPagination
 

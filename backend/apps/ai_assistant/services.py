@@ -24,6 +24,41 @@ RÈGLES D'OR :
 5. Si une maladie ou un ravageur est détecté, propose en priorité des solutions de lutte intégrée et agroécologiques (purin de neem, savon noir, décoctions) et des produits homologués au Sénégal (SAED/ANCAR/DPV). Ne cite JAMAIS de produits interdits ou retirés (comme le Mancozèbe, l'Endosulfan, le Carbofuran, le Diméthoate, etc.).
 """
 
+def _zone_weather(location):
+    """Météo réelle de la zone ``location`` (« Thiès, Sénégal »), ou ``None`` si elle n'est pas disponible."""
+    zone = (location or '').split(',')[0].strip()
+    if not zone or zone.lower() == 'sénégal':
+        return None
+    if getattr(settings, 'AI_LIVE_WEATHER', True):
+        from apps.weather import services as weather
+        try:
+            report = weather.weather_for_place(zone)
+            current = report['current']
+            return {
+                "zone": report['place']['name'],
+                "temperature_c": current['temperature'],
+                "humidite_pct": current.get('humidity'),
+                "pluviometrie_mm": current.get('today_rain', current.get('rainfall')),
+                "vent_kmh": current.get('wind_speed'),
+                "date": str(datetime.date.today()),
+                "source": "Open-Meteo (mesure en direct)",
+            }
+        except (weather.WeatherUnavailable, weather.UnknownPlace, weather.AmbiguousPlace, weather.OutsideSenegal):
+            pass
+    from apps.weather.models import WeatherData
+    stored = (WeatherData.objects.filter(location__icontains=zone, forecast_date__gte=datetime.date.today() - datetime.timedelta(days=1))
+              .order_by('-forecast_date').first())
+    if stored:
+        return {
+            "zone": stored.location,
+            "temperature_c": stored.temperature,
+            "humidite_pct": stored.humidity,
+            "pluviometrie_mm": stored.rainfall,
+            "date": str(stored.forecast_date),
+        }
+    return None
+
+
 def get_farmer_context(user):
     """
     Extrait de manière strictement cloisonnée (ORM Django) le contexte
@@ -176,22 +211,12 @@ def get_farmer_context(user):
                     "date": alert.date_reported.strftime("%Y-%m-%d")
                 })
 
-        # 8. Météo géolocalisée selon la région de l'utilisateur ou données nationales récentes
-        user_region = user.location.split(',')[0].strip() if user.location else ''
-        latest_weather = None
-        if user_region:
-            latest_weather = WeatherData.objects.filter(location__icontains=user_region).order_by('-forecast_date').first()
-        if not latest_weather:
-            latest_weather = WeatherData.objects.order_by('-forecast_date').first()
-
-        if latest_weather:
-            context["weather"] = {
-                "zone": latest_weather.location,
-                "temperature_c": latest_weather.temperature,
-                "humidite_pct": latest_weather.humidity,
-                "pluviometrie_mm": latest_weather.rainfall,
-                "date": str(latest_weather.forecast_date),
-            }
+        # 8. Météo de la zone de l'utilisateur, et d'elle seule : mesure réelle en direct, sinon la dernière mesure
+        #    enregistrée pour cette zone. Jamais la météo d'une autre région : sans donnée, on le dit.
+        context["weather"] = _zone_weather(user.location)
+        if context["weather"] is None:
+            context["weather_note"] = ("La météo de la zone de l'exploitant n'est pas disponible. N'en donne AUCUNE "
+                                       "et ne cite pas la météo d'une autre région : dis qu'elle n'est pas disponible.")
     except Exception as e:
         logger.error(f"[AI Context Extraction] Erreur d'extraction : {e}")
 
@@ -522,6 +547,17 @@ def _is_meta_conversational(query):
     return any(re.search(pat, q) for pat in patterns)
 
 
+REQUEST_PATTERN = re.compile(
+    r"\b(peux tu|pouvez vous|tu peux|vous pouvez|aide moi|aidez moi|cree|creer|cree moi|fais moi|faire|envoie|envoyer|"
+    r"appelle|appeler|commande|commander|ajoute|ajouter|programme|je veux|je voudrais|j aimerais|il faut que tu)\b")
+
+
+def is_request(query):
+    """Vrai si la personne demande à l'assistant de FAIRE quelque chose (et non de lui expliquer quelque chose)."""
+    from .knowledge import normalize
+    return bool(REQUEST_PATTERN.search(normalize(query)))
+
+
 def _retrieve_with_history(query, history):
     """Si la question seule ne désigne aucune culture (« et l'engrais ? »), s'appuie sur les messages précédents."""
     # Si la question est méta-conversationnelle, ne pas forcer d'association avec des cultures de l'historique
@@ -530,6 +566,9 @@ def _retrieve_with_history(query, history):
 
     retrieval = retrieve(query)
     if retrieval.guides or not history:
+        return retrieval
+    # Une demande d'action (« peux-tu créer une alerte ? ») n'est pas la suite d'une question sur une culture
+    if is_request(query):
         return retrieval
     previous = ' '.join(t['content'] for t in history if t.get('role') == 'user' and t.get('content'))
     if not previous:

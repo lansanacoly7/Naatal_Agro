@@ -365,7 +365,7 @@ def _partial_reminder(text):
     match = actions.RE_REMINDER.search(text)
     if not match:
         return None
-    tail = match.group(1).strip(" .!?")
+    tail = actions.reminder_tail(match.group(1))
     if tail and strip_time_expressions(tail):
         return None  # il y a bien un objet : la détection normale s'en charge (et demande l'échéance si elle manque)
     schedule = parse_schedule(tail) if tail else None
@@ -378,6 +378,11 @@ def _draft_from_incomplete_reminder(intent):
 
 
 def _start_draft(text, intent, user):
+    if not intent.get('has_intent') and not intent.get('note'):
+        # « Peux-tu créer une alerte pour moi ? » est une demande, pas une question : on demande l'objet et l'heure
+        reminder = _partial_reminder(text)
+        if reminder:
+            return reminder
     if _is_question(text):
         return None
     if intent.get('has_intent'):
@@ -596,6 +601,8 @@ def handle_turn(user, conversation, text, intent, context='general'):
     """
     draft = active_draft(conversation)
     if draft:
+        if draft.get('agent'):
+            return None  # brouillon de l'agent d'actions (farm_agent) : c'est lui qui le poursuit
         return _continue(user, conversation, draft, text, intent, context)
 
     new_draft = _start_draft(text, intent, user)

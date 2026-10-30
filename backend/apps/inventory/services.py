@@ -19,6 +19,20 @@ def _movement_type(reason, delta):
     return 'in' if delta > 0 else 'out'
 
 
+def stock_for_sale(user, product_name, crop_name=''):
+    """
+    L'article de stock qu'une vente doit toucher : celui que la personne a choisi (le nom du produit vendu), et seulement
+    à défaut celui de la culture liée. Une culture « Arachide 73-33 » ne doit jamais remplacer l'article « Arachide » vendu.
+    """
+    for name in (product_name, crop_name):
+        name = (name or '').strip()
+        if name:
+            item = StockItem.objects.filter(user=user, name__iexact=name).first()
+            if item:
+                return item
+    return None
+
+
 @transaction.atomic
 def record_quantity_change(stock_item, old_quantity, *, reason, note='', sale=None):
     """

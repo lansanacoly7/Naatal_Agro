@@ -76,13 +76,13 @@ class SaleSerializer(serializers.ModelSerializer):
         if price_per_unit is None or price_per_unit <= 0:
             raise serializers.ValidationError({'price_per_unit': "Le prix unitaire doit être supérieur à zéro."})
 
-        effective_name = crop.name if crop else (product_name or '')
-        if request and request.user and effective_name and quantity_sold is not None:
-            from apps.inventory.models import StockItem
-            stock_item = StockItem.objects.filter(user=request.user, name__iexact=effective_name).first()
+        # Le stock contrôlé est celui du produit vendu (pas celui d'une culture qui porte un nom voisin)
+        if request and request.user and request.user.is_authenticated and quantity_sold is not None:
+            from apps.inventory.services import stock_for_sale
+            stock_item = stock_for_sale(request.user, product_name, crop.name if crop else '')
             if stock_item and stock_item.quantity < float(quantity_sold):
                 raise serializers.ValidationError({
-                    'quantity_sold': f"Stock insuffisant : vous disposez actuellement de {stock_item.quantity} {stock_item.unit} pour {effective_name}."
+                    'quantity_sold': f"Stock insuffisant : vous disposez actuellement de {stock_item.quantity} {stock_item.unit} pour {stock_item.name}."
                 })
         return attrs
 

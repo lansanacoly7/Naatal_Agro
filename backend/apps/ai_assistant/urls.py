@@ -6,6 +6,7 @@ from .views import (
     ExecuteAIActionView,
     AnalyticsAIView,
     TranscribeAudioView,
+    TranscribeLiveView,
 )
 
 app_name = 'ai_assistant'
@@ -17,4 +18,5 @@ urlpatterns = [
     path('actions/execute/', ExecuteAIActionView.as_view(), name='execute_action'),
     path('analytics/', AnalyticsAIView.as_view(), name='ai_analytics'),
     path('voice/transcribe/', TranscribeAudioView.as_view(), name='voice_transcribe'),
+    path('voice/live/', TranscribeLiveView.as_view(), name='voice_live'),
 ]

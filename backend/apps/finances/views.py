@@ -17,18 +17,16 @@ class SaleViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         with db_transaction.atomic():
             sale = serializer.save(user=self.request.user)
-            product_name = sale.crop.name if sale.crop else sale.product_name
+            product_name = sale.product_name or (sale.crop.name if sale.crop else '')
 
-            # 1. Décrémenter le stock correspondant (journalisé) : une erreur annule toute la vente
-            if product_name:
-                from apps.inventory.models import StockItem
-                from apps.inventory.services import change_stock
-                stock_item = StockItem.objects.filter(user=self.request.user, name__iexact=product_name).first()
-                if stock_item:
-                    change_stock(
-                        stock_item, stock_item.quantity - float(sale.quantity_sold),
-                        reason='sale', note=f"Vente du {sale.date}", sale=sale,
-                    )
+            # 1. Décrémenter le stock du produit VENDU (journalisé) : une erreur annule toute la vente
+            from apps.inventory.services import change_stock, stock_for_sale
+            stock_item = stock_for_sale(self.request.user, sale.product_name, sale.crop.name if sale.crop else '')
+            if stock_item:
+                change_stock(
+                    stock_item, stock_item.quantity - float(sale.quantity_sold),
+                    reason='sale', note=f"Vente du {sale.date}", sale=sale,
+                )
 
             # 2. Créer automatiquement la Transaction de revenu liée à la vente
             Transaction.objects.update_or_create(
@@ -43,19 +41,8 @@ class SaleViewSet(viewsets.ModelViewSet):
             )
 
     def perform_destroy(self, instance):
-        with db_transaction.atomic():
-            # Restituer la quantité dans le stock (journalisé) avant suppression de la vente
-            product_name = instance.crop.name if instance.crop else instance.product_name
-            if product_name:
-                from apps.inventory.models import StockItem
-                from apps.inventory.services import change_stock
-                stock_item = StockItem.objects.filter(user=self.request.user, name__iexact=product_name).first()
-                if stock_item:
-                    change_stock(
-                        stock_item, stock_item.quantity + float(instance.quantity_sold),
-                        reason='sale_reversal', note=f"Annulation de la vente du {instance.date}",
-                    )
-            super().perform_destroy(instance)
+        from .services import delete_sale
+        delete_sale(instance, self.request.user)
 
 class TransactionViewSet(viewsets.ModelViewSet):
     serializer_class = TransactionSerializer

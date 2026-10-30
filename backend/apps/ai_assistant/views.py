@@ -11,6 +11,8 @@ from .serializers import (
     AIConversationListSerializer,
     AIConversationDetailSerializer
 )
+from . import farm_agent
+from .capabilities import unsupported_request
 from .services import answer_question
 from .actions import (
     detect_action_intent,
@@ -253,6 +255,13 @@ class AskAIView(views.APIView):
                 dialogue.remember(conversation, product=dialogue.product_of(turn.action_data))
                 return Response(AIInteractionSerializer(turn).data, status=status.HTTP_201_CREATED)
 
+            # 1ter. Les autres actions de l'application (activités, récoltes, cultures, annulations, profil…) :
+            #       l'agent comprend la demande, pose les questions qui manquent, puis propose avant d'écrire quoi que ce soit
+            agent_turn = farm_agent.handle(request.user, conversation, safe_query, intent, context=context)
+            if agent_turn is not None:
+                dialogue.remember(conversation, product=dialogue.product_of(agent_turn.action_data))
+                return Response(AIInteractionSerializer(agent_turn).data, status=status.HTTP_201_CREATED)
+
         # 2. Demande d'opération reconnue mais impossible à proposer (rappel introuvable, plusieurs candidats…)
         if intent and intent.get('note'):
             note = proposals.create_note(
@@ -271,6 +280,15 @@ class AskAIView(views.APIView):
 
         # 4. Consultation en lecture seule : la réponse vient de la base, sans modèle de langage
         if not image_base64:
+            # 3bis. Action que l'assistant ne sait pas faire : il le dit, propose une alternative, et ne sort pas une fiche au hasard
+            refusal = unsupported_request(safe_query)
+            if refusal:
+                note = proposals.create_note(
+                    user=request.user, conversation=conversation, query=safe_query, context=context,
+                    text=refusal['text'], suggestions=refusal['suggestions'], kind='unsupported',
+                )
+                return Response(AIInteractionSerializer(note).data, status=status.HTTP_201_CREATED)
+
             query_intent = detect_query_intent(safe_query)
             if query_intent:
                 answer = answer_query(request.user, query_intent)
@@ -453,7 +471,8 @@ class TranscribeAudioView(views.APIView):
         if detected:
             filename, content_type = detected
 
-        text = voice.transcribe_audio_bytes(audio_bytes, filename=filename, content_type=content_type)
+        language = 'wo' if str(request.data.get('language') or '').lower().startswith('wo') else 'fr'
+        text = voice.transcribe_audio_bytes(audio_bytes, filename=filename, content_type=content_type, language=language)
         if text is None:
             return Response({"text": "", "error": "Le service de transcription est momentanément indisponible. "
                                                   "Vous pouvez écrire votre message.", "code": "unavailable"},
@@ -461,4 +480,73 @@ class TranscribeAudioView(views.APIView):
         if not text:
             return Response({"text": "", "error": "Je n'ai rien entendu. Rapprochez-vous du micro et réessayez.",
                              "code": "no_speech"}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+        # Le texte brut est conservé à côté du texte corrigé, pour que l'écran puisse montrer ce qui a été compris
+        corrected = voice.improve_transcript(text) if language == 'fr' else text
+        return Response({"text": corrected, "raw_text": text}, status=status.HTTP_200_OK)
+
+
+class TranscribeLiveView(views.APIView):
+    """
+    Transcription en direct. Le téléphone envoie le son par petits morceaux (PCM 16 bits, 16 kHz, mono) pendant que la
+    personne parle ; chaque réponse contient le texte compris depuis le début (``final=false``). Au dernier morceau
+    (``final=true``), le texte est transcrit en entier puis remis d'équerre, et le son est effacé.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'voice_live'
+
+    def post(self, request, *args, **kwargs):
+        import base64
+        import binascii
+        import re
+        from . import voice
+
+        session = str(request.data.get('session') or '')
+        if not re.fullmatch(r'[A-Za-z0-9_-]{8,64}', session):
+            return Response({"error": "Session invalide.", "code": "bad_session"}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            seq = int(request.data.get('seq'))
+            if not 0 <= seq < 400:
+                raise ValueError
+        except (TypeError, ValueError):
+            return Response({"error": "Numéro de morceau invalide.", "code": "bad_seq"}, status=status.HTTP_400_BAD_REQUEST)
+        final = str(request.data.get('final')).lower() in ('true', '1')
+        language = 'wo' if str(request.data.get('language') or '').lower().startswith('wo') else 'fr'
+
+        raw = str(request.data.get('pcm_base64') or '')
+        if len(raw) > voice.LIVE_MAX_CHUNK_BYTES * 4 // 3 + 8:
+            return Response({"error": "Morceau trop volumineux.", "code": "too_large"}, status=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE)
+        try:
+            chunk = base64.b64decode(raw, validate=True) if raw else b''
+        except (binascii.Error, ValueError):
+            return Response({"error": "Son invalide.", "code": "bad_audio"}, status=status.HTTP_400_BAD_REQUEST)
+
+        audio = voice.live_append(request.user.pk, session, seq, chunk)
+        if audio is None:
+            voice.live_clear(request.user.pk, session)
+            return Response({"error": "Enregistrement trop long (1 minute maximum).", "code": "too_long"},
+                            status=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE)
+
+        if len(audio) < voice.LIVE_MIN_BYTES:
+            if final:
+                voice.live_clear(request.user.pk, session)
+                return Response({"text": "", "error": "Je n'ai rien entendu. Rapprochez-vous du micro et réessayez.",
+                                 "code": "no_speech"}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+            return Response({"text": ""}, status=status.HTTP_200_OK)
+
+        text = voice.transcribe_audio_bytes(voice.pcm_to_wav(audio), filename='live.wav', content_type='audio/wav', language=language)
+        if final:
+            voice.live_clear(request.user.pk, session)
+        if text is None:
+            return Response({"text": "", "error": "Le service de transcription est momentanément indisponible. "
+                                                  "Vous pouvez écrire votre message.", "code": "unavailable"},
+                            status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        if not text:
+            if final:
+                return Response({"text": "", "error": "Je n'ai rien entendu. Rapprochez-vous du micro et réessayez.",
+                                 "code": "no_speech"}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+            return Response({"text": ""}, status=status.HTTP_200_OK)
+        if final:
+            corrected = voice.improve_transcript(text) if language == 'fr' else text
+            return Response({"text": corrected, "raw_text": text}, status=status.HTTP_200_OK)
         return Response({"text": text}, status=status.HTTP_200_OK)

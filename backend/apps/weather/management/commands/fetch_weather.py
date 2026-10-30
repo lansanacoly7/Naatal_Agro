@@ -1,58 +1,43 @@
 import time
+
 from django.core.management.base import BaseCommand
-from apps.weather.models import WeatherData
-from apps.weather.services import fetch_weather_for_location
-from django.conf import settings
+
 from apps.agriculture.models import Crop
+from apps.weather.services import (
+    AmbiguousPlace,
+    OutsideSenegal,
+    UnknownPlace,
+    WeatherUnavailable,
+    weather_for_place,
+)
+
 
 class Command(BaseCommand):
-    help = 'Mise à jour des données météo pour les régions des cultures actives'
+    help = (
+        "Relève la météo réelle (Open-Meteo) des lieux où les agriculteurs ont des cultures et l'enregistre. "
+        "Aucune valeur n'est jamais inventée : un lieu sans réponse est simplement signalé."
+    )
 
     def handle(self, *args, **kwargs):
-        self.stdout.write("Début de la synchronisation météo...")
-
-        if not getattr(settings, 'OPENWEATHER_API_KEY', None):
-            self.stdout.write(self.style.WARNING("ATTENTION: OPENWEATHER_API_KEY n'est pas configurée."))
-            self.stdout.write("Génération de données météo fictives (mode dégradé)...")
-            # Mode dégradé: si pas de clé, on simule pour que l'app fonctionne.
-            from datetime import date
-            import random
-            today = date.today()
-            locations = list(set(Crop.objects.values_list('location', flat=True)))
-            if not locations:
-                locations = ["Diamniadio, Sénégal", "Dakar, Sénégal", "Thiès, Sénégal"]
-                
-            for loc in locations:
-                if loc:
-                    WeatherData.objects.update_or_create(
-                        location=loc.lower(),
-                        forecast_date=today,
-                        defaults={
-                            'temperature': round(random.uniform(22.0, 38.0), 1),
-                            'humidity': round(random.uniform(30.0, 80.0), 1),
-                            'rainfall': round(random.choice([0.0, 0.0, 0.0, 5.0, 12.0]), 1),
-                        }
-                    )
-            self.stdout.write(self.style.SUCCESS("Météo fictive générée avec succès !"))
+        locations = sorted({loc.strip() for loc in Crop.objects.values_list('location', flat=True) if loc and loc.strip()})
+        if not locations:
+            self.stdout.write('Aucune culture avec un lieu : rien à relever.')
             return
 
-        # Vraie récupération depuis l'API
-        locations = list(set(Crop.objects.values_list('location', flat=True)))
-        if not locations:
-            locations = ["Diamniadio, Sénégal", "Dakar, Sénégal"]
-
-        success_count = 0
-        for loc in locations:
-            if not loc:
-                continue
-            
-            weather = fetch_weather_for_location(loc)
-            if weather:
-                success_count += 1
-                self.stdout.write(f"Météo mise à jour pour {loc}: {weather.temperature}°C, Humidité: {weather.humidity}%")
+        done = 0
+        for location in locations:
+            try:
+                report = weather_for_place(location)
+            except AmbiguousPlace:
+                self.stdout.write(self.style.WARNING(f'{location} : plusieurs lieux portent ce nom, précisez la région (ex. « {location}, Dakar »).'))
+            except (UnknownPlace, OutsideSenegal) as exc:
+                self.stdout.write(self.style.WARNING(f'{location} : {exc}'))
+            except WeatherUnavailable:
+                self.stdout.write(self.style.ERROR(f'{location} : la source météo ne répond pas.'))
             else:
-                self.stdout.write(self.style.ERROR(f"Échec de la mise à jour pour {loc}"))
-                
-            time.sleep(1) # Rate limiting pour les APIs gratuites
+                done += 1
+                current = report['current']
+                self.stdout.write(f"{location} : {current['temperature']} °C, humidité {current['humidity']} %")
+            time.sleep(0.5)  # on ménage la source gratuite
 
-        self.stdout.write(self.style.SUCCESS(f"Synchronisation météo terminée. {success_count}/{len(locations)} mises à jour."))
+        self.stdout.write(self.style.SUCCESS(f'Météo relevée pour {done} lieu(x) sur {len(locations)}.'))

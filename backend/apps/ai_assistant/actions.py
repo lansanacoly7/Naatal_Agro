@@ -91,10 +91,21 @@ RE_STOCK_ADD = re.compile(
 # Création d'un rappel : seulement des formulations explicites (« rappelle-moi », « mets un rappel »…)
 RE_REMINDER = re.compile(
     r"(?:rappelle[- ]moi|alerte[- ]moi|fatt?ali\s+ma"
-    r"|(?:mets|programme|cr[ée]e|ajoute|pose)\s+(?:moi\s+)?un\s+(?:rappel|alerte))"
-    r"\s*(?:de\s+|d['’]\s*|pour\s+|:\s*)?(.+)",
+    r"|(?:(?:peux|pouvez)[- ](?:tu|vous)\s+|tu\s+peux\s+|vous\s+pouvez\s+|je\s+(?:veux|voudrais)\s+|j['’]aimerais\s+)?"
+    r"(?:me\s+|nous\s+)?(?:mets|mettre|programme|programmer|cr[ée]e|cr[ée]{1,2}r|ajoute|ajouter|pose|poser|fais|faire|donne|donner)"
+    r"(?:[- ]moi)?\s+(?:un|une)\s+(?:rappel|alerte|notification)"
+    r"|(?:je\s+(?:veux|voudrais)|j['’]aimerais)\s+(?:un|une)\s+(?:rappel|alerte))"
+    r"\s*(?:de\s+|d['’]\s*|pour\s+|:\s*)?(.*)",
     re.IGNORECASE
 )
+_POLITE = re.compile(r"(?:s['’]il\s+(?:te|vous)\s+pla[iî]t|svp|stp)", re.IGNORECASE)
+
+
+def reminder_tail(raw):
+    """Ce qui suit « crée-moi une alerte » une fois la politesse retirée (« pour moi », « s'il te plaît »)."""
+    text = _POLITE.sub('', raw or '')
+    text = re.sub(r"^(?:moi|nous)\b[\s,]*", "", text.strip(" .!?,"), flags=re.IGNORECASE)
+    return text.strip(" .!?,")
 _REMINDER_NOUN = (
     r"(?:mon|ma|le|la|ce|cet|cette|mes|les|l['’])\s*(?:rappel|alerte)s?\b\s*"
     r"(?:de\s+|d['’]\s*|pour\s+|du\s+|des\s+)?"
@@ -260,9 +271,9 @@ def _detect_reminder_create(q):
     match = RE_REMINDER.search(q)
     if not match:
         return None
-    text = match.group(1).strip(" .!?")
-    if not text:
-        return None
+    text = reminder_tail(match.group(1))
+    if not text or not strip_time_expressions(text):
+        return None  # pas d'objet : le dialogue demande « de quoi dois-je vous rappeler ? »
     schedule = parse_schedule(text)
     message = (strip_time_expressions(text) or text)
     return build_reminder_intent(message, schedule.when if schedule else None,
@@ -591,6 +602,10 @@ def check_action(user, action_type, params):
     if not user:
         return blockers, warnings
 
+    from . import farm_agent
+    if action_type in farm_agent.TOOLS:
+        return farm_agent.check(user, action_type, params if isinstance(params, dict) else {})
+
     if action_type == 'record_sale':
         from apps.inventory.models import StockItem
         name = _as_text(params.get('product_name'), 255)
@@ -633,6 +648,10 @@ def execute_action(user, action_type, params):
 
     try:
         with db_transaction.atomic():
+            from . import farm_agent
+            if action_type in farm_agent.TOOLS:
+                return farm_agent.execute(user, action_type, params)
+
             if action_type == 'record_expense':
                 from apps.finances.models import Transaction
                 from apps.agriculture.models import Crop
