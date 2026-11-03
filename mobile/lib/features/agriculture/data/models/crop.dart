@@ -92,14 +92,14 @@ class Crop {
 
   factory Crop.fromJson(Map<String, dynamic> json) {
     return Crop(
-      id: json['id'] ?? '',
-      name: json['name'] ?? '',
-      cropType: json['crop_type'] ?? '',
-      plantingDate: json['planting_date'] ?? '',
-      expectedHarvestDate: json['expected_harvest_date'] ?? '',
-      status: json['status'] ?? 'active',
+      id: json['id']?.toString() ?? '',
+      name: json['name']?.toString() ?? '',
+      cropType: json['crop_type']?.toString() ?? '',
+      plantingDate: json['planting_date']?.toString() ?? '',
+      expectedHarvestDate: json['expected_harvest_date']?.toString() ?? '',
+      status: json['status']?.toString() ?? 'active',
       areaSize: double.tryParse(json['area_size']?.toString() ?? '0') ?? 0.0,
-      location: json['location'] ?? '',
+      location: json['location']?.toString() ?? '',
       guideId: json['guide']?.toString(),
       guideSlug: json['guide_slug']?.toString(),
       guideName: json['guide_name']?.toString(),

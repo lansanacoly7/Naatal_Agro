@@ -111,7 +111,7 @@ class _AddCropScreenState extends ConsumerState<AddCropScreen> {
       });
       refreshAfterDataChange(ref);
       if (!mounted) return;
-      context.pop();
+      context.go('/agriculture');
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Culture ajoutée.')));
     } catch (_) {
       if (mounted) {

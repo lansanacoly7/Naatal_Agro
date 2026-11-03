@@ -221,7 +221,8 @@ class _AddCropScreenState extends ConsumerState<AddCropScreen> {
           doneLabel: 'Voir mes cultures',
         );
         if (mounted) {
-          context.pop();
+          refreshAfterDataChange(ref);
+          context.go('/agriculture');
         }
       }
     } catch (e) {

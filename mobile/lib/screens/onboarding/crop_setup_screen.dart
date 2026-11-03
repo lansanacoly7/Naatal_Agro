@@ -7,7 +7,9 @@ import '../../core/location/senegal_regions.dart';
 import '../../core/router/app_router.dart';
 import '../../features/agriculture/data/guides_provider.dart';
 import '../../features/agriculture/data/models/agronomic_guide.dart';
+import '../../features/agriculture/data/agriculture_provider.dart';
 import '../../features/profile/data/profile_provider.dart';
+import '../../shared/utils/data_refresh.dart';
 import '../../ui/ui.dart';
 
 /// Première chose montrée après l'inscription : les cultures à suggérer, avec la région trouvée toute seule.
@@ -76,6 +78,32 @@ class _CropSetupScreenState extends ConsumerState<CropSetupScreen> {
               mainCrops: withCrops ? _selected.toList() : null,
             );
         ref.invalidate(profileNotifierProvider);
+      }
+      if (withCrops && _selected.isNotEmpty) {
+        final guides = ref.read(guidesNotifierProvider).guides;
+        final repo = ref.read(agricultureRepositoryProvider);
+        final now = DateTime.now();
+        final nowStr = now.toIso8601String().split('T').first;
+        for (final cropName in _selected) {
+          final guide = guides.where((g) => g.name.toLowerCase() == cropName.toLowerCase()).firstOrNull;
+          final cycleDays = guide?.cycleDaysMax ?? guide?.cycleDaysMin ?? 90;
+          final harvestStr = now.add(Duration(days: cycleDays)).toIso8601String().split('T').first;
+          try {
+            await repo.addCrop({
+              'name': cropName,
+              'crop_type': cropName,
+              'area_size': 1.0,
+              'location': region?.name ?? 'Mon exploitation',
+              'planting_date': nowStr,
+              'expected_harvest_date': harvestStr,
+              'status': 'active',
+              if (guide != null && guide.id.isNotEmpty) 'guide': guide.id,
+            });
+          } catch (err) {
+            debugPrint('[CropSetup] Erreur ajout culture $cropName : $err');
+          }
+        }
+        refreshAfterDataChange(ref);
       }
       HapticFeedback.mediumImpact();
       await setCropSetupPending(ref, false); // le routeur envoie alors vers l'accueil

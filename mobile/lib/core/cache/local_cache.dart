@@ -2,14 +2,14 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class CacheEntry {
-  final Map<String, dynamic> data;
+  final dynamic data;
   final DateTime cachedAt;
 
   CacheEntry({required this.data, required this.cachedAt});
 
   factory CacheEntry.fromJson(Map<String, dynamic> json) {
     return CacheEntry(
-      data: json['data'] as Map<String, dynamic>,
+      data: json['data'],
       cachedAt: DateTime.parse(json['cachedAt'] as String),
     );
   }
@@ -39,7 +39,7 @@ class LocalCache {
     return '$_prefix${_userId}_$key';
   }
 
-  Future<void> write(String key, Map<String, dynamic> data) async {
+  Future<void> write(String key, dynamic data) async {
     final entry = CacheEntry(data: data, cachedAt: DateTime.now());
     await _prefs.setString(_buildKey(key), jsonEncode(entry.toJson()));
   }

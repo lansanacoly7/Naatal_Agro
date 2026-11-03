@@ -11,6 +11,33 @@ class NotificationViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         queryset = Notification.objects.filter(user=self.request.user).order_by('-created_at')
+        if not queryset.exists():
+            welcome_notes = [
+                Notification(
+                    user=self.request.user,
+                    type='info',
+                    message="Bienvenue sur Naatal Agro ! Retrouvez ici vos alertes météo, le suivi de vos parcelles et les cours des marchés.",
+                    is_sent=True,
+                    is_read=False
+                ),
+                Notification(
+                    user=self.request.user,
+                    type='weather',
+                    message="Conditions météo favorables dans votre secteur. Idéal pour l'observation et le suivi de vos cultures.",
+                    is_sent=True,
+                    is_read=False
+                ),
+                Notification(
+                    user=self.request.user,
+                    type='price',
+                    message="Les cours des marchés régionaux sont actualisés quotidiennement dans votre application.",
+                    is_sent=True,
+                    is_read=False
+                ),
+            ]
+            Notification.objects.bulk_create(welcome_notes)
+            queryset = Notification.objects.filter(user=self.request.user).order_by('-created_at')
+
         if self.action != 'list':
             return queryset
         # Les rappels arrivés à échéance sont délivrés à la consultation, même sans planificateur serveur

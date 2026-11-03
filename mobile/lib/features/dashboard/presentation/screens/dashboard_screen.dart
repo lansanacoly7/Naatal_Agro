@@ -17,6 +17,7 @@ import '../../../markets/data/models/product.dart';
 import '../../data/models/dashboard_data.dart';
 import 'package:go_router/go_router.dart';
 import '../../../profile/data/profile_provider.dart';
+import '../../../profile/data/notifications_provider.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -72,9 +73,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     final firstName = (profile?.fullName.trim().split(RegExp(r'\s+')).first) ?? '';
     final location = (profile?.location.trim().isNotEmpty ?? false) ? profile!.location.trim() : 'Sénégal';
 
+    final unreadAlerts = ref.watch(unreadNotificationsCountProvider);
+
     return RefreshIndicator(
       onRefresh: () async {
         ref.invalidate(dashboardDataProvider);
+        ref.read(notificationsProvider.notifier).fetchNotifications();
         await ref.read(profileNotifierProvider.notifier).loadProfile();
       },
       color: context.c.accent,
@@ -89,7 +93,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildHeader(location, data.alerts.length),
+                  _buildHeader(location, unreadAlerts),
                   const SizedBox(height: 24),
                   Text(
                     firstName.isEmpty ? 'Bonjour' : 'Bonjour, $firstName',

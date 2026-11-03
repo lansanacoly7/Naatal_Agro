@@ -74,6 +74,16 @@ class AgricultureRepository {
     return paginated.results;
   }
 
+  Future<void> _clearCropsCache() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userId = await _apiClient.getUserId();
+      final cache = LocalCache(prefs, userId);
+      await cache.delete('crops_page_null');
+      await cache.delete('crops_page_1');
+    } catch (_) {}
+  }
+
   Future<void> addCrop(Map<String, dynamic> cropData) async {
     final response = await _apiClient.post(
       AppConstants.cropsEndpoint,
@@ -83,6 +93,7 @@ class AgricultureRepository {
     if (response.statusCode != 201 && response.statusCode != 200 && response.statusCode != 202) {
       throw Exception('Erreur lors de l\'ajout de la culture');
     }
+    await _clearCropsCache();
   }
 
   Future<void> updateCrop(String cropId, Map<String, dynamic> cropData) async {
@@ -94,6 +105,7 @@ class AgricultureRepository {
     if (response.statusCode != 200 && response.statusCode != 204 && response.statusCode != 202) {
       throw Exception('Erreur lors de la mise à jour de la culture');
     }
+    await _clearCropsCache();
   }
 
   Future<void> deleteCrop(String cropId) async {
@@ -104,6 +116,7 @@ class AgricultureRepository {
     if (response.statusCode != 204 && response.statusCode != 200 && response.statusCode != 202) {
       throw Exception('Erreur lors de la suppression de la culture');
     }
+    await _clearCropsCache();
   }
 
   /// Ajoute une activité (arrosage, engrais, traitement…) à une culture.
@@ -151,6 +164,8 @@ class AgricultureRepository {
     if (response.statusCode != 200 && response.statusCode != 201 && response.statusCode != 202) {
       throw Exception('Erreur lors de l\'enregistrement de la récolte (${response.statusCode})');
     }
+
+    await _clearCropsCache();
 
     return response.data is Map<String, dynamic>
         ? response.data as Map<String, dynamic>

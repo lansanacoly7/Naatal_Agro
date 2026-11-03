@@ -20,7 +20,17 @@ class CropViewSet(viewsets.ModelViewSet):
         return Crop.objects.filter(user=self.request.user).prefetch_related('activities', 'harvests').select_related('guide')
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        crop = serializer.save(user=self.request.user)
+        try:
+            from apps.notifications.models import Notification
+            Notification.objects.create(
+                user=self.request.user,
+                type='crop',
+                message=f"La culture « {crop.name} » a bien été enregistrée. Retrouvez vos conseils et calendrier de récolte.",
+                is_sent=True
+            )
+        except Exception:
+            pass
 
     @action(detail=True, methods=['post'], url_path='harvest')
     def record_harvest(self, request, pk=None):
@@ -31,6 +41,16 @@ class CropViewSet(viewsets.ModelViewSet):
         )
         serializer.is_valid(raise_exception=True)
         harvest = serializer.save()
+        try:
+            from apps.notifications.models import Notification
+            Notification.objects.create(
+                user=self.request.user,
+                type='stock',
+                message=f"Récolte réussie pour « {crop.name} » : {harvest.quantity} {harvest.unit} ajoutés au stock de votre exploitation.",
+                is_sent=True
+            )
+        except Exception:
+            pass
         return Response(HarvestSerializer(harvest).data, status=status.HTTP_201_CREATED)
 
 class ActivityViewSet(viewsets.ModelViewSet):

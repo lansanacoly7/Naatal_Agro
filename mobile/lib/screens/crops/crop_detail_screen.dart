@@ -69,6 +69,8 @@ class _Detail extends ConsumerWidget {
     final progress = crop.progressOrNull;
     final planting = crop.parsedPlantingDate;
     final harvestDate = crop.parsedHarvestDate;
+    final daysRemaining = crop.daysToHarvest;
+    final isHarvestReady = !harvested && (daysRemaining == null || daysRemaining <= 0);
 
     return LargeTitleScaffold(
       title: crop.name,
@@ -90,10 +92,14 @@ class _Detail extends ConsumerWidget {
               padding: EdgeInsets.fromLTRB(Space.gutter, Space.m, Space.gutter, MediaQuery.paddingOf(context).bottom + Space.m),
               decoration: BoxDecoration(color: c.bg, border: Border(top: BorderSide(color: c.line))),
               child: PillButton(
-                label: 'Enregistrer la récolte',
-                icon: Icons.agriculture_rounded,
+                label: isHarvestReady
+                    ? 'Enregistrer la récolte'
+                    : (daysRemaining != null
+                        ? 'Récolte dans $daysRemaining j'
+                        : 'Récolte non prête'),
+                icon: isHarvestReady ? Icons.agriculture_rounded : Icons.lock_clock_rounded,
                 expand: true,
-                onPressed: () => showHarvestSheet(context, ref, crop),
+                onPressed: isHarvestReady ? () => showHarvestSheet(context, ref, crop) : null,
               ),
             ),
       slivers: [

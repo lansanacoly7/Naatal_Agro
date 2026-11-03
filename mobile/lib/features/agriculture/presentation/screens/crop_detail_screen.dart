@@ -327,6 +327,10 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
   // ────────────────────────── 0. Actions rapides photo ──────────────────────────
 
   Widget _buildPhotoActions(Crop crop) {
+    final isHarvested = crop.status.toLowerCase() == 'harvested' || crop.harvests.isNotEmpty;
+    final daysRemaining = crop.daysToHarvest;
+    final bool isHarvestReady = !isHarvested && (daysRemaining == null || daysRemaining <= 0);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -391,12 +395,31 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
             ),
             const SizedBox(width: 10),
             Expanded(
-              child: PhotoTile(
-                imageAsset: 'assets/images/ui/ui_recolter_geste.jpg',
-                label: 'Récolter',
-                icon: Icons.agriculture_rounded,
-                height: 110,
-                onTap: () => _showHarvestDialog(context),
+              child: Opacity(
+                opacity: (isHarvested || isHarvestReady) ? 1.0 : 0.45,
+                child: PhotoTile(
+                  imageAsset: 'assets/images/ui/ui_recolter_geste.jpg',
+                  label: isHarvested ? 'En Stock' : 'Récolter',
+                  icon: isHarvested
+                      ? Icons.inventory_2_rounded
+                      : (isHarvestReady ? Icons.agriculture_rounded : Icons.lock_clock_rounded),
+                  badge: (!isHarvested && !isHarvestReady && daysRemaining != null)
+                      ? 'J-$daysRemaining'
+                      : null,
+                  height: 110,
+                  onTap: isHarvested
+                      ? () => context.push('/stock')
+                      : (isHarvestReady
+                          ? () => _showHarvestDialog(context)
+                          : () {
+                              final msg = (daysRemaining != null && daysRemaining > 0)
+                                  ? 'La récolte est prévue dans $daysRemaining jours.'
+                                  : 'Cette culture n\'est pas encore prête pour la récolte.';
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text(msg), behavior: SnackBarBehavior.floating),
+                              );
+                            }),
+                ),
               ),
             ),
           ],
@@ -1065,6 +1088,9 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
   // ────────────────────────── BottomBar ──────────────────────────
 
   Widget _buildBottomBar(Crop crop, bool isHarvested) {
+    final daysRemaining = crop.daysToHarvest;
+    final bool isHarvestReady = !isHarvested && (daysRemaining == null || daysRemaining <= 0);
+
     return SafeArea(
       child: Container(
         padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
@@ -1104,12 +1130,29 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
               child: SizedBox(
                 height: 56,
                 child: ElevatedButton.icon(
-                  onPressed: isHarvested ? () => context.push('/stock') : () => _showHarvestDialog(context),
-                  icon: Icon(isHarvested ? Icons.inventory_2_rounded : Icons.agriculture_rounded, size: 20),
-                  label: Text(isHarvested ? 'Voir en Stock' : 'Enregistrer la récolte'),
+                  onPressed: isHarvested
+                      ? () => context.push('/stock')
+                      : (isHarvestReady ? () => _showHarvestDialog(context) : null),
+                  icon: Icon(
+                    isHarvested
+                        ? Icons.inventory_2_rounded
+                        : (isHarvestReady ? Icons.agriculture_rounded : Icons.lock_clock_rounded),
+                    size: 20,
+                  ),
+                  label: Text(
+                    isHarvested
+                        ? 'Voir en Stock'
+                        : (isHarvestReady
+                            ? 'Enregistrer la récolte'
+                            : (daysRemaining != null
+                                ? 'Récolte dans $daysRemaining j'
+                                : 'Récolte non prête')),
+                  ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
+                    disabledBackgroundColor: Colors.grey.shade300,
+                    disabledForegroundColor: Colors.grey.shade600,
                     elevation: 0,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),

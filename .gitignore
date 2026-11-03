@@ -70,3 +70,6 @@ coverage.xml
 
 # Clés privées et certificats Let's Encrypt (jamais dans Git)
 infra/certbot/
+
+cloudflared.exe
+backend/media/

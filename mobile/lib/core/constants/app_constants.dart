@@ -15,6 +15,10 @@ class AppConstants {
     if (kIsWeb) {
       final origin = Uri.base.origin;
       if (origin.isNotEmpty && !origin.startsWith('file:') && origin != 'null') {
+        final uri = Uri.tryParse(origin);
+        if (uri != null && (uri.host == 'localhost' || uri.host == '127.0.0.1') && uri.port != 8000) {
+          return 'http://127.0.0.1:8000/api';
+        }
         return '$origin/api';
       }
       return 'http://127.0.0.1:8000/api';
