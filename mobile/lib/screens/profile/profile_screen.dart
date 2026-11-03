@@ -8,12 +8,88 @@ import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../core/constants/app_constants.dart';
+import '../../core/location/location_access.dart';
+import '../markets/markets_data.dart' show userLocationProvider;
 import '../../features/auth/data/auth_provider.dart';
 import '../../features/profile/data/notifications_provider.dart';
 import '../../features/profile/data/profile_provider.dart';
 import '../../features/profile/domain/profile_model.dart';
 import '../../ui/appearance.dart';
 import '../../ui/ui.dart';
+
+/// Interrupteur de localisation. Allumé : on redemande l'autorisation si elle avait été refusée (ou on ouvre les réglages
+/// du téléphone si elle est bloquée). Éteint : l'application n'utilise plus la position.
+class _LocationRow extends ConsumerStatefulWidget {
+  const _LocationRow();
+
+  @override
+  ConsumerState<_LocationRow> createState() => _LocationRowState();
+}
+
+class _LocationRowState extends ConsumerState<_LocationRow> with WidgetsBindingObserver {
+  LocationAccess? _access;
+  bool _busy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _refresh();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  /// Au retour des réglages du téléphone, on relit l'état réel.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _refresh();
+  }
+
+  Future<void> _refresh() async {
+    final access = await checkLocationAccess(enabledByUser: ref.read(locationEnabledProvider));
+    if (mounted) setState(() => _access = access);
+  }
+
+  Future<void> _toggle(bool on) async {
+    if (_busy) return;
+    HapticFeedback.selectionClick();
+    setState(() => _busy = true);
+    final notifier = ref.read(userLocationProvider.notifier);
+    if (on) {
+      await notifier.enable();
+    } else {
+      await notifier.disable();
+    }
+    await _refresh();
+    if (mounted) setState(() => _busy = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    ref.watch(locationEnabledProvider);
+    final access = _access;
+    final active = access == LocationAccess.granted;
+    final subtitle = switch (access) {
+      null => 'Position de votre téléphone',
+      LocationAccess.granted => 'Active : marchés proches, météo et carte',
+      LocationAccess.disabledByUser => 'Désactivée : touchez l\'interrupteur pour l\'activer',
+      LocationAccess.denied => 'Refusée : touchez l\'interrupteur pour réessayer',
+      LocationAccess.deniedForever => 'Bloquée : touchez pour ouvrir les réglages du téléphone',
+      LocationAccess.serviceOff => 'Éteinte sur le téléphone : touchez pour ouvrir les réglages',
+    };
+    return GroupedRow(
+      leading: IconTile(icon: active ? Icons.location_on_rounded : Icons.location_off_rounded, color: active ? c.accent : c.clay),
+      title: 'Localisation',
+      subtitle: subtitle,
+      trailing: Switch.adaptive(value: active, activeTrackColor: c.accent, onChanged: _busy ? null : _toggle),
+    );
+  }
+}
 
 /// Profil : identité, exploitation, préférences, sécurité et données personnelles.
 /// Rien n'est affiché qui ne soit réellement pris en charge par l'application.
@@ -91,6 +167,7 @@ class ProfileScreen extends ConsumerWidget {
                       chevron: true,
                       onTap: () => context.push('/notifications'),
                     ),
+                    const _LocationRow(),
                     GroupedRow(
                       leading: IconTile(icon: Icons.speed_rounded, color: c.slate),
                       title: 'Effets réduits',

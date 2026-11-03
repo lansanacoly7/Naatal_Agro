@@ -35,6 +35,9 @@ Future<void> showSuccessReveal(
         if (context.reduceEffects) {
           return FadeTransition(opacity: animation, child: child);
         }
+        if (animation.isCompleted) {
+          return child;
+        }
         return AnimatedBuilder(
           animation: animation,
           child: child,
@@ -89,71 +92,241 @@ class _SuccessPage extends StatefulWidget {
 
 class _SuccessPageState extends State<_SuccessPage> with SingleTickerProviderStateMixin {
   late final AnimationController _check =
-      AnimationController(vsync: this, duration: const Duration(milliseconds: 600));
+      AnimationController(vsync: this, duration: const Duration(milliseconds: 550));
+  bool _checkStarted = false;
+
+  late final Animation<double> _badgeScale = CurvedAnimation(
+    parent: widget.animation,
+    curve: const Interval(0.2, 0.65, curve: Curves.easeOutBack),
+  );
+
+  late final Animation<double> _badgeOpacity = CurvedAnimation(
+    parent: widget.animation,
+    curve: const Interval(0.15, 0.5, curve: Curves.easeOut),
+  );
+
+  late final Animation<double> _contentSlide = CurvedAnimation(
+    parent: widget.animation,
+    curve: const Interval(0.35, 0.85, curve: Curves.easeOutCubic),
+  );
+
+  late final Animation<double> _contentOpacity = CurvedAnimation(
+    parent: widget.animation,
+    curve: const Interval(0.35, 0.75, curve: Curves.easeOut),
+  );
 
   @override
   void initState() {
     super.initState();
-    Future<void>.delayed(const Duration(milliseconds: 380), () {
-      if (mounted) _check.forward();
-    });
+    widget.animation.addListener(_onAnimationProgress);
+    if (widget.animation.value >= 0.5 || widget.animation.isCompleted) {
+      _startCheck();
+    }
+  }
+
+  void _onAnimationProgress() {
+    if (!_checkStarted && (widget.animation.value >= 0.5 || widget.animation.isCompleted)) {
+      _startCheck();
+    }
+  }
+
+  void _startCheck() {
+    _checkStarted = true;
+    if (mounted) {
+      _check.forward();
+    }
   }
 
   @override
   void dispose() {
+    widget.animation.removeListener(_onAnimationProgress);
     _check.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    const green = Color(0xFF0F7A45);
+    final green = context.c.accent;
+    final reduce = context.reduceEffects;
+
     return Scaffold(
       backgroundColor: green,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(Space.xxl + 6),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 104,
-                height: 104,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white.withValues(alpha: 0.18),
-                ),
-                child: AnimatedBuilder(
-                  animation: _check,
-                  builder: (context, _) => CustomPaint(
-                    painter: _CheckPainter(progress: Curves.easeOutCubic.transform(_check.value)),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              physics: const ClampingScrollPhysics(),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: IntrinsicHeight(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: Space.gutter,
+                      vertical: Space.l,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        const Spacer(flex: 2),
+                        // Badge rond avec coche
+                        reduce
+                            ? _buildBadge()
+                            : ScaleTransition(
+                                scale: _badgeScale,
+                                child: FadeTransition(
+                                  opacity: _badgeOpacity,
+                                  child: _buildBadge(),
+                                ),
+                              ),
+                        const SizedBox(height: Space.xl),
+                        // Bloc de texte et carte récapitulative
+                        reduce
+                            ? _buildContent()
+                            : AnimatedBuilder(
+                                animation: _contentSlide,
+                                builder: (context, child) {
+                                  final dy = (1.0 - _contentSlide.value) * 16.0;
+                                  return Transform.translate(
+                                    offset: Offset(0, dy),
+                                    child: FadeTransition(
+                                      opacity: _contentOpacity,
+                                      child: child,
+                                    ),
+                                  );
+                                },
+                                child: _buildContent(),
+                              ),
+                        const Spacer(flex: 3),
+                        // Bouton d'action ancré en bas
+                        reduce
+                            ? _buildActionButton()
+                            : FadeTransition(
+                                opacity: _contentOpacity,
+                                child: _buildActionButton(),
+                              ),
+                        const SizedBox(height: Space.s),
+                      ],
+                    ),
                   ),
                 ),
               ),
-              const SizedBox(height: Space.xxl),
-              Text(widget.headline,
-                  textAlign: TextAlign.center,
-                  style: T.number(40, color: Colors.white)),
-              const SizedBox(height: Space.s),
-              Text(widget.title,
-                  textAlign: TextAlign.center,
-                  style: T.body(color: Colors.white, weight: 700)),
-              const SizedBox(height: Space.m),
-              for (final d in widget.details)
-                Padding(
-                  padding: const EdgeInsets.only(top: 2),
-                  child: Text(d,
-                      textAlign: TextAlign.center,
-                      style: T.body(color: Colors.white.withValues(alpha: 0.9), weight: 500)),
-                ),
-              const SizedBox(height: Space.huge),
-              PillButton(
-                label: widget.doneLabel,
-                variant: PillVariant.light,
-                onPressed: () => Navigator.of(context, rootNavigator: true).pop(),
-              ),
-            ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBadge() {
+    return Container(
+      width: 110,
+      height: 110,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: Colors.white.withValues(alpha: 0.15),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.28),
+          width: 2,
+        ),
+      ),
+      child: Center(
+        child: Container(
+          width: 90,
+          height: 90,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: Colors.white.withValues(alpha: 0.22),
           ),
+          child: AnimatedBuilder(
+            animation: _check,
+            builder: (context, _) => CustomPaint(
+              painter: _CheckPainter(progress: Curves.easeOutCubic.transform(_check.value)),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildContent() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Text(
+          widget.headline,
+          textAlign: TextAlign.center,
+          style: T.number(36, color: Colors.white, weight: 800),
+        ),
+        const SizedBox(height: Space.s),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.16),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text(
+            widget.title,
+            textAlign: TextAlign.center,
+            style: T.body(color: Colors.white, weight: 700),
+          ),
+        ),
+        if (widget.details.isNotEmpty) ...[
+          const SizedBox(height: Space.l),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 360),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.22),
+                  width: 1,
+                ),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  for (int i = 0; i < widget.details.length; i++) ...[
+                    if (i > 0)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        child: Container(
+                          height: 1,
+                          color: Colors.white.withValues(alpha: 0.15),
+                        ),
+                      ),
+                    Text(
+                      widget.details[i],
+                      textAlign: TextAlign.center,
+                      style: T.body(
+                        color: Colors.white.withValues(alpha: i == 0 ? 0.98 : 0.88),
+                        weight: i == 0 ? 600 : 500,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildActionButton() {
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 380),
+      child: SizedBox(
+        width: double.infinity,
+        child: PillButton(
+          label: widget.doneLabel,
+          variant: PillVariant.light,
+          expand: true,
+          onPressed: () => Navigator.of(context, rootNavigator: true).pop(),
         ),
       ),
     );

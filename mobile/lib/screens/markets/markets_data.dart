@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 
+import '../../core/location/location_access.dart';
 import '../../features/auth/data/auth_provider.dart';
 
 export '../../ui/product_photo.dart' show productImageForName;
@@ -104,41 +105,66 @@ final priceHistoryProvider = FutureProvider.autoDispose.family<List<PricePoint>,
 // ───────────── Position de l'utilisateur (demandée seulement s'il le souhaite) ─────────────
 
 class UserLocation {
-  const UserLocation({this.position, this.loading = false, this.error});
+  const UserLocation({this.position, this.loading = false, this.error, this.access});
 
   final LatLng? position;
   final bool loading;
   final String? error;
+
+  /// Pourquoi la position manque (null = pas encore demandée, ou position introuvable malgré l'autorisation).
+  final LocationAccess? access;
+
+  /// Vrai quand une action de l'utilisateur (autoriser, allumer le GPS) peut débloquer la situation.
+  bool get needsFix => access != null && access != LocationAccess.granted;
 }
 
 class UserLocationNotifier extends StateNotifier<UserLocation> {
-  UserLocationNotifier() : super(const UserLocation());
+  UserLocationNotifier(this._ref) : super(const UserLocation());
+
+  final Ref _ref;
 
   Future<void> locate() async {
     state = const UserLocation(loading: true);
     try {
-      if (!await Geolocator.isLocationServiceEnabled()) {
-        state = const UserLocation(error: 'La localisation est désactivée sur votre téléphone.');
+      if (!_ref.read(locationEnabledProvider)) {
+        state = UserLocation(access: LocationAccess.disabledByUser, error: locationAccessMessage(LocationAccess.disabledByUser));
         return;
       }
-      var permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-      }
-      if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
-        state = const UserLocation(error: 'Autorisez la localisation pour voir les marchés autour de vous.');
+      final access = await requestLocationAccess();
+      if (access != LocationAccess.granted) {
+        state = UserLocation(access: access, error: locationAccessMessage(access));
         return;
       }
       final p = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(accuracy: LocationAccuracy.low, timeLimit: Duration(seconds: 12)),
       );
-      state = UserLocation(position: LatLng(p.latitude, p.longitude));
+      state = UserLocation(position: LatLng(p.latitude, p.longitude), access: LocationAccess.granted);
     } catch (_) {
       state = const UserLocation(error: 'Position introuvable. Réessayez à l\'extérieur.');
     }
   }
 
+  /// Bouton « Activer la localisation » : rallume l'option, redemande l'autorisation ou ouvre les réglages du téléphone.
+  Future<void> enable() async {
+    await _ref.read(locationEnabledProvider.notifier).set(true);
+    final blocking = await checkLocationAccess(enabledByUser: true);
+    if (blocking == LocationAccess.deniedForever || blocking == LocationAccess.serviceOff) {
+      final opened = await openLocationFix(blocking);
+      if (!opened) {
+        state = UserLocation(access: blocking, error: '${locationAccessMessage(blocking)} Dans le navigateur, utilisez le cadenas à côté de l\'adresse.');
+        return;
+      }
+    }
+    await locate();
+  }
+
+  /// Interrupteur du profil : éteint l'usage de la position et oublie celle qu'on avait.
+  Future<void> disable() async {
+    await _ref.read(locationEnabledProvider.notifier).set(false);
+    state = UserLocation(access: LocationAccess.disabledByUser, error: locationAccessMessage(LocationAccess.disabledByUser));
+  }
+
   void clear() => state = const UserLocation();
 }
 
-final userLocationProvider = StateNotifierProvider<UserLocationNotifier, UserLocation>((ref) => UserLocationNotifier());
+final userLocationProvider = StateNotifierProvider<UserLocationNotifier, UserLocation>((ref) => UserLocationNotifier(ref));

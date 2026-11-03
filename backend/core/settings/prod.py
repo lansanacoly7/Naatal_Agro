@@ -14,6 +14,13 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 if not SECRET_KEY:
     raise ValueError("La variable d'environnement SECRET_KEY est obligatoire en production.")
 
+# Garde-fous : un code OTP connu de tous ou renvoyé dans la réponse permettrait de prendre n'importe quel compte.
+if OTP_DEMO_MODE or OTP_REGISTER_FIXED_CODE:
+    raise ValueError(
+        "OTP_DEMO_MODE et OTP_REGISTER_FIXED_CODE doivent être désactivés (False / vide) en production : "
+        "branchez une passerelle SMS réelle."
+    )
+
 # Sécurité HTTP & Cookies
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True

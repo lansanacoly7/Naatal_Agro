@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
 
 import '../../../../ui/ui.dart';
+
+/// Contacts réels du support, fournis à la compilation (--dart-define=SUPPORT_EMAIL=... --dart-define=SUPPORT_PHONE=...).
+/// Tant qu'ils ne sont pas renseignés, l'écran le dit au lieu d'afficher un faux numéro.
+const _supportEmail = String.fromEnvironment('SUPPORT_EMAIL');
+const _supportPhone = String.fromEnvironment('SUPPORT_PHONE');
+
 class SettingsSupportScreen extends StatelessWidget {
   const SettingsSupportScreen({super.key});
 
@@ -23,9 +29,17 @@ class SettingsSupportScreen extends StatelessWidget {
         children: [
           Text('Comment pouvons-nous vous aider ?', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: context.c.ink)),
           const SizedBox(height: 24),
-          _buildContactCard(context, Icons.email_rounded, 'Nous contacter par email', 'support@naatalagro.sn', Colors.blue),
-          const SizedBox(height: 16),
-          _buildContactCard(context, Icons.phone_rounded, 'Appeler le service client', '+221 77 000 00 00', Colors.green),
+          if (_supportEmail.isNotEmpty) ...[
+            _buildContactCard(context, Icons.email_rounded, 'Nous contacter par email', _supportEmail, Colors.blue),
+            const SizedBox(height: 16),
+          ],
+          if (_supportPhone.isNotEmpty) ...[
+            _buildContactCard(context, Icons.phone_rounded, 'Appeler le service client', _supportPhone, Colors.green),
+            const SizedBox(height: 16),
+          ],
+          if (_supportEmail.isEmpty && _supportPhone.isEmpty)
+            _buildContactCard(context, Icons.support_agent_rounded, "Service d'assistance",
+                "Pas encore ouvert. Posez votre question à l'assistant Naatal IA, ou consultez les réponses ci-dessous.", Colors.green),
           const SizedBox(height: 32),
           Text('Questions fréquentes (FAQ)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: context.c.ink)),
           const SizedBox(height: 16),

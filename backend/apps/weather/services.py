@@ -162,7 +162,7 @@ def build_advice(report):
     hottest = max((d['temperature_max'] for d in next_days), default=current['temperature'])
 
     if rain_ahead >= 10 or best_chance >= 70:
-        advice.append("De la pluie arrive bientôt. Attendez avant d'arroser, de mettre de l'engrais ou de traiter.")
+        advice.append("De la pluie arrive dans les prochains jours. Attendez avant d'arroser, de mettre de l'engrais ou de traiter.")
     elif past_rain < 2 and rain_ahead < 2 and hottest >= 33:
         advice.append("Il n'a presque pas plu et il fait chaud. Arrosez tôt le matin ou le soir.")
     if hottest >= 38:

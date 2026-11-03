@@ -44,7 +44,7 @@ Map<String, dynamic> serverJson({List<String> advice = const []}) => {
 const _query = WeatherQuery(lat: 14.72, lon: -17.18, label: 'Ma position', isMyPosition: true);
 
 class _NoLocation extends UserLocationNotifier {
-  _NoLocation() : super();
+  _NoLocation(super.ref);
 
   @override
   Future<void> locate() async {}
@@ -60,7 +60,7 @@ Future<void> pumpCard(WidgetTester tester, {required WeatherQuery? query, requir
         weatherQueryProvider.overrideWithValue(query),
         weatherReportProvider.overrideWith((ref, q) => report()),
         weatherLocateAskedProvider.overrideWith((ref) => true),
-        userLocationProvider.overrideWith((ref) => _NoLocation()),
+        userLocationProvider.overrideWith((ref) => _NoLocation(ref)),
       ],
       child: MaterialApp(
         theme: NaatalTheme.light,

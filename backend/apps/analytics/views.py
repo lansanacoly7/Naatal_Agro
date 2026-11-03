@@ -10,23 +10,26 @@ from django.db.models import Max, Q, Sum
 from django.utils import timezone
 
 def _user_product_names(user):
-    """Noms (en minuscules) des produits que l'utilisateur cultive ou suit."""
+    """Noms (en minuscules) des produits que l'utilisateur cultive, stocke ou suit."""
     names = set()
     for crop_name, crop_type in Crop.objects.filter(user=user).values_list('name', 'crop_type'):
         names.update({(crop_name or '').strip().lower(), (crop_type or '').strip().lower()})
+    for stock_name in StockItem.objects.filter(user=user).values_list('name', flat=True):
+        if stock_name:
+            names.add(stock_name.strip().lower())
     names.update(str(c).strip().lower() for c in (user.main_crops or []))
     return sorted(n for n in names if len(n) >= 3)
 
 
-def _prices_for_user_products(user, limit=6):
+def _prices_for_user_products(user, limit=12):
     """
     Dernier relevé de prix de chaque produit de l'utilisateur : moyenne des marchés à la date
     du relevé le plus récent, avec l'évolution par rapport au relevé d'au moins 7 jours avant.
-    Renvoie une liste vide si l'utilisateur ne cultive rien ou si aucun prix n'existe.
+    Renvoie une liste vide si l'utilisateur ne cultive/stocke rien ou si aucun prix n'existe.
 
     Nombre de requêtes constant (indépendant du nombre de cultures) : une pour les dates, une pour les relevés.
     """
-    names = _user_product_names(user)[:12]
+    names = _user_product_names(user)[:16]
     if not names:
         return []
     name_filter = Q()
@@ -91,7 +94,7 @@ class DashboardView(views.APIView):
         active_crops = Crop.objects.filter(user=user, status='active').count()
         total_area = Crop.objects.filter(user=user).aggregate(total=Sum('area_size'))['total'] or 0.0
         
-        # 2. Prix des cultures de l'utilisateur (relevés les plus récents, tous marchés confondus)
+        # 2. Prix des cultures et stocks de l'utilisateur (relevés les plus récents, tous marchés confondus)
         latest_prices = _prices_for_user_products(user)
 
         # 3. Météo de la région de l'utilisateur uniquement (jamais celle d'une autre région)
@@ -168,4 +171,3 @@ class DashboardView(views.APIView):
             'calendarEvents': calendar_events,
             'featuredProducts': featured_products
         })
-

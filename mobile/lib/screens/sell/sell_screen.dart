@@ -3,11 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/dashboard/presentation/widgets/my_dashboard_logic.dart';
 import '../../features/inventory/data/inventory_provider.dart';
 import '../../features/inventory/data/models/stock_item.dart';
+import '../../features/markets/data/markets_provider.dart';
+import '../../features/markets/data/models/product.dart';
 import '../../shared/utils/data_refresh.dart';
 import '../../ui/ui.dart';
-import '../markets/markets_data.dart';
 
 /// Vente d'un produit du stock : quantité et prix au clavier géant, total et
 /// stock restant calculés en direct, puis confirmation avec un grand bouton.
@@ -165,6 +167,8 @@ class _SellScreenState extends ConsumerState<SellScreen> {
 
   Widget _body(BuildContext context, StockItem item, List<StockItem> all) {
     final c = context.c;
+    final allProducts = ref.watch(allProductsProvider).valueOrNull ?? const <Product>[];
+    final suggested = findPriceForStock(item.name, const [], allProducts: allProducts);
     final q = _q;
     final total = q * _p;
     final over = q > item.quantity;
@@ -221,6 +225,36 @@ class _SellScreenState extends ConsumerState<SellScreen> {
                     ),
                   ],
                 ),
+                if (suggested != null && suggested.price > 0)
+                  Padding(
+                    padding: const EdgeInsets.only(top: Space.s),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(Radii.pill),
+                      onTap: () => setState(() {
+                        _price = suggested.price.round().toString();
+                        _field = _Field.quantity;
+                      }),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: c.accent.withValues(alpha: c.isDark ? 0.22 : 0.1),
+                          borderRadius: BorderRadius.circular(Radii.pill),
+                          border: Border.all(color: c.accent.withValues(alpha: 0.25)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.trending_up_rounded, size: 14, color: c.accent),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Cours actuel : ${suggested.price.round()} F/kg · Toucher pour appliquer',
+                              style: T.caption(color: c.accent, weight: 700),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
                 const SizedBox(height: Space.m),
                 _TotalCard(total: total, over: over, available: item.quantity, unit: item.unit, remaining: remaining, hasQuantity: q > 0),
                 if (_error != null)

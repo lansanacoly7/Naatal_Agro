@@ -155,7 +155,7 @@ class PrepareTile extends StatelessWidget {
   }
 }
 
-/// Grille de l'année : une ligne par culture, 12 cases ; vert = semis, doré = récolte, le mois courant est encadré.
+/// Grille de l'année : une carte par culture avec ses 12 mois ; vert = on sème, doré = on récolte, le mois courant est marqué.
 class YearGrid extends StatelessWidget {
   const YearGrid({super.key, required this.crops, required this.zone, required this.currentMonth, required this.onOpen});
 
@@ -167,95 +167,168 @@ class YearGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
-    const initials = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
     return Container(
-      padding: const EdgeInsets.fromLTRB(Space.m, Space.m, Space.m, Space.s),
+      padding: const EdgeInsets.fromLTRB(Space.l, Space.l, Space.l, Space.s),
       decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(Radii.l), border: Border.all(color: c.line)),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              const SizedBox(width: 104),
-              for (var m = 1; m <= 12; m++)
-                Expanded(
-                  child: Center(
-                    child: Text(
-                      initials[m - 1],
-                      style: T.caption(color: m == currentMonth ? c.accent : c.ink2, weight: m == currentMonth ? 900 : 600),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: Space.xs),
-          for (final crop in crops)
-            PressScale(
-              onTap: () => onOpen(crop),
-              scale: 0.99,
-              semanticLabel: crop.name,
-              child: SizedBox(
-                height: 34,
-                child: Row(
-                  children: [
-                    SizedBox(
-                      width: 104,
-                      child: Text(crop.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: T.caption(color: c.ink, weight: 700)),
-                    ),
-                    for (var m = 1; m <= 12; m++) Expanded(child: _Cell(activity: activityInMonth(crop, zone, m), current: m == currentMonth)),
-                  ],
-                ),
-              ),
-            ),
-          const SizedBox(height: Space.s),
           Wrap(
-            spacing: Space.l,
-            runSpacing: Space.xs,
-            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: Space.xl,
+            runSpacing: Space.s,
             children: [
-              _Legend(color: c.accent, label: 'Semis'),
-              _Legend(color: c.gold, label: 'Récolte'),
-              Text('Touchez une culture pour le détail', style: T.caption(color: c.ink2, weight: 500)),
+              _Legend(color: c.accent, icon: Icons.grass_rounded, label: 'On sème'),
+              _Legend(color: c.gold, icon: Icons.agriculture_rounded, label: 'On récolte'),
             ],
           ),
+          const SizedBox(height: Space.m),
+          for (var i = 0; i < crops.length; i++) ...[
+            if (i > 0) Divider(height: 1, color: c.line),
+            _YearRow(crop: crops[i], zone: zone, currentMonth: currentMonth, onOpen: onOpen),
+          ],
         ],
       ),
     );
   }
 }
 
-class _Cell extends StatelessWidget {
-  const _Cell({required this.activity, required this.current});
+class _YearRow extends StatelessWidget {
+  const _YearRow({required this.crop, required this.zone, required this.currentMonth, required this.onOpen});
 
-  final MonthActivity activity;
+  final CalendarCrop crop;
+  final String zone;
+  final int currentMonth;
+  final ValueChanged<CalendarCrop> onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final now = activityInMonth(crop, zone, currentMonth);
+    return PressScale(
+      onTap: () => onOpen(crop),
+      scale: 0.99,
+      semanticLabel: crop.name,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: Space.m),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                CropPhoto(cropKey: crop.key, width: 44, height: 44, radius: 22),
+                const SizedBox(width: Space.m),
+                Expanded(child: Text(crop.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: T.body(color: c.ink, weight: 800).copyWith(fontSize: 17))),
+                if (now.sowing) _NowDot(color: c.accent, icon: Icons.grass_rounded),
+                if (now.harvesting) _NowDot(color: c.gold, icon: Icons.agriculture_rounded),
+                Icon(Icons.chevron_right_rounded, color: c.ink2, size: 26),
+              ],
+            ),
+            const SizedBox(height: Space.s),
+            MonthBars(
+              sowing: {for (var m = 1; m <= 12; m++) if (activityInMonth(crop, zone, m).sowing) m},
+              harvesting: {for (var m = 1; m <= 12; m++) if (activityInMonth(crop, zone, m).harvesting) m},
+              currentMonth: currentMonth,
+              height: 24,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Pastille « c'est le cas maintenant » (on sème / on récolte aujourd'hui).
+class _NowDot extends StatelessWidget {
+  const _NowDot({required this.color, required this.icon});
+
+  final Color color;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 32,
+      height: 32,
+      margin: const EdgeInsets.only(right: Space.xs),
+      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+      child: Icon(icon, size: 18, color: context.c.onAccent),
+    );
+  }
+}
+
+/// Les 12 mois en barres : vert = on sème, doré = on récolte, le mois courant est encadré. Les lettres des mois sont dessous.
+class MonthBars extends StatelessWidget {
+  const MonthBars({super.key, required this.sowing, required this.harvesting, required this.currentMonth, this.height = 20});
+
+  final Set<int> sowing;
+  final Set<int> harvesting;
+  final int currentMonth;
+  final double height;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    const initials = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
+    return Column(
+      children: [
+        Row(
+          children: [
+            for (var m = 1; m <= 12; m++)
+              Expanded(child: _Cell(sowing: sowing.contains(m), harvesting: harvesting.contains(m), current: m == currentMonth, height: height)),
+          ],
+        ),
+        const SizedBox(height: 3),
+        Row(
+          children: [
+            for (var m = 1; m <= 12; m++)
+              Expanded(
+                child: Center(
+                  child: Text(
+                    initials[m - 1],
+                    style: T.caption(color: m == currentMonth ? c.ink : c.ink2, weight: m == currentMonth ? 900 : 600).copyWith(fontSize: 12),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _Cell extends StatelessWidget {
+  const _Cell({required this.sowing, required this.harvesting, required this.current, required this.height});
+
+  final bool sowing;
+  final bool harvesting;
   final bool current;
+  final double height;
 
   @override
   Widget build(BuildContext context) {
     final c = context.c;
     final Decoration decoration;
-    if (activity.sowing && activity.harvesting) {
+    if (sowing && harvesting) {
       decoration = BoxDecoration(
-        borderRadius: BorderRadius.circular(5),
+        borderRadius: BorderRadius.circular(6),
         gradient: LinearGradient(colors: [c.accent, c.accent, c.gold, c.gold], stops: const [0, 0.5, 0.5, 1], begin: Alignment.topLeft, end: Alignment.bottomRight),
       );
     } else {
-      decoration = BoxDecoration(
-        color: activity.sowing ? c.accent : (activity.harvesting ? c.gold : c.surfaceAlt),
-        borderRadius: BorderRadius.circular(5),
-      );
+      decoration = BoxDecoration(color: sowing ? c.accent : (harvesting ? c.gold : c.surfaceAlt), borderRadius: BorderRadius.circular(6));
     }
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 1, vertical: 6),
+      height: height,
+      margin: const EdgeInsets.symmetric(horizontal: 1.5),
       decoration: decoration,
-      foregroundDecoration: current ? BoxDecoration(borderRadius: BorderRadius.circular(5), border: Border.all(color: c.ink, width: 1.4)) : null,
+      foregroundDecoration: current ? BoxDecoration(borderRadius: BorderRadius.circular(6), border: Border.all(color: c.ink, width: 2)) : null,
     );
   }
 }
 
 class _Legend extends StatelessWidget {
-  const _Legend({required this.color, required this.label});
+  const _Legend({required this.color, required this.icon, required this.label});
 
   final Color color;
+  final IconData icon;
   final String label;
 
   @override
@@ -263,9 +336,14 @@ class _Legend extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Container(width: 14, height: 14, decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(4))),
-        const SizedBox(width: 5),
-        Text(label, style: T.caption(color: context.c.ink, weight: 700)),
+        Container(
+          width: 28,
+          height: 28,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          child: Icon(icon, size: 16, color: context.c.onAccent),
+        ),
+        const SizedBox(width: Space.s),
+        Text(label, style: T.body(color: context.c.ink, weight: 700)),
       ],
     );
   }
@@ -296,10 +374,7 @@ class SeasonMarkets extends ConsumerWidget {
         GroupedList(children: rows),
         Padding(
           padding: const EdgeInsets.fromLTRB(Space.gutter + 4, Space.s, Space.gutter, 0),
-          child: Text(
-            'Prix relevés sur les marchés. Le classement des produits les mieux vendus mois par mois viendra quand l\'application aura un an de relevés : on n\'invente rien avant.',
-            style: T.caption(color: context.c.ink2, weight: 500),
-          ),
+          child: Text('Prix relevés sur les marchés.', style: T.caption(color: context.c.ink2, weight: 500)),
         ),
       ],
     );
@@ -341,7 +416,7 @@ class _PriceLine extends ConsumerWidget {
   }
 }
 
-/// Détail d'une culture : chaque période de la zone, le cycle, les remarques et la source.
+/// Détail d'une culture : le bouton pour la planter en haut, puis une carte par période (semis, récolte, cycle en images).
 class CropSheet extends StatelessWidget {
   const CropSheet({super.key, required this.crop, required this.zone, required this.zoneName, required this.data, required this.today});
 
@@ -364,113 +439,100 @@ class CropSheet extends StatelessWidget {
         children: [
           Row(
             children: [
-              CropPhoto(cropKey: crop.key, width: 72, height: 72, radius: 18),
-              const SizedBox(width: Space.l),
+              CropPhoto(cropKey: crop.key, width: 64, height: 64, radius: 32),
+              const SizedBox(width: Space.m),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(crop.name, style: T.title(color: c.ink)),
-                    Text('${categoryLabel(crop.category)} · $zoneName', style: T.caption(color: c.ink2, weight: 600)),
+                    Text(crop.name, maxLines: 2, overflow: TextOverflow.ellipsis, style: T.title(color: c.ink)),
+                    Text(categoryLabel(crop.category), style: T.caption(color: c.ink2, weight: 600)),
                   ],
                 ),
               ),
+              if (slug != null) ...[
+                const SizedBox(width: Space.s),
+                PillButton(
+                  label: 'Je plante',
+                  icon: Icons.add_rounded,
+                  compact: true,
+                  onPressed: () {
+                    Navigator.pop(context);
+                    context.push('/agriculture/add', extra: slug);
+                  },
+                ),
+              ],
             ],
           ),
           const SizedBox(height: Space.l),
-          _StatusLine(season: season),
+          _StatusLine(season: season, today: today),
           for (final w in windows) ...[
             const SizedBox(height: Space.m),
-            Container(
-              padding: const EdgeInsets.all(Space.l),
-              decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(Radii.m), border: Border.all(color: c.line)),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (w.label.isNotEmpty) Text(w.label, style: T.body(color: c.ink, weight: 800)),
-                  if (w.sow != null || w.allYear) _Fact(icon: Icons.grass_rounded, color: c.accent, label: 'Semis', value: sowingText(w)),
-                  if (w.harvest != null) _Fact(icon: Icons.agriculture_rounded, color: c.gold, label: 'Récolte', value: harvestText(w)),
-                  if (cycleText(w) != null) _Fact(icon: Icons.schedule_rounded, color: c.slate, label: 'Cycle', value: cycleText(w)!),
-                  if (w.notes.isNotEmpty) Padding(padding: const EdgeInsets.only(top: Space.s), child: Text(w.notes, style: T.caption(color: c.ink2, weight: 500))),
-                ],
-              ),
-            ),
+            _WindowCard(window: w, currentMonth: today.month),
           ],
           const SizedBox(height: Space.m),
-          Text(_sourceLine(windows), style: T.caption(color: c.ink2, weight: 500)),
-          if (slug != null) ...[
-            const SizedBox(height: Space.l),
-            PillButton(
-              label: 'Je plante cette culture',
-              icon: Icons.add_rounded,
-              expand: true,
-              onPressed: () {
-                Navigator.pop(context);
-                context.push('/agriculture/add', extra: slug);
-              },
-            ),
-          ],
+          _MoreInfo(windows: windows, data: data, zoneName: zoneName),
         ],
       ),
     );
   }
-
-  String _sourceLine(List<CalendarWindow> windows) {
-    final keys = windows.map((w) => w.sourceKey).toSet();
-    return {
-      for (final key in keys)
-        if (data.sources[key] != null) 'Source : ${data.sources[key]!.title} (${data.sources[key]!.publisher}${data.sources[key]!.year == null ? '' : ', ${data.sources[key]!.year}'}).',
-      for (final w in windows)
-        if (w.sourceNote.isNotEmpty) w.sourceNote,
-    }.join(' ');
-  }
 }
 
-class _StatusLine extends StatelessWidget {
-  const _StatusLine({required this.season});
+/// Une période de culture : son nom en gros avec une phrase pour l'expliquer, puis semis / récolte / cycle en icônes et les 12 mois.
+class _WindowCard extends StatelessWidget {
+  const _WindowCard({required this.window, required this.currentMonth});
 
-  final CropSeason season;
+  final CalendarWindow window;
+  final int currentMonth;
 
   @override
   Widget build(BuildContext context) {
     final c = context.c;
-    final String text;
-    final Color color;
-    if (season.sowingNow.isNotEmpty) {
-      final left = season.sowingNow.map((w) => w.sow!.daysLeft(DateTime.now())).reduce((a, b) => a < b ? a : b);
-      text = 'C\'est le moment de semer · ${_daysLeft(left)}';
-      color = c.accent;
-    } else if (season.harvestNow.isNotEmpty) {
-      text = 'C\'est la période de récolte';
-      color = c.gold;
-    } else if (season.prepare != null) {
-      text = 'À préparer : les semis commencent ${season.prepare!.inWords}';
-      color = c.gold;
-    } else {
-      text = 'Pas de semis ni de récolte à signaler aujourd\'hui dans cette zone';
-      color = c.ink2;
-    }
+    final w = window;
+    final info = w.label.isEmpty ? null : variantInfo(w.label);
+    final cycle = cycleText(w);
+    final sowMonths = w.allYear ? {for (var m = 1; m <= 12; m++) m} : (w.sow?.months ?? const <int>{});
+    final harvestMonths = w.harvest?.months ?? const <int>{};
     return Container(
-      padding: const EdgeInsets.all(Space.m),
-      decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(Radii.m)),
-      child: Row(
+      padding: const EdgeInsets.all(Space.l),
+      decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(Radii.l), border: Border.all(color: c.line)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.event_available_rounded, color: color),
-          const SizedBox(width: Space.m),
-          Expanded(child: Text(text, style: T.body(color: c.ink, weight: 700))),
+          if (w.label.isNotEmpty) ...[
+            Row(
+              children: [
+                if (info != null) ...[Icon(info.icon, color: c.accent, size: 24), const SizedBox(width: Space.s)],
+                Expanded(child: Text(w.label, style: T.title(color: c.ink).copyWith(fontSize: 19))),
+              ],
+            ),
+            if (info != null) ...[
+              const SizedBox(height: Space.xs),
+              Text(info.text, style: T.body(color: c.ink2, weight: 500)),
+            ],
+            const SizedBox(height: Space.m),
+          ],
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (w.sow != null || w.allYear) Expanded(child: _FactTile(icon: Icons.grass_rounded, color: c.accent, label: 'Semis', value: sowingText(w))),
+              if (w.harvest != null) Expanded(child: _FactTile(icon: Icons.agriculture_rounded, color: c.gold, label: 'Récolte', value: harvestText(w))),
+              if (cycle != null) Expanded(child: _FactTile(icon: Icons.schedule_rounded, color: c.slate, label: 'Cycle', value: cycle)),
+            ],
+          ),
+          if (sowMonths.isNotEmpty || harvestMonths.isNotEmpty) ...[
+            const SizedBox(height: Space.m),
+            MonthBars(sowing: sowMonths, harvesting: harvestMonths, currentMonth: currentMonth, height: 18),
+          ],
         ],
       ),
     );
   }
 }
 
-String _daysLeft(int days) => days <= 0 ? 'dernier jour' : days == 1 ? 'encore 1 jour' : 'encore $days jours';
-
-/// « encore 12 jours » : pour les autres écrans.
-String daysLeftWords(int days) => _daysLeft(days);
-
-class _Fact extends StatelessWidget {
-  const _Fact({required this.icon, required this.color, required this.label, required this.value});
+/// Une information en gros pictogramme : la pastille de couleur, le mot, puis la période.
+class _FactTile extends StatelessWidget {
+  const _FactTile({required this.icon, required this.color, required this.label, required this.value});
 
   final IconData icon;
   final Color color;
@@ -481,19 +543,141 @@ class _Fact extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.c;
     return Padding(
-      padding: const EdgeInsets.only(top: Space.s),
-      child: Row(
+      padding: const EdgeInsets.only(right: Space.s),
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 20, color: color),
-          const SizedBox(width: Space.s),
-          SizedBox(width: 58, child: Text(label, style: T.body(color: c.ink2, weight: 600))),
-          Expanded(child: Text(value, style: T.body(color: c.ink, weight: 700))),
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+            child: Icon(icon, size: 22, color: c.onAccent),
+          ),
+          const SizedBox(height: Space.xs),
+          Text(label, style: T.caption(color: c.ink2, weight: 700)),
+          Text(value, maxLines: 3, overflow: TextOverflow.ellipsis, style: T.body(color: c.ink, weight: 800).copyWith(fontSize: 14)),
         ],
       ),
     );
   }
 }
+
+/// Remarques et source, repliées : utiles mais pas nécessaires pour décider.
+class _MoreInfo extends StatefulWidget {
+  const _MoreInfo({required this.windows, required this.data, required this.zoneName});
+
+  final List<CalendarWindow> windows;
+  final CalendarData data;
+  final String zoneName;
+
+  @override
+  State<_MoreInfo> createState() => _MoreInfoState();
+}
+
+class _MoreInfoState extends State<_MoreInfo> {
+  bool _open = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final notes = [for (final w in widget.windows) if (w.notes.isNotEmpty) w.notes];
+    final source = _sourceLine();
+    if (notes.isEmpty && source.isEmpty) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        PressScale(
+          onTap: () => setState(() => _open = !_open),
+          semanticLabel: _open ? 'Cacher les détails' : 'Voir plus de détails',
+          child: Container(
+            height: Hit.min,
+            padding: const EdgeInsets.symmetric(horizontal: Space.l),
+            decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(Radii.pill), border: Border.all(color: c.line)),
+            child: Row(
+              children: [
+                Icon(Icons.info_outline_rounded, color: c.ink2, size: 22),
+                const SizedBox(width: Space.s),
+                Expanded(child: Text('Plus de détails', style: T.body(color: c.ink, weight: 700))),
+                Icon(_open ? Icons.expand_less_rounded : Icons.expand_more_rounded, color: c.ink2),
+              ],
+            ),
+          ),
+        ),
+        if (_open) ...[
+          const SizedBox(height: Space.m),
+          for (final n in notes) Padding(padding: const EdgeInsets.only(bottom: Space.s), child: Text(n, style: T.caption(color: c.ink2, weight: 500))),
+          if (source.isNotEmpty) Text(source, style: T.caption(color: c.ink2, weight: 500)),
+          Padding(padding: const EdgeInsets.only(top: Space.s), child: Text('Zone : ${widget.zoneName}', style: T.caption(color: c.ink2, weight: 500))),
+        ],
+      ],
+    );
+  }
+
+  String _sourceLine() {
+    final keys = widget.windows.map((w) => w.sourceKey).toSet();
+    final sources = widget.data.sources;
+    return {
+      for (final key in keys)
+        if (sources[key] != null) 'Source : ${sources[key]!.title} (${sources[key]!.publisher}${sources[key]!.year == null ? '' : ', ${sources[key]!.year}'}).',
+      for (final w in widget.windows)
+        if (w.sourceNote.isNotEmpty) w.sourceNote,
+    }.join(' ');
+  }
+}
+
+class _StatusLine extends StatelessWidget {
+  const _StatusLine({required this.season, required this.today});
+
+  final CropSeason season;
+  final DateTime today;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final String text;
+    final IconData icon;
+    final Color color;
+    if (season.sowingNow.isNotEmpty) {
+      final left = season.sowingNow.map((w) => w.sow!.daysLeft(today)).reduce((a, b) => a < b ? a : b);
+      text = 'On sème maintenant · ${_daysLeft(left)}';
+      icon = Icons.grass_rounded;
+      color = c.accent;
+    } else if (season.harvestNow.isNotEmpty) {
+      text = 'On récolte maintenant';
+      icon = Icons.agriculture_rounded;
+      color = c.gold;
+    } else if (season.prepare != null) {
+      text = 'Bientôt : semis ${season.prepare!.inWords}';
+      icon = Icons.hourglass_top_rounded;
+      color = c.gold;
+    } else {
+      text = 'Rien à faire en ce moment';
+      icon = Icons.pause_circle_outline_rounded;
+      color = c.ink2;
+    }
+    return Container(
+      padding: const EdgeInsets.all(Space.m),
+      decoration: BoxDecoration(color: color.withValues(alpha: 0.14), borderRadius: BorderRadius.circular(Radii.l)),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+            child: Icon(icon, color: c.onAccent, size: 24),
+          ),
+          const SizedBox(width: Space.m),
+          Expanded(child: Text(text, style: T.body(color: c.ink, weight: 800).copyWith(fontSize: 17))),
+        ],
+      ),
+    );
+  }
+}
+
+String _daysLeft(int days) => days <= 0 ? 'dernier jour' : days == 1 ? 'encore 1 jour' : 'encore $days jours';
+
+/// « encore 12 jours » : pour les autres écrans.
+String daysLeftWords(int days) => _daysLeft(days);
 
 /// Une source du calendrier : titre, éditeur, année ; toucher copie le lien.
 class SourceTile extends StatelessWidget {

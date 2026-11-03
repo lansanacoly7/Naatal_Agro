@@ -6,6 +6,7 @@ from rest_framework import viewsets, permissions
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
+from rest_framework.throttling import ScopedRateThrottle
 from .market_overview import build_overview
 from .models import Market, Price, Product
 from .routing import route_to_market
@@ -37,6 +38,13 @@ class MarketViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Market.objects.all()
     serializer_class = MarketSerializer
     permission_classes = [permissions.AllowAny]
+
+    def get_throttles(self):
+        # L'itinéraire interroge un service externe : limite dédiée en plus de la limite générale
+        if getattr(self, 'action', None) == 'route':
+            self.throttle_scope = 'route'
+            return [ScopedRateThrottle()]
+        return super().get_throttles()
 
     @action(detail=True, methods=['get'], url_path='overview')
     def overview(self, request, pk=None):
@@ -111,6 +119,7 @@ class PriceViewSet(viewsets.ReadOnlyModelViewSet):
                 'price': float(r.price),
                 'trend': r.trend,
                 'date': r.date.isoformat(),
+                'source': r.source,
             }
             for r in rows
         ])
@@ -118,14 +127,14 @@ class PriceViewSet(viewsets.ReadOnlyModelViewSet):
     @action(detail=False, methods=['get'], url_path='history')
     def history(self, request):
         """
-        Historique journalier d'un produit (``?product=Oignon``), au plus 120 jours.
+        Historique journalier d'un produit (``?product=Oignon``), au plus 365 jours (un an entier si le dernier relevé est officiel).
         Avec ``?market=<id>`` : prix de ce marché. Sans : moyenne de tous les marchés ce jour-là.
         """
         product = (request.query_params.get('product') or '').strip()
         if not product:
             raise ValidationError({'product': "Le paramètre 'product' est requis."})
         try:
-            days = min(max(int(request.query_params.get('days', 30)), 1), 120)
+            days = min(max(int(request.query_params.get('days', 30)), 1), 365)
         except ValueError:
             raise ValidationError({'days': 'Nombre de jours invalide.'})
         qs = Price.objects.filter(product_name__icontains=product)
@@ -135,6 +144,8 @@ class PriceViewSet(viewsets.ReadOnlyModelViewSet):
         newest = qs.aggregate(d=Max('date'))['d']
         if newest is None:
             return Response([])
+        if qs.filter(date=newest, source='wfp').exists():
+            days = 365  # relevés officiels mensuels : un mois ne donnerait qu'un point
         series = (
             qs.filter(date__gte=newest - timedelta(days=days - 1))
             .values('date')

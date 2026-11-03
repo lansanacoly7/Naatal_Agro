@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 import '../../../ui/format.dart';
 import '../data/models/crop_calendar.dart';
 
@@ -105,4 +107,42 @@ String? cycleText(CalendarWindow w) {
   if (a == null && b == null) return null;
   if (a == null || b == null || a == b) return '${a ?? b} jours';
   return '$a à $b jours';
+}
+
+/// Ce que veut dire un type de culture (« hâtive », « tardive »…) : une icône et une phrase courte. `null` si on ne connaît pas le mot.
+({IconData icon, String text})? variantInfo(String label) {
+  final l = label.toLowerCase();
+  if (l.contains('hâtive') || l.contains('hative')) {
+    return (icon: Icons.flash_on_rounded, text: 'Semée tôt : elle se récolte avant les autres.');
+  }
+  if (l.contains('tardive')) {
+    return (icon: Icons.hourglass_bottom_rounded, text: 'Semée plus tard dans la saison : elle se récolte plus tard.');
+  }
+  if (l.contains('pleine saison')) {
+    return (icon: Icons.wb_sunny_rounded, text: 'La saison principale : la culture pousse le mieux à cette période.');
+  }
+  if (l.contains('décrue') || l.contains('decrue')) {
+    return (icon: Icons.water_drop_rounded, text: "Semée quand l'eau du fleuve se retire, sur la terre encore humide.");
+  }
+  if (l.contains('contre saison') || l.contains('contre-saison')) {
+    return (
+      icon: Icons.water_drop_rounded,
+      text: l.contains('chaude')
+          ? 'Cultivée avec arrosage pendant la saison sèche et chaude.'
+          : 'Cultivée avec arrosage après les pluies.',
+    );
+  }
+  if (l.contains('diéri') || l.contains('dieri')) {
+    return (icon: Icons.cloud_rounded, text: 'Sur les terres hautes (diéri) : elle dépend de la pluie.');
+  }
+  if (l.contains('pluvial')) {
+    return (icon: Icons.cloud_rounded, text: "Elle pousse avec l'eau de la pluie, sans arrosage.");
+  }
+  if (l.contains('humide') || l.contains('hivernage')) {
+    return (icon: Icons.cloud_rounded, text: "Pendant la saison des pluies (l'hivernage).");
+  }
+  if (l.contains('gravitaire')) {
+    return (icon: Icons.water_drop_rounded, text: "Arrosée par l'eau qui coule dans des canaux.");
+  }
+  return null;
 }

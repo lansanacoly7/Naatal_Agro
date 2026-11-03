@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/location/location_access.dart' show locationFixLabel;
 import '../../../../core/location/senegal_regions.dart';
 import '../../../../screens/markets/markets_data.dart' show userLocationProvider;
 import '../../../../ui/ui.dart';
@@ -221,7 +222,8 @@ class _AskPlace extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final loading = ref.watch(userLocationProvider).loading;
+    final location = ref.watch(userLocationProvider);
+    final loading = location.loading;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -229,7 +231,7 @@ class _AskPlace extends ConsumerWidget {
         const SizedBox(height: Space.m),
         Text('Où êtes-vous ?', style: T.title(color: Colors.white)),
         const SizedBox(height: Space.xs),
-        Text('Pour la météo de votre zone, autorisez la localisation ou choisissez votre région.',
+        Text(location.error ?? 'Pour la météo de votre zone, autorisez la localisation ou choisissez votre région.',
             style: T.body(color: Colors.white.withValues(alpha: 0.88))),
         const SizedBox(height: Space.l),
         Wrap(
@@ -237,11 +239,14 @@ class _AskPlace extends ConsumerWidget {
           runSpacing: Space.s,
           children: [
             PillButton(
-              label: 'Me localiser',
+              label: location.needsFix ? locationFixLabel(location.access!) : 'Me localiser',
               icon: Icons.my_location_rounded,
               variant: PillVariant.light,
               loading: loading,
-              onPressed: () => ref.read(userLocationProvider.notifier).locate(),
+              onPressed: () {
+                final notifier = ref.read(userLocationProvider.notifier);
+                location.needsFix ? notifier.enable() : notifier.locate();
+              },
             ),
             PillButton(
               label: 'Choisir ma région',

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../screens/markets/markets_data.dart';
 import '../../../../ui/ui.dart';
 import '../../../agriculture/data/agriculture_provider.dart';
 import '../../../agriculture/data/models/crop.dart';

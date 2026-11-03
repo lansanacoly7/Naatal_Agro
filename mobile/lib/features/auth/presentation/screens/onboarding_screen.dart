@@ -21,17 +21,17 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     {
       'title': 'Réinventer l\'agriculture',
       'subtitle': 'La donnée et la technologie au service des producteurs sénégalais.',
-      'imagePath': 'assets/images/onboarding_agriculture_1784459495811.png',
+      'imagePath': 'assets/images/onboarding_agriculture_1784459495811.jpg',
     },
     {
       'title': 'Décider mieux',
       'subtitle': 'Météo en temps réel, évolution des marchés et alertes personnalisées.',
-      'imagePath': 'assets/images/onboarding_market_1784459514097.png',
+      'imagePath': 'assets/images/onboarding_market_1784459514097.jpg',
     },
     {
       'title': 'Naatal IA',
       'subtitle': 'Votre copilote intelligent qui vous conseille du semis à la récolte.',
-      'imagePath': 'assets/images/onboarding_tech_1784459505530.png',
+      'imagePath': 'assets/images/onboarding_tech_1784459505530.jpg',
     },
   ];
 

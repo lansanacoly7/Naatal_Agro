@@ -6,7 +6,6 @@ import '../../features/finances/data/finances_provider.dart';
 import '../../features/finances/data/models/financial_summary.dart';
 import '../../shared/utils/data_refresh.dart';
 import '../../ui/ui.dart';
-import '../markets/markets_data.dart';
 
 /// Finances : solde, revenus, dépenses et historique des opérations.
 /// Chaque vente enregistrée apparaît ici comme un revenu.

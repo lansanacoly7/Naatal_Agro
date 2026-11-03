@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_theme.dart';
+import '../../../../screens/guides/guide_text_cleaner.dart';
 import '../../../../screens/guides/guides_screens.dart' show GuideSections;
 import '../../../markets/data/markets_provider.dart';
 import '../../../markets/data/models/product.dart';
@@ -111,7 +112,7 @@ class CultureFicheScreen extends ConsumerWidget {
                     if (full.summary.trim().isNotEmpty)
                       Padding(
                         padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
-                        child: Text(full.summary.trim(), style: TextStyle(fontSize: 14, height: 1.5, color: context.c.ink)),
+                        child: Text(cleanGuideText(full.summary), style: TextStyle(fontSize: 14, height: 1.5, color: context.c.ink)),
                       ),
                     GuideSections(guide: full),
                   ],

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/location/location_access.dart' show locationFixLabel;
 import '../../ui/ui.dart';
 import 'market_page_data.dart';
 import 'market_route_page.dart';
@@ -234,11 +235,14 @@ class _TripCard extends ConsumerWidget {
       body = message(
         location.error ?? 'Touchez le bouton pour voir le temps de trajet depuis où vous êtes.',
         action: PillButton(
-          label: 'Voir le trajet',
-          icon: Icons.my_location_rounded,
+          label: location.needsFix ? locationFixLabel(location.access!) : 'Voir le trajet',
+          icon: location.needsFix ? Icons.location_on_rounded : Icons.my_location_rounded,
           expand: true,
           loading: location.loading,
-          onPressed: () => ref.read(userLocationProvider.notifier).locate(),
+          onPressed: () {
+            final notifier = ref.read(userLocationProvider.notifier);
+            location.needsFix ? notifier.enable() : notifier.locate();
+          },
         ),
       );
     } else {
@@ -399,7 +403,9 @@ class _ProductRow extends StatelessWidget {
         ),
       ),
       title: product.name,
-      subtitle: _trendWords(product.trend),
+      subtitle: product.source == null
+          ? _trendWords(product.trend)
+          : '${_trendWords(product.trend)} · ${product.source}${product.date == null ? '' : ', ${Fmt.shortDate(product.date!)}'}',
       value: '${Fmt.grouped(product.price)} F',
       chevron: true,
       onTap: onTap,
@@ -496,7 +502,7 @@ class _ProductSheet extends StatelessWidget {
             ),
           ],
           const SizedBox(height: Space.xl),
-          Text('Ces 30 derniers jours', style: T.body(color: c.ink, weight: 700)),
+          Text(product.windowDays >= 300 ? 'Cette dernière année' : 'Ces ${product.windowDays} derniers jours', style: T.body(color: c.ink, weight: 700)),
           const SizedBox(height: Space.m),
           if (points.length < 2)
             Container(

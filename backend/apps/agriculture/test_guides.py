@@ -15,7 +15,13 @@ User = get_user_model()
 LIST_URL = '/api/agriculture/guides/'
 TEXT_FIELDS = ('summary', 'zones', 'calendar', 'soil_and_sowing', 'water_needs', 'fertilization',
                'harvest', 'yield_info')
-EXPECTED_SLUGS = {'oignon', 'tomate-industrielle', 'arachide', 'mil', 'riz-irrigue', 'carotte', 'sorgho', 'mangue', 'pomme-de-terre', 'chou', 'aubergine', 'piment', 'gombo', 'patate-douce', 'manioc', 'melon', 'bissap', 'mais', 'niebe'}
+EXPECTED_SLUGS = {
+    'oignon', 'tomate-industrielle', 'arachide', 'mil', 'riz-irrigue', 'carotte',
+    'sorgho', 'mangue', 'pomme-de-terre', 'chou', 'aubergine', 'piment', 'gombo',
+    'patate-douce', 'manioc', 'melon', 'bissap', 'mais', 'niebe',
+    'papaye', 'banane', 'agrumes', 'haricot-vert', 'pasteque', 'poivron', 'concombre',
+    'laitue', 'courge', 'betterave', 'navet', 'fonio', 'ail', 'ananas', 'igname', 'goyave',
+}
 MARKER = re.compile(r'\[(\d+)\]')
 
 
@@ -104,11 +110,11 @@ class GuideApiTests(TestCase):
         self.assertTrue(any(p['name'] == 'Rosette' for p in data['pests_diseases']))
 
     def test_unknown_slug_is_404(self):
-        self.assertEqual(self.client.get(f'{LIST_URL}igname/').status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(self.client.get(f'{LIST_URL}inconnu-introuvable/').status_code, status.HTTP_404_NOT_FOUND)
 
     def test_filter_by_category(self):
         data = self.client.get(LIST_URL, {'category': 'cereale'}).json()
-        self.assertEqual({g['slug'] for g in data}, {'mil', 'riz-irrigue', 'sorgho', 'mais'})
+        self.assertEqual({g['slug'] for g in data}, {'mil', 'riz-irrigue', 'sorgho', 'mais', 'fonio'})
 
     def test_search_by_name_and_scientific_name(self):
         self.assertEqual([g['slug'] for g in self.client.get(LIST_URL, {'search': 'oignon'}).json()], ['oignon'])

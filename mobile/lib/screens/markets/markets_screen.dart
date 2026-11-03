@@ -8,6 +8,7 @@ import '../../ui/appearance.dart';
 import '../../ui/map_tiles.dart';
 import 'package:latlong2/latlong.dart';
 
+import '../../core/location/location_access.dart' show locationFixLabel;
 import '../../core/location/senegal_regions.dart';
 import '../../features/dashboard/data/dashboard_provider.dart';
 import '../../features/markets/data/markets_provider.dart';
@@ -300,7 +301,8 @@ class _MarketsScreenState extends ConsumerState<MarketsScreen> {
                       ? null
                       : () {
                           if (me == null) {
-                            ref.read(userLocationProvider.notifier).locate();
+                            final notifier = ref.read(userLocationProvider.notifier);
+                            location.needsFix ? notifier.enable() : notifier.locate();
                           } else {
                             _map.move(me, 13); // revient sur la personne
                           }
@@ -335,6 +337,13 @@ class _MarketsScreenState extends ConsumerState<MarketsScreen> {
                     Icon(Icons.location_off_rounded, size: 18, color: c.clay),
                     const SizedBox(width: Space.s),
                     Expanded(child: Text(location.error!, style: T.caption(color: c.ink, weight: 600))),
+                    if (location.needsFix) ...[
+                      const SizedBox(width: Space.s),
+                      PillButton(
+                        label: locationFixLabel(location.access!),
+                        onPressed: () => ref.read(userLocationProvider.notifier).enable(),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -360,7 +369,8 @@ class _MarketsScreenState extends ConsumerState<MarketsScreen> {
               sort: _sort,
               onSort: (s) {
                 if (s == _Sort.distance && location.position == null) {
-                  ref.read(userLocationProvider.notifier).locate();
+                  final notifier = ref.read(userLocationProvider.notifier);
+                  location.needsFix ? notifier.enable() : notifier.locate();
                 }
                 setState(() => _sort = s);
               },

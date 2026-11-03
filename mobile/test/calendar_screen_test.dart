@@ -84,8 +84,14 @@ void main() {
 
     testWidgets('l\'écran dit d\'où viennent les dates et ce qu\'il ne sait pas', (tester) async {
       await pumpCalendar(tester, today: DateTime(2026, 10, 24));
-      await tester.scrollUntilVisible(find.text('Sources'), 800, scrollable: find.byType(Scrollable).first);
-      expect(find.text('Sources'), findsOneWidget);
+      await tester.scrollUntilVisible(find.text('Sources et limites'), 800, scrollable: find.byType(Scrollable).first);
+      expect(find.textContaining('FAO Crop Calendar'), findsNothing, reason: 'les sources sont repliées derrière un bouton');
+      await tester.ensureVisible(find.text('Sources et limites'));
+      await tester.pump(const Duration(milliseconds: 200));
+      await tester.tap(find.text('Sources et limites'));
+      for (var i = 0; i < 8; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
       expect(find.textContaining('FAO Crop Calendar'), findsOneWidget);
       expect(find.text('Dates pas encore connues'), findsOneWidget);
       expect(find.textContaining('Orange'), findsWidgets);
@@ -121,13 +127,22 @@ void main() {
 
     testWidgets('toucher une culture de la grille ouvre son détail sourcé', (tester) async {
       await pumpCalendar(tester, today: DateTime(2026, 10, 24));
-      await tester.scrollUntilVisible(find.text('Touchez une culture pour le détail'), 800, scrollable: find.byType(Scrollable).first);
+      await tester.scrollUntilVisible(find.text('Toutes les cultures'), 800, scrollable: find.byType(Scrollable).first);
+      await tester.scrollUntilVisible(find.text('On sème'), 400, scrollable: find.byType(Scrollable).first);
+      await tester.ensureVisible(find.text('Oignon').last);
+      await tester.pump(const Duration(milliseconds: 200));
       await tester.tap(find.text('Oignon').last);
       for (var i = 0; i < 8; i++) {
         await tester.pump(const Duration(milliseconds: 100));
       }
       expect(find.text('Culture hâtive'), findsOneWidget);
+      expect(find.text('Semée tôt : elle se récolte avant les autres.'), findsOneWidget);
+      expect(find.text('Je plante'), findsOneWidget);
       expect(find.text('Semis'), findsWidgets);
+      expect(find.textContaining('FAO Crop Calendar'), findsNothing, reason: 'la source est repliée');
+      await tester.ensureVisible(find.text('Plus de détails'));
+      await tester.tap(find.text('Plus de détails'));
+      await tester.pump(const Duration(milliseconds: 300));
       expect(find.textContaining('FAO Crop Calendar'), findsWidgets);
     });
   });

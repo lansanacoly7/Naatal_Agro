@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../features/agriculture/data/guides_provider.dart';
 import '../../features/agriculture/data/models/agronomic_guide.dart';
 import '../../ui/ui.dart';
-import '../markets/markets_data.dart';
+import 'guide_text_cleaner.dart';
+import 'guide_videos.dart';
 
 const _categories = [
   ('all', 'Toutes'),
@@ -291,13 +294,13 @@ class GuideDetailScreen extends ConsumerWidget {
                             children: [
                               if (guide.scientificName.isNotEmpty)
                                 Text(
-                                  guide.scientificName,
+                                  cleanGuideText(guide.scientificName),
                                   style: T.caption(color: c.ink2).copyWith(fontStyle: FontStyle.italic),
                                 ),
                               const SizedBox(height: Space.xs),
                               Text(
-                                guide.summary.isEmpty ? 'Présentation non documentée dans nos sources.' : guide.summary,
-                                style: T.body(color: c.ink),
+                                guide.summary.isEmpty ? 'Présentation non documentée dans nos sources.' : cleanGuideText(guide.summary),
+                                style: T.body(color: c.ink).copyWith(height: 1.5),
                               ),
                               const SizedBox(height: Space.m),
                               Wrap(
@@ -357,12 +360,313 @@ class _GuideChip extends StatelessWidget {
   }
 }
 
+class _AudioGuideBar extends StatefulWidget {
+  const _AudioGuideBar({required this.guide});
+
+  final AgronomicGuide guide;
+
+  @override
+  State<_AudioGuideBar> createState() => _AudioGuideBarState();
+}
+
+class _AudioGuideBarState extends State<_AudioGuideBar> {
+  FlutterTts? _tts;
+  bool _isPlaying = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initTts();
+  }
+
+  Future<void> _initTts() async {
+    try {
+      final tts = FlutterTts();
+      await tts.setLanguage('fr-FR');
+      await tts.setSpeechRate(0.48);
+      await tts.setVolume(1.0);
+      tts.setCompletionHandler(() {
+        if (mounted) setState(() => _isPlaying = false);
+      });
+      tts.setCancelHandler(() {
+        if (mounted) setState(() => _isPlaying = false);
+      });
+      tts.setErrorHandler((_) {
+        if (mounted) setState(() => _isPlaying = false);
+      });
+      _tts = tts;
+    } catch (_) {}
+  }
+
+  Future<void> _togglePlay() async {
+    if (_tts == null) return;
+    if (_isPlaying) {
+      await _tts?.stop();
+      if (mounted) setState(() => _isPlaying = false);
+    } else {
+      if (mounted) setState(() => _isPlaying = true);
+      final g = widget.guide;
+      final textToSpeak = [
+        'Fiche technique de ${g.name}.',
+        if (g.summary.isNotEmpty) cleanGuideText(g.summary),
+        if (g.calendar.isNotEmpty) 'Calendrier : ${cleanGuideText(g.calendar)}',
+        if (g.soilAndSowing.isNotEmpty) 'Sol et semis : ${cleanGuideText(g.soilAndSowing)}',
+        if (g.waterNeeds.isNotEmpty) 'Arrosage et besoins en eau : ${cleanGuideText(g.waterNeeds)}',
+        if (g.harvest.isNotEmpty) 'Récolte : ${cleanGuideText(g.harvest)}',
+      ].join(' ');
+      try {
+        await _tts?.speak(textToSpeak);
+      } catch (_) {
+        if (mounted) setState(() => _isPlaying = false);
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _tts?.stop();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: Space.gutter),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: Space.l, vertical: Space.m),
+        decoration: BoxDecoration(
+          color: _isPlaying
+              ? c.accent.withValues(alpha: c.isDark ? 0.25 : 0.12)
+              : c.surface,
+          borderRadius: BorderRadius.circular(Radii.l),
+          border: Border.all(
+            color: _isPlaying ? c.accent : c.line,
+            width: _isPlaying ? 1.5 : 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: c.isDark ? 0.2 : 0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: _isPlaying ? c.accent : c.surfaceAlt,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                _isPlaying ? Icons.volume_up_rounded : Icons.headphones_rounded,
+                color: _isPlaying ? Colors.white : c.accent,
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: Space.m),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _isPlaying ? 'Lecture audio en cours...' : 'Écouter la fiche (vocal)',
+                    style: T.body(color: _isPlaying ? c.accent : c.ink, weight: 700),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    _isPlaying ? 'Appuyez pour mettre en pause' : 'Idéal pour écouter les conseils au champ',
+                    style: T.caption(color: c.ink2, weight: 500),
+                  ),
+                ],
+              ),
+            ),
+            PillButton(
+              label: _isPlaying ? 'Arrêter' : 'Écouter',
+              icon: _isPlaying ? Icons.stop_rounded : Icons.play_arrow_rounded,
+              compact: true,
+              variant: _isPlaying ? PillVariant.secondary : PillVariant.primary,
+              onPressed: _togglePlay,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _VideoGuideCard extends StatelessWidget {
+  const _VideoGuideCard({required this.video});
+
+  final GuideVideoInfo video;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: Space.gutter),
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: c.isDark
+                ? [const Color(0xFF1E293B), const Color(0xFF0F172A)]
+                : [const Color(0xFF064E3B), const Color(0xFF047857)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(Radii.xl),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.12),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () async {
+              final uri = Uri.parse(video.url);
+              try {
+                if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+                  await launchUrl(uri);
+                }
+              } catch (_) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Impossible d\'ouvrir la vidéo.')),
+                  );
+                }
+              }
+            },
+            child: Padding(
+              padding: const EdgeInsets.all(Space.l),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(Radii.pill),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.play_circle_fill_rounded, color: Colors.white, size: 14),
+                            const SizedBox(width: 5),
+                            Text(
+                              'TUTORIEL VIDÉO',
+                              style: T.caption(color: Colors.white, weight: 800),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (video.duration.isNotEmpty)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.25),
+                            borderRadius: BorderRadius.circular(Radii.pill),
+                          ),
+                          child: Text(
+                            video.duration,
+                            style: T.caption(color: Colors.white70, weight: 700),
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: Space.m),
+                  Text(
+                    video.title,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 16,
+                      height: 1.3,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      const Icon(Icons.verified_rounded, size: 14, color: Colors.white70),
+                      const SizedBox(width: 4),
+                      Text(
+                        video.channel,
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: Space.s),
+                  Text(
+                    video.description,
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.85),
+                      fontSize: 12.5,
+                      height: 1.4,
+                    ),
+                  ),
+                  const SizedBox(height: Space.m),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(Radii.pill),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.play_arrow_rounded, color: Color(0xFF064E3B), size: 18),
+                            const SizedBox(width: 4),
+                            const Text(
+                              'Voir sur YouTube',
+                              style: TextStyle(
+                                color: Color(0xFF064E3B),
+                                fontWeight: FontWeight.w800,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _Section extends StatefulWidget {
-  const _Section({required this.title, required this.text, required this.icon});
+  const _Section({
+    required this.title,
+    required this.text,
+    required this.icon,
+    this.color,
+  });
 
   final String title;
   final String text;
   final IconData icon;
+  final Color? color;
 
   @override
   State<_Section> createState() => _SectionState();
@@ -374,7 +678,10 @@ class _SectionState extends State<_Section> {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
-    final documented = widget.text.trim().isNotEmpty;
+    final cleaned = cleanGuideText(widget.text);
+    final documented = cleaned.trim().isNotEmpty;
+    final accentColor = widget.color ?? c.accent;
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(Space.gutter, 0, Space.gutter, Space.s),
       child: AppCard(
@@ -388,18 +695,36 @@ class _SectionState extends State<_Section> {
                 padding: const EdgeInsets.all(Space.l),
                 child: Row(
                   children: [
-                    IconTile(icon: widget.icon, color: documented ? c.accent : c.ink2.withValues(alpha: 0.5), size: 34),
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: documented ? accentColor.withValues(alpha: c.isDark ? 0.25 : 0.12) : c.surfaceAlt,
+                        borderRadius: BorderRadius.circular(Radii.m),
+                      ),
+                      child: Icon(
+                        widget.icon,
+                        color: documented ? accentColor : c.ink2.withValues(alpha: 0.5),
+                        size: 20,
+                      ),
+                    ),
                     const SizedBox(width: Space.m),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(widget.title, style: T.body(color: c.ink, weight: 700)),
-                          if (!documented) Text('Non documenté dans nos sources', style: T.caption(color: c.ink2, weight: 500)),
+                          if (!documented)
+                            Text('Non documenté dans nos sources', style: T.caption(color: c.ink2, weight: 500)),
                         ],
                       ),
                     ),
-                    if (documented) AnimatedRotation(turns: _open ? 0.5 : 0, duration: Motion.base, child: Icon(Icons.expand_more_rounded, color: c.ink2)),
+                    if (documented)
+                      AnimatedRotation(
+                        turns: _open ? 0.5 : 0,
+                        duration: Motion.base,
+                        child: Icon(Icons.expand_more_rounded, color: c.ink2),
+                      ),
                   ],
                 ),
               ),
@@ -411,13 +736,55 @@ class _SectionState extends State<_Section> {
               child: _open
                   ? Padding(
                       padding: const EdgeInsets.fromLTRB(Space.l, 0, Space.l, Space.l),
-                      child: SelectableText(widget.text.trim(), style: T.body(color: c.ink).copyWith(height: 1.5)),
+                      child: _buildFormattedText(context, cleaned, accentColor),
                     )
                   : const SizedBox(width: double.infinity),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildFormattedText(BuildContext context, String text, Color accentColor) {
+    final c = context.c;
+    final lines = text.split('\n').where((l) => l.trim().isNotEmpty).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (final line in lines) ...[
+          if (line.trim().startsWith('-') || line.trim().startsWith('•'))
+            Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    margin: const EdgeInsets.only(top: 7, right: 8),
+                    width: 6,
+                    height: 6,
+                    decoration: BoxDecoration(color: accentColor, shape: BoxShape.circle),
+                  ),
+                  Expanded(
+                    child: SelectableText(
+                      line.replaceFirst(RegExp(r'^[-•]\s*'), '').trim(),
+                      style: T.body(color: c.ink).copyWith(height: 1.55),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: SelectableText(
+                line.trim(),
+                style: T.body(color: c.ink).copyWith(height: 1.55),
+              ),
+            ),
+        ],
+      ],
     );
   }
 }
@@ -438,6 +805,7 @@ class _PestsSectionState extends State<_PestsSection> {
   Widget build(BuildContext context) {
     final c = context.c;
     final documented = widget.items.isNotEmpty;
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(Space.gutter, 0, Space.gutter, Space.s),
       child: AppCard(
@@ -451,18 +819,36 @@ class _PestsSectionState extends State<_PestsSection> {
                 padding: const EdgeInsets.all(Space.l),
                 child: Row(
                   children: [
-                    IconTile(icon: Icons.bug_report_rounded, color: documented ? c.clay : c.ink2.withValues(alpha: 0.5), size: 34),
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: documented ? c.clay.withValues(alpha: c.isDark ? 0.25 : 0.12) : c.surfaceAlt,
+                        borderRadius: BorderRadius.circular(Radii.m),
+                      ),
+                      child: Icon(
+                        Icons.bug_report_rounded,
+                        color: documented ? c.clay : c.ink2.withValues(alpha: 0.5),
+                        size: 20,
+                      ),
+                    ),
                     const SizedBox(width: Space.m),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text('Maladies et ravageurs', style: T.body(color: c.ink, weight: 700)),
-                          if (!documented) Text('Non documenté dans nos sources', style: T.caption(color: c.ink2, weight: 500)),
+                          if (!documented)
+                            Text('Non documenté dans nos sources', style: T.caption(color: c.ink2, weight: 500)),
                         ],
                       ),
                     ),
-                    if (documented) AnimatedRotation(turns: _open ? 0.5 : 0, duration: Motion.base, child: Icon(Icons.expand_more_rounded, color: c.ink2)),
+                    if (documented)
+                      AnimatedRotation(
+                        turns: _open ? 0.5 : 0,
+                        duration: Motion.base,
+                        child: Icon(Icons.expand_more_rounded, color: c.ink2),
+                      ),
                   ],
                 ),
               ),
@@ -478,14 +864,34 @@ class _PestsSectionState extends State<_PestsSection> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           for (final p in widget.items)
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: Space.m),
+                            Container(
+                              margin: const EdgeInsets.only(bottom: Space.m),
+                              padding: const EdgeInsets.all(Space.m),
+                              decoration: BoxDecoration(
+                                color: c.surfaceAlt,
+                                borderRadius: BorderRadius.circular(Radii.m),
+                                border: Border.all(color: c.line),
+                              ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(p.name, style: T.body(color: c.ink, weight: 700)),
-                                  const SizedBox(height: 2),
-                                  SelectableText(p.advice, style: T.body(color: c.ink2).copyWith(height: 1.45)),
+                                  Row(
+                                    children: [
+                                      Icon(Icons.warning_amber_rounded, size: 16, color: c.clay),
+                                      const SizedBox(width: 6),
+                                      Expanded(
+                                        child: Text(
+                                          cleanGuideText(p.name),
+                                          style: T.body(color: c.ink, weight: 700),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 4),
+                                  SelectableText(
+                                    cleanGuideText(p.advice),
+                                    style: T.caption(color: c.ink2).copyWith(height: 1.45),
+                                  ),
                                 ],
                               ),
                             ),
@@ -511,23 +917,82 @@ class GuideSections extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
+    final videoInfo = guide.video != null
+        ? GuideVideoInfo(
+            title: guide.video!.title,
+            channel: guide.video!.channel,
+            url: guide.video!.url,
+            duration: guide.video!.duration,
+          )
+        : findVideoForCrop(guide.slug);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _Section(title: 'Zones de culture', text: guide.zones, icon: Icons.map_rounded),
-        _Section(title: 'Calendrier', text: guide.calendar, icon: Icons.event_rounded),
-        _Section(title: 'Sol et semis', text: guide.soilAndSowing, icon: Icons.grass_rounded),
-        _Section(title: 'Eau', text: guide.waterNeeds, icon: Icons.water_drop_rounded),
-        _Section(title: 'Fertilisation', text: guide.fertilization, icon: Icons.science_rounded),
+        // 0. Barre de lecture vocale pour les utilisateurs peu alphabétisés
+        _AudioGuideBar(guide: guide),
+        const SizedBox(height: Space.m),
+
+        // 1. Vidéo explicative pratique
+        if (videoInfo != null) ...[
+          _VideoGuideCard(video: videoInfo),
+          const SizedBox(height: Space.m),
+        ],
+
+        // 2. Rubriques de la fiche avec design soigné
+        _Section(
+          title: 'Zones de culture',
+          text: guide.zones,
+          icon: Icons.map_rounded,
+          color: const Color(0xFF0F766E), // Teal
+        ),
+        _Section(
+          title: 'Calendrier & Cycle',
+          text: guide.calendar,
+          icon: Icons.event_rounded,
+          color: const Color(0xFFD97706), // Amber
+        ),
+        _Section(
+          title: 'Sol, préparation et semis',
+          text: guide.soilAndSowing,
+          icon: Icons.grass_rounded,
+          color: const Color(0xFF16A34A), // Green
+        ),
+        _Section(
+          title: 'Besoins en eau & Irrigation',
+          text: guide.waterNeeds,
+          icon: Icons.water_drop_rounded,
+          color: const Color(0xFF0284C7), // Blue
+        ),
+        _Section(
+          title: 'Fertilisation & Fumure',
+          text: guide.fertilization,
+          icon: Icons.science_rounded,
+          color: const Color(0xFF7C3AED), // Purple
+        ),
         _PestsSection(items: guide.pestsDiseases),
-        _Section(title: 'Récolte', text: guide.harvest, icon: Icons.agriculture_rounded),
-        _Section(title: 'Rendement', text: guide.yieldInfo, icon: Icons.bar_chart_rounded),
-        if (guide.limitations.trim().isNotEmpty)
+        _Section(
+          title: 'Récolte & Conservation',
+          text: guide.harvest,
+          icon: Icons.agriculture_rounded,
+          color: const Color(0xFFEA580C), // Orange
+        ),
+        _Section(
+          title: 'Rendements observés',
+          text: guide.yieldInfo,
+          icon: Icons.bar_chart_rounded,
+          color: const Color(0xFF059669), // Emerald
+        ),
+        if (cleanGuideText(guide.limitations).trim().isNotEmpty)
           Padding(
             padding: const EdgeInsets.fromLTRB(Space.gutter, Space.s, Space.gutter, 0),
             child: Container(
               padding: const EdgeInsets.all(Space.l),
-              decoration: BoxDecoration(color: c.clay.withValues(alpha: c.isDark ? 0.18 : 0.1), borderRadius: BorderRadius.circular(Radii.l)),
+              decoration: BoxDecoration(
+                color: c.clay.withValues(alpha: c.isDark ? 0.18 : 0.1),
+                borderRadius: BorderRadius.circular(Radii.l),
+                border: Border.all(color: c.clay.withValues(alpha: 0.2)),
+              ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -537,9 +1002,12 @@ class GuideSections extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('À vérifier', style: T.body(color: c.clay, weight: 800)),
+                        Text('Points d\'attention & vigilance', style: T.body(color: c.clay, weight: 800)),
                         const SizedBox(height: 2),
-                        Text(guide.limitations.trim(), style: T.caption(color: c.ink, weight: 500)),
+                        Text(
+                          cleanGuideText(guide.limitations).trim(),
+                          style: T.caption(color: c.ink, weight: 500),
+                        ),
                       ],
                     ),
                   ),
@@ -562,14 +1030,17 @@ class GuideSections extends StatelessWidget {
                     width: 38,
                     height: 38,
                     alignment: Alignment.center,
-                    decoration: BoxDecoration(color: c.accent.withValues(alpha: 0.14), borderRadius: BorderRadius.circular(12)),
+                    decoration: BoxDecoration(
+                      color: c.accent.withValues(alpha: 0.14),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                     child: Text('${i + 1}', style: T.number(16, color: c.accent)),
                   ),
-                  title: guide.sources[i].title,
+                  title: cleanGuideText(guide.sources[i].title),
                   subtitle: [
-                    if (guide.sources[i].publisher.isNotEmpty) guide.sources[i].publisher,
-                    if (guide.sources[i].year.isNotEmpty) guide.sources[i].year,
-                    if (!guide.sources[i].isSenegal) 'Référence hors Sénégal, à adapter',
+                    if (guide.sources[i].publisher.isNotEmpty) cleanGuideText(guide.sources[i].publisher),
+                    if (guide.sources[i].year.isNotEmpty) cleanGuideText(guide.sources[i].year),
+                    if (!guide.sources[i].isSenegal) 'Référence régionale hors Sénégal',
                   ].join(' · '),
                   trailing: guide.sources[i].url.isEmpty ? null : Icon(Icons.copy_rounded, size: 18, color: c.ink2),
                   onTap: guide.sources[i].url.isEmpty
@@ -577,7 +1048,9 @@ class GuideSections extends StatelessWidget {
                       : () async {
                           await Clipboard.setData(ClipboardData(text: guide.sources[i].url));
                           if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Lien de la source copié.')));
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Lien de la source copié.')),
+                            );
                           }
                         },
                 ),
@@ -585,7 +1058,10 @@ class GuideSections extends StatelessWidget {
           ),
         Padding(
           padding: const EdgeInsets.fromLTRB(Space.gutter + 4, Space.m, Space.gutter, 0),
-          child: Text('Confirmez toujours les doses et produits avec un conseiller agricole (ANCAR, SAED).', style: T.caption(color: c.ink2, weight: 500)),
+          child: Text(
+            'Recommandations basées sur la recherche agronomique (ISRA, ANCAR, FAO). Adaptez toujours à votre sol.',
+            style: T.caption(color: c.ink2, weight: 500),
+          ),
         ),
       ],
     );

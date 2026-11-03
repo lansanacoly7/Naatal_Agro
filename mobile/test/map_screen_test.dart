@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:nataal_agro/features/agriculture/data/agriculture_provider.dart';
 import 'package:nataal_agro/features/agriculture/data/models/crop.dart';
-import 'package:nataal_agro/features/map/data/map_provider.dart';
 import 'package:nataal_agro/features/map/data/models/map_marker_item.dart';
 import 'package:nataal_agro/features/map/presentation/screens/map_screen.dart';
 import 'package:nataal_agro/features/markets/data/markets_provider.dart';

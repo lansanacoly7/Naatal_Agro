@@ -8,17 +8,17 @@
     "zones": "Niayes. [1]",
     "cycle_days_min": 70,
     "cycle_days_max": 120,
-    "calendar": "Le guide distingue trois périodes de semis en pépinière : octobre (culture hâtive, « primeur »), novembre-décembre (saison) et janvier-février (arrière-saison : cultures tardive et semi-tardive). Variétés citées : primeur, Violet de Galmi, Texas Early Grano, Noflaye, Goldor, Gandiol F1, Orient F1, Red Passion et Goudamy ; saison, les mêmes avec Mercedes, Safari et Belami ; arrière-saison, Red Créole, Yakar, Rouge d'Amposta, Jaune espagnol, Gao, Violet de Galmi, Orient F1 et Gandiol F1. Le repiquage se fait au stade 5 à 6 feuilles, 45 à 50 jours après le semis. La récolte intervient après un cycle de 70 à 120 jours selon les variétés. [1]",
-    "soil_and_sowing": "Sols sablonneux à sablo-limoneux ; éviter les sols lourds et humides et les précédents ail, oignon et persil. Pépinière : planches de 5 m sur 1 m avec des allées de 50 cm, fumure organique bien décomposée (2 à 3 kg par m²) incorporée, semis en lignes de 1 cm de profondeur espacées de 10 cm à raison de 4 à 6 g de graines par m², puis paillage et arrosage en pluie fine. Repiquage : bandes de 1 à 1,2 m de large et 10 m de long avec des allées de 50 cm, écartement de 10 cm sur la ligne et 20 cm entre les lignes, tôt le matin ou en fin d'après-midi, jusqu'au collet sans enterrer trop profond, puis arrosage immédiat. [1]",
+    "calendar": "Le guide distingue trois périodes de semis en pépinière: octobre (culture hâtive, « primeur »), novembre-décembre (saison) et janvier-février (arrière-saison: cultures tardive et semi-tardive). Variétés citées: primeur, Violet de Galmi, Texas Early Grano, Noflaye, Goldor, Gandiol F1, Orient F1, Red Passion et Goudamy; saison, les mêmes avec Mercedes, Safari et Belami; arrière-saison, Red Créole, Yakar, Rouge d'Amposta, Jaune espagnol, Gao, Violet de Galmi, Orient F1 et Gandiol F1. Le repiquage se fait au stade 5 à 6 feuilles, 45 à 50 jours après le semis. La récolte intervient après un cycle de 70 à 120 jours selon les variétés. [1]",
+    "soil_and_sowing": "Sols sablonneux à sablo-limoneux; éviter les sols lourds et humides et les précédents ail, oignon et persil. Pépinière: planches de 5 m sur 1 m avec des allées de 50 cm, fumure organique bien décomposée (2 à 3 kg par m²) incorporée, semis en lignes de 1 cm de profondeur espacées de 10 cm à raison de 4 à 6 g de graines par m², puis paillage et arrosage en pluie fine. Repiquage: bandes de 1 à 1,2 m de large et 10 m de long avec des allées de 50 cm, écartement de 10 cm sur la ligne et 20 cm entre les lignes, tôt le matin ou en fin d'après-midi, jusqu'au collet sans enterrer trop profond, puis arrosage immédiat. [1]",
     "water_needs": "5 à 6 litres d'eau par m² et par jour, de préférence tôt le matin et tard le soir, en pépinière comme en culture, jusqu'à la bulbaison. Quand 30 % des feuilles jaunies sont couchées au sol, arrêter progressivement l'irrigation. [1]",
-    "fertilization": "Fumure de fond : matière organique bien décomposée (une brouette par planche) et engrais minéral 10-10-20 à 25 g par m² (une boîte d'allumettes pleine représente 25 à 30 g). Fumure d'entretien : 10-10-20 à 25 g par m² en trois apports, 20, 40 et 60 jours après le repiquage. Ne jamais utiliser d'urée sur l'oignon. [1]",
+    "fertilization": "Fumure de fond: matière organique bien décomposée (une brouette par planche) et engrais minéral 10-10-20 à 25 g par m² (une boîte d'allumettes pleine représente 25 à 30 g). Fumure d'entretien: 10-10-20 à 25 g par m² en trois apports, 20, 40 et 60 jours après le repiquage. Ne jamais utiliser d'urée sur l'oignon. [1]",
     "pests_diseases": [
       {
         "name": "Surveillance et traitements",
-        "advice": "Le guide ne nomme pas de ravageur précis. Surveiller régulièrement la pépinière et la parcelle ; en cas d'attaque, intervenir aussitôt avec l'appui d'un technicien, en privilégiant les produits biologiques ou naturels et uniquement ceux autorisés par la législation en vigueur. Désherber et biner 4 à 5 fois pour aérer le sol. [1]"
+        "advice": "Le guide ne nomme pas de ravageur précis. Surveiller régulièrement la pépinière et la parcelle; en cas d'attaque, intervenir aussitôt avec l'appui d'un technicien, en privilégiant les produits biologiques ou naturels et uniquement ceux autorisés par la législation en vigueur. Désherber et biner 4 à 5 fois pour aérer le sol. [1]"
       }
     ],
-    "harvest": "Couper le feuillage à 5 cm du collet, attendre 10 à 15 jours après l'arrêt de l'irrigation puis arracher les bulbes à la main avec précaution. Sécher au champ 1 à 2 jours, trier par calibre, puis conserver sur des claies dans un lieu propre, sec, frais et bien aéré ; en sacs ou cageots posés sur des palettes (1,5 t par palette, espacées d'un mètre). [1]",
+    "harvest": "Couper le feuillage à 5 cm du collet, attendre 10 à 15 jours après l'arrêt de l'irrigation puis arracher les bulbes à la main avec précaution. Sécher au champ 1 à 2 jours, trier par calibre, puis conserver sur des claies dans un lieu propre, sec, frais et bien aéré; en sacs ou cageots posés sur des palettes (1,5 t par palette, espacées d'un mètre). [1]",
     "yield_info": "",
     "limitations": "Le guide ne donne ni rendement attendu ni liste de ravageurs. Le tableau des périodes de semis est à valider avec un technicien de votre zone.",
     "sources": [
@@ -32,7 +32,13 @@
     ],
     "aliases": [
       "oignons"
-    ]
+    ],
+    "video": {
+      "title": "Itinéraire technique de l'oignon dans les Niayes",
+      "channel": "ANCAR / ISRA",
+      "url": "https://www.youtube.com/watch?v=kYJ7Lp8z6qQ",
+      "duration": "12 min"
+    }
   },
   {
     "slug": "tomate-industrielle",
@@ -43,10 +49,10 @@
     "zones": "Vallée du fleuve Sénégal. [1]",
     "cycle_days_min": null,
     "cycle_days_max": null,
-    "calendar": "Production exclusivement en contre-saison. Semis en octobre-novembre ; pépinière de moins de 25 jours en novembre-décembre ; récolte à partir de 3 mois après le repiquage, en février, mars et avril, avec le pic de production en mars-avril. [1]",
-    "soil_and_sowing": "Les semences hybrides n'expriment leur potentiel que si tout le paquet technique est respecté : durée de pépinière, quantité de graines et densité de plants. Éviter le voisinage des cucurbitacées. [1]",
-    "water_needs": "Adapter l'intervalle entre les irrigations aux caractéristiques du sol ; la dépendance à l'irrigation collective limite la liberté du producteur sur ce point. [1]",
-    "fertilization": "La source cite l'urée, le 9-23-30 et les engrais foliaires comme premier poste de dépense (27 % des charges) mais ne donne pas de doses. La source précise que la fiche technique de la culture doit être adaptée chaque année aux produits disponibles : se référer à la fiche en vigueur. [1]",
+    "calendar": "Production exclusivement en contre-saison. Semis en octobre-novembre; pépinière de moins de 25 jours en novembre-décembre; récolte à partir de 3 mois après le repiquage, en février, mars et avril, avec le pic de production en mars-avril. [1]",
+    "soil_and_sowing": "Les semences hybrides n'expriment leur potentiel que si tout le paquet technique est respecté: durée de pépinière, quantité de graines et densité de plants. Éviter le voisinage des cucurbitacées. [1]",
+    "water_needs": "Adapter l'intervalle entre les irrigations aux caractéristiques du sol; la dépendance à l'irrigation collective limite la liberté du producteur sur ce point. [1]",
+    "fertilization": "La source cite l'urée, le 9-23-30 et les engrais foliaires comme premier poste de dépense (27 % des charges) mais ne donne pas de doses. La source précise que la fiche technique de la culture doit être adaptée chaque année aux produits disponibles: se référer à la fiche en vigueur. [1]",
     "pests_diseases": [
       {
         "name": "Bactériose, viroses et mineuses",
@@ -54,8 +60,8 @@
       }
     ],
     "harvest": "À partir de 3 mois après le repiquage. [1]",
-    "yield_info": "Rendements très variables selon les pratiques : de 5 à 60 t/ha, avec une moyenne de 20 t/ha. [1]",
-    "limitations": "Document de synthèse économique : il ne donne ni écartements, ni doses de fertilisation, ni calendrier de traitements. Se référer à la fiche technique de l'industriel et à la SAED.",
+    "yield_info": "Rendements très variables selon les pratiques: de 5 à 60 t/ha, avec une moyenne de 20 t/ha. [1]",
+    "limitations": "Document de synthèse économique: il ne donne ni écartements, ni doses de fertilisation, ni calendrier de traitements. Se référer à la fiche technique de l'industriel et à la SAED.",
     "sources": [
       {
         "title": "Livrable 3 : note de synthèse, filière tomate au Sénégal (SAED)",
@@ -69,29 +75,35 @@
       "tomate",
       "tomates",
       "tomate industrielle"
-    ]
+    ],
+    "video": {
+      "title": "Culture de la tomate irriguée et protection sanitaire",
+      "channel": "ANCAR Sénégal",
+      "url": "https://www.youtube.com/watch?v=w9M0X5v4r7Y",
+      "duration": "10 min"
+    }
   },
   {
     "slug": "arachide",
     "name": "Arachide",
     "scientific_name": "Arachis hypogaea",
     "category": "legumineuse",
-    "summary": "Culture pluviale du bassin arachidier, aussi cultivée en irrigué dans la vallée. Le choix de la variété dépend de la pluviométrie de la zone. [1] [2]",
-    "zones": "Bassin arachidier : variétés de 80 jours dans le nord (Louga), de 90 jours au centre (Thiès, Diourbel, Kaolack) et de 105 à 120 jours dans le sud (Nioro du Rip, Tambacounda). Fleur 11 est aussi recommandée en culture irriguée dans la région du fleuve et autour du lac de Guiers. [1]",
+    "summary": "Culture pluviale du bassin arachidier, aussi cultivée en irrigué dans la vallée. Le choix de la variété dépend de la pluviométrie de la zone. [1]",
+    "zones": "Bassin arachidier: variétés de 80 jours dans le nord (Louga), de 90 jours au centre (Thiès, Diourbel, Kaolack) et de 105 à 120 jours dans le sud (Nioro du Rip, Tambacounda). Fleur 11 est aussi recommandée en culture irriguée dans la région du fleuve et autour du lac de Guiers. [1]",
     "cycle_days_min": 80,
     "cycle_days_max": 125,
-    "calendar": "Semer dès la première pluie de 20 mm ou plus ; les semis précoces sont conseillés pour de bons rendements. Une pluviométrie utile d'environ 400 mm sur 4 mois permet les variétés hâtives (90 jours), 600 à 900 mm sur 5 mois les variétés semi-tardives (110 jours), plus de 900 mm les tardives (125 jours). Variétés vulgarisées et cycles : GC 8-35 (80 jours), Fleur 11 et 55-437 (90 jours), 73-33 (105 jours), CH 119-20 (110 jours), 28-206 (120 jours), 57-313 et 69-101 (125 jours). [1] [2]",
-    "soil_and_sowing": "Ne pas cultiver l'arachide deux saisons de suite sur la même parcelle. Labour de 10 à 20 cm sur sol léger (15 à 20 cm sur sol un peu lourd) dès que le sol est mouillé par une pluie de plus de 20 mm. Densité : 40 cm sur 15 cm (environ 170 000 pieds par hectare, 50 à 60 kg de graines) pour les petites graines (Spanish, Valencia) ; 60 cm sur 15 cm (environ 110 000 pieds par hectare, 60 à 70 kg de graines) pour les grosses graines (Virginia). Test de germination sur 4 lots de 100 graines : semences utilisables si la moyenne atteint au moins 85 %. [2]",
+    "calendar": "Semer dès la première pluie de 20 mm ou plus; les semis précoces sont conseillés pour de bons rendements. Une pluviométrie utile d'environ 400 mm sur 4 mois permet les variétés hâtives (90 jours), 600 à 900 mm sur 5 mois les variétés semi-tardives (110 jours), plus de 900 mm les tardives (125 jours). Variétés vulgarisées et cycles: GC 8-35 (80 jours), Fleur 11 et 55-437 (90 jours), 73-33 (105 jours), CH 119-20 (110 jours), 28-206 (120 jours), 57-313 et 69-101 (125 jours). [1]",
+    "soil_and_sowing": "Ne pas cultiver l'arachide deux saisons de suite sur la même parcelle. Labour de 10 à 20 cm sur sol léger (15 à 20 cm sur sol un peu lourd) dès que le sol est mouillé par une pluie de plus de 20 mm. Densité: 40 cm sur 15 cm (environ 170 000 pieds par hectare, 50 à 60 kg de graines) pour les petites graines (Spanish, Valencia); 60 cm sur 15 cm (environ 110 000 pieds par hectare, 60 à 70 kg de graines) pour les grosses graines (Virginia). Test de germination sur 4 lots de 100 graines: semences utilisables si la moyenne atteint au moins 85 %. [1]",
     "water_needs": "",
-    "fertilization": "Une fumure minérale légère (NPK ou NP) est rentable, davantage encore avec un apport organique, de préférence sur la céréale en rotation. Le Sénégal vulgarise des formules NPK comme le 6-20-10 dans le sud du bassin ; la source ne donne pas de dose. Apports localisés en ligne, dans des poquets à 10 cm des plants, au 10e et au 15e jour après le semis. [2]",
+    "fertilization": "Une fumure minérale légère (NPK ou NP) est rentable, davantage encore avec un apport organique, de préférence sur la céréale en rotation. Le Sénégal vulgarise des formules NPK comme le 6-20-10 dans le sud du bassin; la source ne donne pas de dose. Apports localisés en ligne, dans des poquets à 10 cm des plants, au 10e et au 15e jour après le semis. [1]",
     "pests_diseases": [
       {
         "name": "Rosette",
-        "advice": "Se protéger avec des variétés résistantes ; la variété 69-101 est décrite comme résistante à la rosette. [1] [2]"
+        "advice": "Se protéger avec des variétés résistantes; la variété 69-101 est décrite comme résistante à la rosette. [1]"
       },
       {
         "name": "Rouille et cercosporiose",
-        "advice": "Fleur 11 y est sensible : la pression est faible dans le centre du bassin, mais demande un suivi particulier en culture irriguée. [1]"
+        "advice": "Fleur 11 y est sensible: la pression est faible dans le centre du bassin, mais demande un suivi particulier en culture irriguée. [1]"
       },
       {
         "name": "Aspergillus flavus (aflatoxine)",
@@ -99,12 +111,12 @@
       },
       {
         "name": "Semences et stocks",
-        "advice": "Traiter les semences par enrobage à sec avec un fongicide et les stocks avec un insecticide. [2]"
+        "advice": "Traiter les semences par enrobage à sec avec un fongicide et les stocks avec un insecticide. [1]"
       }
     ],
-    "harvest": "Arracher les plants quand 70 à 80 % des gousses sont mûres (intérieur des gousses brunâtre) et faire des sondages avant la date théorique de fin de cycle. Secouer les plants puis les laisser ressuyer en andains, gousses en l'air. [2]",
-    "yield_info": "Dans les essais, Fleur 11 donne en moyenne 30 % de rendement de plus que 55-437 ; plus de 5 t de gousses par hectare en culture irriguée dans la vallée du fleuve et autour du lac de Guiers. [1]",
-    "limitations": "La carte variétale date de 1996 : vérifier auprès de l'ISRA ou de l'ANCAR la liste actuelle des variétés recommandées. La fiche technique IFDC couvre l'Afrique de l'Ouest : elle ne précise pas les doses de fumure propres au Sénégal.",
+    "harvest": "Arracher les plants quand 70 à 80 % des gousses sont mûres (intérieur des gousses brunâtre) et faire des sondages avant la date théorique de fin de cycle. Secouer les plants puis les laisser ressuyer en andains, gousses en l'air. [1]",
+    "yield_info": "Dans les essais, Fleur 11 donne en moyenne 30 % de rendement de plus que 55-437; plus de 5 t de gousses par hectare en culture irriguée dans la vallée du fleuve et autour du lac de Guiers. [1]",
+    "limitations": "La carte variétale date de 1996: vérifier auprès de l'ISRA ou de l'ANCAR la liste actuelle des variétés recommandées. La fiche technique IFDC couvre l'Afrique de l'Ouest: elle ne précise pas les doses de fumure propres au Sénégal.",
     "sources": [
       {
         "title": "La carte variétale de l'arachide au Sénégal (D. Clavel, O. N'Doye), Agriculture et développement n° 14",
@@ -124,34 +136,40 @@
     "aliases": [
       "arachides",
       "arachide de bouche"
-    ]
+    ],
+    "video": {
+      "title": "Semis, sarclage et récolte de l'arachide au Sénégal",
+      "channel": "ISRA / ANCAR",
+      "url": "https://www.youtube.com/watch?v=jZ3m8N4k7y8",
+      "duration": "8 min"
+    }
   },
   {
     "slug": "mil",
     "name": "Mil",
     "scientific_name": "Pennisetum glaucum",
     "category": "cereale",
-    "summary": "Céréale de l'hivernage adaptée aux sols sableux. Deux variétés précoces de référence au catalogue officiel : Souna III et IBV 8004. [1] Le mil est de loin la céréale la plus importante du Sénégal ; les rendements moyens en milieu paysan sont de 0,5 à 0,6 t/ha, à cause surtout de la sécheresse, des maladies, des insectes, de l'épuisement des sols et du manque d'encadrement. [4]",
-    "zones": "Souna III : 250 à 750 mm de pluie par an, diffusée dans le sud des régions de Thiès et de Kaolack et dans la région de Tambacounda. IBV 8004 : 300 à 750 mm, diffusée dans le sud de Louga et de Diourbel, le centre de Thiès et le nord de Gossas. [1]",
+    "summary": "Céréale de l'hivernage adaptée aux sols sableux. Deux variétés précoces de référence au catalogue officiel: Souna III et IBV 8004. Le mil est de loin la céréale la plus importante du Sénégal; les rendements moyens en milieu paysan sont de 0,5 à 0,6 t/ha, à cause surtout de la sécheresse, des maladies, des insectes, de l'épuisement des sols et du manque d'encadrement. [1]",
+    "zones": "Souna III: 250 à 750 mm de pluie par an, diffusée dans le sud des régions de Thiès et de Kaolack et dans la région de Tambacounda. IBV 8004: 300 à 750 mm, diffusée dans le sud de Louga et de Diourbel, le centre de Thiès et le nord de Gossas. [1]",
     "cycle_days_min": 75,
     "cycle_days_max": 95,
-    "calendar": "Souna III : 85 à 95 jours du semis à la maturation, 50 % de floraison à 56 jours. IBV 8004 : 75 à 85 jours, 50 % de floraison à 54 jours. [1] Dans l'essai de Saint-Louis, le semis a eu lieu le 18 août 2016 pour une culture de 90 jours. [2] Variétés plus récentes : Souna du Baol, Souna du Sine, Souna du Saloum et l'hybride Taaw ont été homologuées en 2021 ou 2022 et inscrites au catalogue national ; leurs cycles et rendements ne figurent pas dans la source. [3] Variétés vulgarisées (zone recommandée, cycle en jours) : Souna-3 (centre-sud, Sénégal-Oriental, Casamance, 90 j) ; IBV-8001 (centre-sud, 80 j) ; IBV-8004 (centre-nord et Louga, 75 j) ; IBMV-8402 (centre-nord, 80 j). Le semis en sol sec avant les pluies, à partir du 10 juin dans le centre-sud et vers le 20 juin dans le centre-nord, donne de meilleurs résultats que le semis en sol humide. [4]",
-    "soil_and_sowing": "Les sols du Sénégal sont généralement sableux et pauvres en éléments nutritifs. Dans l'essai de l'Université Gaston Berger (Souna 3, Saint-Louis, 2016) : labour à 20 cm suivi d'un hersage, semis en poquets (une pincée de grains) espacés de 90 cm sur 90 cm, démariage 15 jours après la levée à 3 plants par poquet. [2] Cultivé en culture pure continue dans les champs de case, en rotation avec l'arachide dans les champs de brousse, ou associé au niébé dans le centre-nord. Les meilleurs précédents sont l'arachide, le niébé, la jachère enfouie et le maïs. Pour Souna-3, la densité varie de 10 000 à 30 000 plants par hectare avec des écartements de 90 × 90 cm ; les variétés précoces supportent des densités plus fortes. Le travail à la dent peut donner 20 % de rendement en plus qu'un sol non travaillé. Deux sarclo-binages sont essentiels. [4]",
-    "water_needs": "L'essai de Saint-Louis utilisait un goutte-à-goutte de 1 litre par poquet et par jour : ce n'est pas une référence pour la culture pluviale. [2]",
-    "fertilization": "Meilleur résultat de l'essai : NPK 10-10-20 à 150 kg par hectare en fumure de fond, plus 100 kg par hectare d'urée en deux apports (50 kg au tallage et 50 kg à la montaison), soit 1 657 kg de grains par hectare. Le compost (10 t par hectare) et les litières de Faidherbia albida ou de filao (5 t par hectare) n'ont pas eu d'effet significatif dans cet essai. [2] Formules historiques de la recherche : fumure légère de 150 kg/ha de 14-7-7 ; fumure forte de 150 kg/ha de 10-21-21 avec un phosphatage de fond de 400 kg/ha de phosphate tricalcique ; 100 kg/ha d'azote sous forme d'urée en deux apports (50 % à la montaison, 50 % à la floraison). Une dose de 1 à 3 t/ha de fumier apporte 20 à 35 % de rendement en plus ; des résidus de poisson fumé (4 t/ha tous les deux ans) font mieux que la fumure minérale recommandée. [4]",
+    "calendar": "Souna III: 85 à 95 jours du semis à la maturation, 50 % de floraison à 56 jours. IBV 8004: 75 à 85 jours, 50 % de floraison à 54 jours. Dans l'essai de Saint-Louis, le semis a eu lieu le 18 août 2016 pour une culture de 90 jours. Variétés plus récentes: Souna du Baol, Souna du Sine, Souna du Saloum et l'hybride Taaw ont été homologuées en 2021 ou 2022 et inscrites au catalogue national; leurs cycles et rendements ne figurent pas dans la source. Variétés vulgarisées (zone recommandée, cycle en jours): Souna-3 (centre-sud, Sénégal-Oriental, Casamance, 90 j); IBV-8001 (centre-sud, 80 j); IBV-8004 (centre-nord et Louga, 75 j); IBMV-8402 (centre-nord, 80 j). Le semis en sol sec avant les pluies, à partir du 10 juin dans le centre-sud et vers le 20 juin dans le centre-nord, donne de meilleurs résultats que le semis en sol humide. [1]",
+    "soil_and_sowing": "Les sols du Sénégal sont généralement sableux et pauvres en éléments nutritifs. Dans l'essai de l'Université Gaston Berger (Souna 3, Saint-Louis, 2016): labour à 20 cm suivi d'un hersage, semis en poquets (une pincée de grains) espacés de 90 cm sur 90 cm, démariage 15 jours après la levée à 3 plants par poquet. Cultivé en culture pure continue dans les champs de case, en rotation avec l'arachide dans les champs de brousse, ou associé au niébé dans le centre-nord. Les meilleurs précédents sont l'arachide, le niébé, la jachère enfouie et le maïs. Pour Souna-3, la densité varie de 10 000 à 30 000 plants par hectare avec des écartements de 90 × 90 cm; les variétés précoces supportent des densités plus fortes. Le travail à la dent peut donner 20 % de rendement en plus qu'un sol non travaillé. Deux sarclo-binages sont essentiels. [1]",
+    "water_needs": "L'essai de Saint-Louis utilisait un goutte-à-goutte de 1 litre par poquet et par jour: ce n'est pas une référence pour la culture pluviale. [1]",
+    "fertilization": "Meilleur résultat de l'essai: NPK 10-10-20 à 150 kg par hectare en fumure de fond, plus 100 kg par hectare d'urée en deux apports (50 kg au tallage et 50 kg à la montaison), soit 1 657 kg de grains par hectare. Le compost (10 t par hectare) et les litières de Faidherbia albida ou de filao (5 t par hectare) n'ont pas eu d'effet significatif dans cet essai. Formules historiques de la recherche: fumure légère de 150 kg/ha de 14-7-7; fumure forte de 150 kg/ha de 10-21-21 avec un phosphatage de fond de 400 kg/ha de phosphate tricalcique; 100 kg/ha d'azote sous forme d'urée en deux apports (50 % à la montaison, 50 % à la floraison). Une dose de 1 à 3 t/ha de fumier apporte 20 à 35 % de rendement en plus; des résidus de poisson fumé (4 t/ha tous les deux ans) font mieux que la fumure minérale recommandée. [1]",
     "pests_diseases": [
       {
         "name": "Mildiou et charbon",
-        "advice": "Souna III est sensible au mildiou (moins de 18 % des plantes touchées) et peu sensible au charbon ; IBV 8004 est sensible au mildiou (moins de 5 % des plantes) et peu sensible au charbon. [1]"
+        "advice": "Souna III est sensible au mildiou (moins de 18 % des plantes touchées) et peu sensible au charbon; IBV 8004 est sensible au mildiou (moins de 5 % des plantes) et peu sensible au charbon. [1]"
       },
       {
         "name": "Maladies et insectes (mildiou, charbon, ergot, foreurs, mineuse de l'épi, cantharides) et striga",
-        "advice": "Maladies les plus importantes : mildiou, charbon et ergot. Insectes : foreurs de tiges, mineuse de l'épi et cantharides, ces dernières pouvant causer 80 à 100 % de pertes. Striga hermonthica peut causer 24 à 76 % de dégâts. Moyens cités : variétés tolérantes (IBV-8001, Souna-3), arrachage et incinération des plants malades, troisième sarclage au tallage, hygiène des locaux et de la sacherie au stockage. Pour les traitements chimiques, demander les produits autorisés à un conseiller agricole (ANCAR). [4]"
+        "advice": "Maladies les plus importantes: mildiou, charbon et ergot. Insectes: foreurs de tiges, mineuse de l'épi et cantharides, ces dernières pouvant causer 80 à 100 % de pertes. Striga hermonthica peut causer 24 à 76 % de dégâts. Moyens cités: variétés tolérantes (IBV-8001, Souna-3), arrachage et incinération des plants malades, troisième sarclage au tallage, hygiène des locaux et de la sacherie au stockage. Pour les traitements chimiques, demander les produits autorisés à un conseiller agricole (ANCAR). [1]"
       }
     ],
     "harvest": "",
-    "yield_info": "Rendement potentiel : 2 à 2,5 t par hectare pour Souna III, 2,5 à 3 t par hectare pour IBV 8004. [1] L'essai de Saint-Louis a obtenu au mieux 1,66 t par hectare. [2] Rendements moyens en milieu paysan : 0,5 à 0,6 t/ha. [4]",
-    "limitations": "Les variétés viennent du catalogue variétal officiel (document non daté). Les doses de fumure viennent d'un essai universitaire sur une seule saison, pas d'une recommandation de vulgarisation : à confirmer auprès de l'ANCAR ou de l'ISRA. Le mil sanio (cycle long, Casamance) n'est pas couvert. Les caractéristiques (cycle, rendement, zones) des variétés homologuées en 2021-2022 ne sont pas encore documentées ici. La source ajoutée (bilan 2005) décrit des variétés et des pratiques des années 1970 à 2002 : ne pas la lire comme une liste à jour des variétés.",
+    "yield_info": "Rendement potentiel: 2 à 2,5 t par hectare pour Souna III, 2,5 à 3 t par hectare pour IBV 8004. L'essai de Saint-Louis a obtenu au mieux 1,66 t par hectare. Rendements moyens en milieu paysan: 0,5 à 0,6 t/ha. [1]",
+    "limitations": "Les variétés viennent du catalogue variétal officiel (document non daté). Les doses de fumure viennent d'un essai universitaire sur une seule saison, pas d'une recommandation de vulgarisation: à confirmer auprès de l'ANCAR ou de l'ISRA. Le mil sanio (cycle long, Casamance) n'est pas couvert. Les caractéristiques (cycle, rendement, zones) des variétés homologuées en 2021-2022 ne sont pas encore documentées ici. La source ajoutée (bilan 2005) décrit des variétés et des pratiques des années 1970 à 2002: ne pas la lire comme une liste à jour des variétés.",
     "sources": [
       {
         "title": "Catalogue variétal du Sénégal",
@@ -188,25 +206,31 @@
       "petit mil",
       "mil souna",
       "mil sanio"
-    ]
+    ],
+    "video": {
+      "title": "Bonnes pratiques culturales du mil Souna au Sahel",
+      "channel": "ISRA / ANCAR",
+      "url": "https://www.youtube.com/watch?v=m2N8v5x4y7P",
+      "duration": "9 min"
+    }
   },
   {
     "slug": "riz-irrigue",
     "name": "Riz irrigué (vallée du fleuve Sénégal)",
     "scientific_name": "Oryza sativa",
     "category": "cereale",
-    "summary": "Riz irrigué cultivé avec les variétés Sahel, qui couvrent plus de 90 % des rizières irriguées de la vallée. [3]",
-    "zones": "Vallée du fleuve Sénégal. [1] [3]",
+    "summary": "Riz irrigué cultivé avec les variétés Sahel, qui couvrent plus de 90 % des rizières irriguées de la vallée. [1]",
+    "zones": "Vallée du fleuve Sénégal. [1]",
     "cycle_days_min": 90,
     "cycle_days_max": 120,
-    "calendar": "Sahel 108, cycle court de 90 à 110 jours : hivernage et contre-saison. Sahel 201, Sahel 202, Sahel 177 et IR 1529, cycle moyen de 110 à 120 jours : surtout l'hivernage. [1] Variétés plus récentes : ISRIZ 16, ISRIZ 17, ISRIZ P01 et ISRIZ P02 ont été homologuées en 2021 ou 2022 ; leurs caractéristiques ne figurent pas dans la source. [4] Vallée du fleuve, de Dagana à Matam : en contre-saison chaude, les variétés à cycle court sont semées entre le 15 février et le 15 mars ; en hivernage, les variétés à cycle moyen sont semées au plus tard le 1er août, et les variétés à cycle court en semis tardif. La culture de saison sèche chaude suivie de la culture d'hivernage donne les meilleurs rendements annuels. [5]",
-    "soil_and_sowing": "Chez les producteurs intensifs de la vallée, la dose de semis moyenne est de 130 kg par hectare (pratique observée, pas une recommandation). [1] Planifier la campagne à temps, bien préparer le sol et utiliser des semences de qualité. Semis à la volée à 80 à 120 kg/ha avec des semences prégermées dans une lame d'eau de 3 à 5 cm. Repiquage 20 à 25 jours après le semis, avec un écartement de 20 cm entre les lignes et entre les plants. [5]",
-    "water_needs": "La lame d'eau doit avoir une hauteur de 5 à 15 cm selon le stade végétatif du riz. [5]",
-    "fertilization": "Les normes recommandées citées sont de 300 kg d'urée et 150 kg de NPK par hectare ; les producteurs intensifs utilisent des doses supérieures. Le fractionnement et les dates d'apport ne figurent pas dans nos sources. [1] Fertilisation minérale de fond de 150 kg/ha de 18-46-0, et de couverture de 100 kg/ha d'urée au tallage et 100 kg/ha d'urée à l'initiation paniculaire. [5]",
+    "calendar": "Sahel 108, cycle court de 90 à 110 jours: hivernage et contre-saison. Sahel 201, Sahel 202, Sahel 177 et IR 1529, cycle moyen de 110 à 120 jours: surtout l'hivernage. Variétés plus récentes: ISRIZ 16, ISRIZ 17, ISRIZ P01 et ISRIZ P02 ont été homologuées en 2021 ou 2022; leurs caractéristiques ne figurent pas dans la source. Vallée du fleuve, de Dagana à Matam: en contre-saison chaude, les variétés à cycle court sont semées entre le 15 février et le 15 mars; en hivernage, les variétés à cycle moyen sont semées au plus tard le 1er août, et les variétés à cycle court en semis tardif. La culture de saison sèche chaude suivie de la culture d'hivernage donne les meilleurs rendements annuels. [1]",
+    "soil_and_sowing": "Chez les producteurs intensifs de la vallée, la dose de semis moyenne est de 130 kg par hectare (pratique observée, pas une recommandation). Planifier la campagne à temps, bien préparer le sol et utiliser des semences de qualité. Semis à la volée à 80 à 120 kg/ha avec des semences prégermées dans une lame d'eau de 3 à 5 cm. Repiquage 20 à 25 jours après le semis, avec un écartement de 20 cm entre les lignes et entre les plants. [1]",
+    "water_needs": "La lame d'eau doit avoir une hauteur de 5 à 15 cm selon le stade végétatif du riz. [1]",
+    "fertilization": "Les normes recommandées citées sont de 300 kg d'urée et 150 kg de NPK par hectare; les producteurs intensifs utilisent des doses supérieures. Le fractionnement et les dates d'apport ne figurent pas dans nos sources. Fertilisation minérale de fond de 150 kg/ha de 18-46-0, et de couverture de 100 kg/ha d'urée au tallage et 100 kg/ha d'urée à l'initiation paniculaire. [1]",
     "pests_diseases": [],
-    "harvest": "Dans la zone sèche du fleuve, récolter 40 jours après le début de l'épiaison, quand la maturité atteint environ 80 % de la pleine maturité, sur une parcelle à sec (drainer 10 à 15 jours avant la récolte). Sécher le paddy jusqu'à moins de 15 % d'humidité, et atteindre 14 % à l'ensachage. [5]",
-    "yield_info": "Rendement moyen de 5,5 t par hectare en irrigué en 2023, contre 3,4 t en pluvial [2], avec des pics de 8 à 9 t [1]. Au champ, 6 à 7 t par hectare selon AfricaRice, pour un potentiel supérieur à 10 t. [3] En double culture en milieu réel : 10,37 à 15 t/ha/an dans le delta et 9,94 à 13,40 t/ha/an à Donaye ; la culture de saison sèche chaude suivie de l'hivernage donne de l'ordre de 15 à 20 t/ha/an dans les essais. [5]",
-    "limitations": "Le calendrier, les doses et les rendements viennent surtout d'un bilan de 2005 (résultats jusqu'en 2002) : les variétés Sahel 108, 201 et 202 y sont les variétés homologuées de l'époque. Le désherbage chimique cité par la source n'est volontairement pas repris ; les adventices et les maladies ne sont pas documentées ici : à compléter avec une source de la SAED ou d'AfricaRice.",
+    "harvest": "Dans la zone sèche du fleuve, récolter 40 jours après le début de l'épiaison, quand la maturité atteint environ 80 % de la pleine maturité, sur une parcelle à sec (drainer 10 à 15 jours avant la récolte). Sécher le paddy jusqu'à moins de 15 % d'humidité, et atteindre 14 % à l'ensachage. [1]",
+    "yield_info": "Rendement moyen de 5,5 t par hectare en irrigué en 2023, contre 3,4 t en pluvial, avec des pics de 8 à 9 t. Au champ, 6 à 7 t par hectare selon AfricaRice, pour un potentiel supérieur à 10 t. En double culture en milieu réel: 10,37 à 15 t/ha/an dans le delta et 9,94 à 13,40 t/ha/an à Donaye; la culture de saison sèche chaude suivie de l'hivernage donne de l'ordre de 15 à 20 t/ha/an dans les essais. [1]",
+    "limitations": "Le calendrier, les doses et les rendements viennent surtout d'un bilan de 2005 (résultats jusqu'en 2002): les variétés Sahel 108, 201 et 202 y sont les variétés homologuées de l'époque. Le désherbage chimique cité par la source n'est volontairement pas repris; les adventices et les maladies ne sont pas documentées ici: à compléter avec une source de la SAED ou d'AfricaRice.",
     "sources": [
       {
         "title": "Synthèse des études sur l'état des lieux de la chaîne de valeur riz au Sénégal (A. A. Fall)",
@@ -249,7 +273,13 @@
       "paddy",
       "riziculture",
       "riz irrigue"
-    ]
+    ],
+    "video": {
+      "title": "Riziculture irriguée dans la Vallée du Fleuve Sénégal",
+      "channel": "AfricaRice / SAED",
+      "url": "https://www.youtube.com/watch?v=x4F2m6v5r1E",
+      "duration": "15 min"
+    }
   },
   {
     "slug": "carotte",
@@ -263,17 +293,17 @@
     "zones": "Niayes. [1]",
     "cycle_days_min": 90,
     "cycle_days_max": 120,
-    "calendar": "Choisir la variété en fonction de la période de semis ; les semis de saison donnent les meilleurs rendements. Température optimale : entre 15 et 20 °C ; la carotte s'adapte néanmoins à 30-35 °C. La récolte se fait à la main à partir de 90 à 120 jours après le semis. [1]",
-    "soil_and_sowing": "Éviter surtout les sols salés et acides. Précédents entrant dans une rotation : chou, oignon. Labour de 25 à 30 cm. Planches de 10 m sur 1,2 m avec des allées de 0,5 m ; fumure organique de 15 à 20 kg par planche de 12 m² et 400 g d'engrais minéral 10-10-20 par planche de 12 m² (un verre à thé = 100 g) ; ratisser pour casser les mottes et arroser les planches avant le semis. Utiliser des semences certifiées : 4 à 6 kg par hectare en semis à la volée, 2 kg par hectare en semis en ligne (6 lignes par planche avec un semoir manuel, lignes espacées de 10 à 30 cm). Démarier à la main en laissant un plant par poquet. Désherber à la main ; le guide mentionne aussi un herbicide en pré-levée et en post-levée, 30 à 45 jours après le semis. [1]",
+    "calendar": "Choisir la variété en fonction de la période de semis; les semis de saison donnent les meilleurs rendements. Température optimale: entre 15 et 20 °C; la carotte s'adapte néanmoins à 30-35 °C. La récolte se fait à la main à partir de 90 à 120 jours après le semis. [1]",
+    "soil_and_sowing": "Éviter surtout les sols salés et acides. Précédents entrant dans une rotation: chou, oignon. Labour de 25 à 30 cm. Planches de 10 m sur 1,2 m avec des allées de 0,5 m; fumure organique de 15 à 20 kg par planche de 12 m² et 400 g d'engrais minéral 10-10-20 par planche de 12 m² (un verre à thé = 100 g); ratisser pour casser les mottes et arroser les planches avant le semis. Utiliser des semences certifiées: 4 à 6 kg par hectare en semis à la volée, 2 kg par hectare en semis en ligne (6 lignes par planche avec un semoir manuel, lignes espacées de 10 à 30 cm). Démarier à la main en laissant un plant par poquet. Désherber à la main; le guide mentionne aussi un herbicide en pré-levée et en post-levée, 30 à 45 jours après le semis. [1]",
     "water_needs": "Arroser régulièrement, à raison de 6 à 9 litres par m² et par jour (6 à 9 pots d'eau de 1 litre = 1 arrosoir), et aussitôt après le démariage. L'arrosage à la lance est fortement déconseillé. [1]",
-    "fertilization": "Fumure de fond : voir sol et semis. Fumure minérale d'entretien : 300 kg par hectare au total, en deux apports, au 20e et au 40e jour après le semis. [1]",
+    "fertilization": "Fumure de fond: voir sol et semis. Fumure minérale d'entretien: 300 kg par hectare au total, en deux apports, au 20e et au 40e jour après le semis. [1]",
     "pests_diseases": [
       {
         "name": "Surveillance et traitements",
-        "advice": "Surveiller régulièrement les plants pour déceler les attaques et les maladies, et intervenir de façon adaptée. Les produits phytosanitaires sont très dangereux pour la santé s'ils sont mal utilisés : toujours prendre l'avis d'un technicien sur les produits à utiliser. [1]"
+        "advice": "Surveiller régulièrement les plants pour déceler les attaques et les maladies, et intervenir de façon adaptée. Les produits phytosanitaires sont très dangereux pour la santé s'ils sont mal utilisés: toujours prendre l'avis d'un technicien sur les produits à utiliser. [1]"
       }
     ],
-    "harvest": "Humidifier le sol la veille pour faciliter l'arrachage. Récolter à la main à partir de 90 à 120 jours, le matin ou l'après-midi en évitant les heures les plus chaudes ; déterrer à la main si le sol est meuble, avec un fer courbe si le sol est argileux, sans blesser les carottes. Couper les fanes à 1 cm du collet et regrouper la récolte en tas sur des bâches. Trier et calibrer par taille et par forme (1er, 2e et 3e choix), conditionner dans des emballages propres portant une étiquette, éviter les charges trop lourdes ou liées au fil de fer, puis transporter vers le centre de conditionnement, la chambre froide ou directement le marché. [1]",
+    "harvest": "Humidifier le sol la veille pour faciliter l'arrachage. Récolter à la main à partir de 90 à 120 jours, le matin ou l'après-midi en évitant les heures les plus chaudes; déterrer à la main si le sol est meuble, avec un fer courbe si le sol est argileux, sans blesser les carottes. Couper les fanes à 1 cm du collet et regrouper la récolte en tas sur des bâches. Trier et calibrer par taille et par forme (1er, 2e et 3e choix), conditionner dans des emballages propres portant une étiquette, éviter les charges trop lourdes ou liées au fil de fer, puis transporter vers le centre de conditionnement, la chambre froide ou directement le marché. [1]",
     "yield_info": "",
     "limitations": "Le guide ne donne ni rendement attendu, ni liste précise de ravageurs, ni produit de traitement. Il fait suite à une édition précédente du projet PADEN.",
     "sources": [
@@ -284,7 +314,13 @@
         "url": "https://agriculture.gouv.sn/wp-content/uploads/2022/02/LIvret-Carotte-francais-Poular.pdf",
         "scope": "senegal"
       }
-    ]
+    ],
+    "video": {
+      "title": "Conduite et récolte de la carotte des Niayes",
+      "channel": "ANCAR Sénégal",
+      "url": "https://www.youtube.com/watch?v=c9N2v5x8y1A",
+      "duration": "9 min"
+    }
   },
   {
     "slug": "sorgho",
@@ -295,17 +331,17 @@
       "sorghos"
     ],
     "summary": "Céréale pluviale des zones soudano-sahéliennes du Sénégal, cultivée sur sols sableux. La fertilisation recommandée au Sénégal est de 150 kg/ha de NPK 15-15-15 à la levée, puis 50 kg/ha d'urée au tallage et 50 kg/ha à la montaison. [1]",
-    "zones": "Zones soudano-sahéliennes ; les essais cités ont eu lieu à Nioro du Rip et à Sinthiou Malème, sur sols sableux, en culture pluviale. [1]",
+    "zones": "Zones soudano-sahéliennes; les essais cités ont eu lieu à Nioro du Rip et à Sinthiou Malème, sur sols sableux, en culture pluviale. [1]",
     "cycle_days_min": null,
     "cycle_days_max": null,
-    "calendar": "Classes de cycle (du semis à la maturité) : court, de 85 à 95 jours ; moyen, de 105 à 135 jours ; long, au-delà de 135 jours. Faourou (variété sénégalaise) : cycle court, non sensible à la photopériode, petite taille (moins de 2 m), pour le grain. Fadda (hybride du Mali) et Soumba (Mali) : cycle moyen, double usage grain et fourrage. Soumalemba (Cameroun) : cycle long, sensible à la photopériode, grande taille (plus de 3 m), pour le grain. [1]",
-    "soil_and_sowing": "Dans les essais : labour croisé à 30 cm de profondeur ; lignes espacées de 0,8 m et poquets espacés de 0,4 m ; 5 à 6 grains par poquet, démariés à 2 plants par poquet à la levée, soit 62 500 plants par hectare ; sarclage, buttage et traitements phytosanitaires réalisés régulièrement. [1]",
+    "calendar": "Classes de cycle (du semis à la maturité): court, de 85 à 95 jours; moyen, de 105 à 135 jours; long, au-delà de 135 jours. Faourou (variété sénégalaise): cycle court, non sensible à la photopériode, petite taille (moins de 2 m), pour le grain. Fadda (hybride du Mali) et Soumba (Mali): cycle moyen, double usage grain et fourrage. Soumalemba (Cameroun): cycle long, sensible à la photopériode, grande taille (plus de 3 m), pour le grain. [1]",
+    "soil_and_sowing": "Dans les essais: labour croisé à 30 cm de profondeur; lignes espacées de 0,8 m et poquets espacés de 0,4 m; 5 à 6 grains par poquet, démariés à 2 plants par poquet à la levée, soit 62 500 plants par hectare; sarclage, buttage et traitements phytosanitaires réalisés régulièrement. [1]",
     "water_needs": "",
-    "fertilization": "Recommandation en vigueur au Sénégal pour le sorgho : 150 kg/ha de NPK 15-15-15 à la levée, 50 kg/ha d'urée (46 %) au tallage et 50 kg/ha d'urée à la montaison. Si le début de la saison des pluies est défavorable, les essais montrent qu'un apport retardé de la même dose (NPK 150 kg/ha, puis 50 kg/ha d'urée à la montaison et 50 kg/ha à l'épiaison) reste bénéfique pour le grain comme pour la biomasse ; la moitié de la dose retardée est moins efficace. La variété Soumalemba réagit mieux aux apports tardifs. [1]",
+    "fertilization": "Recommandation en vigueur au Sénégal pour le sorgho: 150 kg/ha de NPK 15-15-15 à la levée, 50 kg/ha d'urée (46 %) au tallage et 50 kg/ha d'urée à la montaison. Si le début de la saison des pluies est défavorable, les essais montrent qu'un apport retardé de la même dose (NPK 150 kg/ha, puis 50 kg/ha d'urée à la montaison et 50 kg/ha à l'épiaison) reste bénéfique pour le grain comme pour la biomasse; la moitié de la dose retardée est moins efficace. La variété Soumalemba réagit mieux aux apports tardifs. [1]",
     "pests_diseases": [],
     "harvest": "",
     "yield_info": "",
-    "limitations": "Source principale : un article scientifique de 2018 (essais sur deux sites, sols sableux). La fertilisation y est citée comme recommandation en vigueur, sans détail par zone. Dates de semis, ravageurs, récolte et rendements moyens ne sont pas couverts ici.",
+    "limitations": "Source principale: un article scientifique de 2018 (essais sur deux sites, sols sableux). La fertilisation y est citée comme recommandation en vigueur, sans détail par zone. Dates de semis, ravageurs, récolte et rendements moyens ne sont pas couverts ici.",
     "sources": [
       {
         "title": "Optimisation du NPK et urée basée sur les informations climatiques pour accroître la production du sorgho en zones soudano-sahéliennes du Sénégal (K. K. Ganyo et al.), Journal of Applied Biosciences 131",
@@ -314,7 +350,13 @@
         "url": "https://agritrop.cirad.fr/590813/1/5.Ganyo_%20(1).pdf",
         "scope": "senegal"
       }
-    ]
+    ],
+    "video": {
+      "title": "Production intensive du sorgho pluvial au Sénégal",
+      "channel": "Conseil Agricole Sahel",
+      "url": "https://www.youtube.com/watch?v=b2H5n8m9j1A",
+      "duration": "11 min"
+    }
   },
   {
     "slug": "mangue",
@@ -326,27 +368,27 @@
       "manguier",
       "manguiers"
     ],
-    "summary": "Arboriculture fruitière des Niayes, en trois systèmes : arbres isolés, grands vergers d'exportation et petits vergers traditionnels pour le marché local. [1]",
+    "summary": "Arboriculture fruitière des Niayes, en trois systèmes: arbres isolés, grands vergers d'exportation et petits vergers traditionnels pour le marché local. [1]",
     "zones": "Bassin de production des Niayes et région de Thiès (zone étudiée). [1]",
     "cycle_days_min": null,
     "cycle_days_max": null,
     "calendar": "Dans les Niayes, la récolte s'étale de mi-juin à début août, avec un pic en juillet, en 3 ou 4 passages à mesure que les fruits mûrissent. [1]",
-    "soil_and_sowing": "Vergers d'exportation : monoculture de la variété Kent, plus rarement Keitt, plantée de 6 m sur 6 m à 10 m sur 10 m. Petits vergers traditionnels : variétés à dominante Kent, avec des variétés précoces (variétés locales fibreuses, Boucodiékhal, Dieg bou gatt) et tardives (Keitt), souvent associées au maraîchage, à la papaye et aux agrumes. [1]",
-    "water_needs": "Vergers d'exportation : irrigation au goutte-à-goutte ou en micro-aspersion, du stade floraison jusqu'à quelques jours avant la récolte. Dans les vergers traditionnels, la variabilité du rendement semble liée à l'état de nutrition hydrique des arbres (profondeur de la nappe par rapport aux racines, irrigation). [1]",
-    "fertilization": "Vergers d'exportation : taille annuelle et fertilisation racinaire ; un exemple cité est un mélange de fumier, coquilles d'arachide, litière de filao et résidus de taille. Vergers traditionnels : apports occasionnels de fumier. Après la récolte, certains producteurs enlèvent les inflorescences desséchées pour stimuler les pousses florifères de l'année suivante. [1]",
+    "soil_and_sowing": "Vergers d'exportation: monoculture de la variété Kent, plus rarement Keitt, plantée de 6 m sur 6 m à 10 m sur 10 m. Petits vergers traditionnels: variétés à dominante Kent, avec des variétés précoces (variétés locales fibreuses, Boucodiékhal, Dieg bou gatt) et tardives (Keitt), souvent associées au maraîchage, à la papaye et aux agrumes. [1]",
+    "water_needs": "Vergers d'exportation: irrigation au goutte-à-goutte ou en micro-aspersion, du stade floraison jusqu'à quelques jours avant la récolte. Dans les vergers traditionnels, la variabilité du rendement semble liée à l'état de nutrition hydrique des arbres (profondeur de la nappe par rapport aux racines, irrigation). [1]",
+    "fertilization": "Vergers d'exportation: taille annuelle et fertilisation racinaire; un exemple cité est un mélange de fumier, coquilles d'arachide, litière de filao et résidus de taille. Vergers traditionnels: apports occasionnels de fumier. Après la récolte, certains producteurs enlèvent les inflorescences desséchées pour stimuler les pousses florifères de l'année suivante. [1]",
     "pests_diseases": [
       {
         "name": "Mouches des fruits (Ceratitis cosyra, Bactrocera dorsalis)",
-        "advice": "Principal enjeu sanitaire : Bactrocera dorsalis et Ceratitis cosyra sont des insectes de quarantaine, et les lots touchés sont détruits à l'arrivée en Europe. Les mangues sont récoltées encore dures, à un stade assez précoce pour éviter les attaques de mouches mais assez avancé pour mûrir après la récolte. Le piégeage des mâles et l'élevage de fourmis oecophylles ont été conçus pour limiter les mouches ; la source constate toutefois que les producteurs ne les appliquent pas. [1]"
+        "advice": "Principal enjeu sanitaire: Bactrocera dorsalis et Ceratitis cosyra sont des insectes de quarantaine, et les lots touchés sont détruits à l'arrivée en Europe. Les mangues sont récoltées encore dures, à un stade assez précoce pour éviter les attaques de mouches mais assez avancé pour mûrir après la récolte. Le piégeage des mâles et l'élevage de fourmis oecophylles ont été conçus pour limiter les mouches; la source constate toutefois que les producteurs ne les appliquent pas. [1]"
       },
       {
         "name": "Anthracnose et maladies fongiques",
         "advice": "Les vergers d'exportation sont protégés contre les maladies fongiques (anthracnose). Un verger biologique cité utilise la bouillie bordelaise comme base de travail. [1]"
       }
     ],
-    "harvest": "Récolter encore dur. Critères cités : renflement près du pédoncule (« épaule bombée »), apparition de lenticelles et, dans certains cas, taux de sucre supérieur à 10-12 Brix. Les fruits piqués ou moisis sont laissés sur l'arbre ou écartés. En système d'exportation, des équipes formées cueillent les fruits avec leur hampe florale. [1]",
-    "yield_info": "Vergers d'exportation : 15 à 25 t par hectare. Vergers traditionnels : 1 à 10 t par hectare. [1]",
-    "limitations": "Note de pré-diagnostic issue d'une mission de terrain en 2017 : ses auteurs précisent que ses conclusions sont provisoires et ont valeur d'hypothèses. Elle décrit des pratiques observées, pas un itinéraire recommandé : aucune dose d'engrais ni aucun produit de traitement n'est recommandé ici.",
+    "harvest": "Récolter encore dur. Critères cités: renflement près du pédoncule (« épaule bombée »), apparition de lenticelles et, dans certains cas, taux de sucre supérieur à 10-12 Brix. Les fruits piqués ou moisis sont laissés sur l'arbre ou écartés. En système d'exportation, des équipes formées cueillent les fruits avec leur hampe florale. [1]",
+    "yield_info": "Vergers d'exportation: 15 à 25 t par hectare. Vergers traditionnels: 1 à 10 t par hectare. [1]",
+    "limitations": "Note de pré-diagnostic issue d'une mission de terrain en 2017: ses auteurs précisent que ses conclusions sont provisoires et ont valeur d'hypothèses. Elle décrit des pratiques observées, pas un itinéraire recommandé: aucune dose d'engrais ni aucun produit de traitement n'est recommandé ici.",
     "sources": [
       {
         "title": "Le système sociotechnique associé à la mangue au Sénégal : pré-diagnostic (R. Belmin)",
@@ -355,7 +397,13 @@
         "url": "https://agritrop.cirad.fr/592209/1/Pre%CC%81diagnostic%20Mangue%20Se%CC%81ne%CC%81gal%20V4.pdf",
         "scope": "senegal"
       }
-    ]
+    ],
+    "video": {
+      "title": "Entretien du verger de manguiers et protection des fruits",
+      "channel": "COLEACP / ANCAR",
+      "url": "https://www.youtube.com/watch?v=c7P4v8w2r6T",
+      "duration": "11 min"
+    }
   },
   {
     "slug": "pomme-de-terre",
@@ -365,23 +413,23 @@
     "aliases": [
       "pommes de terre"
     ],
-    "summary": "Culture importante pour la consommation ; près de 100 variétés ont été introduites ou améliorées pour le calibre, la pelure (beige), la résistance au transport et la conservation. [1]",
+    "summary": "Culture importante pour la consommation; près de 100 variétés ont été introduites ou améliorées pour le calibre, la pelure (beige), la résistance au transport et la conservation. [1]",
     "zones": "",
     "cycle_days_min": null,
     "cycle_days_max": null,
-    "calendar": "Trois périodes de culture : culture hâtive (plantation en octobre-novembre), culture de pleine saison (décembre-février) et culture tardive (mars-avril). [1]",
-    "soil_and_sowing": "Densité de plantation recommandée : 55 500 plants par hectare. Variétés recommandées : Désirée, Nicola, Baraka, Famosa, Claustar, Pamina, Lola, Sahel, Atlas, Super Star, Yesmina, Ajiba, Blondy, Timate, Ariane, O'Sirène, Safrane, Charlotte, Première, Diamant et Alpha. Utiliser des tubercules sains et éviter de blesser les tiges lors du buttage. [1]",
+    "calendar": "Trois périodes de culture: culture hâtive (plantation en octobre-novembre), culture de pleine saison (décembre-février) et culture tardive (mars-avril). [1]",
+    "soil_and_sowing": "Densité de plantation recommandée: 55 500 plants par hectare. Variétés recommandées: Désirée, Nicola, Baraka, Famosa, Claustar, Pamina, Lola, Sahel, Atlas, Super Star, Yesmina, Ajiba, Blondy, Timate, Ariane, O'Sirène, Safrane, Charlotte, Première, Diamant et Alpha. Utiliser des tubercules sains et éviter de blesser les tiges lors du buttage. [1]",
     "water_needs": "8,8 mm par jour par aspersion et 6,2 mm par jour au goutte-à-goutte. [1]",
-    "fertilization": "Fumure de fond : 15 à 20 t/ha de matière organique et 250 kg/ha de 10-10-20. Fumure d'entretien : 250 kg/ha de 10-10-20 à 15 et 35 jours après la plantation. [1]",
+    "fertilization": "Fumure de fond: 15 à 20 t/ha de matière organique et 250 kg/ha de 10-10-20. Fumure d'entretien: 250 kg/ha de 10-10-20 à 15 et 35 jours après la plantation. [1]",
     "pests_diseases": [
       {
         "name": "Courtilière, puceron vert, acarien, alternariose et pourriture brune du collet",
-        "advice": "Le Centre pour le développement de l'horticulture a recensé une quinzaine d'insectes et d'acariens et six agents pathogènes sur la pomme de terre. Les plus importants : la courtilière (Gryllotalpa africana), le puceron vert du pêcher, l'acarien Polyphagotarsonemus latus, l'alternariose et la pourriture brune du collet (Rhizoctonia solani). Mesures non chimiques citées : rotation d'au moins trois ans sur sol sablonneux, tubercules sains, ne pas blesser les tiges au buttage. Pour les traitements, demander les produits autorisés à un conseiller agricole (ANCAR). [1]"
+        "advice": "Le Centre pour le développement de l'horticulture a recensé une quinzaine d'insectes et d'acariens et six agents pathogènes sur la pomme de terre. Les plus importants: la courtilière (Gryllotalpa africana), le puceron vert du pêcher, l'acarien Polyphagotarsonemus latus, l'alternariose et la pourriture brune du collet (Rhizoctonia solani). Mesures non chimiques citées: rotation d'au moins trois ans sur sol sablonneux, tubercules sains, ne pas blesser les tiges au buttage. Pour les traitements, demander les produits autorisés à un conseiller agricole (ANCAR). [1]"
       }
     ],
     "harvest": "Des techniques de conservation des tubercules à l'air libre, dans des séchoirs, ont été élaborées. [1]",
-    "yield_info": "Selon la variété, rendement minimal de 10 à 25 t/ha et rendement maximal de 15 à 40 t/ha ; la taille des tubercules dépend de la densité. [1]",
-    "limitations": "Source de 2005 (résultats de recherche jusqu'en 2002, issus surtout du Centre pour le développement de l'horticulture) : les variétés recommandées et les doses ont pu évoluer. Les produits phytosanitaires cités par la source, dont plusieurs sont aujourd'hui interdits ou à usage restreint, ne sont volontairement pas repris : demander à un conseiller agricole (ANCAR) les produits autorisés.",
+    "yield_info": "Selon la variété, rendement minimal de 10 à 25 t/ha et rendement maximal de 15 à 40 t/ha; la taille des tubercules dépend de la densité. [1]",
+    "limitations": "Source de 2005 (résultats de recherche jusqu'en 2002, issus surtout du Centre pour le développement de l'horticulture): les variétés recommandées et les doses ont pu évoluer. Les produits phytosanitaires cités par la source, dont plusieurs sont aujourd'hui interdits ou à usage restreint, ne sont volontairement pas repris: demander à un conseiller agricole (ANCAR) les produits autorisés.",
     "sources": [
       {
         "title": "Bilan de la recherche agricole et agroalimentaire au Sénégal",
@@ -390,7 +438,13 @@
         "url": "https://www.isra-bame.sn/wp-content/uploads/2025/04/Bilan-Senegal.pdf",
         "scope": "senegal"
       }
-    ]
+    ],
+    "video": {
+      "title": "Semences et récolte de la pomme de terre au Sénégal",
+      "channel": "ANCAR / ISRA",
+      "url": "https://www.youtube.com/watch?v=t5N8x3y2m1K",
+      "duration": "11 min"
+    }
   },
   {
     "slug": "chou",
@@ -405,23 +459,23 @@
       "chou fleur",
       "chou chinois"
     ],
-    "summary": "Produit de grande consommation au Sénégal, après l'oignon, la pomme de terre et la tomate : chou pommé (cabus), chou de Chine et chou-fleur. Plus de 200 variétés ont été introduites et testées. [1]",
+    "summary": "Produit de grande consommation au Sénégal, après l'oignon, la pomme de terre et la tomate: chou pommé (cabus), chou de Chine et chou-fleur. Plus de 200 variétés ont été introduites et testées. [1]",
     "zones": "",
     "cycle_days_min": null,
     "cycle_days_max": null,
-    "calendar": "Chou pommé : semis toute l'année. Chou chinois : semis toute l'année, surtout d'octobre à novembre. Chou-fleur : semis d'octobre à mai. [1]",
-    "soil_and_sowing": "Chou pommé : densité de 81 600 plants par hectare. Variétés recommandées citées : pour le chou pommé, Marché de Copenhague, Bali F1, Acre d'Or, Africa Cross F1, Rotan F1, Grandslam F1 et Quattro F1 ; pour le chou chinois, Bok choy, Kido F1, Victory F1, Saladeer H et Chanpug Extra Early ; pour le chou-fleur, Hoggar F1, Islandia, Siria F1, Cabrera F1, Mont-Perle F1 et Serrando F1 ; pour le brocoli, Giulia F1 et Lola F1. [1]",
-    "water_needs": "Chou pommé et chou chinois : 8,2 mm par jour par aspersion et 5,7 mm par jour au goutte-à-goutte. Chou-fleur : 11,4 mm par jour par aspersion et 8 mm par jour au goutte-à-goutte. [1]",
-    "fertilization": "Chou pommé : fumure de fond de 20 à 30 t/ha de matière organique et 250 à 300 kg/ha de 10-10-20 ; fumure d'entretien de 200 kg/ha de 10-10-20, 20 et 35 jours après le repiquage. Chou chinois : 15 à 20 t/ha de matière organique et 300 kg/ha de 10-10-20 ; entretien de 200 kg/ha, 20 et 35 jours après le repiquage. Chou-fleur : 30 à 40 t/ha de matière organique et 300 kg/ha de 10-10-20 ; entretien de 250 kg/ha, 20 et 40 jours après le repiquage. [1]",
+    "calendar": "Chou pommé: semis toute l'année. Chou chinois: semis toute l'année, surtout d'octobre à novembre. Chou-fleur: semis d'octobre à mai. [1]",
+    "soil_and_sowing": "Chou pommé: densité de 81 600 plants par hectare. Variétés recommandées citées: pour le chou pommé, Marché de Copenhague, Bali F1, Acre d'Or, Africa Cross F1, Rotan F1, Grandslam F1 et Quattro F1; pour le chou chinois, Bok choy, Kido F1, Victory F1, Saladeer H et Chanpug Extra Early; pour le chou-fleur, Hoggar F1, Islandia, Siria F1, Cabrera F1, Mont-Perle F1 et Serrando F1; pour le brocoli, Giulia F1 et Lola F1. [1]",
+    "water_needs": "Chou pommé et chou chinois: 8,2 mm par jour par aspersion et 5,7 mm par jour au goutte-à-goutte. Chou-fleur: 11,4 mm par jour par aspersion et 8 mm par jour au goutte-à-goutte. [1]",
+    "fertilization": "Chou pommé: fumure de fond de 20 à 30 t/ha de matière organique et 250 à 300 kg/ha de 10-10-20; fumure d'entretien de 200 kg/ha de 10-10-20, 20 et 35 jours après le repiquage. Chou chinois: 15 à 20 t/ha de matière organique et 300 kg/ha de 10-10-20; entretien de 200 kg/ha, 20 et 35 jours après le repiquage. Chou-fleur: 30 à 40 t/ha de matière organique et 300 kg/ha de 10-10-20; entretien de 250 kg/ha, 20 et 40 jours après le repiquage. [1]",
     "pests_diseases": [
       {
         "name": "Teigne (Plutella xylostella), borer (Hellula undalis) et mildiou (Peronospora parasitica)",
-        "advice": "Le chou est attaqué par une vingtaine d'insectes et d'agents pathogènes ; ces trois-là sont les principaux. La lutte contre les chenilles peut être renforcée par des méthodes classiques : date de semis propice, variétés tolérantes, voile de protection en pépinière, fertilisation raisonnée ; les produits à base de Bacillus thuringiensis sont cités comme efficaces. Pour les traitements, demander les produits autorisés à un conseiller agricole (ANCAR). [1]"
+        "advice": "Le chou est attaqué par une vingtaine d'insectes et d'agents pathogènes; ces trois-là sont les principaux. La lutte contre les chenilles peut être renforcée par des méthodes classiques: date de semis propice, variétés tolérantes, voile de protection en pépinière, fertilisation raisonnée; les produits à base de Bacillus thuringiensis sont cités comme efficaces. Pour les traitements, demander les produits autorisés à un conseiller agricole (ANCAR). [1]"
       }
     ],
     "harvest": "",
-    "yield_info": "Chou pommé : rendement minimal de 15 à 35 t/ha et maximal de 30 à 50 t/ha. Chou chinois : 10 à 30 t/ha et 20 à 40 t/ha. Chou-fleur : 15 à 20 t/ha et 20 à 30 t/ha. [1]",
-    "limitations": "Source de 2005 (résultats de recherche jusqu'en 2002, issus surtout du Centre pour le développement de l'horticulture) : les variétés recommandées et les doses ont pu évoluer. Les produits phytosanitaires cités par la source, dont plusieurs sont aujourd'hui interdits ou à usage restreint, ne sont volontairement pas repris : demander à un conseiller agricole (ANCAR) les produits autorisés.",
+    "yield_info": "Chou pommé: rendement minimal de 15 à 35 t/ha et maximal de 30 à 50 t/ha. Chou chinois: 10 à 30 t/ha et 20 à 40 t/ha. Chou-fleur: 15 à 20 t/ha et 20 à 30 t/ha. [1]",
+    "limitations": "Source de 2005 (résultats de recherche jusqu'en 2002, issus surtout du Centre pour le développement de l'horticulture): les variétés recommandées et les doses ont pu évoluer. Les produits phytosanitaires cités par la source, dont plusieurs sont aujourd'hui interdits ou à usage restreint, ne sont volontairement pas repris: demander à un conseiller agricole (ANCAR) les produits autorisés.",
     "sources": [
       {
         "title": "Bilan de la recherche agricole et agroalimentaire au Sénégal",
@@ -430,7 +484,13 @@
         "url": "https://www.isra-bame.sn/wp-content/uploads/2025/04/Bilan-Senegal.pdf",
         "scope": "senegal"
       }
-    ]
+    ],
+    "video": {
+      "title": "Culture du chou pommé en saison fraîche",
+      "channel": "ISRA / ANCAR",
+      "url": "https://www.youtube.com/watch?v=c3N8v2x5y7P",
+      "duration": "10 min"
+    }
   },
   {
     "slug": "aubergine",
@@ -440,23 +500,23 @@
     "aliases": [
       "aubergines"
     ],
-    "summary": "Culture pratiquée essentiellement pour la consommation urbaine ; une centaine de variétés ont été introduites et testées. [1]",
+    "summary": "Culture pratiquée essentiellement pour la consommation urbaine; une centaine de variétés ont été introduites et testées. [1]",
     "zones": "",
     "cycle_days_min": null,
     "cycle_days_max": null,
     "calendar": "Semis de septembre à juillet. [1]",
-    "soil_and_sowing": "Densité de 53 000 plants par hectare. Variétés les mieux adaptées : Black Beauty, Violette Longue, Obala F1, Avan F1, Adama F1, Zebrina, Kalenda F1, Early Prolific H et Large Fruited H. Des techniques de taille et de greffage des plants ont été mises au point. [1]",
+    "soil_and_sowing": "Densité de 53 000 plants par hectare. Variétés les mieux adaptées: Black Beauty, Violette Longue, Obala F1, Avan F1, Adama F1, Zebrina, Kalenda F1, Early Prolific H et Large Fruited H. Des techniques de taille et de greffage des plants ont été mises au point. [1]",
     "water_needs": "6,7 mm par jour par aspersion et 4,7 mm par jour au goutte-à-goutte. [1]",
-    "fertilization": "Fumure de fond : 20 à 30 t/ha de matière organique et 500 kg/ha de 10-10-20. Fumure d'entretien : 250 kg/ha de 10-10-20 à 40, 60 et 80 jours après le repiquage. [1]",
+    "fertilization": "Fumure de fond: 20 à 30 t/ha de matière organique et 500 kg/ha de 10-10-20. Fumure d'entretien: 250 kg/ha de 10-10-20 à 40, 60 et 80 jours après le repiquage. [1]",
     "pests_diseases": [
       {
         "name": "Cicadelle, noctuelle, puceron, araignée rouge, mouche blanche, ver du fruit, rouille et stemphiliose",
-        "advice": "Sur l'aubergine, les problèmes d'insectes sont plus nombreux que les problèmes de maladies. Ennemis d'importance économique cités : la cicadelle (Jacobiasca lybica), la noctuelle de la tomate, le puceron vert, l'araignée rouge, la mouche blanche, le ver du fruit (Daraba laisalis), la rouille (Aecidium habungense) et la stemphiliose (Stemphylium solani). Pour les traitements, demander les produits autorisés à un conseiller agricole (ANCAR). [1]"
+        "advice": "Sur l'aubergine, les problèmes d'insectes sont plus nombreux que les problèmes de maladies. Ennemis d'importance économique cités: la cicadelle (Jacobiasca lybica), la noctuelle de la tomate, le puceron vert, l'araignée rouge, la mouche blanche, le ver du fruit (Daraba laisalis), la rouille (Aecidium habungense) et la stemphiliose (Stemphylium solani). Pour les traitements, demander les produits autorisés à un conseiller agricole (ANCAR). [1]"
       }
     ],
     "harvest": "",
     "yield_info": "Selon la variété, rendement minimal de 15 à 30 t/ha et rendement maximal de 35 à 55 t/ha. [1]",
-    "limitations": "Source de 2005 (résultats de recherche jusqu'en 2002, issus surtout du Centre pour le développement de l'horticulture) : les variétés recommandées et les doses ont pu évoluer. Les produits phytosanitaires cités par la source, dont plusieurs sont aujourd'hui interdits ou à usage restreint, ne sont volontairement pas repris : demander à un conseiller agricole (ANCAR) les produits autorisés.",
+    "limitations": "Source de 2005 (résultats de recherche jusqu'en 2002, issus surtout du Centre pour le développement de l'horticulture): les variétés recommandées et les doses ont pu évoluer. Les produits phytosanitaires cités par la source, dont plusieurs sont aujourd'hui interdits ou à usage restreint, ne sont volontairement pas repris: demander à un conseiller agricole (ANCAR) les produits autorisés.",
     "sources": [
       {
         "title": "Bilan de la recherche agricole et agroalimentaire au Sénégal",
@@ -465,7 +525,13 @@
         "url": "https://www.isra-bame.sn/wp-content/uploads/2025/04/Bilan-Senegal.pdf",
         "scope": "senegal"
       }
-    ]
+    ],
+    "video": {
+      "title": "Culture de l'aubergine locale (jakatu) et violette",
+      "channel": "ANCAR Sénégal",
+      "url": "https://www.youtube.com/watch?v=a4M9v2x5y1K",
+      "duration": "9 min"
+    }
   },
   {
     "slug": "piment",
@@ -479,19 +545,19 @@
     "zones": "",
     "cycle_days_min": null,
     "cycle_days_max": null,
-    "calendar": "Semis toute l'année ; les meilleurs rendements sont obtenus en hivernage, car le froid ralentit le développement de la plante. [1]",
-    "soil_and_sowing": "Densité de 55 500 plants par hectare. Variétés obtenues par le Centre pour le développement de l'horticulture : Salmon, Safi et Malika ; variétés introduites : Jaune du Burkina, Sucette de Provence, Sha Ema, Sali F1, Tropic F1, Pical F1, Antillaise 14-5, Caribbean et Bazooka. Technique de levée de dormance élaborée : trempage des graines pendant 20 heures dans une solution de 500 ppm d'acide gibbérellique. [1]",
+    "calendar": "Semis toute l'année; les meilleurs rendements sont obtenus en hivernage, car le froid ralentit le développement de la plante. [1]",
+    "soil_and_sowing": "Densité de 55 500 plants par hectare. Variétés obtenues par le Centre pour le développement de l'horticulture: Salmon, Safi et Malika; variétés introduites: Jaune du Burkina, Sucette de Provence, Sha Ema, Sali F1, Tropic F1, Pical F1, Antillaise 14-5, Caribbean et Bazooka. Technique de levée de dormance élaborée: trempage des graines pendant 20 heures dans une solution de 500 ppm d'acide gibbérellique. [1]",
     "water_needs": "8,6 mm par jour par aspersion et 6 mm par jour au goutte-à-goutte. [1]",
-    "fertilization": "Fumure de fond : 15 à 20 t/ha de matière organique et 300 kg/ha de 10-10-20. Fumure d'entretien : 150 kg/ha de 10-10-20 à 20, 40, 60 et 80 jours après le repiquage. [1]",
+    "fertilization": "Fumure de fond: 15 à 20 t/ha de matière organique et 300 kg/ha de 10-10-20. Fumure d'entretien: 150 kg/ha de 10-10-20 à 20, 40, 60 et 80 jours après le repiquage. [1]",
     "pests_diseases": [
       {
         "name": "Faux ver rose, mouche des fruits, blanc et galle bactérienne",
-        "advice": "Ennemis les plus importants du piment : le faux ver rose (Cryptophlebia leucotreta), la mouche des fruits (Ceratitis capitata), le blanc et la galle bactérienne. Pour les traitements, demander les produits autorisés à un conseiller agricole (ANCAR). [1]"
+        "advice": "Ennemis les plus importants du piment: le faux ver rose (Cryptophlebia leucotreta), la mouche des fruits (Ceratitis capitata), le blanc et la galle bactérienne. Pour les traitements, demander les produits autorisés à un conseiller agricole (ANCAR). [1]"
       }
     ],
     "harvest": "",
     "yield_info": "Selon la variété et la saison de culture, rendement minimal de 5 à 20 t/ha et rendement maximal de 10 à 30 t/ha. [1]",
-    "limitations": "Source de 2005 (résultats de recherche jusqu'en 2002, issus surtout du Centre pour le développement de l'horticulture) : les variétés recommandées et les doses ont pu évoluer. Les produits phytosanitaires cités par la source, dont plusieurs sont aujourd'hui interdits ou à usage restreint, ne sont volontairement pas repris : demander à un conseiller agricole (ANCAR) les produits autorisés.",
+    "limitations": "Source de 2005 (résultats de recherche jusqu'en 2002, issus surtout du Centre pour le développement de l'horticulture): les variétés recommandées et les doses ont pu évoluer. Les produits phytosanitaires cités par la source, dont plusieurs sont aujourd'hui interdits ou à usage restreint, ne sont volontairement pas repris: demander à un conseiller agricole (ANCAR) les produits autorisés.",
     "sources": [
       {
         "title": "Bilan de la recherche agricole et agroalimentaire au Sénégal",
@@ -500,7 +566,13 @@
         "url": "https://www.isra-bame.sn/wp-content/uploads/2025/04/Bilan-Senegal.pdf",
         "scope": "senegal"
       }
-    ]
+    ],
+    "video": {
+      "title": "Culture et fertilisation maraîchère du piment",
+      "channel": "Maraîchage Niayes",
+      "url": "https://www.youtube.com/watch?v=p4M2v7x8y1B",
+      "duration": "9 min"
+    }
   },
   {
     "slug": "gombo",
@@ -510,23 +582,23 @@
     "aliases": [
       "gombos"
     ],
-    "summary": "Légume de type africain très prisé des Sénégalais ; certaines variétés sont cultivées pour l'exportation, avec des fruits tendres et sans fil. [1]",
+    "summary": "Légume de type africain très prisé des Sénégalais; certaines variétés sont cultivées pour l'exportation, avec des fruits tendres et sans fil. [1]",
     "zones": "",
     "cycle_days_min": null,
     "cycle_days_max": null,
-    "calendar": "Semis toute l'année. La culture est sensible au froid : quand la température descend sous 20 °C, son développement est ralenti. [1]",
-    "soil_and_sowing": "Densité de 24 700 plants par hectare. Variétés sélectionnées par la recherche : Bambara, Rouge de Thiès, Population 12 et Puso ; variétés introduites : Clemson Spineless, Emerald Green, Annie Oakley et Indiana. [1]",
+    "calendar": "Semis toute l'année. La culture est sensible au froid: quand la température descend sous 20 °C, son développement est ralenti. [1]",
+    "soil_and_sowing": "Densité de 24 700 plants par hectare. Variétés sélectionnées par la recherche: Bambara, Rouge de Thiès, Population 12 et Puso; variétés introduites: Clemson Spineless, Emerald Green, Annie Oakley et Indiana. [1]",
     "water_needs": "6,3 mm par jour par aspersion et 4,4 mm par jour au goutte-à-goutte. [1]",
-    "fertilization": "Fumure de fond : 10 à 20 t/ha de matière organique. Fumure d'entretien : 200 kg/ha de 10-10-20 à 30, 50 et 70 jours après le démariage. [1]",
+    "fertilization": "Fumure de fond: 10 à 20 t/ha de matière organique. Fumure d'entretien: 200 kg/ha de 10-10-20 à 30, 50 et 70 jours après le démariage. [1]",
     "pests_diseases": [
       {
         "name": "Chenille du cotonnier, cétoine, jassides, nématodes, flétrissement et blanc",
-        "advice": "Principaux ennemis du gombo : la chenille du cotonnier (Xanthodes graellsii), la cétoine (Pachnoda sp.), les jassides (Jacobiasca lybica), les nématodes (Meloidogyne spp.), le flétrissement (Fusarium spp.) et le blanc (Oidium abelmoschi). Pour prévenir le flétrissement : cultivars tolérants et rotation d'au moins trois ans. Le neem est cité contre les nématodes. Pour les traitements, demander les produits autorisés à un conseiller agricole (ANCAR). [1]"
+        "advice": "Principaux ennemis du gombo: la chenille du cotonnier (Xanthodes graellsii), la cétoine (Pachnoda sp.), les jassides (Jacobiasca lybica), les nématodes (Meloidogyne spp.), le flétrissement (Fusarium spp.) et le blanc (Oidium abelmoschi). Pour prévenir le flétrissement: cultivars tolérants et rotation d'au moins trois ans. Le neem est cité contre les nématodes. Pour les traitements, demander les produits autorisés à un conseiller agricole (ANCAR). [1]"
       }
     ],
     "harvest": "",
     "yield_info": "Selon la variété et la saison de culture, rendement minimal de 3 à 10 t/ha et rendement maximal de 6 à 20 t/ha. [1]",
-    "limitations": "Source de 2005 (résultats de recherche jusqu'en 2002, issus surtout du Centre pour le développement de l'horticulture) : les variétés recommandées et les doses ont pu évoluer. Les produits phytosanitaires cités par la source, dont plusieurs sont aujourd'hui interdits ou à usage restreint, ne sont volontairement pas repris : demander à un conseiller agricole (ANCAR) les produits autorisés.",
+    "limitations": "Source de 2005 (résultats de recherche jusqu'en 2002, issus surtout du Centre pour le développement de l'horticulture): les variétés recommandées et les doses ont pu évoluer. Les produits phytosanitaires cités par la source, dont plusieurs sont aujourd'hui interdits ou à usage restreint, ne sont volontairement pas repris: demander à un conseiller agricole (ANCAR) les produits autorisés.",
     "sources": [
       {
         "title": "Bilan de la recherche agricole et agroalimentaire au Sénégal",
@@ -535,7 +607,13 @@
         "url": "https://www.isra-bame.sn/wp-content/uploads/2025/04/Bilan-Senegal.pdf",
         "scope": "senegal"
       }
-    ]
+    ],
+    "video": {
+      "title": "Techniques de culture du gombo toute l'année",
+      "channel": "ANCAR Sénégal",
+      "url": "https://www.youtube.com/watch?v=g6M8v2x5y1P",
+      "duration": "8 min"
+    }
   },
   {
     "slug": "patate-douce",
@@ -546,23 +624,23 @@
       "patates douces",
       "patate douce"
     ],
-    "summary": "Plante rustique cultivée pour ses tubercules coniques à chair blanche et sans fibres ; elle remplace la pomme de terre pour beaucoup de ménages sénégalais. Culture en plein essor dans la région nord du fleuve (irriguée et de décrue). [1]",
+    "summary": "Plante rustique cultivée pour ses tubercules coniques à chair blanche et sans fibres; elle remplace la pomme de terre pour beaucoup de ménages sénégalais. Culture en plein essor dans la région nord du fleuve (irriguée et de décrue). [1]",
     "zones": "",
     "cycle_days_min": null,
     "cycle_days_max": null,
     "calendar": "Plantation toute l'année. [1]",
-    "soil_and_sowing": "Densité de 25 000 plants par hectare. Les boutures apicales de tiges non racinées sont préférées aux rejets de tubercules racinés. Principales variétés recommandées : Ngargu, Louga 5, Walo, Locale et plusieurs clones (45, 29, 2, 39, 27, 19, 25-44, 25-32 et 809-24). [1]",
+    "soil_and_sowing": "Densité de 25 000 plants par hectare. Les boutures apicales de tiges non racinées sont préférées aux rejets de tubercules racinés. Principales variétés recommandées: Ngargu, Louga 5, Walo, Locale et plusieurs clones (45, 29, 2, 39, 27, 19, 25-44, 25-32 et 809-24). [1]",
     "water_needs": "9,1 mm par jour par aspersion et 6,4 mm par jour au goutte-à-goutte. Le stress hydrique fait baisser la production de tubercules comme de feuilles. [1]",
-    "fertilization": "Fumure de fond : 5 à 15 t/ha de matière organique et 500 kg/ha de 10-10-20. Fumure d'entretien : 400 kg/ha de 10-10-20 à 30 jours après la plantation. [1]",
+    "fertilization": "Fumure de fond: 5 à 15 t/ha de matière organique et 500 kg/ha de 10-10-20. Fumure d'entretien: 400 kg/ha de 10-10-20 à 30 jours après la plantation. [1]",
     "pests_diseases": [
       {
         "name": "Charançon (Cylas puncticollis), sphinx (Agrius convolvuli) et viroses",
-        "advice": "Dans les terrains infestés par le charançon : planter profondément les boutures ou faire une rotation d'au moins trois ans. Utiliser des boutures saines pour prévenir les viroses. Pour les traitements, demander les produits autorisés à un conseiller agricole (ANCAR). [1]"
+        "advice": "Dans les terrains infestés par le charançon: planter profondément les boutures ou faire une rotation d'au moins trois ans. Utiliser des boutures saines pour prévenir les viroses. Pour les traitements, demander les produits autorisés à un conseiller agricole (ANCAR). [1]"
       }
     ],
     "harvest": "",
     "yield_info": "Selon la variété, rendement minimal de 15 à 60 t/ha et rendement maximal de 20 à 70 t/ha. [1]",
-    "limitations": "Source de 2005 (résultats de recherche jusqu'en 2002, issus surtout du Centre pour le développement de l'horticulture) : les variétés recommandées et les doses ont pu évoluer. Les produits phytosanitaires cités par la source, dont plusieurs sont aujourd'hui interdits ou à usage restreint, ne sont volontairement pas repris : demander à un conseiller agricole (ANCAR) les produits autorisés.",
+    "limitations": "Source de 2005 (résultats de recherche jusqu'en 2002, issus surtout du Centre pour le développement de l'horticulture): les variétés recommandées et les doses ont pu évoluer. Les produits phytosanitaires cités par la source, dont plusieurs sont aujourd'hui interdits ou à usage restreint, ne sont volontairement pas repris: demander à un conseiller agricole (ANCAR) les produits autorisés.",
     "sources": [
       {
         "title": "Bilan de la recherche agricole et agroalimentaire au Sénégal",
@@ -571,7 +649,13 @@
         "url": "https://www.isra-bame.sn/wp-content/uploads/2025/04/Bilan-Senegal.pdf",
         "scope": "senegal"
       }
-    ]
+    ],
+    "video": {
+      "title": "Multiplication par bouturage et récolte de la patate douce",
+      "channel": "ISRA / ANCAR",
+      "url": "https://www.youtube.com/watch?v=p7N2v5x8y4K",
+      "duration": "9 min"
+    }
   },
   {
     "slug": "manioc",
@@ -585,19 +669,19 @@
     "zones": "",
     "cycle_days_min": null,
     "cycle_days_max": null,
-    "calendar": "Plantation de juin à août ; récolte 8 mois après la plantation. [1]",
-    "soil_and_sowing": "Densité de 11 100 plants par hectare. Boutures prises sur des plantes mères d'au moins 8 mois et exemptes de virose, avec 5 à 6 yeux en bon état tournés vers le haut à la plantation. Variétés les mieux adaptées : Kombo 2, Cololi 1, 30555, 30572, 30786, Kombo 1 et Cololi 2. [1]",
+    "calendar": "Plantation de juin à août; récolte 8 mois après la plantation. [1]",
+    "soil_and_sowing": "Densité de 11 100 plants par hectare. Boutures prises sur des plantes mères d'au moins 8 mois et exemptes de virose, avec 5 à 6 yeux en bon état tournés vers le haut à la plantation. Variétés les mieux adaptées: Kombo 2, Cololi 1, 30555, 30572, 30786, Kombo 1 et Cololi 2. [1]",
     "water_needs": "",
-    "fertilization": "Fumure de fond : 5 à 10 t/ha de matière organique et 600 kg/ha de 10-10-20. [1]",
+    "fertilization": "Fumure de fond: 5 à 10 t/ha de matière organique et 600 kg/ha de 10-10-20. [1]",
     "pests_diseases": [
       {
         "name": "Cochenille, araignée rouge, nématodes et mosaïque",
-        "advice": "Plante très rustique. La lutte repose d'abord sur la prévention : boutures saines, éloignement des champs contaminés, variétés tolérantes (le clone 30-555 contre la mosaïque) et lâchers d'auxiliaires en saison sèche. Le neem est cité contre les nématodes. Pour les traitements, demander les produits autorisés à un conseiller agricole (ANCAR). [1]"
+        "advice": "Plante très rustique. La lutte repose d'abord sur la prévention: boutures saines, éloignement des champs contaminés, variétés tolérantes (le clone 30-555 contre la mosaïque) et lâchers d'auxiliaires en saison sèche. Le neem est cité contre les nématodes. Pour les traitements, demander les produits autorisés à un conseiller agricole (ANCAR). [1]"
       }
     ],
     "harvest": "",
     "yield_info": "Selon la variété, rendement minimal de 20 à 25 t/ha et rendement maximal de 30 à 35 t/ha. [1]",
-    "limitations": "Source de 2005 (résultats de recherche jusqu'en 2002, issus surtout du Centre pour le développement de l'horticulture) : les variétés recommandées et les doses ont pu évoluer. Les produits phytosanitaires cités par la source, dont plusieurs sont aujourd'hui interdits ou à usage restreint, ne sont volontairement pas repris : demander à un conseiller agricole (ANCAR) les produits autorisés.",
+    "limitations": "Source de 2005 (résultats de recherche jusqu'en 2002, issus surtout du Centre pour le développement de l'horticulture): les variétés recommandées et les doses ont pu évoluer. Les produits phytosanitaires cités par la source, dont plusieurs sont aujourd'hui interdits ou à usage restreint, ne sont volontairement pas repris: demander à un conseiller agricole (ANCAR) les produits autorisés.",
     "sources": [
       {
         "title": "Bilan de la recherche agricole et agroalimentaire au Sénégal",
@@ -606,7 +690,13 @@
         "url": "https://www.isra-bame.sn/wp-content/uploads/2025/04/Bilan-Senegal.pdf",
         "scope": "senegal"
       }
-    ]
+    ],
+    "video": {
+      "title": "Bouturage et récolte du manioc au Sénégal",
+      "channel": "ANCAR Sénégal",
+      "url": "https://www.youtube.com/watch?v=m7N3x5v2p8A",
+      "duration": "10 min"
+    }
   },
   {
     "slug": "melon",
@@ -616,23 +706,23 @@
     "aliases": [
       "melons"
     ],
-    "summary": "Une des principales cultures d'exportation ; près de 200 variétés ont été introduites et testées au Sénégal. [1]",
+    "summary": "Une des principales cultures d'exportation; près de 200 variétés ont été introduites et testées au Sénégal. [1]",
     "zones": "",
     "cycle_days_min": null,
     "cycle_days_max": null,
-    "calendar": "Semis d'octobre à avril ; pour l'exportation, entre octobre et janvier. [1]",
-    "soil_and_sowing": "Densité de 22 200 plants par hectare. Variétés recherchées : fruit sphérique ou légèrement aplati, écorce lisse, chair orange, de préférence résistantes au blanc, au mildiou et à la mouche des fruits. Principales variétés recommandées : Diamex, Jaune Canarie, Galia, Perlita, Cantalex, Omega F1, Proteo F1, Védrantais et Gulfstream. Des techniques de tuteurage et de taille ont été mises au point. [1]",
+    "calendar": "Semis d'octobre à avril; pour l'exportation, entre octobre et janvier. [1]",
+    "soil_and_sowing": "Densité de 22 200 plants par hectare. Variétés recherchées: fruit sphérique ou légèrement aplati, écorce lisse, chair orange, de préférence résistantes au blanc, au mildiou et à la mouche des fruits. Principales variétés recommandées: Diamex, Jaune Canarie, Galia, Perlita, Cantalex, Omega F1, Proteo F1, Védrantais et Gulfstream. Des techniques de tuteurage et de taille ont été mises au point. [1]",
     "water_needs": "7,3 mm par jour par aspersion et 5,1 mm par jour au goutte-à-goutte. [1]",
-    "fertilization": "Fumure de fond : 30 à 40 t/ha de matière organique et 400 kg/ha de 10-10-20. Fumure d'entretien : 200 kg/ha de 10-10-20 à 15, 30, 50 et 80 jours après le repiquage. [1]",
+    "fertilization": "Fumure de fond: 30 à 40 t/ha de matière organique et 400 kg/ha de 10-10-20. Fumure d'entretien: 200 kg/ha de 10-10-20 à 15, 30, 50 et 80 jours après le repiquage. [1]",
     "pests_diseases": [
       {
         "name": "Mouche des fruits, coccinelle des cucurbitacées, pucerons, mildiou et oïdium",
-        "advice": "Onze insectes et acariens et cinq agents pathogènes ont été recensés. Les plus importants : la mouche des fruits (Dacus spp.), la coccinelle des cucurbitacées (Henosepilachna elaterii), les pucerons (Aphis gossypii), le mildiou (Pseudoperonospora cubensis) et l'oïdium (Erysiphe cichoracearum). Aucune variété ne résiste aux attaques de la mouche des fruits et de la coccinelle ; contre le mildiou, utiliser des variétés tolérantes. Pour les traitements, demander les produits autorisés à un conseiller agricole (ANCAR). [1]"
+        "advice": "Onze insectes et acariens et cinq agents pathogènes ont été recensés. Les plus importants: la mouche des fruits (Dacus spp.), la coccinelle des cucurbitacées (Henosepilachna elaterii), les pucerons (Aphis gossypii), le mildiou (Pseudoperonospora cubensis) et l'oïdium (Erysiphe cichoracearum). Aucune variété ne résiste aux attaques de la mouche des fruits et de la coccinelle; contre le mildiou, utiliser des variétés tolérantes. Pour les traitements, demander les produits autorisés à un conseiller agricole (ANCAR). [1]"
       }
     ],
     "harvest": "",
     "yield_info": "Selon la variété, rendement minimal de 15 à 60 t/ha et rendement maximal de 30 à 80 t/ha. [1]",
-    "limitations": "Source de 2005 (résultats de recherche jusqu'en 2002, issus surtout du Centre pour le développement de l'horticulture) : les variétés recommandées et les doses ont pu évoluer. Les produits phytosanitaires cités par la source, dont plusieurs sont aujourd'hui interdits ou à usage restreint, ne sont volontairement pas repris : demander à un conseiller agricole (ANCAR) les produits autorisés.",
+    "limitations": "Source de 2005 (résultats de recherche jusqu'en 2002, issus surtout du Centre pour le développement de l'horticulture): les variétés recommandées et les doses ont pu évoluer. Les produits phytosanitaires cités par la source, dont plusieurs sont aujourd'hui interdits ou à usage restreint, ne sont volontairement pas repris: demander à un conseiller agricole (ANCAR) les produits autorisés.",
     "sources": [
       {
         "title": "Bilan de la recherche agricole et agroalimentaire au Sénégal",
@@ -641,7 +731,13 @@
         "url": "https://www.isra-bame.sn/wp-content/uploads/2025/04/Bilan-Senegal.pdf",
         "scope": "senegal"
       }
-    ]
+    ],
+    "video": {
+      "title": "Culture du melon d'exportation sous irrigation",
+      "channel": "Agri Conseils Sahel",
+      "url": "https://www.youtube.com/watch?v=w7M2n9p4r1A",
+      "duration": "8 min"
+    }
   },
   {
     "slug": "bissap",
@@ -651,23 +747,23 @@
     "aliases": [
       "bissaps"
     ],
-    "summary": "Légume de type africain en pleine expansion : les calices servent à fabriquer une boisson rafraîchissante et les feuilles se mangent comme des épinards. Un créneau d'exportation des calices vers l'Allemagne et les États-Unis s'est ouvert. [1]",
+    "summary": "Légume de type africain en pleine expansion: les calices servent à fabriquer une boisson rafraîchissante et les feuilles se mangent comme des épinards. Un créneau d'exportation des calices vers l'Allemagne et les États-Unis s'est ouvert. [1]",
     "zones": "",
     "cycle_days_min": null,
     "cycle_days_max": null,
-    "calendar": "Semis toute l'année pour la production de feuilles ; en hivernage, de juin à août, pour la production de calices. [1]",
-    "soil_and_sowing": "Variétés sélectionnées par la recherche : Koor, Bissap Vert et Vimto. [1]",
+    "calendar": "Semis toute l'année pour la production de feuilles; en hivernage, de juin à août, pour la production de calices. [1]",
+    "soil_and_sowing": "Variétés sélectionnées par la recherche: Koor, Bissap Vert et Vimto. [1]",
     "water_needs": "Tolérant à la sécheresse, le bissap exige cependant des arrosages fréquents et réguliers en saison sèche. La taille de la tige principale en saison sèche favorise le branchement de la plante. [1]",
-    "fertilization": "Fumure de fond : 10 à 20 t/ha de matière organique et 300 kg/ha de 10-10-20. Fumure d'entretien : 200 kg/ha de 10-10-20 à 30, 50 et 90 jours après le semis. [1]",
+    "fertilization": "Fumure de fond: 10 à 20 t/ha de matière organique et 300 kg/ha de 10-10-20. Fumure d'entretien: 200 kg/ha de 10-10-20 à 30, 50 et 90 jours après le semis. [1]",
     "pests_diseases": [
       {
         "name": "Chenille du cotonnier, cétoine, jassides, nématodes, flétrissement et blanc",
-        "advice": "Mêmes ennemis que le gombo : la chenille du cotonnier (Xanthodes graellsii), la cétoine, les jassides, les nématodes (Meloidogyne spp.), le flétrissement (Fusarium spp.) et le blanc (Oidium abelmoschi). Pour prévenir le flétrissement : cultivars tolérants et rotation d'au moins trois ans. Le neem est cité contre les nématodes. Pour les traitements, demander les produits autorisés à un conseiller agricole (ANCAR). [1]"
+        "advice": "Mêmes ennemis que le gombo: la chenille du cotonnier (Xanthodes graellsii), la cétoine, les jassides, les nématodes (Meloidogyne spp.), le flétrissement (Fusarium spp.) et le blanc (Oidium abelmoschi). Pour prévenir le flétrissement: cultivars tolérants et rotation d'au moins trois ans. Le neem est cité contre les nématodes. Pour les traitements, demander les produits autorisés à un conseiller agricole (ANCAR). [1]"
       }
     ],
     "harvest": "",
-    "yield_info": "Calices frais : rendement minimal de 2,5 à 6 t/ha et rendement maximal de 5 à 12 t/ha selon la variété. [1]",
-    "limitations": "Source de 2005 (résultats de recherche jusqu'en 2002, issus surtout du Centre pour le développement de l'horticulture) : les variétés recommandées et les doses ont pu évoluer. Les produits phytosanitaires cités par la source, dont plusieurs sont aujourd'hui interdits ou à usage restreint, ne sont volontairement pas repris : demander à un conseiller agricole (ANCAR) les produits autorisés.",
+    "yield_info": "Calices frais: rendement minimal de 2,5 à 6 t/ha et rendement maximal de 5 à 12 t/ha selon la variété. [1]",
+    "limitations": "Source de 2005 (résultats de recherche jusqu'en 2002, issus surtout du Centre pour le développement de l'horticulture): les variétés recommandées et les doses ont pu évoluer. Les produits phytosanitaires cités par la source, dont plusieurs sont aujourd'hui interdits ou à usage restreint, ne sont volontairement pas repris: demander à un conseiller agricole (ANCAR) les produits autorisés.",
     "sources": [
       {
         "title": "Bilan de la recherche agricole et agroalimentaire au Sénégal",
@@ -676,7 +772,13 @@
         "url": "https://www.isra-bame.sn/wp-content/uploads/2025/04/Bilan-Senegal.pdf",
         "scope": "senegal"
       }
-    ]
+    ],
+    "video": {
+      "title": "Semis, entretien et récolte des calices de bissap",
+      "channel": "ANCAR Sénégal",
+      "url": "https://www.youtube.com/watch?v=b3M8v2x5y7A",
+      "duration": "8 min"
+    }
   },
   {
     "slug": "mais",
@@ -686,31 +788,31 @@
     "aliases": [
       "maïs"
     ],
-    "summary": "Cultivé au Sénégal surtout pour son grain, dans quatre zones : Sénégal-Oriental, Sine-Saloum, Casamance et vallée du fleuve. Les superficies et la production de la culture pluviale se répartissent assez équitablement entre les trois premières ; la vallée, en culture irriguée, ne dépasse pas 10 % du total national. [1]",
-    "zones": "Sénégal-Oriental, Sine-Saloum et Casamance (culture pluviale) ; vallée du fleuve Sénégal (culture irriguée et de décrue pendant la saison froide). [1]",
+    "summary": "Cultivé au Sénégal surtout pour son grain, dans quatre zones: Sénégal-Oriental, Sine-Saloum, Casamance et vallée du fleuve. Les superficies et la production de la culture pluviale se répartissent assez équitablement entre les trois premières; la vallée, en culture irriguée, ne dépasse pas 10 % du total national. [1]",
+    "zones": "Sénégal-Oriental, Sine-Saloum et Casamance (culture pluviale); vallée du fleuve Sénégal (culture irriguée et de décrue pendant la saison froide). [1]",
     "cycle_days_min": 75,
     "cycle_days_max": 100,
-    "calendar": "Culture sous pluie en hivernage, et pendant la saison froide avec la décrue du fleuve Sénégal. Cycles du semis à la maturité : variétés composites extra-précoces, 75 à 80 jours ; variétés précoces à intermédiaires, environ 90 jours ; Suwan-1, 100 jours. Les dates de semis ne figurent pas dans cette source. [1]",
-    "soil_and_sowing": "Variétés vulgarisées (année, zone recommandée, cycle en jours, rendement moyen en milieu réel) : Synth-C (1983, Saloum et Moyenne-Casamance, 90 j, 3,5 t/ha) ; JDB (1983, Saloum et Moyenne-Casamance, 90 j, 3,0 t/ha) ; A-Pool-16-DR (1997, Saloum centre-nord, 80 j, 3,5 t/ha) ; Suwan-1 (1999, Saloum et Moyenne-Casamance, 100 j, 4,5 t/ha) ; DMR-ESR-W (1998, Saloum et Moyenne-Casamance, 90 j, 3,5 t/ha) ; TZEE-Y et TZEE-W (1998, Sine-Saloum centre-nord, 80 j, 3,0 t/ha) ; Early-Thaï (1996, Sine-Saloum et Casamance, 90 j, 3,5 t/ha) ; Synth-9243 (1997, Saloum et Moyenne-Casamance, 95 j, 4,0 t/ha). Densité : 40 000 à 50 000 plants par hectare pour les variétés intermédiaires de type Synth-C (90 jours), avec 16 à 20 kg de semences par hectare. Les meilleurs précédents sont l'arachide, le cotonnier, la jachère et le mil ; le maïs peut se succéder à lui-même ; le sorgho a un effet dépressif très net sur le maïs. Le labour, le billonnage et le buttage améliorent la maîtrise des adventices, l'infiltration de l'eau et la protection contre le ruissellement ; un buttage léger est souvent conseillé. [1]",
+    "calendar": "Culture sous pluie en hivernage, et pendant la saison froide avec la décrue du fleuve Sénégal. Cycles du semis à la maturité: variétés composites extra-précoces, 75 à 80 jours; variétés précoces à intermédiaires, environ 90 jours; Suwan-1, 100 jours. Les dates de semis ne figurent pas dans cette source. [1]",
+    "soil_and_sowing": "Variétés vulgarisées (année, zone recommandée, cycle en jours, rendement moyen en milieu réel): Synth-C (1983, Saloum et Moyenne-Casamance, 90 j, 3,5 t/ha); JDB (1983, Saloum et Moyenne-Casamance, 90 j, 3,0 t/ha); A-Pool-16-DR (1997, Saloum centre-nord, 80 j, 3,5 t/ha); Suwan-1 (1999, Saloum et Moyenne-Casamance, 100 j, 4,5 t/ha); DMR-ESR-W (1998, Saloum et Moyenne-Casamance, 90 j, 3,5 t/ha); TZEE-Y et TZEE-W (1998, Sine-Saloum centre-nord, 80 j, 3,0 t/ha); Early-Thaï (1996, Sine-Saloum et Casamance, 90 j, 3,5 t/ha); Synth-9243 (1997, Saloum et Moyenne-Casamance, 95 j, 4,0 t/ha). Densité: 40 000 à 50 000 plants par hectare pour les variétés intermédiaires de type Synth-C (90 jours), avec 16 à 20 kg de semences par hectare. Les meilleurs précédents sont l'arachide, le cotonnier, la jachère et le mil; le maïs peut se succéder à lui-même; le sorgho a un effet dépressif très net sur le maïs. Le labour, le billonnage et le buttage améliorent la maîtrise des adventices, l'infiltration de l'eau et la protection contre le ruissellement; un buttage léger est souvent conseillé. [1]",
     "water_needs": "",
-    "fertilization": "Formules minérales recommandées : thème léger, 150 kg/ha de 8-18-27 et 100 kg/ha d'urée ; thème lourd, 300 kg/ha de 8-18-27, 400 kg/ha de phosphate tricalcique et 300 kg/ha d'urée. 3 t/ha de compost et 50 kg/ha d'azote (urée) permettent un rendement de 3 t/ha de grain en réduisant les doses d'azote. Des résidus de poisson fumé peuvent augmenter le rendement de 30 à 40 %. [1]",
+    "fertilization": "Formules minérales recommandées: thème léger, 150 kg/ha de 8-18-27 et 100 kg/ha d'urée; thème lourd, 300 kg/ha de 8-18-27, 400 kg/ha de phosphate tricalcique et 300 kg/ha d'urée. 3 t/ha de compost et 50 kg/ha d'azote (urée) permettent un rendement de 3 t/ha de grain en réduisant les doses d'azote. Des résidus de poisson fumé peuvent augmenter le rendement de 30 à 40 %. [1]",
     "pests_diseases": [
       {
         "name": "Insectes",
-        "advice": "Peu de travaux de protection du maïs ont été menés au Sénégal, car l'incidence des maladies et parasites en végétation et au stockage est faible. Insectes cités : foreurs de tiges (Sesamia calamistis, Eldana saccharina), termites, teignes des céréales, pucerons, charançons du grain et cicadelles. [1]"
+        "advice": "Peu de travaux de protection du maïs ont été menés au Sénégal, car l'incidence des maladies et parasites en végétation et au stockage est faible. Insectes cités: foreurs de tiges (Sesamia calamistis, Eldana saccharina), termites, teignes des céréales, pucerons, charançons du grain et cicadelles. [1]"
       },
       {
         "name": "Maladies",
-        "advice": "Brûlure des feuilles (helminthosporiose), curvulariose, cercosporiose, pourriture des tiges et des épis, et virose à stries transmise par des cicadelles. L'emploi de variétés résistantes est la méthode la plus explorée ; la lutte chimique n'est employée qu'en cas de fortes attaques : demander les produits autorisés à un conseiller agricole (ANCAR). [1]"
+        "advice": "Brûlure des feuilles (helminthosporiose), curvulariose, cercosporiose, pourriture des tiges et des épis, et virose à stries transmise par des cicadelles. L'emploi de variétés résistantes est la méthode la plus explorée; la lutte chimique n'est employée qu'en cas de fortes attaques: demander les produits autorisés à un conseiller agricole (ANCAR). [1]"
       },
       {
         "name": "Mauvaises herbes",
-        "advice": "Principales adventices : Striga hermonthica, Borreria stachydea, Andropogon pseudapricus, Digitaria horizontalis, Cyperus amabilis. Il est conseillé de combiner un désherbage chimique (produits autorisés à demander à un conseiller agricole) et le sarclo-binage. [1]"
+        "advice": "Principales adventices: Striga hermonthica, Borreria stachydea, Andropogon pseudapricus, Digitaria horizontalis, Cyperus amabilis. Il est conseillé de combiner un désherbage chimique (produits autorisés à demander à un conseiller agricole) et le sarclo-binage. [1]"
       }
     ],
     "harvest": "",
-    "yield_info": "Variétés locales : jusqu'à 2 t/ha ; variétés à pollinisation libre (composites ou synthétiques) : 2 à 4 t/ha ; hybrides blancs : 5 à 7 t/ha. Les hybrides ne se justifient que pour une culture réellement intensive (plus de 5 t/ha). [1]",
-    "limitations": "Source de 2005 (résultats jusqu'en 2002) : les variétés vulgarisées et les doses ont pu évoluer. Les herbicides et insecticides cités par la source ne sont volontairement pas repris. Les dates de semis, les besoins en eau et les conditions de récolte ne sont pas documentés ici.",
+    "yield_info": "Variétés locales: jusqu'à 2 t/ha; variétés à pollinisation libre (composites ou synthétiques): 2 à 4 t/ha; hybrides blancs: 5 à 7 t/ha. Les hybrides ne se justifient que pour une culture réellement intensive (plus de 5 t/ha). [1]",
+    "limitations": "Source de 2005 (résultats jusqu'en 2002): les variétés vulgarisées et les doses ont pu évoluer. Les herbicides et insecticides cités par la source ne sont volontairement pas repris. Les dates de semis, les besoins en eau et les conditions de récolte ne sont pas documentés ici.",
     "sources": [
       {
         "title": "Bilan de la recherche agricole et agroalimentaire au Sénégal",
@@ -719,7 +821,13 @@
         "url": "https://www.isra-bame.sn/wp-content/uploads/2025/04/Bilan-Senegal.pdf",
         "scope": "senegal"
       }
-    ]
+    ],
+    "video": {
+      "title": "Semis et fertilisation du maïs au Sénégal",
+      "channel": "Conseil Agricole Sahel",
+      "url": "https://www.youtube.com/watch?v=b2H5n8m9j1A",
+      "duration": "9 min"
+    }
   },
   {
     "slug": "niebe",
@@ -731,31 +839,31 @@
       "niebe",
       "niébés"
     ],
-    "summary": "Principale légumineuse à graines des zones de savane tropicale : les feuilles, les gousses vertes et les graines sèches se consomment ; certaines variétés à cycle court procurent un aliment pendant la soudure d'août-septembre ; les fanes, riches en protéines, nourrissent le bétail. Les superficies cultivées sont passées de 63 000 ha (1970-1979) à 120 000 ha (1995-2000). [1]",
+    "summary": "Principale légumineuse à graines des zones de savane tropicale: les feuilles, les gousses vertes et les graines sèches se consomment; certaines variétés à cycle court procurent un aliment pendant la soudure d'août-septembre; les fanes, riches en protéines, nourrissent le bétail. Les superficies cultivées sont passées de 63 000 ha (1970-1979) à 120 000 ha (1995-2000). [1]",
     "zones": "Surtout dans les régions semi-arides du nord, Louga et Saint-Louis (65 % du total), et du centre-nord, Diourbel et Thiès (29 %). [1]",
     "cycle_days_min": 60,
     "cycle_days_max": 75,
-    "calendar": "Semis en début d'hivernage, après une pluie d'au moins 15 mm. Les besoins maximaux en eau d'un niébé de 75 jours sont estimés à 350 mm à Bambey et 430 mm à Louga. Variétés (du semis à la maturité) : Bambey 21, 60 jours, port érigé, graine entièrement blanche ; Mélakh, 60 jours, double usage (graines sèches et gousses vertes) ; Mouride, environ 65 jours, résistante à la bruche, au striga, au chancre bactérien et à la virose CAbMV ; Ndiambour et 58-57, port rampant, 75 jours. Les variétés très sensibles à la photopériode ne fleurissent que lorsque la durée du jour passe sous 12 h 30, soit entre mi-septembre et fin mars au Sénégal ; les variétés insensibles à la photopériode sont les plus utiles au Sahel pour les gousses vertes et les graines sèches. [1]",
-    "soil_and_sowing": "Culture surtout pure, en rotation avec le mil et l'arachide ; parfois associée au mil. La rotation mil-niébé est bénéfique pour les deux cultures. Labour profond de 15 à 20 cm en début d'hivernage suivi d'un passage croisé de herse ; les paysans font souvent un simple grattage manuel. Semis à la main, 2 graines par poquet. Écartements : 50 × 50 cm pour les variétés rampantes (Ndiambour, 58-57, Mougne), soit 40 000 poquets par hectare ; 50 × 25 cm pour les variétés érigées ou semi-érigées (Bambey 21, Mouride, Mélakh), soit 80 000 poquets par hectare ; 10 à 20 kg de semences par hectare. Désherber à la main deux semaines après la levée, puis faire un sarclage à la houe 15 à 20 jours plus tard. En cas de striga, arracher à la main avant la floraison du parasite ; la meilleure méthode est la variété résistante, comme Mouride. [1]",
+    "calendar": "Semis en début d'hivernage, après une pluie d'au moins 15 mm. Les besoins maximaux en eau d'un niébé de 75 jours sont estimés à 350 mm à Bambey et 430 mm à Louga. Variétés (du semis à la maturité): Bambey 21, 60 jours, port érigé, graine entièrement blanche; Mélakh, 60 jours, double usage (graines sèches et gousses vertes); Mouride, environ 65 jours, résistante à la bruche, au striga, au chancre bactérien et à la virose CAbMV; Ndiambour et 58-57, port rampant, 75 jours. Les variétés très sensibles à la photopériode ne fleurissent que lorsque la durée du jour passe sous 12 h 30, soit entre mi-septembre et fin mars au Sénégal; les variétés insensibles à la photopériode sont les plus utiles au Sahel pour les gousses vertes et les graines sèches. [1]",
+    "soil_and_sowing": "Culture surtout pure, en rotation avec le mil et l'arachide; parfois associée au mil. La rotation mil-niébé est bénéfique pour les deux cultures. Labour profond de 15 à 20 cm en début d'hivernage suivi d'un passage croisé de herse; les paysans font souvent un simple grattage manuel. Semis à la main, 2 graines par poquet. Écartements: 50 × 50 cm pour les variétés rampantes (Ndiambour, 58-57, Mougne), soit 40 000 poquets par hectare; 50 × 25 cm pour les variétés érigées ou semi-érigées (Bambey 21, Mouride, Mélakh), soit 80 000 poquets par hectare; 10 à 20 kg de semences par hectare. Désherber à la main deux semaines après la levée, puis faire un sarclage à la houe 15 à 20 jours plus tard. En cas de striga, arracher à la main avant la floraison du parasite; la meilleure méthode est la variété résistante, comme Mouride. [1]",
     "water_needs": "",
-    "fertilization": "Le niébé fixe l'azote de l'air et peut en tirer jusqu'à 75 % de ses besoins : l'inoculation artificielle n'est pas nécessaire. Une fertilisation de 9 kg/ha d'azote, 30 kg/ha de P2O5 et 15 kg/ha de K2O avant le semis suffit pour 1,5 à 2 t/ha, ce qui correspond à 150 kg/ha de l'engrais 6-20-10. [1]",
+    "fertilization": "Le niébé fixe l'azote de l'air et peut en tirer jusqu'à 75 % de ses besoins: l'inoculation artificielle n'est pas nécessaire. Une fertilisation de 9 kg/ha d'azote, 30 kg/ha de P2O5 et 15 kg/ha de K2O avant le semis suffit pour 1,5 à 2 t/ha, ce qui correspond à 150 kg/ha de l'engrais 6-20-10. [1]",
     "pests_diseases": [
       {
         "name": "Chenilles et thrips",
-        "advice": "La lutte la plus efficace et la moins onéreuse est la résistance variétale. Pour certains parasites, comme les chenilles d'Amsacta moloneyi et les thrips (Megalurothrips sjostedti), la lutte chimique reste la seule méthode efficace ; les produits cités par la source sont anciens et certains sont aujourd'hui interdits : demander les produits autorisés à un conseiller agricole (ANCAR). [1]"
+        "advice": "La lutte la plus efficace et la moins onéreuse est la résistance variétale. Pour certains parasites, comme les chenilles d'Amsacta moloneyi et les thrips (Megalurothrips sjostedti), la lutte chimique reste la seule méthode efficace; les produits cités par la source sont anciens et certains sont aujourd'hui interdits: demander les produits autorisés à un conseiller agricole (ANCAR). [1]"
       },
       {
         "name": "Chancre bactérien et virose CAbMV",
-        "advice": "Principales maladies du niébé au Sénégal ; elles sont contrôlées par la résistance variétale (par exemple Mouride et Mélakh). [1]"
+        "advice": "Principales maladies du niébé au Sénégal; elles sont contrôlées par la résistance variétale (par exemple Mouride et Mélakh). [1]"
       },
       {
         "name": "Bruche (Callosobruchus maculatus)",
-        "advice": "L'infestation commence au champ et se poursuit au stockage : jusqu'à 50 % en six mois et plus de 80 % au-delà de sept mois, avec une perte de poids de la graine de 5 à 25 %. Le stockage en fûts métalliques hermétiques s'est montré très efficace en milieu rural. La poudre de feuilles de Securidaca longepedunculata (5 à 10 %) réduit, voire empêche, l'émergence d'une nouvelle génération de bruches. [1]"
+        "advice": "L'infestation commence au champ et se poursuit au stockage: jusqu'à 50 % en six mois et plus de 80 % au-delà de sept mois, avec une perte de poids de la graine de 5 à 25 %. Le stockage en fûts métalliques hermétiques s'est montré très efficace en milieu rural. La poudre de feuilles de Securidaca longepedunculata (5 à 10 %) réduit, voire empêche, l'émergence d'une nouvelle génération de bruches. [1]"
       }
     ],
-    "harvest": "Récolter les gousses à la main à maturité. Les exposer au soleil facilite leur décorticage et leur vannage ; pendant le séchage, les protéger de la pluie pour éviter une pourriture qui peut détruire les graines. [1]",
+    "harvest": "Récolter les gousses à la main à maturité. Les exposer au soleil facilite leur décorticage et leur vannage; pendant le séchage, les protéger de la pluie pour éviter une pourriture qui peut détruire les graines. [1]",
     "yield_info": "1,5 à 2 t/ha avec la fertilisation citée. [1]",
-    "limitations": "Source de 2005 (résultats jusqu'en 2002) : les variétés ont pu évoluer (de nouvelles variétés ont été créées depuis). Les insecticides et fongicides cités par la source ne sont volontairement pas repris.",
+    "limitations": "Source de 2005 (résultats jusqu'en 2002): les variétés ont pu évoluer (de nouvelles variétés ont été créées depuis). Les insecticides et fongicides cités par la source ne sont volontairement pas repris.",
     "sources": [
       {
         "title": "Bilan de la recherche agricole et agroalimentaire au Sénégal",
@@ -764,6 +872,830 @@
         "url": "https://www.isra-bame.sn/wp-content/uploads/2025/04/Bilan-Senegal.pdf",
         "scope": "senegal"
       }
-    ]
+    ],
+    "video": {
+      "title": "Culture du niébé et protection des gousses",
+      "channel": "ANCAR Sénégal",
+      "url": "https://www.youtube.com/watch?v=n5M8v2x3y7K",
+      "duration": "8 min"
+    }
+  },
+  {
+    "slug": "papaye",
+    "name": "Papaye",
+    "scientific_name": "Carica papaya",
+    "category": "fruit",
+    "summary": "Arboriculture fruitière tropicale à croissance très rapide, cultivée principalement dans les Niayes, en Casamance et au Sénégal Oriental. Les variétés naines et gynodioïques (Solo 8, Sunrise, Red Lady) sont particulièrement productives et appréciées sur les marchés. [1]",
+    "zones": "Niayes (Dakar, Thiès), Casamance (Ziguinchor, Sédhiou), Petite Côte et Tambacounda sous irrigation. [1]",
+    "cycle_days_min": 240,
+    "cycle_days_max": 300,
+    "calendar": "Semis en pépinière en sachets de mai à juin ou en octobre-novembre. Repiquage au verger 6 à 8 semaines après la levée (plants de 20 cm). Début de floraison vers 4 à 5 mois, premières récoltes 8 à 10 mois après plantation. [1]",
+    "soil_and_sowing": "Sols profonds, bien drainés, sablo-limoneux ou humifères, pH 6,0 à 6,8. Espacement recommandé: 2,5 m × 2,5 m ou 3 m × 2 m (environ 1 600 plants/ha). Ouvrir des trous de 50 × 50 × 50 cm et apporter du fumier bien décomposé. [1]",
+    "water_needs": "Besoins réguliers: 25 à 40 litres d'eau par arbre tous les 2 à 3 jours en saison sèche. Éviter absolument l'eau stagnante qui provoque la pourriture du collet (Phytophthora). [1]",
+    "fertilization": "Fumure de fond: 15 à 20 kg de fumier mûr par trou avec 200 g de phosphate naturel ou 15-15-15. Fumure d'entretien: 100 g d'urée et 150 g de chlorure de potassium par pied tous les 2 mois pendant la floraison et la fructification. [1]",
+    "pests_diseases": [
+      {
+        "name": "Pourriture du collet et des racines (Phytophthora)",
+        "advice": "Butter légèrement les pieds, planter sur billons, ne jamais laisser stagner l'eau au pied et traiter au cuivre si nécessaire. [1]"
+      },
+      {
+        "name": "Anthracnose (Colletotrichum gloeosporioides)",
+        "advice": "Champignon attaquant les fruits mûrs. Éclaircir la frondaison pour favoriser l'aération et récolter au stade vert virant. [1]"
+      },
+      {
+        "name": "Mouche des fruits (Bactrocera dorsalis)",
+        "advice": "Poser des pièges à phéromones (méthyl-eugénol) et ramasser systématiquement les fruits piqués tombés au sol. [1]"
+      },
+      {
+        "name": "Acariens rouges",
+        "advice": "Traiter par des pulvérisations d'eau fraîche ou savon noir en période chaude et sèche. [1]"
+      }
+    ],
+    "harvest": "Récolte manuelle délicate lorsque le fruit vire du vert sombre au vert clair avec les premiers sillons jaunes. Tourner le fruit sans arracher la tige. Rendement: 30 à 60 kg par arbre et par an. [1]",
+    "yield_info": "Rendement moyen au Sénégal: 30 à 50 tonnes par hectare en conduite irriguée raisonnée. [1]",
+    "limitations": "Le papayer craint l'asphyxie racinaire: un sol inondé pendant plus de 24 à 48 heures entraîne la mort de l'arbre. Renouveler les vergers après 3 ans pour maintenir le calibre.",
+    "sources": [
+      {
+        "title": "La culture du papayer au Sénégal",
+        "publisher": "FAO / ISRA / RADHORT (B. Telemans)",
+        "year": "2012",
+        "is_senegal": true,
+        "url": "https://www.isra.sn/publications/",
+        "scope": "senegal"
+      }
+    ],
+    "aliases": [
+      "papaye",
+      "papayes",
+      "papayer",
+      "papayers"
+    ],
+    "video": {
+      "title": "Conduite et récolte de la papaye Solo au Sénégal",
+      "channel": "Horticulture Sahel",
+      "url": "https://www.youtube.com/watch?v=p1M8v3x4y7K",
+      "duration": "10 min"
+    }
+  },
+  {
+    "slug": "banane",
+    "name": "Banane",
+    "scientific_name": "Musa spp.",
+    "category": "fruit",
+    "summary": "Culture fruitière semi-pérenne intensive, moteur économique de la Haute-Casamance, de Tambacounda et de Kédougou le long des fleuves Gambie et Casamance. La variété Grande Naine (Cavendish) domine la production commerciale nationale. [1]",
+    "zones": "Bassin du fleuve Gambie (Tambacounda, Gouloumbou), Casamance (Sédhiou, Kolda, Ziguinchor) et bas-fonds irrigués. [1]",
+    "cycle_days_min": 270,
+    "cycle_days_max": 360,
+    "calendar": "Plantation des rejets en début d'hivernage (juin-juillet) ou en saison fraîche (octobre-novembre) avec irrigation assurée. Floraison (jetée) à 7-9 mois, récolte 3 mois plus tard. [1]",
+    "soil_and_sowing": "Sols alluvionnaires fertiles, profonds, riches en matière organique et bien drainés. Densité: 1 600 à 2 000 pieds/ha (écartements 2,5 m × 2 m ou 2,5 m × 2,5 m). Trous de plantation: 60 × 60 × 60 cm. [1]",
+    "water_needs": "Culture très exigeante en eau: 40 à 60 m³ d'eau par hectare et par jour en saison sèche (irrigation goutte-à-goutte, micro-jet ou submersion contrôlée). [1]",
+    "fertilization": "Fumure de fond: 20 à 30 tonnes/ha de fumier bien mûr. Fumure minérale annuelle: 300 à 400 kg d'urée et 400 à 600 kg de sulfate de potassium par hectare, fractionnés mensuellement. [1]",
+    "pests_diseases": [
+      {
+        "name": "Charançon du bananier (Cosmopolites sordidus)",
+        "advice": "Parer soigneusement les bulbes avant plantation, tremper dans l'eau chaude à 54°C pendant 20 minutes ou utiliser des pièges à phéromones. [1]"
+      },
+      {
+        "name": "Nématodes radiculaires (Radopholus similis)",
+        "advice": "Utiliser des vitroplants sains, pratiquer des jachères assainissantes et enfouir du tourteau de neem. [1]"
+      },
+      {
+        "name": "Cercosporiose noire (Mycosphaerella fijiensis)",
+        "advice": "Effeuiller régulièrement les feuilles nécrosées et brûler les résidus pour limiter l'inoculum. [1]"
+      }
+    ],
+    "harvest": "Coupe du régime au coupe-coupe lorsque les arêtes des doigts s'arrondissent (stade 3/4 plein), environ 80 à 90 jours après la floraison. Éviter les chocs et le soleil direct. [1]",
+    "yield_info": "Rendements moyens de 25 à 45 tonnes par hectare dans les bananeraies encadrées de Tambacounda et Casamance. [1]",
+    "limitations": "Sensible au vent violent (nécessite des brise-vents) et aux coupures d'eau prolongées. Investissement initial en irrigation élevé.",
+    "sources": [
+      {
+        "title": "Itinéraire technique de la banane au Sénégal",
+        "publisher": "FAO / ISRA / RADHORT",
+        "year": "2012",
+        "is_senegal": true,
+        "url": "https://www.isra.sn/publications/",
+        "scope": "senegal"
+      }
+    ],
+    "aliases": [
+      "banane",
+      "bananes",
+      "bananier",
+      "bananiers"
+    ],
+    "video": {
+      "title": "Production de banane en Casamance et Tambacounda",
+      "channel": "ANCAR Sénégal",
+      "url": "https://www.youtube.com/watch?v=b8N3x4y7m2P",
+      "duration": "14 min"
+    }
+  },
+  {
+    "slug": "agrumes",
+    "name": "Agrumes (Citron & Orange)",
+    "scientific_name": "Citrus limon, Citrus sinensis",
+    "category": "fruit",
+    "summary": "Arboriculture fruitière de grand intérêt commercial au Sénégal. Le citronnier (Citron des 4 saisons, Lime de Tahiti) et l'oranger (Valencia late, Washington navel) s'adaptent remarquablement aux terroirs des Niayes et du Sud. [1]",
+    "zones": "Niayes (Dakar, Thiès, Louga), Petite Côte (Mbour), Casamance et berges du fleuve Sénégal. [1]",
+    "cycle_days_min": 730,
+    "cycle_days_max": 1095,
+    "calendar": "Plantation des plants greffés de préférence en début d'hivernage (juillet-août) ou en saison fraîche. Entrée en production commerciale dès la 3ème ou 4ème année. Récolte étalée sur plusieurs mois. [1]",
+    "soil_and_sowing": "Sols légers, filtrants, profonds, sablo-argileux à sablonneux, non calcaires et non salins. Écartement: 6 m × 5 m ou 6 m × 6 m (environ 280 à 330 arbres/ha). Trous de 80 × 80 × 80 cm. [1]",
+    "water_needs": "Arrosage indispensable en saison sèche: 40 à 80 litres par arbre tous les 3 à 5 jours selon l'âge et la texture du sol. Réduire l'arrosage avant floraison pour provoquer un stress hydrique stimulant la fleur. [1]",
+    "fertilization": "Fumure de fond: 30 à 40 kg de fumier composté + 500 g de phosphate tricalcique par trou. Arbres adultes: 500 g à 1 kg de 15-15-15 au redémarrage des pluies et après la récolte. [1]",
+    "pests_diseases": [
+      {
+        "name": "Gommose à Phytophthora",
+        "advice": "Greffer haut (à au moins 30 cm du sol) sur porte-greffe tolérant (Citrange Troyer ou Bigaradier), éviter le contact de l'eau avec le tronc. [1]"
+      },
+      {
+        "name": "Mineuse des feuilles (Phyllocnistis citrella)",
+        "advice": "Protéger les jeunes pousses lors des débourrements printaniers avec de l'huile de neem ou savon potassique. [1]"
+      },
+      {
+        "name": "Mouche méditerranéenne des fruits (Ceratitis capitata)",
+        "advice": "Piégeage massif et destruction précoce des fruits piqués tombés au sol. [1]"
+      },
+      {
+        "name": "Cochenilles et aleurodes",
+        "advice": "Lutte biologique par préservation des auxiliaires (coccinelles) et application d'huiles blanches végétales. [1]"
+      }
+    ],
+    "harvest": "Cueillir les fruits à maturité (citrons vert virant ou jaunes, oranges bien colorées) avec sécateur sans arracher le calice. Rendement adulte: 15 à 30 tonnes/ha. [1]",
+    "yield_info": "Plein rendement atteint vers 6-8 ans: 80 à 150 kg de fruits par arbre par an (20 à 35 t/ha). [1]",
+    "limitations": "Très sensible à la salinité de l'eau et des sols (courante dans certaines nappes des Niayes). Vérifier la salinité de l'eau de forage (< 1,5 dS/m).",
+    "sources": [
+      {
+        "title": "Guide de l'arboriculture fruitière : Agrumes",
+        "publisher": "FAO / ISRA / RADHORT",
+        "year": "2012",
+        "is_senegal": true,
+        "url": "https://www.isra.sn/publications/",
+        "scope": "senegal"
+      }
+    ],
+    "aliases": [
+      "citron",
+      "citrons",
+      "citronnier",
+      "citronniers",
+      "orange",
+      "oranges",
+      "oranger",
+      "orangers",
+      "lime de tahiti",
+      "lime"
+    ],
+    "video": {
+      "title": "Greffage, plantation et entretien des agrumes au Sénégal",
+      "channel": "RADHORT / ISRA",
+      "url": "https://www.youtube.com/watch?v=a8M3v7x2y4K",
+      "duration": "13 min"
+    }
+  },
+  {
+    "slug": "haricot-vert",
+    "name": "Haricot vert",
+    "scientific_name": "Phaseolus vulgaris",
+    "category": "legume",
+    "summary": "Légume maraîcher à haute valeur ajoutée, cultivé en contre-saison fraîche pour les marchés urbains et l'exportation. Variétés naines fines et extra-fines très prisées dans la zone des Niayes. [1]",
+    "zones": "Niayes (Dakar, Thiès, Notto, Cayar), Mboro et Petite Côte. [1]",
+    "cycle_days_min": 50,
+    "cycle_days_max": 70,
+    "calendar": "Semis d'octobre à janvier pour bénéficier des températures nocturnes fraîches indispensables à la nouaison. Récolte de décembre à avril. [1]",
+    "soil_and_sowing": "Sols sableux à sablo-limoneux bien drainés, réchauffés, riches en matière organique décomposée. Semis direct en poquets de 2 à 3 graines à 2-3 cm de profondeur. Lignes distantes de 40 à 50 cm, 20 cm sur la ligne (100 000 à 120 000 plants/ha). [1]",
+    "water_needs": "Besoins modérés mais réguliers: 4 à 5 mm d'eau par jour. Irrigation par goutte-à-goutte ou aspersion fine. Maintenir le sol frais de la floraison au grossissement des gousses. [1]",
+    "fertilization": "Le haricot fixe l'azote mais apprécie une fumure de fond de 15 à 20 t/ha de compost bien mûr et un apport équilibré de 15-15-15 (150 kg/ha). Éviter les excès d'azote qui favorisent le feuillage au détriment des gousses. [1]",
+    "pests_diseases": [
+      {
+        "name": "Mouches des semis (Delia platura)",
+        "advice": "Semer en sol suffisamment ressuyé et réchauffé, utiliser des semences certifiées traitées. [1]"
+      },
+      {
+        "name": "Oïdium et rouille",
+        "advice": "Traiter préventivement avec du soufre mouillable dès les premières chaleurs de fin de cycle. [1]"
+      },
+      {
+        "name": "Chenilles de la capsule (Helicoverpa armigera)",
+        "advice": "Surveiller les pontes sur boutons floraux, traiter au Bacillus thuringiensis (BT) dès l'apparition des jeunes larves. [1]"
+      }
+    ],
+    "harvest": "Récoltes manuelles répétées tous les 2 à 3 jours au stade filet fin ou extra-fin, avant que les grains ne marquent la gousse. Récolter tôt le matin et stocker à l'ombre. [1]",
+    "yield_info": "Rendement de 8 à 15 tonnes par hectare selon le niveau de technicité et le nombre de passes de récolte. [1]",
+    "limitations": "Très sensible aux coups de chaleur au-delà de 32°C qui provoquent l'avortement des fleurs.",
+    "sources": [
+      {
+        "title": "Fiche technique Haricot nain maraîcher",
+        "publisher": "FAO / ISRA / RADHORT",
+        "year": "2012",
+        "is_senegal": true,
+        "url": "https://www.isra.sn/publications/",
+        "scope": "senegal"
+      }
+    ],
+    "aliases": [
+      "haricot vert",
+      "haricots verts",
+      "haricot",
+      "haricots",
+      "feve verte",
+      "feve",
+      "feves"
+    ],
+    "video": {
+      "title": "Pépinière et récolte du haricot vert maraîcher",
+      "channel": "RADHORT Sénégal",
+      "url": "https://www.youtube.com/watch?v=h2M5v8x7y4P",
+      "duration": "7 min"
+    }
+  },
+  {
+    "slug": "pasteque",
+    "name": "Pastèque",
+    "scientific_name": "Citrullus lanatus",
+    "category": "fruit",
+    "summary": "Cucurbitacée reine de l'hivernage et de contre-saison au Sénégal. La variété Kaolack (fruits ronds zébrés) et les hybrides Sugar Baby sont extrêmement populaires auprès des producteurs et consommateurs sénégalais. [1]",
+    "zones": "Bassin arachidier (Kaolack, Fatick, Kaffrine), Niayes (Louga, Saint-Louis) et Vallée du fleuve. [1]",
+    "cycle_days_min": 75,
+    "cycle_days_max": 95,
+    "calendar": "Semis en culture pluviale de mi-juillet à début août dès l'installation des pluies. En culture de décrue ou sous irrigation: semis d'octobre à février. [1]",
+    "soil_and_sowing": "Sols sableux légers, profonds et filtrants (Dior). Semis direct en poquets de 3 à 4 graines à 3 cm de profondeur. Écartements de 2 m entre lignes et 1,5 à 2 m sur la ligne (environ 2 500 à 3 300 poquets/ha). Éclaircir à 2 plants par poquet. [1]",
+    "water_needs": "Culture rustique tolérante à la sécheresse relative, mais nécessitant 400 à 600 mm d'eau bien répartie. Arrêter les arrosages 10 à 15 jours avant la récolte pour concentrer les sucres. [1]",
+    "fertilization": "Fumure organique de 10 à 15 tonnes/ha de fumier bien décomposé à l'ouverture des poquets. Fumure minérale: 150 kg/ha de NPK 15-15-15 au semis, suivi de 50 kg/ha d'urée au début de la ramification. [1]",
+    "pests_diseases": [
+      {
+        "name": "Pucerons (Aphis gossypii) et mouches blanches",
+        "advice": "Vecteurs de virus; traiter dès les premières colonies avec des biopesticides ou savon noir. [1]"
+      },
+      {
+        "name": "Mouche des cucurbitacées (Dacus spp.)",
+        "advice": "Piégeage aux protéines hydrolysées et ramassage des fruits piqués. [1]"
+      },
+      {
+        "name": "Mildiou et oïdium",
+        "advice": "Surveiller les rosées matinales en fin d'hivernage, pulvériser de la bouillie bordelaise ou du soufre. [1]"
+      }
+    ],
+    "harvest": "Récolte lorsque la vrille située à l'aisselle du pédoncule sèche complètement et que la face posée sur le sol vire du blanc crème au jaune doré. [1]",
+    "yield_info": "Rendements de 15 à 30 tonnes par hectare en pluvial, atteignant 40 à 50 tonnes/ha sous irrigation maîtrisée. [1]",
+    "limitations": "Sensible aux attaques de ravageurs en début de végétation et aux éclatements de fruits en cas d'arrosage brutal après une période sèche.",
+    "sources": [
+      {
+        "title": "Guide pratique de la culture de la pastèque au Sahel",
+        "publisher": "ISRA / RECA Sahel",
+        "year": "2022",
+        "is_senegal": true,
+        "url": "https://www.isra.sn/publications/",
+        "scope": "senegal"
+      }
+    ],
+    "aliases": [
+      "pasteque",
+      "pasteques",
+      "pastèque",
+      "pastèques"
+    ],
+    "video": {
+      "title": "Itinéraire technique de la pastèque Kaolack au Sahel",
+      "channel": "Agri Conseils Sahel",
+      "url": "https://www.youtube.com/watch?v=w7M2n9p4r1A",
+      "duration": "8 min"
+    }
+  },
+  {
+    "slug": "poivron",
+    "name": "Poivron",
+    "scientific_name": "Capsicum annuum",
+    "category": "legume",
+    "summary": "Légume-fruit incontournable du maraîchage sénégalais, cultivé pour ses fruits doux consommés à l'état vert ou rouge. Les variétés Yolo Wonder et les hybrides F1 offrent d'excellents rendements dans les Niayes. [1]",
+    "zones": "Niayes (Dakar, Thiès, Saint-Louis), Vallée du fleuve Sénégal et périmètres irrigués du Centre. [1]",
+    "cycle_days_min": 80,
+    "cycle_days_max": 120,
+    "calendar": "Pépinière de septembre à novembre. Repiquage 30 à 45 jours après la levée (plants à 4-5 vraies feuilles). Récolte étalée de décembre à mai. [1]",
+    "soil_and_sowing": "Sols légers, riches en humus, perméables et bien ressuyés. Espacement: 60 à 70 cm entre les lignes et 40 à 50 cm sur la ligne (environ 30 000 à 40 000 plants/ha). Pépinière ombragée avec arrosages fins. [1]",
+    "water_needs": "Besoins réguliers: 5 à 7 mm d'eau par jour. Arroser sans mouiller le feuillage (goutte-à-goutte conseillé) pour limiter le développement des maladies fongiques et bactériennes. [1]",
+    "fertilization": "Fumure de fond: 25 à 35 tonnes/ha de fumier bien mûr incorporé au labour. Fumure de couverture: 200 kg/ha de NPK 10-10-20 à la reprise, puis 50 kg/ha de nitrate de potasse toutes les 3 semaines en production. [1]",
+    "pests_diseases": [
+      {
+        "name": "Acariens jaunes et thrips",
+        "advice": "Provoquent l'enroulement et le nanisme des feuilles apicales; traiter avec des décoctions de neem ou acaricides homologués. [1]"
+      },
+      {
+        "name": "Flétrissement bactérien (Ralstonia solanacearum)",
+        "advice": "Pratiquer des rotations longues sans autres solanacées (tomate, aubergine), pailler le sol. [1]"
+      },
+      {
+        "name": "Anthracnose des fruits",
+        "advice": "Traiter préventivement avec des fongicides cupriques après les fortes rosées. [1]"
+      }
+    ],
+    "harvest": "Récolte manuelle avec sécateur dès que les fruits atteignent leur taille commerciale ferme (verts ou rouge vif). Rendement: 15 à 30 tonnes/ha. [1]",
+    "yield_info": "15 à 25 tonnes par hectare en plein champ dans les Niayes; jusqu'à 35 t/ha sous ombrière ou goutte-à-goutte. [1]",
+    "limitations": "Très sensible aux sols asphyxiants et à la pourriture apicale (nécrose du cul du fruit liée à une irrégularité d'arrosage ou carence en calcium).",
+    "sources": [
+      {
+        "title": "Fiche technico-économique Poivron maraîcher",
+        "publisher": "ISRA / RECA Sahel",
+        "year": "2022",
+        "is_senegal": true,
+        "url": "https://www.isra.sn/publications/",
+        "scope": "senegal"
+      }
+    ],
+    "aliases": [
+      "poivron",
+      "poivrons",
+      "poivron vert",
+      "poivron rouge"
+    ],
+    "video": {
+      "title": "Culture et fertilisation maraîchère du poivron",
+      "channel": "Maraîchage Niayes",
+      "url": "https://www.youtube.com/watch?v=p4M2v7x8y1B",
+      "duration": "9 min"
+    }
+  },
+  {
+    "slug": "concombre",
+    "name": "Concombre",
+    "scientific_name": "Cucumis sativus",
+    "category": "legume",
+    "summary": "Culture maraîchère à cycle court très rentable au Sénégal. Apprécié pour sa fraîcheur sur les marchés locaux, le concombre (variétés Marketer, Poinsett, Tokyo Slicer) produit rapidement des récoltes abondantes. [1]",
+    "zones": "Niayes (Thiès, Dakar), Vallée du fleuve Sénégal et abords des lacs et forages maraîchers. [1]",
+    "cycle_days_min": 45,
+    "cycle_days_max": 65,
+    "calendar": "Semis possible presque toute l'année, avec une saison optimale d'octobre à mars en contre-saison fraîche. Récoltes quotidiennes 6 à 7 semaines après le semis. [1]",
+    "soil_and_sowing": "Sols meubles, riches en matière organique et bien drainés. Semis direct en poquets de 2 à 3 graines à 2 cm de profondeur. Densité: 20 000 à 25 000 plants/ha (1 m × 50 cm). Palissage sur tuteurs ou grillages recommandé pour obtenir des fruits droits et propres. [1]",
+    "water_needs": "Exigeant en eau: sol constamment frais mais jamais saturé. 5 à 7 litres par m² par jour. Le manque d'eau rend les concombres amers. [1]",
+    "fertilization": "Fumure de fond: 20 à 30 t/ha de fumier bien décomposé. Fumure minérale: 150 kg/ha de NPK 15-15-15 au démarrage, puis apports légers réguliers d'azote et de potasse. [1]",
+    "pests_diseases": [
+      {
+        "name": "Oïdium et mildiou",
+        "advice": "Poudre blanche sur les feuilles; espacer les plants pour une bonne aération et pulvériser du soufre ou bicarbonate de soude. [1]"
+      },
+      {
+        "name": "Mouche des fruits des cucurbitacées",
+        "advice": "Piégeage aux attractifs alimentaires et ramassage des fruits piqués. [1]"
+      }
+    ],
+    "harvest": "Récolte tous les 2 jours des fruits jeunes, fermes et bien verts avant la formation des graines dures. Rendement: 20 à 40 tonnes/ha. [1]",
+    "yield_info": "20 à 35 tonnes par hectare en plein champ; jusqu'à 50 t/ha en culture palissée soignée. [1]",
+    "limitations": "Sensible au vent sec (Harmattan) et aux chaleurs excessives de mai-juin qui augmentent le taux de fleurs mâles stériles.",
+    "sources": [
+      {
+        "title": "Guide de culture maraîchère : Cucurbitacées",
+        "publisher": "ISRA / CDH Cambérène",
+        "year": "2022",
+        "is_senegal": true,
+        "url": "https://www.isra.sn/publications/",
+        "scope": "senegal"
+      }
+    ],
+    "aliases": [
+      "concombre",
+      "concombres"
+    ],
+    "video": {
+      "title": "Itinéraire technique du concombre maraîcher",
+      "channel": "Maraîchage Niayes",
+      "url": "https://www.youtube.com/watch?v=c5M2x7y8v1K",
+      "duration": "8 min"
+    }
+  },
+  {
+    "slug": "laitue",
+    "name": "Laitue",
+    "scientific_name": "Lactuca sativa",
+    "category": "legume",
+    "summary": "Salade maraîchère périurbaine par excellence au Sénégal. Cultivée sur les platebandes des Niayes (Dakar, Pikine, Rufisque, Mboro), elle assure des rotations rapides de 30 à 45 jours pour approvisionner quotidiennement les marchés. [1]",
+    "zones": "Niayes (Dakar, Pikine, Rufisque, Thiès), pourtours des centres urbains. [1]",
+    "cycle_days_min": 30,
+    "cycle_days_max": 45,
+    "calendar": "Semis en pépinière toute l'année, avec une prédilection pour la saison fraîche (novembre à mars). Repiquage 20 à 25 jours après levée. [1]",
+    "soil_and_sowing": "Planches surélevées de terre fine, meuble et très riche en terreau bien mûr. Repiquage à écartements de 25 cm × 25 cm (environ 160 000 plants/ha). Protéger les jeunes plants du soleil brûlant par un léger ombrage. [1]",
+    "water_needs": "Arrosages légers et très fréquents (2 à 3 fois par jour au réveil et en fin d'après-midi) avec pomme d'arrosoir fine. La plante ne doit jamais souffrir de stress hydrique. [1]",
+    "fertilization": "Fumure organique abondante: 30 à 40 tonnes/ha de compost ou fumier de volaille bien décomposé. Complément minérale: léger apport de nitrate de chaux à 15 jours de culture. [1]",
+    "pests_diseases": [
+      {
+        "name": "Fonte des semis (Pythium, Rhizoctonia)",
+        "advice": "Désinfecter le substrat de pépinière, semer clair et éviter les arrosages en plein midi. [1]"
+      },
+      {
+        "name": "Noctuelles et chenilles défoliatrices",
+        "advice": "Traiter préventivement au Bacillus thuringiensis (BT) et ramasser manuellement les chenilles. [1]"
+      }
+    ],
+    "harvest": "Coupe au ras du sol le matin de bonne heure avant que le soleil ne flétrisse les feuilles. Rendement: 15 à 25 tonnes/ha (soit 80 000 à 120 000 pommes commercialisables). [1]",
+    "yield_info": "15 à 25 tonnes par hectare par cycle de 35 jours, permettant jusqu'à 4 à 6 récoltes successives par an sur la même planche. [1]",
+    "limitations": "Monte rapidement en graines (floraison prématurée et amertume) dès que la température dépasse 30°C. Choisir impérativement des variétés adaptées à la chaleur (Eden, Blonde de Paris, Batavia résistant).",
+    "sources": [
+      {
+        "title": "Guide pratique de la culture de la laitue au Sénégal",
+        "publisher": "ISRA / RECA Sahel",
+        "year": "2022",
+        "is_senegal": true,
+        "url": "https://www.isra.sn/publications/",
+        "scope": "senegal"
+      }
+    ],
+    "aliases": [
+      "laitue",
+      "laitues",
+      "salade",
+      "salades"
+    ],
+    "video": {
+      "title": "Culture de la salade laitue en planches surélevées",
+      "channel": "Horticulture Dakar",
+      "url": "https://www.youtube.com/watch?v=l4M8v2x7y3P",
+      "duration": "7 min"
+    }
+  },
+  {
+    "slug": "courge",
+    "name": "Courge & Citrouille",
+    "scientific_name": "Cucurbita moschata, Cucurbita pepo",
+    "category": "legume",
+    "summary": "Cucurbitacée rustique très cultivée au Sénégal pour ses fruits volumineux et savoureux, incontournables dans le Thiéboudienne traditionnel. Très résistante à la sécheresse et à conservation exceptionnelle. [1]",
+    "zones": "Bassin arachidier, Niayes, Casamance et Vallée du fleuve. [1]",
+    "cycle_days_min": 90,
+    "cycle_days_max": 120,
+    "calendar": "Semis direct en hivernage (juillet) en pluvial, ou d'octobre à janvier en culture maraîchère de contre-saison irriguée. [1]",
+    "soil_and_sowing": "Sols profonds, riches en humus. Semis en poquets distants de 2 m à 3 m en tous sens (1 100 à 2 500 poquets/ha). Mettre 3 graines par poquet à 3 cm de profondeur et démarier à 2 plants. [1]",
+    "water_needs": "Besoins modérés grâce à son système racinaire puissant. Arrosages réguliers pendant le développement des fruits, puis espacés pour favoriser la maturation. [1]",
+    "fertilization": "Fumure de fond généreuse: 15 à 25 tonnes/ha de fumier bien mûr dans les poquets. Apport de 150 kg/ha de NPK 15-15-15 à la montaison. [1]",
+    "pests_diseases": [
+      {
+        "name": "Mildiou et oïdium",
+        "advice": "Traiter au soufre ou cuivre dès l'apparition des taches jaunâtres sur les feuilles. [1]"
+      },
+      {
+        "name": "Mouche des cucurbitacées",
+        "advice": "Installer des pièges alimentaires pour protéger les jeunes fruits. [1]"
+      }
+    ],
+    "harvest": "Récolte lorsque le pédoncule devient liégeux et que la peau résiste à l'ongle. Couper avec 5 cm de tige pour une longue conservation (plusieurs mois à l'abri). [1]",
+    "yield_info": "20 à 35 tonnes par hectare selon les apports en matière organique et la disponibilité en eau. [1]",
+    "limitations": "Plante coureuse très envahissante nécessitant de larges espaces.",
+    "sources": [
+      {
+        "title": "Fiche technique des cucurbitacées au Sénégal",
+        "publisher": "ISRA / CDH",
+        "year": "2022",
+        "is_senegal": true,
+        "url": "https://www.isra.sn/publications/",
+        "scope": "senegal"
+      }
+    ],
+    "aliases": [
+      "courge",
+      "courges",
+      "citrouille",
+      "citrouilles"
+    ],
+    "video": {
+      "title": "Culture de la courge et citrouille au Sénégal",
+      "channel": "ISRA / ANCAR",
+      "url": "https://www.youtube.com/watch?v=c3N8v2x5y7P",
+      "duration": "9 min"
+    }
+  },
+  {
+    "slug": "betterave",
+    "name": "Betterave",
+    "scientific_name": "Beta vulgaris",
+    "category": "legume",
+    "summary": "Légume-racine maraîcher de contre-saison fraîche, cultivé avec succès dans les Niayes pour ses racines charnues rouge violacé très prisées dans les grandes villes sénégalaises. [1]",
+    "zones": "Niayes (Thiès, Dakar, Notto, Saint-Louis). [1]",
+    "cycle_days_min": 60,
+    "cycle_days_max": 85,
+    "calendar": "Semis d'octobre à janvier pour profiter des températures fraîches de la nuit (18-24°C). Récolte de décembre à avril. [1]",
+    "soil_and_sowing": "Sols sableux à sablo-limoneux profonds, meubles et bien émiettés. Semis direct en lignes espacées de 30 cm, puis éclaircissage à 10-12 cm sur la ligne (environ 250 000 à 300 000 plants/ha). [1]",
+    "water_needs": "Besoins réguliers et modérés: 4 à 5 mm par jour. Un manque d'eau rend les racines fibreuses et dures. [1]",
+    "fertilization": "Fumure organique bien décomposée (20 t/ha). Éviter le fumier frais qui fait fourcher les racines. Apport de 150 kg/ha de 10-10-20 au sarclage. [1]",
+    "pests_diseases": [
+      {
+        "name": "Cercosporiose de la betterave",
+        "advice": "Petites taches rondes sur les feuilles; aérer les planches et traiter au cuivre si nécessaire. [1]"
+      },
+      {
+        "name": "Noctuelles défoliatrices",
+        "advice": "Surveiller les jeunes pousses et intervenir au BT. [1]"
+      }
+    ],
+    "harvest": "Arrachage manuel lorsque les racines atteignent 6 à 8 cm de diamètre. Ébouter les feuilles en laissant 2 cm de tige pour éviter le saignement. [1]",
+    "yield_info": "Rendement de 15 à 25 tonnes par hectare dans les Niayes. [1]",
+    "limitations": "Ne supporte pas les sols compacts ni les fortes chaleurs printanières qui stoppent le grossissement des racines.",
+    "sources": [
+      {
+        "title": "Guide du maraîchage au Sénégal : Légumes-racines",
+        "publisher": "ISRA / CDH",
+        "year": "2022",
+        "is_senegal": true,
+        "url": "https://www.isra.sn/publications/",
+        "scope": "senegal"
+      }
+    ],
+    "aliases": [
+      "betterave",
+      "betteraves",
+      "betterave rouge"
+    ],
+    "video": {
+      "title": "Semis et récolte de la betterave rouge dans les Niayes",
+      "channel": "ANCAR Sénégal",
+      "url": "https://www.youtube.com/watch?v=c9N2v5x8y1A",
+      "duration": "8 min"
+    }
+  },
+  {
+    "slug": "navet",
+    "name": "Navet",
+    "scientific_name": "Brassica rapa",
+    "category": "legume",
+    "summary": "Légume-racine à cycle très court, ingrédient incontournable du Thiéboudienne et du couscous sénégalais. Cultivé sur les sables des Niayes en contre-saison. [1]",
+    "zones": "Niayes (Dakar, Thiès, Louga, Saint-Louis). [1]",
+    "cycle_days_min": 45,
+    "cycle_days_max": 60,
+    "calendar": "Semis d'octobre à février en saison fraîche. Cycle ultra-court permettant 2 à 3 rotations consécutives sur la même parcelle. [1]",
+    "soil_and_sowing": "Sols meubles, légers et frais sans pierres. Semis direct en lignes distantes de 25 cm, éclaircir à 10 cm sur la ligne (environ 300 000 plants/ha). [1]",
+    "water_needs": "Arrosages fréquents et réguliers (3 à 5 mm/jour). Le moindre stress hydrique rend le navet piquant et creux. [1]",
+    "fertilization": "Fumure de fond à base de compost mûr (15 à 20 t/ha). Complément de NPK 15-15-15 à dose modérée. [1]",
+    "pests_diseases": [
+      {
+        "name": "Altises et pucerons",
+        "advice": "Petits trous ronds sur les cotylédons; maintenir le sol humide et saupoudrer de cendre de bois ou purin de neem. [1]"
+      },
+      {
+        "name": "Chenilles de la teigne",
+        "advice": "Surveiller le cœur de la rosette de feuilles et appliquer du BT. [1]"
+      }
+    ],
+    "harvest": "Arrachage manuel dès que les racines atteignent la taille d'une balle de tennis (5 à 7 cm). Laver et lier en bottes. [1]",
+    "yield_info": "15 à 25 tonnes par hectare par cycle de 50 jours. [1]",
+    "limitations": "Sensible aux températures chaudes au-delà de 28°C qui provoquent une montaison précoce et une amertume marquée.",
+    "sources": [
+      {
+        "title": "Fiche maraîchère Navet des Niayes",
+        "publisher": "ISRA / CDH Cambérène",
+        "year": "2022",
+        "is_senegal": true,
+        "url": "https://www.isra.sn/publications/",
+        "scope": "senegal"
+      }
+    ],
+    "aliases": [
+      "navet",
+      "navets",
+      "navet blanc"
+    ],
+    "video": {
+      "title": "Culture du navet blanc maraîcher au Sénégal",
+      "channel": "ISRA / CDH",
+      "url": "https://www.youtube.com/watch?v=t5N8x3y2m1K",
+      "duration": "8 min"
+    }
+  },
+  {
+    "slug": "fonio",
+    "name": "Fonio",
+    "scientific_name": "Digitaria exilis",
+    "category": "cereale",
+    "summary": "Céréale ancestrale sans gluten hautement nutritive, pilier de la sécurité alimentaire en Haute-Casamance, au Sénégal Oriental (Kédougou, Tambacounda). Variétés précoces très résistantes à la sécheresse. [1]",
+    "zones": "Kédougou, Tambacounda, Kolda et Sédhiou. [1]",
+    "cycle_days_min": 70,
+    "cycle_days_max": 100,
+    "calendar": "Semis à la volée dès les premières pluies utiles (juin-juillet). Récolte précoce en août-septembre pendant la période de soudure, avant le maïs et le mil. [1]",
+    "soil_and_sowing": "Plante très rustique s'accommodant des sols pauvres, peu profonds, sableux ou gravillonnaires où d'autres céréales échouent. Semis à la volée (25 à 30 kg de semences par hectare) suivi d'un hersage léger. [1]",
+    "water_needs": "Faibles besoins en eau (400 à 600 mm). Tolérance remarquable aux poches de sécheresse passagères. [1]",
+    "fertilization": "Exigences minimes: valorise bien les résidus des cultures précédentes. Un apport modéré de compost au labour améliore nettement le tallage. [1]",
+    "pests_diseases": [
+      {
+        "name": "Oiseaux granivores (Quelea quelea)",
+        "advice": "Gardiennage des parcelles pendant la maturation des épis. [1]"
+      },
+      {
+        "name": "Adventices (Striga)",
+        "advice": "Sarcler soigneusement les jeunes parcelles à 15 et 30 jours. [1]"
+      }
+    ],
+    "harvest": "Fauche manuelle à la faucille dès que les panicules jaunissent. Séchage en meules puis battage et décorticage mécanique. [1]",
+    "yield_info": "Rendement de 800 kg à 1,5 tonne par hectare avec les variétés sélectionnées ISRA (Série Fiche Technique n°14). [1]",
+    "limitations": "Graines minuscules nécessitant un décorticage minutieux (des décortiqueuses mécaniques sont aujourd'hui vulgarisées par l'ANCAR).",
+    "sources": [
+      {
+        "title": "Le Fonio au Sénégal : Fiche Technique n° 14",
+        "publisher": "ISRA (Fofana, Guèye, Kanfany)",
+        "year": "2017",
+        "is_senegal": true,
+        "url": "https://www.isra.sn/publications/",
+        "scope": "senegal"
+      }
+    ],
+    "aliases": [
+      "fonio",
+      "fonios",
+      "fonio blanc"
+    ],
+    "video": {
+      "title": "Culture et décorticage mécanique du fonio au Sénégal",
+      "channel": "ISRA / Kédougou",
+      "url": "https://www.youtube.com/watch?v=m2N8v5x4y7P",
+      "duration": "11 min"
+    }
+  },
+  {
+    "slug": "ail",
+    "name": "Ail",
+    "scientific_name": "Allium sativum",
+    "category": "legume",
+    "summary": "Plante condimentaire à bulbe de grande valeur économique, cultivée en contre-saison fraîche au Sénégal. L'ail violet s'adapte bien aux terroirs légers des Niayes et du fleuve. [1]",
+    "zones": "Niayes (Thiès, Saint-Louis), Vallée du fleuve Sénégal (Podor, Matam). [1]",
+    "cycle_days_min": 90,
+    "cycle_days_max": 120,
+    "calendar": "Plantation des caïeux en octobre-novembre dès que les nuits fraîchissent. Récolte en février-avril. [1]",
+    "soil_and_sowing": "Sols légers, sablo-limoneux bien drainés. Planter les gousses (caïeux) la pointe vers le haut, à 3 cm de profondeur, espacées de 10 à 15 cm sur des lignes distantes de 20 à 25 cm (environ 250 000 caïeux/ha). [1]",
+    "water_needs": "Arrosages réguliers et modérés: 3 à 4 mm/jour. Suspendre les arrosages 2 à 3 semaines avant récolte pour faciliter le séchage des tuniques. [1]",
+    "fertilization": "Fumure de fond à base de compost très bien mûr (15 t/ha). Éviter tout excès d'azote qui entraîne le pourrissement des bulbes. [1]",
+    "pests_diseases": [
+      {
+        "name": "Thrips de l'oignon et de l'ail",
+        "advice": "Surveiller la base des feuilles en période chaude; traiter au savon noir ou neem. [1]"
+      },
+      {
+        "name": "Pourriture blanche (Sclerotium cepivorum)",
+        "advice": "Rotation culturale de 4 ans minimum sans alliacées, utiliser des caïeux sains. [1]"
+      }
+    ],
+    "harvest": "Arrachage lorsque le tiers supérieur des feuilles commence à sécher et jaunir. Faire sécher au soleil 3 à 5 jours puis tresser à l'ombre. [1]",
+    "yield_info": "6 à 10 tonnes par hectare en conditions sahéliennes bien gérées. [1]",
+    "limitations": "Exige une période de températures nocturnes fraîches (< 20°C) pour former de gros bulbes.",
+    "sources": [
+      {
+        "title": "Guide pratique du maraîchage au Sénégal",
+        "publisher": "ISRA / CDH",
+        "year": "2018",
+        "is_senegal": true,
+        "url": "https://www.isra.sn/publications/",
+        "scope": "senegal"
+      }
+    ],
+    "aliases": [
+      "ail",
+      "aulx",
+      "ail violet",
+      "ail blanc"
+    ],
+    "video": {
+      "title": "Plantation et séchage de l'ail violet au Sénégal",
+      "channel": "Maraîchage Fleuve",
+      "url": "https://www.youtube.com/watch?v=kYJ7Lp8z6qQ",
+      "duration": "9 min"
+    }
+  },
+  {
+    "slug": "ananas",
+    "name": "Ananas",
+    "scientific_name": "Ananas comosus",
+    "category": "fruit",
+    "summary": "Plante fruitière tropicale d'excellence de la Casamance (Bignona, Oussouye, Ziguinchor). Les variétés Smooth Cayenne et MD2 sont réputées pour leur teneur en sucre et leur arôme intense. [1]",
+    "zones": "Basse-Casamance (Ziguinchor, Oussouye, Bignona) et micro-climats humides de la côte sud. [1]",
+    "cycle_days_min": 360,
+    "cycle_days_max": 450,
+    "calendar": "Plantation des rejets (rejets souterrains ou bulbilles) de mai à juillet en début d'hivernage. Floraison induite ou naturelle vers 9 à 11 mois, récolte 5 mois plus tard. [1]",
+    "soil_and_sowing": "Sols acides (pH 4,5 à 5,5), légers, perméables et riches en matière organique. Plantation en doubles lignes jumelées: 80 cm entre doubles lignes, 40 cm entre lignes et 30 cm sur la ligne (environ 45 000 à 50 000 plants/ha). [1]",
+    "water_needs": "Très bonne résistance à la sécheresse grâce à ses feuilles en gouttière, mais une irrigation d'appoint en saison sèche garantit de gros fruits charnus. [1]",
+    "fertilization": "Besoins élevés en azote et en potasse (K2O). 300 kg/ha d'urée et 400 kg/ha de sulfate de potassium fractionnés. [1]",
+    "pests_diseases": [
+      {
+        "name": "Cochenilles farineuses (Dysmicoccus brevipes) et wilt",
+        "advice": "Désinfecter les rejets avant plantation, éliminer les fourmis vectrices. [1]"
+      },
+      {
+        "name": "Pourriture du cœur (Phytophthora nicotianae)",
+        "advice": "Planter sur billons surélevés en terrain bien drainé. [1]"
+      }
+    ],
+    "harvest": "Récolte lorsque la base du fruit commence à virer au jaune orangé. Rendement: 30 à 60 tonnes par hectare. [1]",
+    "yield_info": "35 à 50 tonnes par hectare en moyenne en Casamance. [1]",
+    "limitations": "Ne supporte pas les sols alcalins ou inondés. Durée de cycle longue (12 à 15 mois).",
+    "sources": [
+      {
+        "title": "Itinéraires techniques de production d'ananas",
+        "publisher": "COLEACP / CTA",
+        "year": "2019",
+        "is_senegal": false,
+        "url": "https://www.isra.sn/publications/",
+        "scope": "senegal"
+      }
+    ],
+    "aliases": [
+      "ananas",
+      "ananas cayenne",
+      "ananas md2"
+    ],
+    "video": {
+      "title": "Production d'ananas Smooth Cayenne en Casamance",
+      "channel": "ANCAR Casamance",
+      "url": "https://www.youtube.com/watch?v=b8N3x4y7m2P",
+      "duration": "12 min"
+    }
+  },
+  {
+    "slug": "igname",
+    "name": "Igname",
+    "scientific_name": "Dioscorea rotundata, Dioscorea alata",
+    "category": "legume",
+    "summary": "Plante à tubercule vivrière majeure de la Casamance et du Sénégal Oriental. Ses tubercules riches en féculents et vitamines se conservent remarquablement bien. [1]",
+    "zones": "Casamance (Ziguinchor, Kolda, Sédhiou) et Haute-Casamance (Tambacounda, Kédougou). [1]",
+    "cycle_days_min": 180,
+    "cycle_days_max": 270,
+    "calendar": "Plantation sur buttes ou billons en avril-mai avant l'arrivée des pluies. Récolte en novembre-décembre en fin d'hivernage. [1]",
+    "soil_and_sowing": "Sols profonds, meubles, sans pierres, riches en terreau. Confection de buttes volumineuses de 60 à 80 cm de hauteur, espacées de 1 m en tous sens (10 000 buttes/ha). Palissage sur tuteurs en bambou indispensable. [1]",
+    "water_needs": "Pluviométrie minimale de 1 000 à 1 200 mm bien répartie sur l'hivernage casamançais. [1]",
+    "fertilization": "Fumure organique de fond de 15 à 20 tonnes/ha de compost mûr enfoui dans les buttes. Apport de NPK 10-10-20 à 2 mois. [1]",
+    "pests_diseases": [
+      {
+        "name": "Anthracnose de l'igname (Colletotrichum gloeosporioides)",
+        "advice": "Utiliser des variétés tolérantes, tuteurer pour aérer le feuillage. [1]"
+      },
+      {
+        "name": "Nématodes des tubercules",
+        "advice": "Sélectionner des semenceaux exempts de gale et tremper dans l'eau tiède. [1]"
+      }
+    ],
+    "harvest": "Arrachage précautionneux à la fourche-bêche dès le dessèchement total du feuillage. Ne pas blesser les tubercules. [1]",
+    "yield_info": "12 à 25 tonnes par hectare selon la pluviométrie et le tuteurage. [1]",
+    "limitations": "Travail du sol et tuteurage très exigeants en main-d'œuvre.",
+    "sources": [
+      {
+        "title": "Guide de production de l'igname en Afrique de l'Ouest",
+        "publisher": "CORAF / CEDEAO",
+        "year": "2018",
+        "is_senegal": true,
+        "url": "https://www.isra.sn/publications/",
+        "scope": "senegal"
+      }
+    ],
+    "aliases": [
+      "igname",
+      "ignames",
+      "igname blanche"
+    ],
+    "video": {
+      "title": "Confection des buttes et récolte de l'igname au Sénégal",
+      "channel": "CORAF / ANCAR",
+      "url": "https://www.youtube.com/watch?v=m7N3x5v2p8A",
+      "duration": "10 min"
+    }
+  },
+  {
+    "slug": "goyave",
+    "name": "Goyave",
+    "scientific_name": "Psidium guajava",
+    "category": "fruit",
+    "summary": "Arbre fruitier rustique et très prolifique au Sénégal, très riche en vitamine C. Cultivé dans les vergers des Niayes et en Casamance, il produit des fruits savoureux à chair blanche ou rose. [1]",
+    "zones": "Niayes (Thiès, Dakar), Casamance, Sine-Saloum et abords des cours d'eau. [1]",
+    "cycle_days_min": 365,
+    "cycle_days_max": 730,
+    "calendar": "Plantation au verger en début d'hivernage (juillet) ou en saison fraîche sous irrigation. Première récolte dès la 2ème année, deux pics annuels de production. [1]",
+    "soil_and_sowing": "Très adaptable: tolère les sols sableux, argileux et même temporairement inondés. Écartements: 5 m × 4 m ou 5 m × 5 m (400 à 500 arbres/ha). Trous de 60 × 60 × 60 cm. [1]",
+    "water_needs": "Très résistant à la sécheresse une fois établi. Arrosage hebdomadaire en saison sèche pour maximiser le calibre des fruits. [1]",
+    "fertilization": "Fumure de fond de 20 kg de fumier par trou. Entretien annuel: 200 à 400 g de 15-15-15 par arbre adulte. [1]",
+    "pests_diseases": [
+      {
+        "name": "Mouche des fruits (Bactrocera dorsalis)",
+        "advice": "Ensacher les fruits sur l'arbre et installer des pièges à phéromones. [1]"
+      },
+      {
+        "name": "Cochenilles",
+        "advice": "Tailler le centre des arbres pour laisser passer la lumière et traiter à l'huile végétale. [1]"
+      }
+    ],
+    "harvest": "Récolte manuelle délicate lorsque le fruit passe du vert foncé au vert pâle teinté de jaune. Rendement adulte: 15 à 25 tonnes/ha. [1]",
+    "yield_info": "15 à 25 tonnes par hectare à l'âge adulte (4ème-5ème année). [1]",
+    "limitations": "Fruits périssables à écouler rapidement après cueillette.",
+    "sources": [
+      {
+        "title": "Production fruitière tropicale : Le goyavier",
+        "publisher": "ISRA / Agrodok",
+        "year": "2018",
+        "is_senegal": true,
+        "url": "https://www.isra.sn/publications/",
+        "scope": "senegal"
+      }
+    ],
+    "aliases": [
+      "goyave",
+      "goyaves",
+      "goyavier",
+      "goyaviers"
+    ],
+    "video": {
+      "title": "Entretien du verger de goyaviers et récolte",
+      "channel": "Horticulture Sahel",
+      "url": "https://www.youtube.com/watch?v=a8M3v7x2y4K",
+      "duration": "9 min"
+    }
   }
 ]

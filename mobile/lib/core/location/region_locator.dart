@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 
+import 'location_access.dart';
 import 'senegal_regions.dart';
 
 /// Détecteur de région injectable (remplacé dans les tests, où il n'y a ni GPS ni autorisation à demander).
@@ -14,10 +15,7 @@ final regionDetectorProvider = Provider<Future<SenegalRegion?> Function()>((ref)
 /// l'écran propose alors de choisir la région en touchant son nom.
 Future<SenegalRegion?> detectRegion() async {
   try {
-    if (!await Geolocator.isLocationServiceEnabled()) return null;
-    var permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) permission = await Geolocator.requestPermission();
-    if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) return null;
+    if (await requestLocationAccess() != LocationAccess.granted) return null;
 
     final position = await Geolocator.getCurrentPosition(
       locationSettings: const LocationSettings(accuracy: LocationAccuracy.low, timeLimit: Duration(seconds: 12)),

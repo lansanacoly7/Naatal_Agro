@@ -14,7 +14,6 @@ import '../../features/auth/data/auth_provider.dart';
 import '../../features/profile/data/profile_provider.dart';
 import '../../shared/utils/data_refresh.dart';
 import '../../ui/ui.dart';
-import '../markets/markets_data.dart';
 import 'analysis_visual.dart';
 import 'voice_sheet.dart';
 

@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../screens/markets/markets_data.dart';
 import '../../../../ui/ui.dart';
 import '../../../finances/data/finances_provider.dart';
 import '../../../inventory/data/inventory_provider.dart';
 import '../../../inventory/data/models/stock_item.dart';
+import '../../../markets/data/markets_provider.dart';
+import '../../../markets/data/models/product.dart';
 import '../../data/dashboard_provider.dart';
 import '../../data/models/dashboard_data.dart';
 import '../widgets/my_dashboard_logic.dart';
@@ -36,6 +37,7 @@ class MonDashboardScreen extends ConsumerWidget {
     final effectivePrices = prices ??
         ref.watch(dashboardDataProvider).valueOrNull?.markets ??
         const <MarketPrice>[];
+    final allProducts = ref.watch(allProductsProvider).valueOrNull ?? const <Product>[];
 
     final revenue = (finances?.totalRevenue ?? 0).toDouble();
     final expenses = (finances?.totalExpenses ?? 0).toDouble();
@@ -44,7 +46,7 @@ class MonDashboardScreen extends ConsumerWidget {
 
     final lines = [
       for (final s in effectiveStock)
-        DashboardStockLine(s, findPriceForStock(s.name, effectivePrices)),
+        DashboardStockLine(s, findPriceForStock(s.name, effectivePrices, allProducts: allProducts)),
     ];
 
     final eval = DashboardEvaluation(
@@ -98,14 +100,14 @@ class MonDashboardScreen extends ConsumerWidget {
                                 ),
                               ),
                               const SizedBox(width: Space.s),
-                              Text('Trésorerie nette', style: T.caption(color: c.ink2, weight: 700)),
+                              Text('Trésorerie nette', style: T.body(color: c.ink, weight: 700).copyWith(fontSize: 18)),
                             ],
                           ),
                           InkWell(
                             onTap: () => context.push('/finances'),
                             child: Row(
                               children: [
-                                Text('Détails', style: T.caption(color: c.accent, weight: 700)),
+                                Text('Détails', style: T.body(color: c.accent, weight: 700)),
                                 Icon(Icons.arrow_forward_ios_rounded, size: 12, color: c.accent),
                               ],
                             ),
@@ -223,14 +225,14 @@ class MonDashboardScreen extends ConsumerWidget {
                                 child: Icon(Icons.inventory_2_rounded, color: c.accent, size: 18),
                               ),
                               const SizedBox(width: Space.s),
-                              Text('Valeur indicative', style: T.caption(color: c.ink2, weight: 700)),
+                              Text('Valeur indicative', style: T.body(color: c.ink, weight: 700).copyWith(fontSize: 18)),
                             ],
                           ),
                           InkWell(
                             onTap: () => context.push('/stock'),
                             child: Row(
                               children: [
-                                Text('Tout voir', style: T.caption(color: c.accent, weight: 700)),
+                                Text('Tout voir', style: T.body(color: c.accent, weight: 700)),
                                 Icon(Icons.arrow_forward_ios_rounded, size: 12, color: c.accent),
                               ],
                             ),
@@ -239,7 +241,9 @@ class MonDashboardScreen extends ConsumerWidget {
                       ),
                       const SizedBox(height: Space.m),
                       Text(
-                        eval.totalStockValue > 0 ? '${formatFcfa(eval.totalStockValue)} F' : 'Stock non valorisé',
+                        eval.totalStockValue > 0
+                            ? '${formatFcfa(eval.totalStockValue)} F'
+                            : (effectiveStock.isEmpty ? '0 F' : '${formatFcfa(lines.fold<double>(0.0, (acc, l) => acc + (l.value ?? (l.kg * 500.0))))} F'),
                         style: TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.w900,
@@ -291,7 +295,7 @@ class MonDashboardScreen extends ConsumerWidget {
                             child: Icon(Icons.trending_up_rounded, color: c.slate, size: 18),
                           ),
                           const SizedBox(width: Space.s),
-                          Text('Cours rémunérateurs', style: T.caption(color: c.ink2, weight: 700)),
+                          Text('Cours rémunérateurs', style: T.body(color: c.ink, weight: 700).copyWith(fontSize: 18)),
                         ],
                       ),
                       const SizedBox(height: Space.m),
@@ -372,17 +376,21 @@ class _StockProductRow extends StatelessWidget {
               ],
             ),
           ),
-          if (line.value != null)
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text('${formatFcfa(line.value!)} F', style: T.caption(color: c.ink, weight: 800)),
-                if (line.price != null)
-                  Text('${line.price!.price.round()} F/kg', style: T.caption(color: c.ink2)),
-              ],
-            )
-          else
-            Text('Non coté', style: T.caption(color: c.ink2)),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                '${formatFcfa(line.value ?? (line.kg * 500.0))} F',
+                style: T.caption(color: c.ink, weight: 800),
+              ),
+              Text(
+                line.price != null
+                    ? '${line.price!.price.round()} F/kg'
+                    : '500 F/kg (estimé)',
+                style: T.caption(color: c.ink2),
+              ),
+            ],
+          ),
         ],
       ),
     );

@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../finances/data/finances_provider.dart';
 import '../../../inventory/data/models/stock_item.dart';
+import '../../../markets/data/markets_provider.dart';
+import '../../../markets/data/models/product.dart';
 import '../../data/models/dashboard_data.dart';
 import 'my_dashboard_logic.dart';
 
@@ -30,7 +32,8 @@ class MyDashboardSection extends ConsumerWidget {
     final balance = (finances?.balance ?? 0).toDouble();
     final hasFinances = finances != null && (revenue > 0 || expenses > 0);
 
-    final lines = [for (final s in stock) DashboardStockLine(s, findPriceForStock(s.name, prices))];
+    final allProducts = ref.watch(allProductsProvider).valueOrNull ?? const <Product>[];
+    final lines = [for (final s in stock) DashboardStockLine(s, findPriceForStock(s.name, prices, allProducts: allProducts))];
     final eval = DashboardEvaluation(
       lines: lines,
       prices: prices,

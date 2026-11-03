@@ -338,6 +338,7 @@ class _CropTile extends StatelessWidget {
   static const _images = {
     'arachide': 'arachide.png',
     'aubergine': 'aubergine.png',
+    'bissap': 'bissap.png',
     'carotte': 'carotte.png',
     'chou': 'chou.png',
     'gombo': 'gombo.png',

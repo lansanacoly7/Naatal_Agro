@@ -273,3 +273,31 @@ class DemoUserCommandTests(TestCase):
         user = get_user_model().objects.get(username='+221770000000')
         self.assertEqual(Crop.objects.filter(user=user).count(), 3)
         self.assertTrue(Transaction.objects.filter(user=user, sale__isnull=False).exists())
+
+
+class ProductionOtpGuardTests(TestCase):
+    """La production refuse de démarrer avec un code OTP connu de tous (audit A1)."""
+
+    def _import_prod(self, **env):
+        import os
+        import subprocess
+        import sys
+        from pathlib import Path
+        base = {k: v for k, v in os.environ.items() if not k.startswith('OTP_')}
+        # Valeurs explicites : le fichier .env du poste de développement ne doit pas influencer le résultat
+        base.update({'SECRET_KEY': 'x' * 50, 'DJANGO_SETTINGS_MODULE': 'core.settings.prod', 'PYTHONUTF8': '1',
+                     'DEBUG': 'False', 'OTP_DEMO_MODE': 'False', 'OTP_REGISTER_FIXED_CODE': ''})
+        base.update(env)
+        root = Path(__file__).resolve().parents[2]
+        return subprocess.run([sys.executable, '-c', 'import core.settings.prod'], cwd=root, env=base, capture_output=True, text=True)
+
+    def test_refuses_fixed_code(self):
+        result = self._import_prod(OTP_REGISTER_FIXED_CODE='1234')
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('OTP', result.stderr)
+
+    def test_refuses_demo_mode(self):
+        self.assertNotEqual(self._import_prod(OTP_DEMO_MODE='True').returncode, 0)
+
+    def test_starts_without_demo_code(self):
+        self.assertEqual(self._import_prod().returncode, 0)

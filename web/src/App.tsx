@@ -138,7 +138,7 @@ export function App() {
     loadData();
   }, []);
 
-  const sendQuery = (queryText: string) => {
+  const sendQuery = async (queryText: string) => {
     const text = queryText.trim();
     if (!text) return;
     const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -146,8 +146,23 @@ export function App() {
     setAiMessage('');
     setIsAiTyping(true);
 
-    setTimeout(() => {
-      let reply = 'Recommandation agronomique pour le Sénégal : veillez à respecter les préconisations du CNRA/ISRA et les cycles d\'irrigation adaptés au sol.';
+    try {
+      const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const res = await axios.post('/api/ai/ask/', { query: text, prompt: text }, { headers, timeout: 15000 });
+      
+      const reply = res.data?.answer || res.data?.response || res.data?.text || 'Réponse reçue sans contenu textuel.';
+      setAiChat((prev) => [
+        ...prev,
+        {
+          sender: 'ia',
+          text: reply,
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        },
+      ]);
+    } catch (err: any) {
+      console.warn('Erreur ou mode déconnecté sur /api/ai/ask/', err);
+      let reply = 'Recommandation agronomique (mode secours local) : veillez à respecter les fiches techniques ISRA et les cycles d\'irrigation adaptés au sol sénégalais.';
       const q = text.toLowerCase();
       if (q.includes('oignon') || q.includes('min') || q.includes('diamniadio')) {
         reply = 'Au Marché d’Intérêt National (MIN) de Diamniadio, l’oignon local cote à 480 FCFA/kg en tendance haussière (+6%). Pour les parcelles des Niayes (Diamniadio / Sébikotane), arrêtez l’arrosage 10 à 15 jours avant la récolte pour assurer un séchage optimal et éviter les pourritures au stockage.';
@@ -158,9 +173,17 @@ export function App() {
       } else if (q.includes('météo') || q.includes('pluie')) {
         reply = 'Sur le pôle de Diamniadio, les conditions sont stables (29.5°C, 0 mm pluie). La brise marine côtière favorise le ressuyage des planches maraîchères.';
       }
-      setAiChat((prev) => [...prev, { sender: 'ia', text: reply, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }]);
+      setAiChat((prev) => [
+        ...prev,
+        {
+          sender: 'ia',
+          text: reply,
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        },
+      ]);
+    } finally {
       setIsAiTyping(false);
-    }, 700);
+    }
   };
 
   const handleSendAi = (e: React.FormEvent) => {

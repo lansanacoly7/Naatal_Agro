@@ -130,6 +130,22 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
                   // 6. Conseil Naatal IA
                   _buildAiCard(crop),
                   const SizedBox(height: 20),
+
+                  // 7. Supprimer la culture
+                  SizedBox(
+                    width: double.infinity,
+                    height: 56,
+                    child: OutlinedButton.icon(
+                      onPressed: () => _confirmDelete(crop),
+                      icon: const Icon(Icons.delete_outline_rounded, size: 24),
+                      label: const Text('Supprimer cette culture', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.red.shade700,
+                        side: BorderSide(color: Colors.red.shade300, width: 1.5),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -138,6 +154,37 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
       ),
       bottomNavigationBar: _buildBottomBar(crop, isHarvested),
     );
+  }
+
+  /// Demande confirmation puis supprime la culture (et ses récoltes/activités côté serveur).
+  Future<void> _confirmDelete(Crop crop) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Supprimer cette culture ?'),
+        content: Text('« ${crop.name} » sera retirée de votre exploitation, avec ses récoltes et ses travaux. Cette action est définitive.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Non, garder')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red.shade700, foregroundColor: Colors.white),
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Oui, supprimer'),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true || !mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await ref.read(agricultureRepositoryProvider).deleteCrop(crop.id);
+      ref.read(cropsPaginationNotifierProvider.notifier).refresh();
+      ref.invalidate(cropsProvider);
+      refreshAfterDataChange(ref);
+      messenger.showSnackBar(const SnackBar(content: Text('Culture supprimée')));
+      if (mounted) context.pop();
+    } catch (_) {
+      messenger.showSnackBar(const SnackBar(content: Text('Suppression impossible. Vérifiez votre connexion et réessayez.')));
+    }
   }
 
   // ────────────────────────── SliverAppBar ──────────────────────────
@@ -159,6 +206,18 @@ class _CropDetailScreenState extends ConsumerState<CropDetailScreen> {
         ),
         onPressed: () => context.pop(),
       ),
+      actions: [
+        IconButton(
+          tooltip: 'Supprimer cette culture',
+          icon: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.35), shape: BoxShape.circle),
+            child: const Icon(Icons.delete_outline_rounded, size: 22, color: Colors.white),
+          ),
+          onPressed: () => _confirmDelete(crop),
+        ),
+        const SizedBox(width: 8),
+      ],
       flexibleSpace: FlexibleSpaceBar(
         background: Stack(
           fit: StackFit.expand,

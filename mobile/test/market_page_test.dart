@@ -48,13 +48,13 @@ final overviewJson = {
 };
 
 class _Located extends UserLocationNotifier {
-  _Located() : super() {
+  _Located(super.ref) {
     state = const UserLocation(position: LatLng(14.7167, -17.4677));
   }
 }
 
 class _Unlocated extends UserLocationNotifier {
-  _Unlocated() : super();
+  _Unlocated(super.ref);
 
   @override
   Future<void> locate() async {}
@@ -62,7 +62,7 @@ class _Unlocated extends UserLocationNotifier {
 
 List<Override> overrides({required bool located}) => [
       marketOverviewProvider('m1').overrideWith((ref) async => MarketOverview.fromJson(overviewJson)),
-      userLocationProvider.overrideWith((ref) => located ? _Located() : _Unlocated()),
+      userLocationProvider.overrideWith((ref) => located ? _Located(ref) : _Unlocated(ref)),
       marketRouteProvider.overrideWith((ref, key) async => MarketRoute.fromJson({
             'straight_km': 1.9,
             'destination': {'lat': 14.7077, 'lon': -17.4526},

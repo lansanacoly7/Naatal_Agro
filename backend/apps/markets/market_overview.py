@@ -14,12 +14,16 @@ from django.db.models.functions import RowNumber
 from .models import Price, Product
 
 HISTORY_DAYS = 30
+OFFICIAL_HISTORY_DAYS = 365
 FORECAST_BASIS_DAYS = 21
 FORECAST_HORIZON_DAYS = 7
 MIN_FORECAST_POINTS = 10
 MIN_FORECAST_SPAN_DAYS = 10
 STABLE_BAND_PERCENT = 2.0
 FEATURED_COUNT = 6
+
+# Relevés officiels : code enregistré -> mention affichée à l'utilisateur
+OFFICIAL_SOURCES = {'wfp': 'Relevé officiel PAM / ANSD'}
 
 
 def forecast_from_series(points):
@@ -121,12 +125,18 @@ def build_overview(market):
         return base
 
     since = newest - timedelta(days=HISTORY_DAYS - 1)
+    official_since = newest - timedelta(days=OFFICIAL_HISTORY_DAYS - 1)
     by_product = defaultdict(list)
     trend_of = {}
-    for name, date, price, trend in prices.filter(date__gte=since).order_by('date', 'created_at').values_list(
-            'product_name', 'date', 'price', 'trend'):
+    source_of = {}
+    for name, date, price, trend, source in prices.filter(date__gte=official_since).order_by('date', 'created_at').values_list(
+            'product_name', 'date', 'price', 'trend', 'source'):
+        # Les relevés officiels sont mensuels : on garde l'année entière pour avoir une courbe, au lieu de 30 jours
+        if source not in OFFICIAL_SOURCES and date < since:
+            continue
         by_product[name].append((date, price))
         trend_of[name] = trend
+        source_of[name] = source
 
     # Position de ce marché parmi tous les marchés qui suivent le même produit (dernier relevé de chaque marché)
     latest_rows = (
@@ -164,6 +174,9 @@ def build_overview(market):
             'history': [{'date': d.isoformat(), 'price': round(p, 0)} for d, p in series],
             'forecast': forecast_from_series(series),
             'is_trending': name in trending,
+            # Origine du dernier relevé : seul un relevé officiel porte une mention de source
+            'source': OFFICIAL_SOURCES.get(source_of.get(name, '')),
+            'window_days': OFFICIAL_HISTORY_DAYS if source_of.get(name) in OFFICIAL_SOURCES else HISTORY_DAYS,
         })
 
     # Produits phares : ceux qui font l'actualité des prix (« tendance » du catalogue), puis les plus suivis ici

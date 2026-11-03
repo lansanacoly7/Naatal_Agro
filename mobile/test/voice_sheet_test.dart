@@ -9,8 +9,8 @@ import 'package:nataal_agro/features/ai/data/services/voice_service.dart';
 import 'package:nataal_agro/screens/assistant/voice_sheet.dart';
 import 'package:nataal_agro/ui/ui.dart';
 
-class _FakeVoice implements VoiceService {
-  _FakeVoice(this.stream, {this.available = true});
+class FakeVoice implements VoiceService {
+  FakeVoice(this.stream, {this.available = true});
 
   final StreamController<Uint8List> stream;
   final bool available;
@@ -26,7 +26,7 @@ class _FakeVoice implements VoiceService {
   dynamic noSuchMethod(Invocation invocation) => null;
 }
 
-class _FakeRepository implements AiRepository {
+class FakeRepository implements AiRepository {
   final List<({int seq, int bytes, bool isFinal})> sent = [];
   final Map<int, String> partialTexts = {0: 'j ai vendu', 1: 'j ai vendu dis sac'};
   String finalText = 'J\'ai vendu 10 sacs';
@@ -46,7 +46,7 @@ class _FakeRepository implements AiRepository {
   dynamic noSuchMethod(Invocation invocation) => null;
 }
 
-Future<void> pumpSheet(WidgetTester tester, _FakeVoice voice, _FakeRepository repo, ValueChanged<String> onSend) async {
+Future<void> pumpSheet(WidgetTester tester, FakeVoice voice, FakeRepository repo, ValueChanged<String> onSend) async {
   tester.view.physicalSize = const Size(390, 900) * 2;
   tester.view.devicePixelRatio = 2;
   addTearDown(tester.view.reset);
@@ -67,9 +67,9 @@ Uint8List sound(int bytes) => Uint8List(bytes);
 void main() {
   testWidgets('le texte apparaît pendant que la personne parle, puis elle confirme', (tester) async {
     final stream = StreamController<Uint8List>();
-    final repo = _FakeRepository();
+    final repo = FakeRepository();
     final sent = <String>[];
-    await pumpSheet(tester, _FakeVoice(stream), repo, sent.add);
+    await pumpSheet(tester, FakeVoice(stream), repo, sent.add);
 
     expect(find.text('Je vous écoute'), findsOneWidget);
     expect(find.textContaining('Parlez'), findsWidgets);
@@ -103,8 +103,8 @@ void main() {
 
   testWidgets('« Non, recommencer » repart d\'un écran vide', (tester) async {
     final stream = StreamController<Uint8List>.broadcast(); // le micro redémarre : un nouveau flux est écouté
-    final repo = _FakeRepository();
-    await pumpSheet(tester, _FakeVoice(stream), repo, (_) {});
+    final repo = FakeRepository();
+    await pumpSheet(tester, FakeVoice(stream), repo, (_) {});
     stream.add(sound(48000));
     await tester.pump(const Duration(milliseconds: 1600));
     await tester.tap(find.text('J\'ai fini de parler'));
@@ -122,7 +122,7 @@ void main() {
 
   testWidgets('un micro inutilisable est dit clairement', (tester) async {
     final stream = StreamController<Uint8List>();
-    await pumpSheet(tester, _FakeVoice(stream, available: false), _FakeRepository(), (_) {});
+    await pumpSheet(tester, FakeVoice(stream, available: false), FakeRepository(), (_) {});
     expect(find.textContaining('Impossible d\'activer le micro'), findsOneWidget);
     expect(find.text('Réessayer'), findsOneWidget);
     unawaited(stream.close());
@@ -130,8 +130,8 @@ void main() {
 
   testWidgets('rien entendu : le message du serveur est affiché', (tester) async {
     final stream = StreamController<Uint8List>();
-    final repo = _FakeRepository()..failFinal = true;
-    await pumpSheet(tester, _FakeVoice(stream), repo, (_) {});
+    final repo = FakeRepository()..failFinal = true;
+    await pumpSheet(tester, FakeVoice(stream), repo, (_) {});
     await tester.tap(find.text('J\'ai fini de parler'));
     for (var i = 0; i < 12; i++) {
       await tester.pump(const Duration(milliseconds: 300));

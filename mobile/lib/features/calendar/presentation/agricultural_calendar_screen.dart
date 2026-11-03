@@ -264,7 +264,7 @@ class _AgriculturalCalendarScreenState extends ConsumerState<AgriculturalCalenda
         // L'année entière
         const SectionHeader('Toutes les cultures'),
         SizedBox(
-          height: 44,
+          height: 52,
           child: ListView(
             padding: const EdgeInsets.symmetric(horizontal: Space.gutter),
             scrollDirection: Axis.horizontal,
@@ -296,47 +296,51 @@ class _AgriculturalCalendarScreenState extends ConsumerState<AgriculturalCalenda
           ],
         ),
 
-        // Ce qu'on ne sait pas, dit clairement
-        if (data.undocumented.isNotEmpty) ...[
-          const SectionHeader('Dates pas encore connues'),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: Space.gutter),
-            child: AppCard(
-              color: c.surface,
-              padding: const EdgeInsets.all(Space.l),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(data.undocumented.join(', '), style: T.body(color: c.ink, weight: 700)),
-                  const SizedBox(height: Space.s),
-                  Text(
-                    'Pas de date sûre pour ces cultures. Nous ne les inventons pas.',
-                    style: T.caption(color: c.ink2, weight: 500),
-                  ),
-                ],
-              ),
+        // Sources et limites : utiles, mais pas besoin de les avoir sous les yeux
+        const SizedBox(height: Space.l),
+        GroupedList(
+          children: [
+            GroupedRow(
+              leading: IconTile(icon: Icons.info_outline_rounded, color: c.slate),
+              title: 'Sources et limites',
+              chevron: true,
+              onTap: () => _openSources(context, data, usedSources),
             ),
-          ),
-        ],
+          ],
+        ),
+        const SizedBox(height: Space.xxl),
+      ],
+    );
+  }
 
-        // Sources
-        const SectionHeader('Sources'),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: Space.gutter),
+  void _openSources(BuildContext context, CalendarData data, Set<String> usedSources) {
+    showNaatalSheet<void>(
+      context,
+      builder: (ctx) {
+        final c = ctx.c;
+        return SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(Space.xxl, Space.xl, Space.xxl, Space.xl),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Text('Sources et limites', style: T.title(color: c.ink)),
+              const SizedBox(height: Space.s),
+              Text('Ce sont des repères. La pluie peut tout changer.', style: T.body(color: c.ink2)),
+              const SizedBox(height: Space.l),
               for (final key in usedSources)
                 if (data.sources[key] != null) SourceTile(source: data.sources[key]!),
-              Text(
-                'Ce sont des repères. La pluie peut tout changer.',
-                style: T.caption(color: c.ink2, weight: 500),
-              ),
-              const SizedBox(height: Space.xxl),
+              if (data.undocumented.isNotEmpty) ...[
+                const SizedBox(height: Space.s),
+                Text('Dates pas encore connues', style: T.body(color: c.ink, weight: 800)),
+                const SizedBox(height: Space.xs),
+                Text(data.undocumented.join(', '), style: T.body(color: c.ink, weight: 600)),
+                const SizedBox(height: Space.xs),
+                Text('Pas de date sûre pour ces cultures. Nous ne les inventons pas.', style: T.caption(color: c.ink2, weight: 500)),
+              ],
             ],
           ),
-        ),
-      ],
+        );
+      },
     );
   }
 
@@ -504,14 +508,14 @@ class _FilterChip extends StatelessWidget {
     return PressScale(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: Space.l),
+        padding: const EdgeInsets.symmetric(horizontal: Space.xl),
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: selected ? c.ink : c.surface,
+          color: selected ? c.accent : c.surface,
           borderRadius: BorderRadius.circular(Radii.pill),
-          border: Border.all(color: selected ? c.ink : c.line),
+          border: Border.all(color: selected ? c.accent : c.line, width: selected ? 2 : 1),
         ),
-        child: Text(label, style: T.caption(color: selected ? c.bg : c.ink, weight: 700).copyWith(fontSize: 13)),
+        child: Text(label, style: T.body(color: selected ? c.onAccent : c.ink, weight: 800)),
       ),
     );
   }

@@ -3,11 +3,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/dashboard/presentation/widgets/my_dashboard_logic.dart';
 import '../../features/inventory/data/inventory_provider.dart';
 import '../../features/inventory/data/models/stock_item.dart';
+import '../../features/markets/data/markets_provider.dart';
+import '../../features/markets/data/models/product.dart';
 import '../../shared/utils/data_refresh.dart';
 import '../../ui/ui.dart';
-import '../markets/markets_data.dart';
 
 /// Stock : ce que l'utilisateur possède, avec le conseil de conservation s'il existe.
 class StockScreen extends ConsumerWidget {
@@ -91,6 +93,20 @@ class _StockRow extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.c;
     final img = productImageForName(item.name);
+    final allProducts = ref.watch(allProductsProvider).valueOrNull ?? const <Product>[];
+    final price = findPriceForStock(item.name, const [], allProducts: allProducts);
+    final kg = stockItemToKg(item);
+    final val = (price != null && price.price > 0) ? kg * price.price : null;
+
+    final String? subtitleText;
+    if (item.alertStatus) {
+      subtitleText = 'Stock bas';
+    } else if (val != null) {
+      subtitleText = '≈ ${formatFcfa(val)} F (${price!.price.round()} F/kg)';
+    } else {
+      subtitleText = null;
+    }
+
     return GroupedRow(
       minHeight: 64,
       leading: ClipRRect(
@@ -116,7 +132,7 @@ class _StockRow extends ConsumerWidget {
         ),
       ),
       title: item.name,
-      subtitle: item.alertStatus ? 'Stock bas' : null,
+      subtitle: subtitleText,
       value: '${Fmt.decimal(item.quantity)} ${item.unit}',
       valueColor: item.alertStatus ? c.clay : c.ink,
       chevron: true,
@@ -134,6 +150,11 @@ class _StockActions extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.c;
     final img = productImageForName(item.name);
+    final allProducts = ref.watch(allProductsProvider).valueOrNull ?? const <Product>[];
+    final price = findPriceForStock(item.name, const [], allProducts: allProducts);
+    final kg = stockItemToKg(item);
+    final val = (price != null && price.price > 0) ? kg * price.price : null;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(Space.xxl, Space.xl, Space.xxl, Space.xl),
       child: Column(
@@ -166,6 +187,13 @@ class _StockActions extends ConsumerWidget {
                     Text(item.name, style: T.title(color: c.ink)),
                     const SizedBox(height: 2),
                     Text('${Fmt.decimal(item.quantity)} ${item.unit} en stock', style: T.body(color: c.ink2, weight: 600)),
+                    if (val != null) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        'Valeur estimée : ≈ ${formatFcfa(val)} F (${price!.price.round()} F/kg)',
+                        style: T.caption(color: c.accent, weight: 700),
+                      ),
+                    ],
                   ],
                 ),
               ),

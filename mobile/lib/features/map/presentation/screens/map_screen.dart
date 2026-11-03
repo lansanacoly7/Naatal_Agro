@@ -8,6 +8,7 @@ import '../../../../ui/appearance.dart';
 import '../../../../ui/map_tiles.dart';
 import 'package:latlong2/latlong.dart';
 
+import '../../../../core/location/location_access.dart' show locationFixLabel;
 import '../../../../core/location/senegal_regions.dart';
 import '../../../../screens/markets/markets_data.dart' show userLocationProvider;
 import '../../../../ui/senegal_map.dart';
@@ -83,7 +84,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   /// Revient sur la personne, ou la cherche si on ne sait pas encore où elle est.
   void _goToMe(LatLng? me) {
     if (me == null) {
-      ref.read(userLocationProvider.notifier).locate();
+      final notifier = ref.read(userLocationProvider.notifier);
+      ref.read(userLocationProvider).needsFix ? notifier.enable() : notifier.locate();
     } else {
       _mapController.move(me, 13.5);
     }
@@ -136,7 +138,12 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       if (position != null && position != previous?.position && isInSenegal(position) && _selectedItem == null) {
         _mapController.move(position, 12.5);
       } else if (next.error != null && next.error != previous?.error && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(next.error!)));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(next.error!),
+          action: next.needsFix
+              ? SnackBarAction(label: locationFixLabel(next.access!), onPressed: () => ref.read(userLocationProvider.notifier).enable())
+              : null,
+        ));
       }
     });
 

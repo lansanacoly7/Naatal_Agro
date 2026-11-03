@@ -55,6 +55,8 @@ class MarketProduct {
     this.marketsCompared = 0,
     this.cheaperMarkets,
     this.forecast,
+    this.source,
+    this.windowDays = 30,
   });
 
   final String name;
@@ -71,6 +73,12 @@ class MarketProduct {
   /// Nombre de marchés où ce produit est moins cher (null si on ne peut pas comparer).
   final int? cheaperMarkets;
   final MarketForecast? forecast;
+
+  /// Mention de provenance quand le prix est un relevé officiel (null sinon).
+  final String? source;
+
+  /// Période couverte par la courbe et les chiffres (jours).
+  final int windowDays;
 
   factory MarketProduct.fromJson(Map<String, dynamic> json) {
     double? number(Object? v) => v is num ? v.toDouble() : null;
@@ -90,6 +98,8 @@ class MarketProduct {
       avg30: number(json['avg_30d']),
       marketsCompared: (json['markets_compared'] as num?)?.toInt() ?? 0,
       cheaperMarkets: (json['cheaper_markets'] as num?)?.toInt(),
+      source: json['source'] is String && (json['source'] as String).isNotEmpty ? json['source'] as String : null,
+      windowDays: (json['window_days'] as num?)?.toInt() ?? 30,
       forecast: json['forecast'] is Map ? MarketForecast.fromJson(Map<String, dynamic>.from(json['forecast'] as Map)) : null,
     );
   }

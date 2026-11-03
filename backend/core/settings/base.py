@@ -73,9 +73,10 @@ OTP_MAX_ATTEMPTS = int(os.getenv('OTP_MAX_ATTEMPTS', '5'))
 # DESACTIVE jusqu'a decision contraire : l'inscription ne doit jamais bloquer sur le code.
 OTP_REQUIRED_FOR_REGISTER = os.getenv('OTP_REQUIRED_FOR_REGISTER', 'False').lower() in ('true', '1', 't')
 # Code unique utilise a l'inscription tant qu'aucune passerelle SMS n'est branchee (vide = code aleatoire).
-# Ne s'applique JAMAIS a la reinitialisation de mot de passe : un code connu de tous permettrait de
-# prendre le controle de n'importe quel compte.
-OTP_REGISTER_FIXED_CODE = os.getenv('OTP_REGISTER_FIXED_CODE', '1234').strip()
+# VIDE PAR DEFAUT : seule la configuration locale le renseigne (voir local.py), et la production refuse de demarrer
+# s'il est defini (voir prod.py). Ne s'applique JAMAIS a la reinitialisation de mot de passe : un code connu de tous
+# permettrait de prendre le controle de n'importe quel compte.
+OTP_REGISTER_FIXED_CODE = os.getenv('OTP_REGISTER_FIXED_CODE', '').strip()
 
 ALLOWED_HOSTS = [h.strip() for h in os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,10.0.2.2').split(',') if h.strip()]
 
@@ -218,6 +219,8 @@ REST_FRAMEWORK = {
         # Limites dédiées (vues avec throttle_scope)
         'auth': '10/minute',
         'ai': '60/hour',
+        # Itinéraires : chaque appel interroge un service externe (public, donc limité par adresse)
+        'route': '30/minute',
         # Transcription en direct : un morceau toutes les ~2 secondes pendant que la personne parle
         'voice_live': '1500/hour',
     }
@@ -284,7 +287,7 @@ if 'test' in sys.argv:
         'django.contrib.auth.hashers.MD5PasswordHasher',
     ]
     REST_FRAMEWORK['DEFAULT_THROTTLE_CLASSES'] = []
-    REST_FRAMEWORK['DEFAULT_THROTTLE_RATES'].update({'auth': '10000/minute', 'ai': '10000/minute', 'voice_live': '10000/minute'})
+    REST_FRAMEWORK['DEFAULT_THROTTLE_RATES'].update({'auth': '10000/minute', 'ai': '10000/minute', 'route': '10000/minute', 'voice_live': '10000/minute'})
 
     # Les tests ne doivent JAMAIS appeler un vrai service d'IA (les clés du .env sont chargées) : sans clé, les
     # fournisseurs sont « non configurés ». Un test d'orchestration injecte ses propres faux fournisseurs ou ses clés.

@@ -30,6 +30,8 @@ class Price(models.Model):
     price = models.DecimalField(max_digits=10, decimal_places=2)
     trend = models.CharField(max_length=20, choices=TREND_CHOICES, default='stable')
     date = models.DateField()
+    # Origine du relevé : « wfp » = relevé officiel (PAM / ANSD) ; « generated » = prix de démonstration générés
+    source = models.CharField(max_length=20, default='generated')
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

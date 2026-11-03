@@ -4,6 +4,9 @@ from rest_framework.permissions import AllowAny
 from rest_framework import status
 from django.db import connection
 from django.utils import timezone
+import logging
+
+logger = logging.getLogger(__name__)
 
 class HealthCheckView(APIView):
     """
@@ -29,5 +32,6 @@ class HealthCheckView(APIView):
             return Response(health_data, status=status.HTTP_200_OK)
         except Exception as e:
             health_data["status"] = "unhealthy"
-            health_data["database"] = f"error: {str(e)}"
+            logger.exception("Sonde de santé : base de données injoignable")
+            health_data["database"] = "error"
             return Response(health_data, status=status.HTTP_503_SERVICE_UNAVAILABLE)

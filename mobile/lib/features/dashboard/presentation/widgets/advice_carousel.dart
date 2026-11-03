@@ -11,14 +11,14 @@ import '../../../inventory/data/models/stock_item.dart';
 import '../../data/models/dashboard_data.dart';
 
 import '../../../../ui/ui.dart';
-const _imgField = 'assets/images/onboarding_agriculture_1784459495811.png';
-const _imgMarket = 'assets/images/onboarding_market_1784459514097.png';
-const _imgTech = 'assets/images/onboarding_tech_1784459505530.png';
+const _imgField = 'assets/images/onboarding_agriculture_1784459495811.jpg';
+const _imgMarket = 'assets/images/onboarding_market_1784459514097.jpg';
+const _imgTech = 'assets/images/onboarding_tech_1784459505530.jpg';
 const _imgPeanut = 'assets/images/arachide_recolte.jpg';
 const _imgTomato = 'assets/images/tomates_recolte.jpg';
 const _imgMil = 'assets/images/mil.jpg';
-const _imgCrowd = 'assets/images/onboarding_2.png';
-const _imgTablet = 'assets/images/onboarding_3.png';
+const _imgCrowd = 'assets/images/onboarding_2.jpg';
+const _imgTablet = 'assets/images/onboarding_3.jpg';
 
 String _dedicated(String key) => 'assets/images/conseils/$key.jpg';
 
