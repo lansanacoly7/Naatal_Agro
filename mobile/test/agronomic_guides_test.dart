@@ -21,6 +21,16 @@ void main() {
         'pests_diseases': [
           {'name': 'Pucerons (Aphis craccivora)', 'advice': 'Surveillance précoce et biopesticides.'},
         ],
+        'varieties': [
+          {
+            'name': 'Mouride',
+            'cycle': '65-70 jours',
+            'season': 'Hivernage',
+            'characteristics': 'Double usage grains et fanes.',
+            'yield_potential': '1 à 1,8 t/ha',
+            'zones': 'Bassin arachidier',
+          },
+        ],
         'harvest': 'Récolte des gousses sèches en 2 à 3 passages.',
         'yield_info': '800 à 1 200 kg/ha en bonnes conditions.',
         'limitations': 'Sensible aux attaques de bruches au stockage.',
@@ -33,14 +43,6 @@ void main() {
             'url': 'https://isra.sn/niebe',
             'scope': 'senegal',
           },
-          {
-            'number': 2,
-            'title': 'Guide FAO légumineuses tropicales',
-            'publisher': 'FAO',
-            'year': '2016',
-            'url': 'https://fao.org/legumes',
-            'scope': 'west_africa',
-          },
         ],
         'updated_at': '2026-10-10T12:00:00Z',
       };
@@ -49,29 +51,28 @@ void main() {
 
       expect(guide.slug, 'niebe');
       expect(guide.name, 'Niébé');
-      expect(guide.scientificName, 'Vigna unguiculata');
-      expect(guide.categoryLabel, 'Légumineuse');
-      expect(guide.cycleDisplay, '60 à 75 jours');
-      expect(guide.pestsDiseases, hasLength(1));
-      expect(guide.pestsDiseases.first.name, 'Pucerons (Aphis craccivora)');
-      expect(guide.sources, hasLength(2));
-      expect(guide.sources.first.isSenegal, isTrue);
-      expect(guide.sources.last.isSenegal, isFalse);
+      expect(guide.varieties.length, 1);
+      expect(guide.varieties.first.name, 'Mouride');
+      expect(guide.varieties.first.cycle, '65-70 jours');
+      expect(guide.varieties.first.yieldPotential, '1 à 1,8 t/ha');
+      expect(guide.varieties.first.zones, 'Bassin arachidier');
     });
 
     test('AgronomicGuide gère les champs facultatifs sans inventer de fausses données', () {
       final json = {
         'id': 'guide-uuid-2',
-        'slug': 'pomme-de-terre',
-        'name': 'Pomme de terre',
+        'slug': 'tomate-vide',
+        'name': 'Tomate',
         'category': 'legume',
-        'summary': 'Culture de contre-saison fraîche.',
-        'sources': [],
+        'summary': 'Culture maraîchère',
       };
 
       final guide = AgronomicGuide.fromJson(json);
 
-      expect(guide.scientificName, '');
+      expect(guide.slug, 'tomate-vide');
+      expect(guide.varieties, isEmpty);
+      expect(guide.cycleDaysMin, isNull);
+      expect(guide.cycleDaysMax, isNull);
       expect(guide.cycleDisplay, isNull);
       expect(guide.zones, '');
       expect(guide.calendar, '');

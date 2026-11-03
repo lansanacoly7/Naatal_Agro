@@ -57,6 +57,7 @@ class MarketProduct {
     this.forecast,
     this.source,
     this.windowDays = 30,
+    this.category = '',
   });
 
   final String name;
@@ -79,10 +80,28 @@ class MarketProduct {
 
   /// Période couverte par la courbe et les chiffres (jours).
   final int windowDays;
+  final String category;
 
   factory MarketProduct.fromJson(Map<String, dynamic> json) {
     double? number(Object? v) => v is num ? v.toDouble() : null;
+    final rawCat = json['category'];
+    String cat = rawCat is String ? rawCat.trim() : '';
+    if (cat.isEmpty) {
+      final n = '${json['name']}'.toLowerCase();
+      if (n.contains('arachide') || n.contains('mil') || n.contains('maïs') || n.contains('mais') || n.contains('sorgho') || n.contains('riz') || n.contains('niébé') || n.contains('niebe') || n.contains('fonio')) {
+        cat = 'CÉRÉALE';
+      } else if (n.contains('oignon') || n.contains('tomate') || n.contains('chou') || n.contains('carotte') || n.contains('aubergine') || n.contains('piment') || n.contains('poivron') || n.contains('gombo') || n.contains('navet') || n.contains('courge') || n.contains('salade') || n.contains('laitue') || n.contains('ail') || n.contains('concombre')) {
+        cat = 'LÉGUME';
+      } else if (n.contains('mangue') || n.contains('banane') || n.contains('papaye') || n.contains('pastèque') || n.contains('pasteque') || n.contains('orange') || n.contains('citron')) {
+        cat = 'FRUIT';
+      } else if (n.contains('manioc') || n.contains('patate') || n.contains('pomme de terre') || n.contains('igname')) {
+        cat = 'TUBERCULE';
+      } else {
+        cat = 'AUTRE';
+      }
+    }
     return MarketProduct(
+      category: cat,
       name: '${json['name']}',
       price: (json['price'] as num).toDouble(),
       trend: '${json['trend'] ?? 'stable'}',

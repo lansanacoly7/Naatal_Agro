@@ -160,4 +160,35 @@ void main() {
     );
     expect(find.text('Pas assez de relevés pour prévoir le prix.'), findsOneWidget);
   });
+
+  testWidgets('filtrer les produits par recherche textuelle et par catégorie', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: overrides(located: true),
+        child: const MaterialApp(
+          home: MarketPage(marketId: 'm1'),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Tous les produits (3)'), findsOneWidget);
+    expect(find.text('350 F'), findsWidgets); // Tomate
+
+    // Recherche par texte 'Oign'
+    await tester.enterText(find.byType(TextField), 'Oign');
+    await tester.pumpAndSettle();
+
+    expect(find.text('Produits (1 sur 3)'), findsOneWidget);
+    expect(find.text('435 F'), findsWidgets); // Oignon
+    expect(find.text('350 F'), findsNothing); // Tomate est filtrée
+    expect(find.text('300 F'), findsNothing); // Mil est filtré
+
+    // Effacer la recherche
+    await tester.tap(find.byIcon(Icons.close_rounded));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Tous les produits (3)'), findsOneWidget);
+    expect(find.text('350 F'), findsWidgets);
+  });
 }

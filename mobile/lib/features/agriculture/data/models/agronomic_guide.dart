@@ -1,5 +1,43 @@
 import '../../../../screens/guides/guide_text_cleaner.dart';
 
+class CropVariety {
+  final String name;
+  final String cycle;
+  final String season;
+  final String characteristics;
+  final String yieldPotential;
+  final String zones;
+
+  const CropVariety({
+    required this.name,
+    this.cycle = '',
+    this.season = '',
+    this.characteristics = '',
+    this.yieldPotential = '',
+    this.zones = '',
+  });
+
+  factory CropVariety.fromJson(Map<String, dynamic> json) {
+    return CropVariety(
+      name: cleanGuideText((json['name'] ?? '').toString()),
+      cycle: cleanGuideText((json['cycle'] ?? '').toString()),
+      season: cleanGuideText((json['season'] ?? '').toString()),
+      characteristics: cleanGuideText((json['characteristics'] ?? '').toString()),
+      yieldPotential: cleanGuideText((json['yield_potential'] ?? '').toString()),
+      zones: cleanGuideText((json['zones'] ?? '').toString()),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'name': name,
+        'cycle': cycle,
+        'season': season,
+        'characteristics': characteristics,
+        'yield_potential': yieldPotential,
+        'zones': zones,
+      };
+}
+
 class GuideVideo {
   final String title;
   final String channel;
@@ -104,6 +142,7 @@ class AgronomicGuide {
   final String waterNeeds;
   final String fertilization;
   final List<PestDiseaseItem> pestsDiseases;
+  final List<CropVariety> varieties;
   final String harvest;
   final String yieldInfo;
   final String limitations;
@@ -126,6 +165,7 @@ class AgronomicGuide {
     this.waterNeeds = '',
     this.fertilization = '',
     this.pestsDiseases = const [],
+    this.varieties = const [],
     this.harvest = '',
     this.yieldInfo = '',
     this.limitations = '',
@@ -180,6 +220,10 @@ class AgronomicGuide {
           .whereType<Map<String, dynamic>>()
           .map(PestDiseaseItem.fromJson)
           .toList(),
+      varieties: ((json['varieties'] as List<dynamic>?) ?? const [])
+          .whereType<Map<String, dynamic>>()
+          .map(CropVariety.fromJson)
+          .toList(),
       harvest: cleanGuideText((json['harvest'] ?? '').toString()),
       yieldInfo: cleanGuideText((json['yield_info'] ?? '').toString()),
       limitations: cleanGuideText((json['limitations'] ?? '').toString()),
@@ -209,6 +253,7 @@ class AgronomicGuide {
         'water_needs': waterNeeds,
         'fertilization': fertilization,
         'pests_diseases': pestsDiseases.map((e) => e.toJson()).toList(),
+        'varieties': varieties.map((e) => e.toJson()).toList(),
         'harvest': harvest,
         'yield_info': yieldInfo,
         'limitations': limitations,

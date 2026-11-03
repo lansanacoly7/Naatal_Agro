@@ -64,3 +64,9 @@ class ImportWfpPricesTests(TestCase):
         self.assertIsNone(mil['forecast'])  # relevés mensuels : pas assez pour une prévision, et on ne l'invente pas
         tomato = next(p for p in build_overview(self.market)['products'] if p['name'] == 'Tomate')
         self.assertIsNone(tomato['source'])
+
+    def test_saint_maur_is_renamed_to_marche_boucotte(self):
+        row = f'{month(0)},Ziguinchor,Ziguinchor,Saint-Maur,123,12.57414,-16.27569,cereals,Millet,1,KG,actual,Retail,XOF,310,0.3\n'
+        self.run_import([row])
+        self.assertFalse(Market.objects.filter(name__icontains='Saint-Maur').exists())
+        self.assertTrue(Market.objects.filter(name='Marché Boucotte', region='Ziguinchor').exists())

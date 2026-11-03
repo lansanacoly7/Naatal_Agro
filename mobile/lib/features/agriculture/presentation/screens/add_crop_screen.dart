@@ -269,6 +269,10 @@ class _AddCropScreenState extends ConsumerState<AddCropScreen> {
               _buildDirectPicker(guidesState.guides, products)
             else ...[
               _chosenHero(),
+              if (_guide != null && _guide!.varieties.isNotEmpty) ...[
+                const SizedBox(height: 14),
+                _varietiesSelectorCard(),
+              ],
               const SizedBox(height: 14),
               _cycleCard(),
               const SizedBox(height: 14),
@@ -509,6 +513,120 @@ class _AddCropScreenState extends ConsumerState<AddCropScreen> {
   }
 
   // Carte de la culture choisie : photo, nom, catégorie, bouton « Changer ».
+
+  Widget _varietiesSelectorCard() {
+    final varieties = _guide?.varieties ?? const [];
+    if (varieties.isEmpty) return const SizedBox.shrink();
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: context.c.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.grey.withValues(alpha: 0.15)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: context.c.accent.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(Icons.park_rounded, color: context.c.accent, size: 18),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Variétés recommandées (Sénégal)',
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: context.c.ink),
+                    ),
+                    Text(
+                      'Toucher pour sélectionner la semence',
+                      style: TextStyle(fontSize: 11.5, color: context.c.ink2),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final v in varieties)
+                InkWell(
+                  onTap: () {
+                    final base = _choice?.name ?? '';
+                    setState(() {
+                      _nameController.text = '$base (${v.name})';
+                    });
+                  },
+                  borderRadius: BorderRadius.circular(20),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                    decoration: BoxDecoration(
+                      color: _nameController.text.contains(v.name)
+                          ? context.c.accent
+                          : context.c.surfaceAlt,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: _nameController.text.contains(v.name)
+                            ? context.c.accent
+                            : context.c.line,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          v.name,
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w700,
+                            color: _nameController.text.contains(v.name)
+                                ? Colors.white
+                                : context.c.ink,
+                          ),
+                        ),
+                        if (v.cycle.isNotEmpty) ...[
+                          const SizedBox(width: 5),
+                          Text(
+                            '· ${v.cycle.split(' ').first}',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: _nameController.text.contains(v.name)
+                                  ? Colors.white70
+                                  : context.c.ink2,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _chosenHero() {
     final c = _choice!;
     return ClipRRect(

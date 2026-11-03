@@ -117,7 +117,7 @@ class AgronomicGuideSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'slug', 'name', 'scientific_name', 'category', 'summary', 'zones',
             'cycle_days_min', 'cycle_days_max', 'calendar', 'soil_and_sowing', 'water_needs',
-            'fertilization', 'pests_diseases', 'harvest', 'yield_info', 'limitations', 'sources',
+            'fertilization', 'pests_diseases', 'varieties', 'harvest', 'yield_info', 'limitations', 'sources',
             'updated_at',
         ]
         read_only_fields = fields

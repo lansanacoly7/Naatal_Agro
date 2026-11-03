@@ -909,6 +909,221 @@ class _PestsSectionState extends State<_PestsSection> {
 
 /// Rubriques d'une fiche technique (zones, calendrier, sol, eau, fertilisation, ravageurs,
 /// récolte, rendement, limites, sources) : utilisées par la fiche d'une culture.
+
+class _PillTag extends StatelessWidget {
+  const _PillTag({required this.icon, required this.label, required this.color});
+
+  final IconData icon;
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(Radii.pill),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: color),
+          const SizedBox(width: 4),
+          Flexible(
+            child: Text(
+              label,
+              style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w700),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _VarietiesSection extends StatefulWidget {
+  const _VarietiesSection({required this.varieties, required this.cropName});
+
+  final List<CropVariety> varieties;
+  final String cropName;
+
+  @override
+  State<_VarietiesSection> createState() => _VarietiesSectionState();
+}
+
+class _VarietiesSectionState extends State<_VarietiesSection> {
+  bool _open = true;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final count = widget.varieties.length;
+    if (count == 0) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(Space.gutter, 0, Space.gutter, Space.s),
+      child: AppCard(
+        padding: EdgeInsets.zero,
+        child: Column(
+          children: [
+            PressScale(
+              onTap: () => setState(() => _open = !_open),
+              scale: 0.99,
+              child: Padding(
+                padding: const EdgeInsets.all(Space.l),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF15803D).withValues(alpha: c.isDark ? 0.25 : 0.12),
+                        borderRadius: BorderRadius.circular(Radii.m),
+                      ),
+                      child: const Icon(
+                        Icons.park_rounded,
+                        color: Color(0xFF15803D),
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: Space.m),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Text('Variétés cultivées au Sénégal', style: T.body(color: c.ink, weight: 700)),
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: c.accent.withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(Radii.pill),
+                                ),
+                                child: Text('$count', style: T.caption(color: c.accent, weight: 800)),
+                              ),
+                            ],
+                          ),
+                          Text('Choix de semences certifiées selon votre zone', style: T.caption(color: c.ink2, weight: 500)),
+                        ],
+                      ),
+                    ),
+                    AnimatedRotation(
+                      turns: _open ? 0.5 : 0,
+                      duration: Motion.base,
+                      child: Icon(Icons.expand_more_rounded, color: c.ink2),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            AnimatedSize(
+              duration: Motion.base,
+              curve: Motion.out,
+              alignment: Alignment.topCenter,
+              child: _open
+                  ? Padding(
+                      padding: const EdgeInsets.fromLTRB(Space.l, 0, Space.l, Space.l),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          for (final v in widget.varieties)
+                            Container(
+                              margin: const EdgeInsets.only(bottom: Space.m),
+                              padding: const EdgeInsets.all(Space.m),
+                              decoration: BoxDecoration(
+                                color: c.surfaceAlt,
+                                borderRadius: BorderRadius.circular(Radii.m),
+                                border: Border.all(color: c.line),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          v.name,
+                                          style: T.body(color: c.ink, weight: 800).copyWith(fontSize: 16),
+                                        ),
+                                      ),
+                                      if (v.cycle.isNotEmpty)
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFF15803D).withValues(alpha: 0.12),
+                                            borderRadius: BorderRadius.circular(Radii.pill),
+                                          ),
+                                          child: Text(
+                                            v.cycle,
+                                            style: T.caption(color: const Color(0xFF15803D), weight: 700),
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                  if (v.season.isNotEmpty) ...[
+                                    const SizedBox(height: 4),
+                                    Row(
+                                      children: [
+                                        Icon(Icons.calendar_today_rounded, size: 13, color: c.ink2),
+                                        const SizedBox(width: 5),
+                                        Expanded(
+                                          child: Text(
+                                            v.season,
+                                            style: T.caption(color: c.ink2, weight: 600),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                  if (v.characteristics.isNotEmpty) ...[
+                                    const SizedBox(height: Space.s),
+                                    Text(
+                                      v.characteristics,
+                                      style: T.body(color: c.ink).copyWith(fontSize: 13.5, height: 1.45),
+                                    ),
+                                  ],
+                                  if (v.yieldPotential.isNotEmpty || v.zones.isNotEmpty) ...[
+                                    const SizedBox(height: Space.s),
+                                    Wrap(
+                                      spacing: Space.s,
+                                      runSpacing: 4,
+                                      children: [
+                                        if (v.yieldPotential.isNotEmpty)
+                                          _PillTag(
+                                            icon: Icons.trending_up_rounded,
+                                            label: 'Rendement : ' + v.yieldPotential,
+                                            color: const Color(0xFF0F766E),
+                                          ),
+                                        if (v.zones.isNotEmpty)
+                                          _PillTag(
+                                            icon: Icons.place_rounded,
+                                            label: v.zones,
+                                            color: const Color(0xFFD97706),
+                                          ),
+                                      ],
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                        ],
+                      ),
+                    )
+                  : const SizedBox(width: double.infinity),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class GuideSections extends StatelessWidget {
   const GuideSections({super.key, required this.guide});
 
@@ -937,6 +1152,12 @@ class GuideSections extends StatelessWidget {
         if (videoInfo != null) ...[
           _VideoGuideCard(video: videoInfo),
           const SizedBox(height: Space.m),
+        ],
+
+        // 1 bis. Variétés cultivées au Sénégal (Sélection et conseil d'investissement)
+        if (guide.varieties.isNotEmpty) ...[
+          _VarietiesSection(varieties: guide.varieties, cropName: guide.name),
+          const SizedBox(height: Space.s),
         ],
 
         // 2. Rubriques de la fiche avec design soigné

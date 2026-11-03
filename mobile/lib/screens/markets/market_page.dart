@@ -96,15 +96,11 @@ class _Content extends ConsumerWidget {
               child: Text('Aucun prix n\'a encore été relevé sur ce marché.', style: T.body(color: c.ink)),
             ),
           )
-        else ...[
-          SectionHeader('Tous les produits (${market.products.length})'),
-          GroupedList(
-            children: [
-              for (final p in market.products)
-                _ProductRow(product: p, onTap: () => _openProduct(context, p)),
-            ],
+        else
+          _ProductsSection(
+            products: market.products,
+            onTapProduct: (p) => _openProduct(context, p),
           ),
-        ],
 
         Padding(
           padding: const EdgeInsets.fromLTRB(Space.gutter, Space.xl, Space.gutter, Space.xxl),
@@ -611,6 +607,196 @@ class _ForecastCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+
+String _formatCategoryLabel(String raw) {
+  final upper = raw.toUpperCase().trim();
+  if (upper.contains('LÉGUME') || upper.contains('LEGUME')) return 'Légumes';
+  if (upper.contains('CÉRÉALE') || upper.contains('CEREALE')) return 'Céréales';
+  if (upper.contains('FRUIT')) return 'Fruits';
+  if (upper.contains('TUBERCULE')) return 'Tubercules';
+  return 'Autres';
+}
+
+class _ProductsSection extends StatefulWidget {
+  const _ProductsSection({
+    required this.products,
+    required this.onTapProduct,
+  });
+
+  final List<MarketProduct> products;
+  final ValueChanged<MarketProduct> onTapProduct;
+
+  @override
+  State<_ProductsSection> createState() => _ProductsSectionState();
+}
+
+class _ProductsSectionState extends State<_ProductsSection> {
+  final TextEditingController _searchController = TextEditingController();
+  String _selectedCategory = 'Tous';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  List<String> _buildCategories() {
+    final set = <String>{};
+    for (final p in widget.products) {
+      set.add(_formatCategoryLabel(p.category));
+    }
+    const preferredOrder = ['Légumes', 'Céréales', 'Fruits', 'Tubercules', 'Autres'];
+    final sorted = preferredOrder.where(set.contains).toList();
+    for (final s in set) {
+      if (!sorted.contains(s)) sorted.add(s);
+    }
+    return ['Tous', ...sorted];
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final query = _searchController.text.trim().toLowerCase();
+    final categories = _buildCategories();
+
+    final filtered = widget.products.where((p) {
+      final matchesQuery = query.isEmpty || p.name.toLowerCase().contains(query);
+      final matchesCat = _selectedCategory == 'Tous' || _formatCategoryLabel(p.category) == _selectedCategory;
+      return matchesQuery && matchesCat;
+    }).toList();
+
+    final hasActiveFilter = query.isNotEmpty || _selectedCategory != 'Tous';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SectionHeader(
+          hasActiveFilter
+              ? 'Produits (${filtered.length} sur ${widget.products.length})'
+              : 'Tous les produits (${widget.products.length})',
+        ),
+
+        // Champ de recherche dynamique par produit
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: Space.gutter),
+          child: Container(
+            decoration: BoxDecoration(
+              color: c.surface,
+              borderRadius: BorderRadius.circular(Radii.m),
+              border: Border.all(color: c.line),
+            ),
+            child: TextField(
+              controller: _searchController,
+              onChanged: (_) => setState(() {}),
+              style: T.body(color: c.ink),
+              decoration: InputDecoration(
+                hintText: 'Rechercher un produit (ex. Oignon, Mil…)',
+                hintStyle: T.body(color: c.ink2),
+                prefixIcon: Icon(Icons.search_rounded, color: c.ink2, size: 20),
+                suffixIcon: _searchController.text.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.close_rounded, size: 18),
+                        onPressed: () {
+                          _searchController.clear();
+                          setState(() {});
+                        },
+                      )
+                    : null,
+                border: InputBorder.none,
+                isDense: true,
+                contentPadding: const EdgeInsets.symmetric(horizontal: Space.m, vertical: 12),
+              ),
+            ),
+          ),
+        ),
+
+        const SizedBox(height: Space.s + 2),
+
+        // Filtre horizontal par catégorie
+        if (categories.length > 2) ...[
+          SizedBox(
+            height: 38,
+            child: ListView.separated(
+              padding: const EdgeInsets.symmetric(horizontal: Space.gutter),
+              scrollDirection: Axis.horizontal,
+              itemCount: categories.length,
+              separatorBuilder: (_, __) => const SizedBox(width: Space.s),
+              itemBuilder: (context, i) {
+                final cat = categories[i];
+                final isSelected = cat == _selectedCategory;
+                return GestureDetector(
+                  onTap: () => setState(() => _selectedCategory = cat),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                    decoration: BoxDecoration(
+                      color: isSelected ? c.accent : c.surface,
+                      borderRadius: BorderRadius.circular(Radii.pill),
+                      border: Border.all(color: isSelected ? c.accent : c.line),
+                      boxShadow: isSelected
+                          ? [BoxShadow(color: c.accent.withValues(alpha: 0.25), blurRadius: 6, offset: const Offset(0, 2))]
+                          : null,
+                    ),
+                    child: Center(
+                      child: Text(
+                        cat,
+                        style: T.caption(
+                          color: isSelected ? Colors.white : c.ink,
+                          weight: isSelected ? 800 : 600,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: Space.m),
+        ],
+
+        // Liste des produits filtrés ou état vide
+        if (filtered.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: Space.gutter),
+            child: AppCard(
+              color: c.surface,
+              padding: const EdgeInsets.all(Space.l),
+              child: Column(
+                children: [
+                  Icon(Icons.search_off_rounded, size: 36, color: c.ink2),
+                  const SizedBox(height: Space.s),
+                  Text('Aucun produit trouvé', style: T.body(color: c.ink, weight: 800)),
+                  const SizedBox(height: Space.xs),
+                  Text(
+                    'Aucun produit ne correspond à vos critères de recherche.',
+                    style: T.caption(color: c.ink2, weight: 500),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: Space.m),
+                  PillButton(
+                    label: 'Réinitialiser les filtres',
+                    variant: PillVariant.secondary,
+                    onPressed: () {
+                      _searchController.clear();
+                      setState(() => _selectedCategory = 'Tous');
+                    },
+                  ),
+                ],
+              ),
+            ),
+          )
+        else
+          GroupedList(
+            children: [
+              for (final p in filtered)
+                _ProductRow(product: p, onTap: () => widget.onTapProduct(p)),
+            ],
+          ),
+      ],
     );
   }
 }

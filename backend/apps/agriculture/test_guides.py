@@ -34,6 +34,14 @@ class GuideContentTests(TestCase):
     def test_the_five_priority_crops_are_present(self):
         self.assertEqual({g['slug'] for g in self.guides}, EXPECTED_SLUGS)
 
+    def test_every_guide_has_senegal_varieties(self):
+        for guide in self.guides:
+            varieties = guide.get('varieties', [])
+            self.assertTrue(len(varieties) >= 2, f"{guide['slug']} : doit avoir au moins 2 variétés cultivées au Sénégal")
+            for var in varieties:
+                self.assertTrue(var.get('name'), f"{guide['slug']} : nom de variété absent")
+                self.assertTrue(var.get('cycle'), f"{guide['slug']} : cycle de variété absent")
+
     def test_every_guide_defines_every_field(self):
         for guide in self.guides:
             for field in GUIDE_FIELDS:

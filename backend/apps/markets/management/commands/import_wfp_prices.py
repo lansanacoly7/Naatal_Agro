@@ -48,6 +48,7 @@ COMMODITIES = {
 }
 
 REGIONS = {'Thies': 'Thiès', 'Saint Louis': 'Saint-Louis', 'Kedougou': 'Kédougou', 'Sedhiou': 'Sédhiou'}
+MARKET_NAMES = {'Saint-Maur': 'Boucotte'}
 
 STABLE_BAND = 0.02  # variation mensuelle jugée « stable » en dessous de 2 %
 
@@ -98,12 +99,13 @@ class Command(BaseCommand):
             raise CommandError('Aucun relevé exploitable dans le fichier.')
 
         with transaction.atomic():
+            Market.objects.filter(name='Marché Saint-Maur').update(name='Marché Boucotte')
             Price.objects.filter(source=SOURCE).delete()
             existing = {_key(m.name): m for m in Market.objects.all()}
             markets = {}
             created_markets = 0
             for row, _ in wanted:
-                name = row['market']
+                name = MARKET_NAMES.get(row['market'], row['market'])
                 if name in markets:
                     continue
                 market = existing.get(_key(name))
@@ -119,7 +121,8 @@ class Command(BaseCommand):
 
             series = defaultdict(list)
             for row, day in wanted:
-                series[(row['market'], COMMODITIES[row['commodity']])].append((day, float(row['price'])))
+                market_name = MARKET_NAMES.get(row['market'], row['market'])
+                series[(market_name, COMMODITIES[row['commodity']])].append((day, float(row['price'])))
 
             products = {p.name: p for p in Product.objects.filter(name__in=set(COMMODITIES.values()))}
             to_create = []

@@ -38,7 +38,49 @@
       "channel": "ANCAR / ISRA",
       "url": "https://www.youtube.com/watch?v=kYJ7Lp8z6qQ",
       "duration": "12 min"
-    }
+    },
+    "varieties": [
+      {
+        "name": "Violet de Galmi",
+        "cycle": "110-120 jours",
+        "season": "Saison et arrière-saison (nov-fév)",
+        "characteristics": "Bulbe violacé aplati, chair ferme très piquante. Référence absolue pour la conservation (5 à 6 mois en magasin aéré).",
+        "yield_potential": "30 à 40 t/ha",
+        "zones": "Niayes, Vallée du fleuve Sénégal, Bassin arachidier"
+      },
+      {
+        "name": "Texas Early Grano",
+        "cycle": "80-95 jours (hâtive)",
+        "season": "Primeur (semis octobre)",
+        "characteristics": "Gros bulbe jaune paille en toupie, saveur douce non piquante. Chair tendre, idéale pour vente rapide en début de campagne.",
+        "yield_potential": "35 à 45 t/ha",
+        "zones": "Niayes (Kayar, Mboro)"
+      },
+      {
+        "name": "Gandiol F1",
+        "cycle": "90-100 jours",
+        "season": "Saison (nov-déc)",
+        "characteristics": "Hybride jaune-cuivré très régulier, excellente fermeté, forte tolérance aux pourritures basales.",
+        "yield_potential": "40 à 55 t/ha",
+        "zones": "Niayes (Saint-Louis, Gandiol, Louga)"
+      },
+      {
+        "name": "Orient F1",
+        "cycle": "95-105 jours",
+        "season": "Saison et arrière-saison",
+        "characteristics": "Bulbe rouge violacé sphérique très homogène, peau épaisse facilitant le transport longue distance.",
+        "yield_potential": "40 à 50 t/ha",
+        "zones": "Niayes, Vallée du fleuve"
+      },
+      {
+        "name": "Red Creole",
+        "cycle": "115-125 jours (tardive)",
+        "season": "Arrière-saison (janv-fév)",
+        "characteristics": "Bulbe rouge sombre très ferme, haute teneur en matière sèche, résistant aux montées à graines tardives.",
+        "yield_potential": "25 à 35 t/ha",
+        "zones": "Niayes, Centre"
+      }
+    ]
   },
   {
     "slug": "tomate-industrielle",
@@ -81,7 +123,33 @@
       "channel": "ANCAR Sénégal",
       "url": "https://www.youtube.com/watch?v=w9M0X5v4r7Y",
       "duration": "10 min"
-    }
+    },
+    "varieties": [
+      {
+        "name": "Roma VF",
+        "cycle": "75-85 jours après repiquage",
+        "season": "Contre-saison froide (oct-mars)",
+        "characteristics": "Fruit allongé très ferme, pulpe dense (Brix 5-6°), résistant au flétrissement fusarien et verticillien.",
+        "yield_potential": "45 à 60 t/ha",
+        "zones": "Vallée du fleuve Sénégal (Podor, Dagana)"
+      },
+      {
+        "name": "Petomech",
+        "cycle": "70-80 jours",
+        "season": "Contre-saison froide",
+        "characteristics": "Port déterminé nain, maturation groupée idéale pour récolte intensive en usine de concentré.",
+        "yield_potential": "40 à 55 t/ha",
+        "zones": "Vallée du fleuve"
+      },
+      {
+        "name": "Rossol",
+        "cycle": "75-80 jours",
+        "season": "Contre-saison",
+        "characteristics": "Résistant aux nématodes Meloidogyne, fruit piriforme rouge intense riche en lycopène.",
+        "yield_potential": "40 à 50 t/ha",
+        "zones": "Vallée du fleuve"
+      }
+    ]
   },
   {
     "slug": "arachide",
@@ -142,7 +210,41 @@
       "channel": "ISRA / ANCAR",
       "url": "https://www.youtube.com/watch?v=jZ3m8N4k7y8",
       "duration": "8 min"
-    }
+    },
+    "varieties": [
+      {
+        "name": "55-437",
+        "cycle": "90 jours (hâtive)",
+        "season": "Hivernage (semis fin juin-juillet)",
+        "characteristics": "L'arachide historique d'huilerie du Sénégal : résistance légendaire à la sécheresse, très rustique sur sols Dior.",
+        "yield_potential": "1,2 à 2 t/ha",
+        "zones": "Centre et Nord du Bassin arachidier (Diourbel, Louga, Thiès)"
+      },
+      {
+        "name": "73-33",
+        "cycle": "105-110 jours (demi-tardive)",
+        "season": "Hivernage (zone sud)",
+        "characteristics": "Graines plus grosses et haute teneur en huile (50%), très productive en zone à pluviométrie favorable.",
+        "yield_potential": "1,8 à 2,8 t/ha",
+        "zones": "Sine-Saloum, Casamance, Tambacounda"
+      },
+      {
+        "name": "Fleur 11",
+        "cycle": "90 jours",
+        "season": "Hivernage et contre-saison irriguée",
+        "characteristics": "Arachide de bouche et confiserie, gousses attrayantes, très recherchée pour la pâte d'arachide et le grillage.",
+        "yield_potential": "1,5 à 2,5 t/ha",
+        "zones": "Niayes, Bassin arachidier"
+      },
+      {
+        "name": "PC 79-79",
+        "cycle": "115-120 jours",
+        "season": "Hivernage Sud",
+        "characteristics": "Arachide de bouche à grosses gousses 3-4 grains, excellente valeur marchande sur les loumas.",
+        "yield_potential": "2 à 3 t/ha",
+        "zones": "Haute Casamance, Kolda"
+      }
+    ]
   },
   {
     "slug": "mil",
@@ -212,7 +314,33 @@
       "channel": "ISRA / ANCAR",
       "url": "https://www.youtube.com/watch?v=m2N8v5x4y7P",
       "duration": "9 min"
-    }
+    },
+    "varieties": [
+      {
+        "name": "Souna 3",
+        "cycle": "85-90 jours",
+        "season": "Hivernage (juillet)",
+        "characteristics": "Variété de référence ISRA pour tout le Bassin arachidier, chandelles denses et bonne tolérance au charbon.",
+        "yield_potential": "1,5 à 2,5 t/ha",
+        "zones": "Bassin arachidier (Kaolack, Fatick, Kaffrine, Diourbel)"
+      },
+      {
+        "name": "IBV 8001",
+        "cycle": "75-80 jours (extra-précoce)",
+        "season": "Hivernage court",
+        "characteristics": "Sélection spéciale pour les zones à faible pluviométrie (300-500 mm), assure la sécurité alimentaire.",
+        "yield_potential": "1,2 à 2 t/ha",
+        "zones": "Louga, Linguère, Nord Bassin"
+      },
+      {
+        "name": "Gawane",
+        "cycle": "85-95 jours",
+        "season": "Hivernage",
+        "characteristics": "Chandelles très longues (50-70 cm), grains gris volumineux, tolérance à la chenille mineuse.",
+        "yield_potential": "1,8 à 2,8 t/ha",
+        "zones": "Sine-Saloum, Kaffrine"
+      }
+    ]
   },
   {
     "slug": "riz-irrigue",
@@ -279,7 +407,33 @@
       "channel": "AfricaRice / SAED",
       "url": "https://www.youtube.com/watch?v=x4F2m6v5r1E",
       "duration": "15 min"
-    }
+    },
+    "varieties": [
+      {
+        "name": "Sahel 108",
+        "cycle": "115-125 jours",
+        "season": "Contre-saison chaude et hivernage",
+        "characteristics": "Création ISRA/AfricaRice, la variété phare de la vallée : court cycle, tolérante au sel et aux écarts thermiques.",
+        "yield_potential": "6 à 8 t/ha",
+        "zones": "Vallée du fleuve Sénégal, Anambé"
+      },
+      {
+        "name": "Sahel 201 & 202",
+        "cycle": "125-135 jours",
+        "season": "Hivernage et contre-saison",
+        "characteristics": "Grain long extra-blanc de haute valeur marchande, excellent taux d'usinage, grand potentiel de tallage.",
+        "yield_potential": "7 à 9 t/ha",
+        "zones": "Vallée du fleuve Sénégal"
+      },
+      {
+        "name": "NERICA 4 & 6 (Pluvial)",
+        "cycle": "95-105 jours",
+        "season": "Hivernage pluvial",
+        "characteristics": "Riz pluvial de plateau associant la rusticité africaine et le rendement, tolérant à la sécheresse.",
+        "yield_potential": "3 à 5 t/ha",
+        "zones": "Casamance, Kédougou, Bassin arachidier"
+      }
+    ]
   },
   {
     "slug": "carotte",
@@ -320,7 +474,33 @@
       "channel": "ANCAR Sénégal",
       "url": "https://www.youtube.com/watch?v=c9N2v5x8y1A",
       "duration": "9 min"
-    }
+    },
+    "varieties": [
+      {
+        "name": "New Kuroda",
+        "cycle": "85-100 jours",
+        "season": "Contre-saison fraîche (oct-fév)",
+        "characteristics": "Racine conique à bout arrondi, couleur orange profond, tolérante à l'alternariose et aux chaleurs modérées.",
+        "yield_potential": "30 à 45 t/ha",
+        "zones": "Niayes (Mboro, Fass Boye, Notto)"
+      },
+      {
+        "name": "Touchon",
+        "cycle": "75-85 jours",
+        "season": "Novembre à janvier",
+        "characteristics": "Racine cylindrique lisse sans cœur fibreux, chair très tendre et sucrée, réservée aux sols sableux.",
+        "yield_potential": "25 à 35 t/ha",
+        "zones": "Niayes"
+      },
+      {
+        "name": "Amazonia",
+        "cycle": "85-95 jours",
+        "season": "Semis précoces et tardifs",
+        "characteristics": "Hybride vigoureux à feuillage dressé résistant aux maladies foliaires, excellente conservation.",
+        "yield_potential": "35 à 50 t/ha",
+        "zones": "Niayes, Zone centre"
+      }
+    ]
   },
   {
     "slug": "sorgho",
@@ -356,7 +536,33 @@
       "channel": "Conseil Agricole Sahel",
       "url": "https://www.youtube.com/watch?v=b2H5n8m9j1A",
       "duration": "11 min"
-    }
+    },
+    "varieties": [
+      {
+        "name": "Fadda",
+        "cycle": "110-120 jours",
+        "season": "Hivernage (juin-juillet)",
+        "characteristics": "Sorgho blanc sans tanin de qualité meunière supérieure, grand rendement en grains et paille pour bétail.",
+        "yield_potential": "2,5 à 4 t/ha",
+        "zones": "Sud du Bassin arachidier, Casamance, Tamba"
+      },
+      {
+        "name": "CE 151-262",
+        "cycle": "90-100 jours",
+        "season": "Hivernage moyen",
+        "characteristics": "Création ISRA adaptée au Centre et Nord, panicule semi-compacte, résiste aux arrêts précoces de pluie.",
+        "yield_potential": "1,8 à 3 t/ha",
+        "zones": "Diourbel, Thiès, Louga"
+      },
+      {
+        "name": "Darou",
+        "cycle": "100-110 jours",
+        "season": "Hivernage",
+        "characteristics": "Panicules bien dégagées, grains protégés contre les oiseaux granivores, tolérant à la moisissure des grains.",
+        "yield_potential": "2 à 3,5 t/ha",
+        "zones": "Kaolack, Nioro, Kaffrine"
+      }
+    ]
   },
   {
     "slug": "mangue",
@@ -403,7 +609,41 @@
       "channel": "COLEACP / ANCAR",
       "url": "https://www.youtube.com/watch?v=c7P4v8w2r6T",
       "duration": "11 min"
-    }
+    },
+    "varieties": [
+      {
+        "name": "Kent",
+        "cycle": "Récolte juin à août",
+        "season": "Mi-saison",
+        "characteristics": "La reine de l'exportation sénégalaise : fruit vert à joue rouge de 500-600 g, chair jaune sans fibres, parfumée et sucrée.",
+        "yield_potential": "15 à 25 t/ha (verger adulte)",
+        "zones": "Niayes, Casamance, Saloum"
+      },
+      {
+        "name": "Keitt",
+        "cycle": "Récolte juillet à septembre",
+        "season": "Tardive",
+        "characteristics": "Très gros fruit de 600-800 g vert rosé, chair ferme peu fibreuse, excellente conservation sur l'arbre et en transport.",
+        "yield_potential": "20 à 30 t/ha",
+        "zones": "Niayes, Casamance"
+      },
+      {
+        "name": "Tommy Atkins",
+        "cycle": "Récolte mai à juin",
+        "season": "Précoce",
+        "characteristics": "Fruit rouge violacé attrayant, peau épaisse très résistante aux chocs de manutention et transport.",
+        "yield_potential": "15 à 22 t/ha",
+        "zones": "Niayes, Thiès, Sine-Saloum"
+      },
+      {
+        "name": "Amélie / Gouverneur",
+        "cycle": "Récolte avril à mai",
+        "season": "Très précoce",
+        "characteristics": "Mangue précoce locale, peau verte sans coloration rouge, chair très juteuse et sucrée prisée sur les marchés locaux.",
+        "yield_potential": "12 à 18 t/ha",
+        "zones": "Casamance, Niayes"
+      }
+    ]
   },
   {
     "slug": "pomme-de-terre",
@@ -444,7 +684,33 @@
       "channel": "ANCAR / ISRA",
       "url": "https://www.youtube.com/watch?v=t5N8x3y2m1K",
       "duration": "11 min"
-    }
+    },
+    "varieties": [
+      {
+        "name": "Sahel",
+        "cycle": "85-95 jours (hâtive)",
+        "season": "Contre-saison froide (nov-fév)",
+        "characteristics": "Variété néerlandaise sélectionnée pour le climat sahélien, peau jaune chair jaune, très résistante aux coups de chaud.",
+        "yield_potential": "30 à 45 t/ha",
+        "zones": "Niayes (Kayar, Mboro, Fass Boye)"
+      },
+      {
+        "name": "Spunta",
+        "cycle": "90-105 jours",
+        "season": "Contre-saison froide",
+        "characteristics": "La reine des marchés sénégalais : très gros tubercules allongés réguliers, chair ferme idéale pour la friture.",
+        "yield_potential": "35 à 50 t/ha",
+        "zones": "Niayes"
+      },
+      {
+        "name": "Atlas",
+        "cycle": "95-110 jours",
+        "season": "Contre-saison froide",
+        "characteristics": "Peau jaune pâle lisse, chair ferme, excellente aptitude au stockage traditionnel en caisses ventilées.",
+        "yield_potential": "28 à 40 t/ha",
+        "zones": "Niayes, Vallée"
+      }
+    ]
   },
   {
     "slug": "chou",
@@ -490,7 +756,33 @@
       "channel": "ISRA / ANCAR",
       "url": "https://www.youtube.com/watch?v=c3N8v2x5y7P",
       "duration": "10 min"
-    }
+    },
+    "varieties": [
+      {
+        "name": "KK Cross F1",
+        "cycle": "60-65 jours après repiquage",
+        "season": "Toute l'année (remarquable tolérance chaleur)",
+        "characteristics": "Hybride tropical n°1 : pomme plate très compacte de 1,5 à 2,5 kg, ne fendille pas.",
+        "yield_potential": "35 à 50 t/ha",
+        "zones": "Niayes, Vallée du fleuve, Casamance"
+      },
+      {
+        "name": "Tropicana F1",
+        "cycle": "65-75 jours",
+        "season": "Contre-saison",
+        "characteristics": "Pomme ronde bien dense, feuillage cireux bleu-vert réduisant les attaques de chenilles.",
+        "yield_potential": "30 à 45 t/ha",
+        "zones": "Niayes"
+      },
+      {
+        "name": "Oxylus F1",
+        "cycle": "70-80 jours",
+        "season": "Contre-saison fraîche",
+        "characteristics": "Excellente tenue de pomme au champ et transport facile vers les marchés urbains.",
+        "yield_potential": "40 à 55 t/ha",
+        "zones": "Niayes"
+      }
+    ]
   },
   {
     "slug": "aubergine",
@@ -531,7 +823,33 @@
       "channel": "ANCAR Sénégal",
       "url": "https://www.youtube.com/watch?v=a4M9v2x5y1K",
       "duration": "9 min"
-    }
+    },
+    "varieties": [
+      {
+        "name": "Black Beauty",
+        "cycle": "80-95 jours après repiquage",
+        "season": "Contre-saison fraîche",
+        "characteristics": "Gros fruit ovale violet presque noir brillant, chair blanche douce sans amertume.",
+        "yield_potential": "25 à 40 t/ha",
+        "zones": "Niayes, Périurbain Dakar"
+      },
+      {
+        "name": "Bonica F1",
+        "cycle": "70-80 jours",
+        "season": "Saison fraîche et chaude",
+        "characteristics": "Hybride hâtif à calice sans épines, nouaison abondante et fruits très réguliers.",
+        "yield_potential": "35 à 50 t/ha",
+        "zones": "Niayes"
+      },
+      {
+        "name": "Kalenda F1",
+        "cycle": "75-85 jours",
+        "season": "Saison chaude et humide",
+        "characteristics": "Fruit cylindrique allongé violet foncé, remarquable tolérance au flétrissement bactérien.",
+        "yield_potential": "30 à 45 t/ha",
+        "zones": "Casamance, Niayes"
+      }
+    ]
   },
   {
     "slug": "piment",
@@ -572,7 +890,33 @@
       "channel": "Maraîchage Niayes",
       "url": "https://www.youtube.com/watch?v=p4M2v7x8y1B",
       "duration": "9 min"
-    }
+    },
+    "varieties": [
+      {
+        "name": "Kaani Sébikotane",
+        "cycle": "80-100 jours",
+        "season": "Toute l'année",
+        "characteristics": "Écotype local des Niayes très aromatique et piquant, fruit allongé ridé, valeur marchande très élevée.",
+        "yield_potential": "8 à 15 t/ha",
+        "zones": "Niayes (Sébikotane, Pout, Thiès)"
+      },
+      {
+        "name": "Scotch Bonnet / Habanero",
+        "cycle": "90-110 jours",
+        "season": "Contre-saison chaude et hivernage",
+        "characteristics": "Forme de lanterne, piquant extrême (force 10), arôme fruité très recherché frais ou séché en poudre.",
+        "yield_potential": "10 à 16 t/ha",
+        "zones": "Niayes, Casamance"
+      },
+      {
+        "name": "Big Sun",
+        "cycle": "85-95 jours",
+        "season": "Saison sèche",
+        "characteristics": "Type Habanero jaune vif, très productif, résistant aux viroses courantes des solanacées.",
+        "yield_potential": "12 à 18 t/ha",
+        "zones": "Niayes"
+      }
+    ]
   },
   {
     "slug": "gombo",
@@ -613,7 +957,33 @@
       "channel": "ANCAR Sénégal",
       "url": "https://www.youtube.com/watch?v=g6M8v2x5y1P",
       "duration": "8 min"
-    }
+    },
+    "varieties": [
+      {
+        "name": "Clemson Spineless",
+        "cycle": "50-60 jours",
+        "season": "Hivernage et contre-saison irriguée",
+        "characteristics": "Variété sans épines à gousses vert moyen tendres à 5 côtes, récolte facile sans gants.",
+        "yield_potential": "10 à 18 t/ha",
+        "zones": "Toutes les zones agricoles du Sénégal"
+      },
+      {
+        "name": "Indiana",
+        "cycle": "55-65 jours",
+        "season": "Toute l'année sous irrigation",
+        "characteristics": "Plante vigoureuse, gousses cylindriques vert foncé très mucilagineuses, idéale pour sauces locales.",
+        "yield_potential": "12 à 20 t/ha",
+        "zones": "Niayes, Casamance"
+      },
+      {
+        "name": "Koto",
+        "cycle": "50-55 jours (très précoce)",
+        "season": "Hivernage",
+        "characteristics": "Sélection adaptée aux saisons des pluies courtes, fructification dense dès les premiers nœuds.",
+        "yield_potential": "8 à 15 t/ha",
+        "zones": "Bassin arachidier, Sud-Est"
+      }
+    ]
   },
   {
     "slug": "patate-douce",
@@ -655,7 +1025,33 @@
       "channel": "ISRA / ANCAR",
       "url": "https://www.youtube.com/watch?v=p7N2v5x8y4K",
       "duration": "9 min"
-    }
+    },
+    "varieties": [
+      {
+        "name": "Kandee",
+        "cycle": "90-105 jours",
+        "season": "Hivernage et contre-saison",
+        "characteristics": "Sélection ISRA/CDH à chair orange foncé très riche en provitamine A, saveur sucrée, excellente productivité.",
+        "yield_potential": "20 à 30 t/ha",
+        "zones": "Niayes, Bassin arachidier, Casamance"
+      },
+      {
+        "name": "Walo",
+        "cycle": "100-120 jours",
+        "season": "Contre-saison irriguée",
+        "characteristics": "Variété adaptée aux sols argileux de la vallée, peau rouge violacée, chair crème très douce.",
+        "yield_potential": "25 à 35 t/ha",
+        "zones": "Vallée du fleuve Sénégal"
+      },
+      {
+        "name": "Tio-Tio",
+        "cycle": "110-130 jours",
+        "season": "Hivernage",
+        "characteristics": "Écotype traditionnel très résistant au charançon de la patate douce (Cylas), chair blanche farineuse.",
+        "yield_potential": "15 à 22 t/ha",
+        "zones": "Casamance, Saloum"
+      }
+    ]
   },
   {
     "slug": "manioc",
@@ -696,7 +1092,33 @@
       "channel": "ANCAR Sénégal",
       "url": "https://www.youtube.com/watch?v=m7N3x5v2p8A",
       "duration": "10 min"
-    }
+    },
+    "varieties": [
+      {
+        "name": "Kombo",
+        "cycle": "9 à 12 mois",
+        "season": "Plantation début d'hivernage",
+        "characteristics": "Sélection ISRA sans amertume (manioc doux), excellente aptitude à la consommation fraîche bouillie et frites.",
+        "yield_potential": "20 à 35 t/ha",
+        "zones": "Casamance, Bassin arachidier, Thiès"
+      },
+      {
+        "name": "Soya",
+        "cycle": "8 à 10 mois (précoce)",
+        "season": "Juin à juillet",
+        "characteristics": "Tubérisation rapide, très apprécié pour la fabrication du tapioca et gari villageois.",
+        "yield_potential": "18 à 28 t/ha",
+        "zones": "Casamance, Niayes"
+      },
+      {
+        "name": "Basse Casamance",
+        "cycle": "12 à 15 mois",
+        "season": "Hivernage",
+        "characteristics": "Haute teneur en amidon, grande résistance à la mosaïque africaine du manioc (CMD).",
+        "yield_potential": "25 à 40 t/ha",
+        "zones": "Ziguinchor, Sédhiou, Kolda"
+      }
+    ]
   },
   {
     "slug": "melon",
@@ -737,7 +1159,33 @@
       "channel": "Agri Conseils Sahel",
       "url": "https://www.youtube.com/watch?v=w7M2n9p4r1A",
       "duration": "8 min"
-    }
+    },
+    "varieties": [
+      {
+        "name": "Charentais",
+        "cycle": "75-85 jours après semis",
+        "season": "Contre-saison fraîche (nov-fév)",
+        "characteristics": "Fruit rond vert clair strié, chair orange vif très parfumée et sucrée, haute valeur marchande.",
+        "yield_potential": "20 à 35 t/ha",
+        "zones": "Niayes (Kayar, Notto)"
+      },
+      {
+        "name": "Cantaloup du Sénégal",
+        "cycle": "80-90 jours",
+        "season": "Contre-saison",
+        "characteristics": "Écotype résistant aux coups de soleil et au transport, peau brodée épaisse.",
+        "yield_potential": "25 à 40 t/ha",
+        "zones": "Niayes, Vallée du fleuve"
+      },
+      {
+        "name": "Ananas d'Amérique",
+        "cycle": "85-95 jours",
+        "season": "Décembre à mars",
+        "characteristics": "Fruit allongé à chair blanc-crème très sucrée et fondante, arôme d'ananas intense.",
+        "yield_potential": "18 à 30 t/ha",
+        "zones": "Niayes"
+      }
+    ]
   },
   {
     "slug": "bissap",
@@ -778,7 +1226,33 @@
       "channel": "ANCAR Sénégal",
       "url": "https://www.youtube.com/watch?v=b3M8v2x5y7A",
       "duration": "8 min"
-    }
+    },
+    "varieties": [
+      {
+        "name": "Vimto (Rouge foncé)",
+        "cycle": "130-150 jours",
+        "season": "Hivernage (semis juillet, récolte nov-déc)",
+        "characteristics": "Calices épais rouge pourpre très foncé, forte acidité et teneur en anthocyanes, standard de l'industrie du jus.",
+        "yield_potential": "1 à 1,8 t/ha de calices secs",
+        "zones": "Bassin arachidier (Kaolack, Fatick), Thiès, Casamance"
+      },
+      {
+        "name": "Koor (Bissap pourpre)",
+        "cycle": "120-140 jours",
+        "season": "Hivernage",
+        "characteristics": "Port dressé vigoureux, calices charnus très productifs, excellente résistance à la sécheresse.",
+        "yield_potential": "1,2 à 2 t/ha secs",
+        "zones": "Bassin arachidier, Louga"
+      },
+      {
+        "name": "Bissap Blanc",
+        "cycle": "110-130 jours",
+        "season": "Hivernage",
+        "characteristics": "Calices vert-jaunâtre sans acidité agressive, recherché pour infusions douces et vertus médicinales (hypotenseur).",
+        "yield_potential": "0,8 à 1,5 t/ha secs",
+        "zones": "Casamance, Sine-Saloum"
+      }
+    ]
   },
   {
     "slug": "mais",
@@ -827,7 +1301,33 @@
       "channel": "Conseil Agricole Sahel",
       "url": "https://www.youtube.com/watch?v=b2H5n8m9j1A",
       "duration": "9 min"
-    }
+    },
+    "varieties": [
+      {
+        "name": "Swan 80",
+        "cycle": "95-105 jours",
+        "season": "Hivernage (semis juillet)",
+        "characteristics": "Grain jaune demi-dur, excellente teneur énergétique pour alimentation humaine et avicole.",
+        "yield_potential": "4 à 6 t/ha",
+        "zones": "Bassin arachidier, Haute Casamance, Tambacounda"
+      },
+      {
+        "name": "Early Thaï",
+        "cycle": "85-90 jours (hâtif)",
+        "season": "Hivernage précoce",
+        "characteristics": "Grain blanc vitreux, échappe aux sécheresses de fin d'hivernage dans le Centre.",
+        "yield_potential": "3 à 4,5 t/ha",
+        "zones": "Bassin arachidier centre et nord"
+      },
+      {
+        "name": "Across Pool 33",
+        "cycle": "90-100 jours",
+        "season": "Hivernage",
+        "characteristics": "Sélection ISRA résistante à la striure du maïs (MSV) et tolérante aux infestations de Striga.",
+        "yield_potential": "3,5 à 5 t/ha",
+        "zones": "Sénégal oriental, Casamance"
+      }
+    ]
   },
   {
     "slug": "niebe",
@@ -878,7 +1378,33 @@
       "channel": "ANCAR Sénégal",
       "url": "https://www.youtube.com/watch?v=n5M8v2x3y7K",
       "duration": "8 min"
-    }
+    },
+    "varieties": [
+      {
+        "name": "Mouride",
+        "cycle": "65-70 jours",
+        "season": "Hivernage",
+        "characteristics": "Sélection ISRA à double usage : grains blancs à œil noir très marchands et fourrage abondant pour ovins/bovins.",
+        "yield_potential": "1 à 1,8 t/ha (grain) + 2 t/ha (fanes)",
+        "zones": "Bassin arachidier, Louga, Thiès"
+      },
+      {
+        "name": "Melakh",
+        "cycle": "60-65 jours (extra-hâtif)",
+        "season": "Hivernage court",
+        "characteristics": "Résistant à la bactériose et aux pucerons, échappe à la sécheresse, récolte possible dès 2 mois.",
+        "yield_potential": "1,2 à 2 t/ha",
+        "zones": "Bassin arachidier Nord et Centre"
+      },
+      {
+        "name": "Yacine",
+        "cycle": "70-75 jours",
+        "season": "Hivernage",
+        "characteristics": "Gros grains beiges très appréciés pour les beignets (accras) et plats familiaux, port semi-érigé.",
+        "yield_potential": "1,4 à 2,2 t/ha",
+        "zones": "Sine-Saloum, Kaffrine, Louga"
+      }
+    ]
   },
   {
     "slug": "papaye",
@@ -935,7 +1461,33 @@
       "channel": "Horticulture Sahel",
       "url": "https://www.youtube.com/watch?v=p1M8v3x4y7K",
       "duration": "10 min"
-    }
+    },
+    "varieties": [
+      {
+        "name": "Solo",
+        "cycle": "9 à 10 mois premier fruit",
+        "season": "Toute l'année sous irrigation",
+        "characteristics": "Fruit piriforme de 400 à 600 g, chair orangée très sucrée (Brix 12-14°), standard d'exportation.",
+        "yield_potential": "40 à 60 t/ha/an",
+        "zones": "Niayes, Casamance"
+      },
+      {
+        "name": "Sunrise Solo",
+        "cycle": "9 à 11 mois",
+        "season": "Toute l'année",
+        "characteristics": "Fruit à chair rouge-orangée très parfumée, cavité centrale petite, peau lisse dorée.",
+        "yield_potential": "45 à 65 t/ha/an",
+        "zones": "Niayes, Périurbain Dakar"
+      },
+      {
+        "name": "Red Lady F1",
+        "cycle": "8 à 9 mois (très précoce)",
+        "season": "Toute l'année",
+        "characteristics": "Arbre nain très résistant au vent, fruits lourds de 1,5 à 2 kg à chair rouge épaisse, tolérant au Papaya Ringspot Virus.",
+        "yield_potential": "60 à 80 t/ha/an",
+        "zones": "Niayes, Vallée, Casamance"
+      }
+    ]
   },
   {
     "slug": "banane",
@@ -988,7 +1540,33 @@
       "channel": "ANCAR Sénégal",
       "url": "https://www.youtube.com/watch?v=b8N3x4y7m2P",
       "duration": "14 min"
-    }
+    },
+    "varieties": [
+      {
+        "name": "Grande Naine (Cavendish)",
+        "cycle": "9 à 11 mois premier régime",
+        "season": "Production continue",
+        "characteristics": "Hauteur 2 à 2,5 m résistante aux vents, régimes massifs de 25 à 35 kg, doigts longs et bien conformés.",
+        "yield_potential": "35 à 50 t/ha/an",
+        "zones": "Tambacounda (Gouloumbou), Casamance"
+      },
+      {
+        "name": "Williams",
+        "cycle": "10 à 12 mois",
+        "season": "Toute l'année",
+        "characteristics": "Sous-groupe Cavendish plus robuste, doigts courbés à peau jaune vif à maturité, saveur sucrée.",
+        "yield_potential": "30 à 45 t/ha/an",
+        "zones": "Vallée de la Gambie, Casamance"
+      },
+      {
+        "name": "Poyo",
+        "cycle": "10 à 12 mois",
+        "season": "Toute l'année",
+        "characteristics": "Variété traditionnelle des bananeraies familiales, rustique sous ombrage et sols alluviaux.",
+        "yield_potential": "25 à 35 t/ha/an",
+        "zones": "Tambacounda, Casamance"
+      }
+    ]
   },
   {
     "slug": "agrumes",
@@ -1051,7 +1629,41 @@
       "channel": "RADHORT / ISRA",
       "url": "https://www.youtube.com/watch?v=a8M3v7x2y4K",
       "duration": "13 min"
-    }
+    },
+    "varieties": [
+      {
+        "name": "Citronnier Eureka & Lisbonne",
+        "cycle": "Fructification toute l'année (pic nov-mars)",
+        "season": "Permanent",
+        "characteristics": "Arbre très vigoureux et productif, citron jaune acide riche en jus et huiles essentielles de zeste.",
+        "yield_potential": "20 à 35 t/ha (adulte)",
+        "zones": "Niayes, Casamance, Sine-Saloum"
+      },
+      {
+        "name": "Lime de Tahiti (Citrus latifolia)",
+        "cycle": "Floraison étalée",
+        "season": "Toute l'année",
+        "characteristics": "Citron vert sans pépins, peau fine vert foncé, jus abondant très aromatique, résistant à la chaleur.",
+        "yield_potential": "18 à 28 t/ha",
+        "zones": "Niayes, Périurbain Thiès/Dakar"
+      },
+      {
+        "name": "Oranger Valencia Late",
+        "cycle": "Maturité tardive (mars-juin)",
+        "season": "Saison chaude",
+        "characteristics": "Orange à jus par excellence, pulpe très juteuse, récolte rémunératrice pendant la période de chaleur.",
+        "yield_potential": "25 à 40 t/ha",
+        "zones": "Niayes, Vallée"
+      },
+      {
+        "name": "Oranger Washington Navel",
+        "cycle": "Maturité précoce (décembre-février)",
+        "season": "Saison fraîche",
+        "characteristics": "Grosse orange de table sans pépins facile à peler avec nombril caractéristique, saveur douce.",
+        "yield_potential": "20 à 32 t/ha",
+        "zones": "Niayes"
+      }
+    ]
   },
   {
     "slug": "haricot-vert",
@@ -1107,7 +1719,33 @@
       "channel": "RADHORT Sénégal",
       "url": "https://www.youtube.com/watch?v=h2M5v8x7y4P",
       "duration": "7 min"
-    }
+    },
+    "varieties": [
+      {
+        "name": "Teresa",
+        "cycle": "50-55 jours après semis",
+        "season": "Contre-saison fraîche (nov-fév)",
+        "characteristics": "Haricot filet extra-fin vert brillant sans fil ni parchemin, gousse droite de 12-14 cm, standard export.",
+        "yield_potential": "8 à 14 t/ha",
+        "zones": "Niayes (Kayar, Notto, Mboro)"
+      },
+      {
+        "name": "Argus",
+        "cycle": "55-60 jours",
+        "season": "Novembre à février",
+        "characteristics": "Excellente tenue aux virus de la mosaïque commune (BCMV) et à la rouille, récolte groupée.",
+        "yield_potential": "9 à 15 t/ha",
+        "zones": "Niayes"
+      },
+      {
+        "name": "Contender",
+        "cycle": "50-55 jours",
+        "season": "Contre-saison",
+        "characteristics": "Type mangetout à gousse charnue cylindrique très rustique, tolérante aux sols moins légers.",
+        "yield_potential": "7 à 12 t/ha",
+        "zones": "Niayes, Périurbain"
+      }
+    ]
   },
   {
     "slug": "pasteque",
@@ -1160,7 +1798,33 @@
       "channel": "Agri Conseils Sahel",
       "url": "https://www.youtube.com/watch?v=w7M2n9p4r1A",
       "duration": "8 min"
-    }
+    },
+    "varieties": [
+      {
+        "name": "Sugar Baby",
+        "cycle": "75-85 jours",
+        "season": "Contre-saison irriguée et hivernage",
+        "characteristics": "Fruit sphérique vert foncé uni de 4 à 6 kg, chair rouge écarlate très sucrée, petites graines noires.",
+        "yield_potential": "25 à 40 t/ha",
+        "zones": "Niayes, Bassin arachidier, Centre"
+      },
+      {
+        "name": "Crimson Sweet",
+        "cycle": "85-90 jours",
+        "season": "Contre-saison",
+        "characteristics": "Fruit ovale rayé vert clair/foncé de 8 à 12 kg, chair croquante, résistance au fusarium et à l'anthracnose.",
+        "yield_potential": "35 à 55 t/ha",
+        "zones": "Niayes, Vallée du fleuve"
+      },
+      {
+        "name": "Kaolack",
+        "cycle": "80-90 jours",
+        "season": "Hivernage et décrue",
+        "characteristics": "Sélection locale réputée, fruit rond tolérant les stress hydriques ponctuels, chair rouge ferme.",
+        "yield_potential": "20 à 35 t/ha",
+        "zones": "Bassin arachidier, Sine-Saloum"
+      }
+    ]
   },
   {
     "slug": "poivron",
@@ -1213,7 +1877,33 @@
       "channel": "Maraîchage Niayes",
       "url": "https://www.youtube.com/watch?v=p4M2v7x8y1B",
       "duration": "9 min"
-    }
+    },
+    "varieties": [
+      {
+        "name": "Yolo Wonder",
+        "cycle": "75-85 jours après repiquage",
+        "season": "Contre-saison fraîche",
+        "characteristics": "Fruit cubique à 4 lobes, chair épaisse vert foncé tournant au rouge vif, résistant au virus TMV.",
+        "yield_potential": "20 à 30 t/ha",
+        "zones": "Niayes, Périurbain"
+      },
+      {
+        "name": "Wonder Bell F1",
+        "cycle": "70-75 jours (hâtif)",
+        "season": "Contre-saison",
+        "characteristics": "Hybride lourd et ferme, parois épaisses garantissant une longue conservation post-récolte.",
+        "yield_potential": "30 à 45 t/ha",
+        "zones": "Niayes"
+      },
+      {
+        "name": "Nobili F1",
+        "cycle": "70-80 jours",
+        "season": "Contre-saison chaude",
+        "characteristics": "Poivron allongé conique type corne, très productif en périodes chaudes lorsque le cubique peine à nouer.",
+        "yield_potential": "25 à 38 t/ha",
+        "zones": "Niayes, Casamance"
+      }
+    ]
   },
   {
     "slug": "concombre",
@@ -1260,7 +1950,33 @@
       "channel": "Maraîchage Niayes",
       "url": "https://www.youtube.com/watch?v=c5M2x7y8v1K",
       "duration": "8 min"
-    }
+    },
+    "varieties": [
+      {
+        "name": "Marketer",
+        "cycle": "55-65 jours après semis",
+        "season": "Contre-saison et hivernage",
+        "characteristics": "Fruit cylindrique vert foncé de 20-22 cm, chair croquante très hydratante, peu de graines.",
+        "yield_potential": "20 à 35 t/ha",
+        "zones": "Niayes, Vallée, Casamance"
+      },
+      {
+        "name": "Tokyo Slicer F1",
+        "cycle": "50-55 jours (très précoce)",
+        "season": "Toute l'année sous abri ou plein champ",
+        "characteristics": "Hybride gynoïque très productif, résistant à l'oïdium et au mildiou, peau lisse digeste.",
+        "yield_potential": "30 à 50 t/ha",
+        "zones": "Niayes"
+      },
+      {
+        "name": "Poinsett 76",
+        "cycle": "60-65 jours",
+        "season": "Hivernage",
+        "characteristics": "Remarquable résistance aux maladies foliaires tropicales, fruit régulier vert sombre.",
+        "yield_potential": "18 à 28 t/ha",
+        "zones": "Casamance, Centre"
+      }
+    ]
   },
   {
     "slug": "laitue",
@@ -1309,7 +2025,33 @@
       "channel": "Horticulture Dakar",
       "url": "https://www.youtube.com/watch?v=l4M8v2x7y3P",
       "duration": "7 min"
-    }
+    },
+    "varieties": [
+      {
+        "name": "Mogador",
+        "cycle": "35-45 jours après repiquage",
+        "season": "Toute l'année (tolérante à la chaleur)",
+        "characteristics": "Type batavia blonde à feuilles cloquées épaisses, résiste à la montaison précoce sous le soleil tropical.",
+        "yield_potential": "15 à 25 t/ha",
+        "zones": "Niayes (Dakar, Thiès, Louga)"
+      },
+      {
+        "name": "Eden F1",
+        "cycle": "40-50 jours",
+        "season": "Contre-saison fraîche",
+        "characteristics": "Batavia compacte très croquante, tolérante à la brûlure du bord des feuilles (tip-burn).",
+        "yield_potential": "20 à 30 t/ha",
+        "zones": "Niayes"
+      },
+      {
+        "name": "Blonde de Paris",
+        "cycle": "45-55 jours",
+        "season": "Décembre à février",
+        "characteristics": "Laitue pommée classique, feuilles vert tendre très douces, réservée aux mois les plus frais.",
+        "yield_potential": "15 à 22 t/ha",
+        "zones": "Niayes nord"
+      }
+    ]
   },
   {
     "slug": "courge",
@@ -1358,7 +2100,25 @@
       "channel": "ISRA / ANCAR",
       "url": "https://www.youtube.com/watch?v=c3N8v2x5y7P",
       "duration": "9 min"
-    }
+    },
+    "varieties": [
+      {
+        "name": "Musquée de Provence",
+        "cycle": "110-130 jours",
+        "season": "Hivernage et décrue",
+        "characteristics": "Gros fruit côtelé aplati de 5 à 15 kg, chair orange intense sucrée, se conserve plus de 6 mois au grenier.",
+        "yield_potential": "25 à 45 t/ha",
+        "zones": "Vallée du fleuve, Bassin arachidier"
+      },
+      {
+        "name": "Ndiol (Courge locale du Sénégal)",
+        "cycle": "90-110 jours",
+        "season": "Hivernage pluvial",
+        "characteristics": "Écotype traditionnel très résistant aux pucerons et à la sécheresse, chair ferme pour couscous.",
+        "yield_potential": "15 à 25 t/ha",
+        "zones": "Toutes les régions agricoles"
+      }
+    ]
   },
   {
     "slug": "betterave",
@@ -1406,7 +2166,25 @@
       "channel": "ANCAR Sénégal",
       "url": "https://www.youtube.com/watch?v=c9N2v5x8y1A",
       "duration": "8 min"
-    }
+    },
+    "varieties": [
+      {
+        "name": "Detroit Dark Red",
+        "cycle": "65-75 jours",
+        "season": "Contre-saison fraîche (nov-fév)",
+        "characteristics": "Racine ronde rouge sang profond, chair tendre très sucrée sans zonage blanc, feuillage vigoureux.",
+        "yield_potential": "25 à 35 t/ha",
+        "zones": "Niayes"
+      },
+      {
+        "name": "Cylindra",
+        "cycle": "70-80 jours",
+        "season": "Novembre à janvier",
+        "characteristics": "Racine allongée cylindrique de découpe facile, rendement élevé en sols sablo-limoneux meubles.",
+        "yield_potential": "28 à 40 t/ha",
+        "zones": "Niayes"
+      }
+    ]
   },
   {
     "slug": "navet",
@@ -1454,7 +2232,25 @@
       "channel": "ISRA / CDH",
       "url": "https://www.youtube.com/watch?v=t5N8x3y2m1K",
       "duration": "8 min"
-    }
+    },
+    "varieties": [
+      {
+        "name": "Blanc demi-long de Croissy",
+        "cycle": "50-60 jours",
+        "season": "Contre-saison fraîche",
+        "characteristics": "Racine blanche cylindrique de 12-15 cm, chair fine douce sans amertume, indispensable au Ceebu Jën.",
+        "yield_potential": "20 à 30 t/ha",
+        "zones": "Niayes (Dakar, Thiès)"
+      },
+      {
+        "name": "Violet de Milan",
+        "cycle": "45-55 jours (hâtif)",
+        "season": "Novembre à février",
+        "characteristics": "Racine plate à collet violacé vif et base blanche, chair tendre, très attrayant sur les étals.",
+        "yield_potential": "18 à 28 t/ha",
+        "zones": "Niayes"
+      }
+    ]
   },
   {
     "slug": "fonio",
@@ -1502,7 +2298,25 @@
       "channel": "ISRA / Kédougou",
       "url": "https://www.youtube.com/watch?v=m2N8v5x4y7P",
       "duration": "11 min"
-    }
+    },
+    "varieties": [
+      {
+        "name": "Niambalam",
+        "cycle": "90-100 jours",
+        "season": "Hivernage (semis fin juin-juillet)",
+        "characteristics": "Fonio blanc noble du Sud-Est, grains minuscules très nutritifs sans gluten, résiste aux sols squelettiques.",
+        "yield_potential": "0,8 à 1,5 t/ha",
+        "zones": "Kédougou, Kolda, Tambacounda"
+      },
+      {
+        "name": "Iskani",
+        "cycle": "70-80 jours (extra-hâtif)",
+        "season": "Hivernage",
+        "characteristics": "Variété de soudure par excellence, mûrit avant le maïs et le mil pour juguler la faim en août.",
+        "yield_potential": "0,6 à 1,2 t/ha",
+        "zones": "Kédougou, Sud-Est"
+      }
+    ]
   },
   {
     "slug": "ail",
@@ -1551,7 +2365,25 @@
       "channel": "Maraîchage Fleuve",
       "url": "https://www.youtube.com/watch?v=kYJ7Lp8z6qQ",
       "duration": "9 min"
-    }
+    },
+    "varieties": [
+      {
+        "name": "Blanc de Thiès (Sélection CDH/ISRA)",
+        "cycle": "120-140 jours",
+        "season": "Contre-saison fraîche (semis nov-déc)",
+        "characteristics": "Bulbe bien formé à 8-12 caïeux adaptés aux nuits fraîches des Niayes, arôme puissant.",
+        "yield_potential": "8 à 14 t/ha",
+        "zones": "Niayes (Thiès, Pout, Sébikotane)"
+      },
+      {
+        "name": "Violet de Kad",
+        "cycle": "115-130 jours",
+        "season": "Novembre à décembre",
+        "characteristics": "Tuniques externes teintées de violet, très résistant aux pourritures blanches de conservation.",
+        "yield_potential": "7 à 12 t/ha",
+        "zones": "Niayes"
+      }
+    ]
   },
   {
     "slug": "ananas",
@@ -1599,7 +2431,25 @@
       "channel": "ANCAR Casamance",
       "url": "https://www.youtube.com/watch?v=b8N3x4y7m2P",
       "duration": "12 min"
-    }
+    },
+    "varieties": [
+      {
+        "name": "Smooth Cayenne (Cayenne Lisse)",
+        "cycle": "14 à 16 mois premier rejet",
+        "season": "Toute l'année",
+        "characteristics": "Fruit lourd cylindrique de 1,8 à 2,5 kg, chair jaune pâle juteuse, équilibre sucre/acidité parfait.",
+        "yield_potential": "40 à 60 t/ha",
+        "zones": "Basse Casamance (Ziguinchor, Oussouye)"
+      },
+      {
+        "name": "MD2 (Extra Sweet)",
+        "cycle": "12 à 14 mois",
+        "season": "Toute l'année",
+        "characteristics": "Fruit doré très sucré à faible acidité, haute teneur en vitamine C, feuillage sans épines.",
+        "yield_potential": "50 à 70 t/ha",
+        "zones": "Casamance"
+      }
+    ]
   },
   {
     "slug": "igname",
@@ -1647,7 +2497,25 @@
       "channel": "CORAF / ANCAR",
       "url": "https://www.youtube.com/watch?v=m7N3x5v2p8A",
       "duration": "10 min"
-    }
+    },
+    "varieties": [
+      {
+        "name": "Kponan (Dioscorea cayenensis)",
+        "cycle": "7 à 9 mois",
+        "season": "Plantation début des pluies",
+        "characteristics": "Igname blanche noble de Casamance, chair farineuse de première qualité pour foutou et frites.",
+        "yield_potential": "15 à 25 t/ha",
+        "zones": "Casamance, Kédougou"
+      },
+      {
+        "name": "Florido (Dioscorea alata)",
+        "cycle": "8 à 10 mois",
+        "season": "Hivernage",
+        "characteristics": "Forte productivité, tubercules réguliers faciles à arracher, tolérante à l'anthracnose.",
+        "yield_potential": "20 à 35 t/ha",
+        "zones": "Casamance"
+      }
+    ]
   },
   {
     "slug": "goyave",
@@ -1696,6 +2564,24 @@
       "channel": "Horticulture Sahel",
       "url": "https://www.youtube.com/watch?v=a8M3v7x2y4K",
       "duration": "9 min"
-    }
+    },
+    "varieties": [
+      {
+        "name": "Goyave Blanche des Niayes",
+        "cycle": "Production continue avec pic en hivernage",
+        "season": "Toute l'année sous goutte-à-goutte",
+        "characteristics": "Fruit piriforme à chair blanche parfumée, riche en pectine idéale pour confitures et jus.",
+        "yield_potential": "15 à 25 t/ha (adulte)",
+        "zones": "Niayes, Thiès, Pout"
+      },
+      {
+        "name": "Goyave Rouge de Casamance",
+        "cycle": "Pic de production en hivernage",
+        "season": "Juillet à octobre",
+        "characteristics": "Chair rose-rougeâtre très fondante et sucrée, peau jaune vif à maturité, très aromatique.",
+        "yield_potential": "18 à 30 t/ha",
+        "zones": "Casamance (Ziguinchor, Kolda)"
+      }
+    ]
   }
 ]

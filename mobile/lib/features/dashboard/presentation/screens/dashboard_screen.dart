@@ -152,7 +152,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                   ),
                   const SizedBox(height: 16),
                   MyDashboardSection(stock: data.stockItems, prices: data.markets),
-                  const SizedBox(height: 120), // Bottom navigation padding
                 ],
               ),
             ),

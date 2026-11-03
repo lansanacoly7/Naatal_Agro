@@ -182,6 +182,7 @@ class AgronomicGuide(models.Model):
     water_needs = models.TextField(blank=True)
     fertilization = models.TextField(blank=True)
     pests_diseases = models.JSONField(default=list, blank=True, help_text="Liste de {name, advice}")
+    varieties = models.JSONField(default=list, blank=True, help_text="Variétés cultivées au Sénégal: [{name, cycle, season, characteristics, yield_potential, zones}]")
     harvest = models.TextField(blank=True)
     yield_info = models.TextField(blank=True)
     limitations = models.TextField(blank=True, help_text="Limites et points à vérifier avant de s'appuyer sur la fiche")

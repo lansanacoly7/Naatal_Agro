@@ -10,7 +10,7 @@ INITIAL_GUIDE_FIELDS = (
     'calendar', 'soil_and_sowing', 'water_needs', 'fertilization', 'pests_diseases', 'harvest',
     'yield_info', 'limitations', 'sources',
 )
-GUIDE_FIELDS = INITIAL_GUIDE_FIELDS + ('aliases',)
+GUIDE_FIELDS = INITIAL_GUIDE_FIELDS + ('aliases', 'varieties',)
 
 
 def read_guides():
@@ -34,7 +34,7 @@ def load_guides(guide_model, fields=GUIDE_FIELDS, force=False):
         if existing is not None and not force and getattr(existing, 'locally_edited', False):
             skipped += 1
             continue
-        defaults = {field: data.get(field, [] if field in ('aliases', 'sources', 'pests_diseases') else '')
+        defaults = {field: data.get(field, [] if field in ('aliases', 'sources', 'pests_diseases', 'varieties') else '')
                     for field in fields}
         guide_model.objects.update_or_create(slug=data['slug'], defaults=defaults)
         processed += 1

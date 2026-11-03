@@ -151,6 +151,23 @@ def build_overview(market):
         market_prices[name][market_id] = float(price)
 
     trending = set(Product.objects.filter(is_trending=True).values_list('name', flat=True))
+    category_map = dict(Product.objects.values_list('name', 'category'))
+
+    def _get_category(product_name):
+        cat = category_map.get(product_name)
+        if cat:
+            return cat
+        clean = product_name.lower().strip()
+        if any(w in clean for w in ['arachide', 'mil', 'mais', 'maïs', 'sorgho', 'riz', 'niebe', 'niébé', 'fonio']):
+            return 'CÉRÉALE'
+        if any(w in clean for w in ['oignon', 'tomate', 'chou', 'carotte', 'aubergine', 'piment', 'poivron', 'gombo', 'navet', 'courge', 'salade', 'laitue', 'ail', 'concombre', 'haricot']):
+            return 'LÉGUME'
+        if any(w in clean for w in ['mangue', 'banane', 'papaye', 'pasteque', 'pastèque', 'orange', 'citron', 'ananas']):
+            return 'FRUIT'
+        if any(w in clean for w in ['manioc', 'patate', 'pomme de terre', 'igname']):
+            return 'TUBERCULE'
+        return 'AUTRE'
+
     products = []
     for name, rows in by_product.items():
         series = _daily_series(rows)
@@ -161,6 +178,7 @@ def build_overview(market):
         cheaper_markets = sum(1 for other, p in peers.items() if other != market.id and p < current)
         products.append({
             'name': name,
+            'category': _get_category(name),
             'price': round(current, 0),
             'trend': trend_of.get(name, 'stable'),
             'date': last_day.isoformat(),
@@ -179,8 +197,22 @@ def build_overview(market):
             'window_days': OFFICIAL_HISTORY_DAYS if source_of.get(name) in OFFICIAL_SOURCES else HISTORY_DAYS,
         })
 
-    # Produits phares : ceux qui font l'actualité des prix (« tendance » du catalogue), puis les plus suivis ici
-    products.sort(key=lambda p: (not p['is_trending'], -p['observed_days'], p['name']))
+    # Produits phares propres à ce marché :
+    # On met en avant les produits qui animent réellement CE marché particulier :
+    # 1. Plus forte variation de prix récente sur ce marché (|change_week_percent|)
+    # 2. Tendance active (hausse ou baisse de cours)
+    # 3. Disponibilité d'une prévision calculée sur l'historique
+    # 4. Nombre de relevés / présence observée sur ce marché
+    # 5. Tendance catalogue en cas d'égalité
+    def _featured_rank(p):
+        chg = abs(p['change_week_percent']) if p['change_week_percent'] is not None else 0.0
+        has_movement = 1 if p['trend'] in ('up', 'down') else 0
+        has_forecast = 1 if p.get('forecast') else 0
+        obs = p.get('observed_days', 0)
+        trending_bonus = 1 if p.get('is_trending') else 0
+        return (-round(chg, 1), -has_movement, -has_forecast, -obs, -trending_bonus, p['name'])
+
+    products.sort(key=_featured_rank)
     base['featured'] = [p['name'] for p in products[:FEATURED_COUNT]]
     products.sort(key=lambda p: p['name'])
     base['products'] = products
